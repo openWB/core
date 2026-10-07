@@ -59,6 +59,115 @@ def transaction_setup(monkeypatch):
     return coordinator, connection, openwb_cp
 
 
+@pytest.mark.parametrize("status", ["Accepted", "Blocked", None])
+@pytest.mark.parametrize("active", [False, True])
+def test_standalone_authorize_preserves_transaction(transaction_setup, mock_pub, status, active):
+    coordinator, connection, openwb_cp = transaction_setup
+    transaction = coordinator._get_transaction("box-1")
+    if active:
+        transaction.state = TransactionState.ACTIVE
+        transaction.transaction_id = 42
+        transaction.id_tag = "ORIGINAL"
+        coordinator._commit("box-1", transaction)
+    previous_transaction = vars(transaction).copy()
+    previous_ocpp = vars(openwb_cp.data.get.ocpp).copy()
+    mock_pub.pub.reset_mock()
+    connection.cp._authorize.return_value = SimpleNamespace(id_tag_info={"status": status})
+
+    result = asyncio.run(coordinator.authorize("box-1", "OTHER"))
+
+    assert result.accepted is (status == "Accepted")
+    assert result.status == status
+    assert result.error is None
+    assert vars(transaction) == previous_transaction
+    assert vars(openwb_cp.data.get.ocpp) == previous_ocpp
+    connection.cp._authorize.assert_awaited_once_with(id_tag="OTHER")
+    connection.cp._start_transaction.assert_not_awaited()
+    connection.cp._stop_transaction.assert_not_awaited()
+    mock_pub.pub.assert_not_called()
+
+
+@pytest.mark.parametrize("response", [None, SimpleNamespace(), SimpleNamespace(id_tag_info=None)])
+def test_standalone_authorize_missing_response_is_not_accepted(transaction_setup, response):
+    coordinator, connection, _ = transaction_setup
+    connection.cp._authorize.return_value = response
+
+    result = asyncio.run(coordinator.authorize("box-1", "TAG"))
+
+    assert result.accepted is False
+    assert result.status is None
+    assert result.error is None
+
+
+@pytest.mark.parametrize("chargebox_id,id_tag", [("", "TAG"), ("box-1", "")])
+def test_standalone_authorize_requires_inputs(transaction_setup, chargebox_id, id_tag):
+    coordinator, connection, _ = transaction_setup
+
+    result = asyncio.run(coordinator.authorize(chargebox_id, id_tag))
+
+    assert result.accepted is False
+    assert result.error is not None
+    coordinator._ensure_connected.assert_not_awaited()
+    connection.cp._authorize.assert_not_awaited()
+
+
+@pytest.mark.parametrize("failure", ["offline", "boot", "connect", "authorize"])
+def test_standalone_authorize_reports_errors_without_transaction_changes(transaction_setup, mock_pub, failure):
+    coordinator, connection, openwb_cp = transaction_setup
+    transaction = coordinator._get_transaction("box-1")
+    previous_transaction = vars(transaction).copy()
+    previous_ocpp = vars(openwb_cp.data.get.ocpp).copy()
+    if failure == "offline":
+        coordinator._ensure_connected.return_value = None
+    elif failure == "boot":
+        connection.boot_accepted = False
+    elif failure == "connect":
+        coordinator._ensure_connected.side_effect = RuntimeError("connect failed")
+    else:
+        connection.cp._authorize.side_effect = RuntimeError("authorize failed")
+
+    result = asyncio.run(coordinator.authorize("box-1", "TAG"))
+
+    assert result.accepted is False
+    assert result.error is not None
+    assert vars(transaction) == previous_transaction
+    assert vars(openwb_cp.data.get.ocpp) == previous_ocpp
+    connection.cp._start_transaction.assert_not_awaited()
+    connection.cp._stop_transaction.assert_not_awaited()
+    mock_pub.pub.assert_not_called()
+    if failure != "authorize":
+        connection.cp._authorize.assert_not_awaited()
+
+
+@pytest.mark.parametrize("cancel_during", ["connect", "authorize"])
+def test_standalone_authorize_propagates_cancellation(transaction_setup, mock_pub, cancel_during):
+    coordinator, connection, _ = transaction_setup
+    pending = coordinator._ensure_connected if cancel_during == "connect" else connection.cp._authorize
+    pending.side_effect = asyncio.CancelledError()
+
+    with pytest.raises(asyncio.CancelledError):
+        asyncio.run(coordinator.authorize("box-1", "TAG"))
+
+    assert coordinator._transactions == {}
+    connection.cp._start_transaction.assert_not_awaited()
+    connection.cp._stop_transaction.assert_not_awaited()
+    mock_pub.pub.assert_not_called()
+
+
+def test_start_authorize_error_returns_to_idle(transaction_setup):
+    coordinator, connection, openwb_cp = transaction_setup
+    connection.cp._authorize.side_effect = RuntimeError()
+
+    assert asyncio.run(coordinator.start("box-1", 1, "TAG", 100)) is False
+
+    transaction = coordinator._get_transaction("box-1")
+    assert transaction.state == TransactionState.IDLE
+    assert transaction.last_error == ""
+    assert transaction.pending_stop is None
+    assert openwb_cp.data.get.ocpp.tag_accepted is False
+    connection.cp._start_transaction.assert_not_awaited()
+
+
 def test_start_publishes_active_transaction(transaction_setup, mock_pub):
     coordinator, connection, openwb_cp = transaction_setup
 
@@ -70,6 +179,7 @@ def test_start_publishes_active_transaction(transaction_setup, mock_pub):
     assert openwb_cp.data.get.ocpp.transaction_id == 42
     assert openwb_cp.data.get.ocpp.tag_accepted is True
     connection.cp._authorize.assert_awaited_once_with(id_tag="TAG")
+    coordinator._ensure_connected.assert_awaited_once_with("box-1")
     connection.cp._start_transaction.assert_awaited_once_with(
         connector_id=1, id_tag="TAG", imported=100,
     )
@@ -150,6 +260,167 @@ def test_stop_during_start_is_not_lost(transaction_setup, waiting_for):
         assert openwb_cp.data.get.ocpp.tag_accepted is False
 
 
+def test_rfid_stop_authorizes_before_stopping(transaction_setup):
+    coordinator, connection, _ = transaction_setup
+
+    async def check():
+        assert await coordinator.start("box-1", 1, "START_TAG", 100)
+        connection.cp._authorize.reset_mock()
+
+        async def authorize(**kwargs):
+            assert coordinator.get_state("box-1") == TransactionState.ACTIVE
+            connection.cp._stop_transaction.assert_not_awaited()
+            return SimpleNamespace(id_tag_info={"status": "Accepted"})
+
+        connection.cp._authorize.side_effect = authorize
+        assert await coordinator.stop("box-1", 150, "STOP_TAG", "Local", authorize_stop=True)
+
+    asyncio.run(check())
+
+    connection.cp._authorize.assert_awaited_once_with(id_tag="STOP_TAG")
+    connection.cp._stop_transaction.assert_awaited_once_with(
+        meter_stop=150, transaction_id=42, reason="Local", id_tag="STOP_TAG",
+    )
+    assert coordinator.get_state("box-1") == TransactionState.IDLE
+
+
+@pytest.mark.parametrize("failure", ["blocked", "error", "empty", "offline", "boot", "cancel"])
+def test_rfid_stop_auth_failure_preserves_active_transaction(transaction_setup, mock_pub, failure):
+    coordinator, connection, openwb_cp = transaction_setup
+
+    async def check():
+        assert await coordinator.start("box-1", 1, "START_TAG", 100)
+        transaction = coordinator._get_transaction("box-1")
+        previous_transaction = vars(transaction).copy()
+        previous_ocpp = vars(openwb_cp.data.get.ocpp).copy()
+        mock_pub.pub.reset_mock()
+        connection.cp._authorize.reset_mock()
+        if failure == "blocked":
+            connection.cp._authorize.return_value = SimpleNamespace(id_tag_info={"status": "Blocked"})
+        elif failure == "error":
+            connection.cp._authorize.side_effect = RuntimeError("authorize failed")
+        elif failure == "offline":
+            coordinator._ensure_connected.return_value = None
+        elif failure == "boot":
+            connection.boot_accepted = False
+        elif failure == "cancel":
+            connection.cp._authorize.side_effect = asyncio.CancelledError()
+
+        request = coordinator.stop("box-1", 150, "" if failure == "empty" else "STOP_TAG",
+                                   "Local", authorize_stop=True)
+        if failure == "cancel":
+            with pytest.raises(asyncio.CancelledError):
+                await request
+        else:
+            assert await request is False
+
+        assert vars(transaction) == previous_transaction
+        assert vars(openwb_cp.data.get.ocpp) == previous_ocpp
+        mock_pub.pub.assert_not_called()
+
+    asyncio.run(check())
+
+    connection.cp._stop_transaction.assert_not_awaited()
+    if failure in ("empty", "offline", "boot"):
+        connection.cp._authorize.assert_not_awaited()
+
+
+@pytest.mark.parametrize("state", [
+    TransactionState.IDLE, TransactionState.REJECTED, TransactionState.ERROR,
+    TransactionState.START_PENDING, TransactionState.AUTHORIZING,
+    TransactionState.STARTING, TransactionState.STOPPING,
+])
+def test_rfid_stop_requires_stoppable_transaction(transaction_setup, mock_pub, state):
+    coordinator, connection, _ = transaction_setup
+    transaction = coordinator._get_transaction("box-1")
+    transaction.state = state
+
+    assert asyncio.run(coordinator.stop("box-1", 150, "STOP_TAG", "Local", authorize_stop=True)) is False
+
+    assert transaction.state == state
+    assert transaction.pending_stop is None
+    connection.cp._authorize.assert_not_awaited()
+    connection.cp._stop_transaction.assert_not_awaited()
+    mock_pub.pub.assert_not_called()
+
+
+@pytest.mark.parametrize("restart", [False, True])
+def test_automatic_stop_during_rfid_auth_does_not_stop_again(transaction_setup, restart):
+    coordinator, connection, _ = transaction_setup
+
+    async def check():
+        assert await coordinator.start("box-1", 1, "START_TAG", 100)
+        entered = asyncio.Event()
+        release = asyncio.Event()
+
+        async def delayed_authorize(**kwargs):
+            entered.set()
+            await release.wait()
+            return SimpleNamespace(id_tag_info={"status": "Accepted"})
+
+        connection.cp._authorize.side_effect = delayed_authorize
+        rfid_stop = asyncio.create_task(coordinator.stop("box-1", 150, "STOP_TAG", "Local", authorize_stop=True))
+        await asyncio.wait_for(entered.wait(), timeout=5)
+        assert await coordinator.stop("box-1", 160, reason="EVDisconnected")
+        if restart:
+            connection.cp._authorize.side_effect = None
+            connection.cp._start_transaction.return_value.transaction_id = 43
+            assert await coordinator.start("box-1", 1, "NEW_TAG", 200)
+        release.set()
+        assert await rfid_stop is False
+
+    asyncio.run(check())
+
+    connection.cp._stop_transaction.assert_awaited_once_with(
+        meter_stop=160, transaction_id=42, reason="EVDisconnected", id_tag="START_TAG",
+    )
+    assert coordinator.get_transaction_id("box-1") == (43 if restart else None)
+
+
+def test_parallel_rfid_stops_send_one_stop_transaction(transaction_setup):
+    coordinator, connection, _ = transaction_setup
+
+    async def check():
+        assert await coordinator.start("box-1", 1, "START_TAG", 100)
+        entered = asyncio.Event()
+        release = asyncio.Event()
+
+        async def delayed_stop(**kwargs):
+            entered.set()
+            await release.wait()
+
+        connection.cp._stop_transaction.side_effect = delayed_stop
+        first = asyncio.create_task(coordinator.stop("box-1", 150, "TAG", "Local", authorize_stop=True))
+        second = asyncio.create_task(coordinator.stop("box-1", 150, "TAG", "Local", authorize_stop=True))
+        await asyncio.wait_for(entered.wait(), timeout=5)
+        assert await second is False
+        release.set()
+        assert await first is True
+
+    asyncio.run(check())
+
+    connection.cp._stop_transaction.assert_awaited_once()
+
+
+@pytest.mark.parametrize("reason", ["EVDisconnected", "Remote", "SoftReset"])
+def test_automatic_stop_does_not_authorize(transaction_setup, reason):
+    coordinator, connection, _ = transaction_setup
+
+    async def check():
+        assert await coordinator.start("box-1", 1, "TAG", 100)
+        connection.cp._authorize.reset_mock()
+        connection.cp._authorize.side_effect = RuntimeError("must not authorize")
+        if reason == "SoftReset":
+            assert await coordinator.stop_and_wait("box-1", 150, "TAG", reason)
+        else:
+            assert await coordinator.stop("box-1", 150, "TAG", reason)
+
+    asyncio.run(check())
+
+    connection.cp._authorize.assert_not_awaited()
+    connection.cp._stop_transaction.assert_awaited_once()
+
+
 def test_active_stop_clears_transaction_only_after_response(transaction_setup):
     coordinator, connection, openwb_cp = transaction_setup
 
@@ -210,6 +481,8 @@ def test_offline_stop_is_replayed_once_after_reconnect(transaction_setup, mock_p
             "action": "stop", "transaction_id": 42, "id_tag": "TAG",
             "imported": 150, "reason": "EVDisconnected",
         }]
+        connection.cp._authorize.reset_mock()
+        connection.cp._authorize.side_effect = RuntimeError("must not authorize replay")
         coordinator._ensure_connected.return_value = connection
         transaction_id_publications_before_replay = mock_pub.pub.call_args_list.count(
             call("openWB/set/chargepoint/1/get/ocpp/transaction_id", 42)
@@ -220,6 +493,7 @@ def test_offline_stop_is_replayed_once_after_reconnect(transaction_setup, mock_p
 
     transaction_id_publications_before_replay = asyncio.run(check())
 
+    connection.cp._authorize.assert_not_awaited()
     connection.cp._stop_transaction.assert_awaited_once_with(
         meter_stop=150, transaction_id=42, reason="EVDisconnected", id_tag="TAG",
     )

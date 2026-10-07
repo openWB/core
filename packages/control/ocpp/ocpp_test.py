@@ -1,4 +1,5 @@
 import asyncio
+import concurrent.futures
 import json
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, Mock
@@ -10,12 +11,13 @@ from control.chargepoint.chargepoint_template import CpTemplate
 from control.counter import Counter
 from control.ev.ev import Ev
 from control.ocpp import ocpp_connection_manager
+from control.ocpp import ocpp_client
 from control.ocpp import ocpp_transaction_coordinator
 from control.ocpp.ocpp_chargepoint import OcppChargePoint
 from control.ocpp.ocpp_client import OcppClient
 from control.ocpp.ocpp_connection import OcppConnection, RegistrationState
 from control.ocpp.ocpp_connection_manager import OcppConnectionManager
-from control.ocpp.ocpp_transaction_coordinator import TransactionCoordinator
+from control.ocpp.ocpp_transaction_coordinator import AuthorizationResult, TransactionCoordinator
 from ocpp.v16.enums import (
     ChargePointStatus,
     MessageTrigger,
@@ -84,6 +86,80 @@ def test_stop_transaction(mock_data, monkeypatch):
         id_tag="ABCDEF01234567",
         imported=0,
         reason="EVDisconnected"
+    )
+
+
+@pytest.mark.parametrize("result", [
+    AuthorizationResult(status="Accepted"),
+    AuthorizationResult(status="Blocked"),
+    AuthorizationResult(error="offline"),
+])
+def test_client_authorize_returns_result_future(monkeypatch, result):
+    client = object.__new__(OcppClient)
+    client.loop = Mock()
+    client.transactions = SimpleNamespace(authorize=AsyncMock(return_value=result))
+
+    def submit(coroutine, loop):
+        assert loop is client.loop
+        future = concurrent.futures.Future()
+        future.set_result(asyncio.run(coroutine))
+        return future
+
+    monkeypatch.setattr(ocpp_client.asyncio, "run_coroutine_threadsafe", submit)
+
+    future = client.authorize("box-1", "TAG")
+
+    assert isinstance(future, concurrent.futures.Future)
+    assert future.result(timeout=1) is result
+    client.transactions.authorize.assert_awaited_once_with(chargebox_id="box-1", id_tag="TAG")
+
+    async def check():
+        assert await asyncio.wrap_future(future) is result
+
+    asyncio.run(check())
+
+
+def test_client_authorize_future_can_be_cancelled(monkeypatch):
+    client = object.__new__(OcppClient)
+    client.loop = Mock()
+    client.transactions = SimpleNamespace(authorize=AsyncMock())
+    submitted = []
+
+    def submit(coroutine, loop):
+        submitted.append(coroutine)
+        return concurrent.futures.Future()
+
+    monkeypatch.setattr(ocpp_client.asyncio, "run_coroutine_threadsafe", submit)
+
+    future = client.authorize("box-1", "TAG")
+    try:
+        assert future.cancel()
+        with pytest.raises(concurrent.futures.CancelledError):
+            future.result(timeout=1)
+    finally:
+        for coroutine in submitted:
+            coroutine.close()
+
+
+@pytest.mark.parametrize("authorize_stop", [False, True])
+def test_client_request_stop_forwards_authorization(monkeypatch, authorize_stop):
+    client = object.__new__(OcppClient)
+    client.loop = Mock()
+    client.transactions = SimpleNamespace(stop=AsyncMock(return_value=True))
+
+    def submit(coroutine, loop):
+        assert loop is client.loop
+        future = concurrent.futures.Future()
+        future.set_result(asyncio.run(coroutine))
+        return future
+
+    monkeypatch.setattr(ocpp_client.asyncio, "run_coroutine_threadsafe", submit)
+    options = {"authorize_stop": True} if authorize_stop else {}
+
+    assert client.request_stop("box-1", 150, "TAG", "Local", **options) is None
+
+    client.transactions.stop.assert_awaited_once_with(
+        chargebox_id="box-1", imported=150, id_tag="TAG", reason="Local", authorize_stop=authorize_stop,
     )
 
 

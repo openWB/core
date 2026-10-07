@@ -238,11 +238,7 @@ class Chargepoint(ChargepointRfidMixin, Load):
                 data.data.ocpp_client.request_stop(
                     chargebox_id=chargebox_id,
                     imported=self.data.get.imported,
-                    id_tag=(
-                        self.data.set.rfid
-                        or self.data.get.rfid
-                        or ""
-                    ),
+                    id_tag=self.data.set.rfid,
                     reason="Remote",
                 )
 
@@ -250,11 +246,7 @@ class Chargepoint(ChargepointRfidMixin, Load):
                 data.data.ocpp_client.request_stop(
                     chargebox_id=chargebox_id,
                     imported=self.data.get.imported,
-                    id_tag=(
-                        self.data.set.rfid
-                        or self.data.get.rfid
-                        or ""
-                    ),
+                    id_tag=self.data.set.rfid,
                     reason="EVDisconnected",
                 )
         # muss vor dem Zurücksetzen der control parameter aufgerufen werden
@@ -716,6 +708,43 @@ class Chargepoint(ChargepointRfidMixin, Load):
 
                 self.data.get.ocpp.reset = False
                 Pub().pub(f"openWB/set/chargepoint/"f"{self.num}/get/ocpp/reset", False)
+
+            # Problem, wenn Tag von openWB accpeted wird
+            # dann bleint das Tag 5 min aktive und wir senden 5 minuten lang im Update Loop das auth das Auth...
+
+            if self.data.get.rfid is not None:
+                rfid = self.data.get.rfid
+                if (rfid in self.template.data.valid_tags or  # Hier mit können nur Auths gemacht werden mit Tags,
+                        any(rfid in v.data.tag_id for v in data.data.ev_data.values())):  # die auch openWB akzeptiert
+                    if not (self.data.set.log.imported_at_plugtime == 0 or
+                            self.data.set.log.imported_at_plugtime == self.data.get.imported):
+                        # RFID wurde gescannt, von openwb akzeptiert und wird sind gerade schon am laden
+
+                        # Wenn der gleiche Tag gescannt wird, wie beim Start
+                        # Trotzdem nochmal Auth und dann Stop Transaktion
+                        if self.data.get.rfid == self.data.set.rfid:
+                            data.data.ocpp_client.request_stop(
+                                chargebox_id=self.data.config.ocpp_chargebox_id,
+                                imported=self.data.get.imported,
+                                id_tag=rfid,
+                                reason="Local",
+                                authorize_stop=True
+                            )
+                        else:
+                            # Führe nur Auth aus
+                            data.data.ocpp_client.authorize(
+                                chargebox_id=self.data.config.ocpp_chargebox_id, id_tag=rfid)
+
+                    else:
+                        # RFID wurde gescannt, von openWB akzeptiert, aber das Fahrzeug lädt noch nicht
+                        # -> Stecker ist nicht eingesteckt
+                        # -> nur Auth machen ohne Transaktion zu starten
+                        # => aber nur einmal, sobald wir einen Timestamp haben, wurde das schon einmal ausgeführt
+                        #           Wenn Stecker eingesteckt ist, übernimmt request_start das auth
+
+                        if not self.data.get.plug_state and self.data.get.rfid_timestamp is None:
+                            data.data.ocpp_client.authorize(
+                                chargebox_id=self.data.config.ocpp_chargebox_id, id_tag=rfid)
 
             self._validate_rfid()
             charging_possible, message = self.is_charging_possible()
