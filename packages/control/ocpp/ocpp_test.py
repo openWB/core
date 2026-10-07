@@ -109,6 +109,32 @@ def test_transfer_values_updates_meter_snapshot():
     assert snapshot.imported == 9876
 
 
+@pytest.mark.parametrize(
+    "previous, chargebox_id, active, expected_disconnects",
+    [
+        pytest.param(None, "box-1", False, ["box-1"], id="initial-disabled-config"),
+        pytest.param(("box-1", True), "box-1", False, ["box-1"], id="disable-ocpp"),
+        pytest.param(("box-1", True), "box-2", True, ["box-1"], id="change-id"),
+        pytest.param(("box-1", False), "box-2", False, ["box-1", "box-2"],
+                     id="change-id-while-disabled"),
+    ],
+)
+def test_sync_chargepoint_lifecycle(
+    previous, chargebox_id, active, expected_disconnects
+):
+    client = object.__new__(OcppClient)
+    client._chargepoint_lifecycle = {}
+    if previous is not None:
+        client._chargepoint_lifecycle[1] = previous
+    disconnect = Mock()
+    client.disconnect = disconnect
+
+    client.sync_chargepoint_lifecycle(1, chargebox_id, active)
+
+    assert [call.args[0] for call in disconnect.call_args_list] == expected_disconnects
+    assert client._chargepoint_lifecycle[1] == (chargebox_id, bool(active and chargebox_id))
+
+
 def test_status_notification_skips_connection_check_when_status_is_unchanged():
     client = object.__new__(OcppClient)
     client._last_update = {("cp1", 1): (ChargePointStatus.available, "NoError")}
