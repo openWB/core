@@ -80,7 +80,8 @@ def create_consumer(config: Elwa):
         power_limit = min(power_limit, 4000)
         power_limit = max(power_limit, 0)
 
-        client.write_registers(1000, power_limit, unit=config.configuration.modbus_id)
+        client.write_register(1000, int(power_limit), data_type=ModbusDataType.INT_16,
+                              unit=config.configuration.modbus_id)
     return ConfigurableConsumer(consumer_config=config,
                                 initializer=initializer,
                                 error_handler=error_handler,
