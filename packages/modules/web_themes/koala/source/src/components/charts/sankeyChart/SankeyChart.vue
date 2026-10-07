@@ -58,11 +58,11 @@ const ChartjsSankey = createTypedChart('sankey', [
 defineOptions({ name: 'SankeyChart' });
 
 // The legend is only shown in compact mode, where node names are hidden.
+// When chart has three columns.
 defineProps<{ showLegend?: boolean }>();
 
 const $q = useQuasar();
-const compact = computed(() => $q.screen.lt.sm);
-const { allocation, colorForNode, labelColor } = useSankeyData();
+const { allocation, compact, colorForNode, labelColor } = useSankeyData();
 
 const hasFlows = computed(() => allocation.value.edges.length > 0);
 
