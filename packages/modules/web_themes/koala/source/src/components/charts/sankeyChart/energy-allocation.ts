@@ -169,7 +169,10 @@ function splitHouse(house: number, consumers: FlowNode[]): FlowNode[] {
   }
   const consumerTotal = sumPower(consumers);
   const scale = Math.min(1, house / consumerTotal);
-  const parts = consumers.map((node) => ({ ...node, power: node.power * scale }));
+  const parts = consumers.map((node) => ({
+    ...node,
+    power: node.power * scale,
+  }));
   const rest = house - consumerTotal * scale;
   if (rest >= MIN_EDGE_WATTS) {
     parts.push({
