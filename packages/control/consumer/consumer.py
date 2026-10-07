@@ -91,6 +91,8 @@ class Consumer(Load):
                 self.data.set.timestamp_wrote_last_on_time = now
             self.data.set.on_time += now - self.data.set.timestamp_wrote_last_on_time
             self.data.set.timestamp_wrote_last_on_time = now
+        else:
+            self.data.set.timestamp_wrote_last_on_time = None
 
     def reset_on_time(self):
         self.data.set.on_time = 0
