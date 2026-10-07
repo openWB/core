@@ -63,7 +63,7 @@ NO_MODULE = {"type": None, "configuration": {}}
 
 class UpdateConfig:
 
-    DATASTORE_VERSION = 153
+    DATASTORE_VERSION = 154
 
     FILE_OPERATION_VERSION = 0
 
@@ -4103,3 +4103,18 @@ class UpdateConfig:
             return None
         self._loop_all_received_topics(upgrade)
         self._append_datastore_version(153)
+
+    def upgrade_datastore_154(self) -> None:
+        def upgrade(topic: str, payload) -> Optional[dict]:
+            if re.search(r"^openWB/consumer/[0-9]+/config$", topic) is not None:
+                config = decode_payload(payload)
+                if "min_current" in config:
+                    if "min_power" not in config:
+                        phases = config.get("connected_phases") or 1
+                        config["min_power"] = float(config["min_current"]) * phases * 230
+                    del config["min_current"]
+                    return {topic: config}
+            return None
+
+        self._loop_all_received_topics(upgrade)
+        self._append_datastore_version(154)

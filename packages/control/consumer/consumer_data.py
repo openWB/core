@@ -55,7 +55,7 @@ class ConsumerConfig:
     connected_phases: int = 1
     phase_1: int = 1
     max_power: float = 5000
-    min_current: float = 0.5
+    min_power: float = 115
     min_interval: int = 60
     is_home_consumption_consumer: str = "auto_home_consumption"
 

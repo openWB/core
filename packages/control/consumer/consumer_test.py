@@ -28,7 +28,7 @@ def mock_data() -> None:
 def consumer() -> Consumer:
     load = Consumer(1)
     load.data.usage.type = ConsumerUsage.CONTINUOUS
-    load.data.config.min_current = 6
+    load.data.config.min_power = 1380
     load.data.config.max_power = 2300
     load.data.config.connected_phases = 1
     load.data.get.voltages = [230]
@@ -169,7 +169,7 @@ def test_wait_for_start_handler_standby_threshold_depends_on_usage_type(
     consumer.data.usage.wait_for_start_active = True
     consumer.data.usage.type = usage_type
     consumer.data.set.wait_for_start_state = WaitForStartStates.WAIT_FOR_DEVICE_START
-    # 0.2 A liegt über STANDBY_THRESHOLD (0.15), aber unter min_current (6 A)
+    # 0.2 A liegt über STANDBY_THRESHOLD (0.15), aber unter der aus min_power abgeleiteten Schwelle (~6 A)
     consumer.data.get.currents = [0.2, 0.2, 0.2]
     charging_func = Mock(return_value=(11, "ok", Chargemode.PV_CHARGING))
 
@@ -300,29 +300,34 @@ def test_pv_charging(consumer: Consumer):
 
 
 @pytest.mark.parametrize(
-    "usage_type, charge_state, currents, expected_min_current",
+    "usage_type, charge_state, connected_phases, currents, expected_min_current",
     [
-        pytest.param(ConsumerUsage.CONTINUOUS, True, [13, 13, 13], 13, id="continuous-while-running"),
-        pytest.param(ConsumerUsage.CONTINUOUS, False, [13, 13, 13], 10, id="continuous-while-stopped"),
-        pytest.param(ConsumerUsage.SUSPENDABLE_TUNABLE, True, [13, 13, 13], 6, id="tunable-while-running"),
-        pytest.param(ConsumerUsage.SUSPENDABLE_TUNABLE, False, [13, 13, 13], 6, id="tunable-while-stopped"),
+        pytest.param(ConsumerUsage.CONTINUOUS, True, 1, [13, 13, 13], 13, id="continuous-while-running"),
+        pytest.param(ConsumerUsage.CONTINUOUS, False, 1, [13, 13, 13], 10, id="continuous-while-stopped"),
+        pytest.param(ConsumerUsage.SUSPENDABLE_TUNABLE, True, 1, [13, 13, 13], 6,
+                     id="tunable-single-phase"),
+        pytest.param(ConsumerUsage.SUSPENDABLE_TUNABLE, False, 2, [13, 13, 13], 3,
+                     id="tunable-two-phases-min-power-conversion"),
     ],
 )
 def test_set_control_parameter_sets_min_current_by_usage_and_charge_state(
         consumer: Consumer,
         usage_type: ConsumerUsage,
         charge_state: bool,
+        connected_phases: int,
         currents: List[float],
         expected_min_current: float):
     # setup
     consumer.data.usage.type = usage_type
     consumer.data.get.charge_state = charge_state
+    consumer.data.config.connected_phases = connected_phases
+    consumer.data.get.voltages = [230]*3
     consumer.data.get.currents = currents
 
     # execution
     consumer.set_control_parameter(
         required_current=11,
-        phases=1,
+        phases=connected_phases,
         submode=Chargemode.PV_CHARGING,
         mode=Chargemode.PV_CHARGING,
     )

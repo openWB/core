@@ -267,9 +267,46 @@ def test_upgrade_datastore_125_converts_energycharts_surcharge(mock_pub):
     provider = uc.all_received_topics["openWB/optional/ep/flexible_tariff/provider"]
     assert provider["configuration"]["surcharge"] == pytest.approx(0.0001)
     assert uc.all_received_topics["openWB/system/datastore_version"] == [123, 125]
-
     updated_topics = [call.args[0] for call in mock_pub.pub.call_args_list]
     assert "openWB/optional/ep/flexible_tariff/provider" in updated_topics
+
+
+def test_upgrade_datastore_154_converts_min_current_to_min_power_and_removes_legacy_field():
+    uc = UpdateConfig()
+    uc.all_received_topics = {
+        "openWB/system/datastore_version": list(range(154)),
+        "openWB/consumer/1/config": {
+            "connected_phases": 2,
+            "max_power": 5000,
+            "min_current": 1.5,
+        },
+    }
+
+    uc.upgrade_datastore_154()
+
+    migrated_config = uc.all_received_topics["openWB/consumer/1/config"]
+    assert migrated_config["min_power"] == pytest.approx(690.0)
+    assert "min_current" not in migrated_config
+    assert 154 in uc.all_received_topics["openWB/system/datastore_version"]
+
+
+def test_upgrade_datastore_154_keeps_existing_min_power_and_removes_legacy_field():
+    uc = UpdateConfig()
+    uc.all_received_topics = {
+        "openWB/system/datastore_version": list(range(154)),
+        "openWB/consumer/2/config": {
+            "connected_phases": 3,
+            "max_power": 5000,
+            "min_power": 1200,
+            "min_current": 2,
+        },
+    }
+
+    uc.upgrade_datastore_154()
+
+    migrated_config = uc.all_received_topics["openWB/consumer/2/config"]
+    assert migrated_config["min_power"] == 1200
+    assert "min_current" not in migrated_config
 
 
 def test_upgrade_datastore_125_is_idempotent_for_already_converted_values(mock_pub):
