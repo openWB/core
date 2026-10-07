@@ -3,10 +3,11 @@ import logging
 import math
 from dataclasses import asdict
 from pathlib import Path
+from urllib.parse import urlsplit
 from helpermodules.utils.error_handling import ImportErrorContext
 with ImportErrorContext():
     from ocpp.v16 import ChargePoint as cp
-    from ocpp.v16 import call, call_result, datatypes
+    from ocpp.v16 import call, call_result
     from ocpp.v16.enums import (
         Action,
         AvailabilityStatus,
@@ -46,7 +47,9 @@ class OcppChargePoint(cp):
         self.reset_callback = reset_callback
         self.trigger_msg_callback = trigger_msg_callback
         self._accepted_triggers = set()
+        self._accepted_resets = set()
         self._diagnostics_status_stored = None
+        self._background_tasks: set[asyncio.Task] = set()
         self.registration_state = None
 
     async def _handle_call(self, msg):
@@ -114,14 +117,15 @@ class OcppChargePoint(cp):
     async def _authorize(self,
                          id_tag: str) -> Optional[object]:
 
-        print(f"AUTHORIZE        CP_Nr: {self.openwb_num}  OCPP_Nr: {self.chargebox_id}")
-
+        print(f"# AUTHORIZE        CP_Nr: {self.openwb_num}  OCPP_Nr: {self.chargebox_id}")
+        log.debug(f"Authorize request for CP {self.openwb_num} OCPP_Nr: {self.chargebox_id} with id_tag: {id_tag}")
         request = call.Authorize(
             id_tag=id_tag if id_tag else ""
         )
 
         response: call_result.Authorize = await self.call(request)
-        print(f"Authorize response: {response}")
+        print(f"# AUTHORIZE response: {response}")
+        log.debug(f"Authorize response: {response}")
 
         return response
 
@@ -191,7 +195,7 @@ class OcppChargePoint(cp):
             error_code=get_ocpp_error_code(fault_state),
             status=status,
             timestamp=_get_formatted_time(),
-            info=fault_state_str,
+            info=(fault_state_str or "")[:50],
             vendor_id="openWB",
             vendor_error_code=str(fault_state)
 
@@ -212,9 +216,11 @@ class OcppChargePoint(cp):
         try:
             availability_type = type
             print(
-                f"CHANGE_AVAILABILITY     CP_Nr: {self.openwb_num} "
+                f"# CHANGE_AVAILABILITY     CP_Nr: {self.openwb_num} "
                 f"OCPP_Nr: {self.chargebox_id}"
             )
+            log.debug(f"ChangeAvailability request for CP {self.openwb_num} mit OCPP_Nr: {self.chargebox_id} "
+                      f"Connector: {connector_id} Type: {availability_type}")
 
             if connector_id not in (0, 1):
                 log.warning("Ungültige Connector-ID für ChangeAvailability: %s", connector_id)
@@ -270,11 +276,12 @@ class OcppChargePoint(cp):
     @on(Action.get_configuration)
     async def get_configuration(self, key=None, **kwargs):
         print(
-            f"GET_CONFIGURATION     CP_Nr: {self.openwb_num} "
+            f"# GET_CONFIGURATION     CP_Nr: {self.openwb_num} "
             f"OCPP_Nr: {self.chargebox_id} "
-            f"\nKey: {key}"
+            f"Key: {key}"
         )
-
+        log.debug("GetConfiguration called for CP_Nr: %s, OCPP_Nr: %s, Key: %s",
+                  self.openwb_num, self.chargebox_id, key)
         unknown_keys = []
         configuration = self.openwb_cp.data.get.ocpp.config
         configuration_fields = vars(configuration)
@@ -292,31 +299,30 @@ class OcppChargePoint(cp):
         else:
             configuration_values = configuration_fields.items()
 
-        response = dict(
-            configuration_key=[
-                datatypes.KeyValue(
-                    key=k,
-                    readonly=v.get("readonly", False),
-                    value=str(v.get("value"))
-                ) for k, v in configuration_values
-            ],
-            unknown_key=unknown_keys
-        )
-        print(response)
+        configuration_key = [
+            {
+                "key": k,
+                "readonly": v.get("readonly", False),
+                "value": str(v.get("value")),
+            }
+            for k, v in configuration_values
+        ]
+
         return call_result.GetConfiguration(
-            configuration_key=response["configuration_key"],
-            unknown_key=response["unknown_key"]
+            configuration_key=configuration_key,
+            unknown_key=unknown_keys,
         )
 
     @on(Action.change_configuration)
     async def change_configuration(self, key, value, **kwargs):
         print(
-            f"CHANGE_CONFIGURATION  CP_Nr: {self.openwb_num} "
+            f"# CHANGE_CONFIGURATION  CP_Nr: {self.openwb_num} "
             f"OCPP_Nr: {self.chargebox_id} "
-            f"\nKey: {key} "
+            f"Key: {key} "
             f"Value: {value}"
         )
-
+        log.debug("ChangeConfiguration called for CP_Nr: %s, OCPP_Nr: %s, Key: %s, Value: %s",
+                  self.openwb_num, self.chargebox_id, key, value)
         configuration = self.openwb_cp.data.get.ocpp.config
         configuration_fields = vars(configuration)
         if key not in configuration_fields:
@@ -390,28 +396,19 @@ class OcppChargePoint(cp):
             return call_result.RemoteStartTransaction(
                 status=RemoteStartStopStatus.rejected
             )
-
         print(
-            f"REMOTE_START_TRANSACTION  CP_Nr: {self.openwb_num} "
+            f"# REMOTE_START_TRANSACTION  CP_Nr: {self.openwb_num} "
             f"OCPP_Nr: {self.chargebox_id} "
-            f"\nId Tag: {id_tag} "
-            f"Connector ID: {connector_id} "
-            f"\nKwargs: {kwargs}"
+            f"Id Tag: {id_tag} "
         )
 
-        """
-        Wenn der Cp nicht gesperrt ist durch OCPP_Availability,
-        kann die Remote-Start-Transaktion akzeptiert werden.
+        log.debug(
+            "RemoteStartTransaction für CP %s / OCPP %s / Connector %s",
+            self.openwb_num,
+            self.chargebox_id,
+            connector_id,
+        )
 
-        Wir setzten einfach den übergebenen id_tag  in die rfif-Topic
-        dann handelt alles weiter der openWB-Backend
-
-        Wenn Tag erlaubt ist:
-        wenn Fahrzeug nicht eingesteckt ist -> Nachricht: sie haben 5 min um das auto einzustecken.
-        wenn Fahrzeug eingesteckt ist -> Transaktion wird gestartet.
-            -> standart reaction von openWB, wie wenn man direkt nen tag gescannt hat
-
-        """
         requested_connector_id = connector_id if connector_id is not None else 1
         openwb_cp = self.openwb_cp
         if (openwb_cp is None or requested_connector_id != 1 or
@@ -441,10 +438,17 @@ class OcppChargePoint(cp):
             )
 
         print(
-            f"REMOTE_STOP_TRANSACTION  CP_Nr: {self.openwb_num} "
+            f"# REMOTE_STOP_TRANSACTION  CP_Nr: {self.openwb_num} "
             f"OCPP_Nr: {self.chargebox_id} "
             f"\nTransaction ID: {transaction_id} "
             f"\nKwargs: {kwargs}"
+        )
+
+        log.debug(
+            "RemoteStartTransaction für CP %s / OCPP %s / Transaction ID %s",
+            self.openwb_num,
+            self.chargebox_id,
+            transaction_id,
         )
 
         # Nur akzeptiren, wenn auch eine aktive Transaktion vorhanden ist
@@ -481,14 +485,12 @@ class OcppChargePoint(cp):
         )
 
     @on(Action.reset)
-    async def reset(self, type: ResetType, **kwargs):
-        print(
-            f"RESET  CP_Nr: {self.openwb_num} "
-            f"OCPP_Nr: {self.chargebox_id} "
-            f"\nType: {type} "
-            f"\nKwargs: {kwargs}"
-        )
-
+    async def reset(
+        self,
+        type: ResetType,
+        call_unique_id: Optional[str] = None,
+        **kwargs,
+    ):
         if self.reset_callback is None:
             log.error(
                 "Kein Reset-Callback für OCPP Chargebox %s registriert",
@@ -496,23 +498,48 @@ class OcppChargePoint(cp):
             )
             return call_result.Reset(status=ResetStatus.rejected)
 
-        loop = asyncio.get_running_loop()
+        # Erst Reset bestätigen und dann die eigentliche Reset-Logik ausführen
+        # -> im after_reset-Handler
+        self._accepted_resets.add(call_unique_id)
+        return call_result.Reset(status=ResetStatus.accepted)
 
-        # Die Reset-Antwort erst über die bestehende OCPP-Verbindung senden,
-        # bevor der Callback beim Soft-Reset den Reconnect startet.
-        loop.call_later(
-            0.5,
-            lambda: asyncio.create_task(
-                self.reset_callback(
-                    self.chargebox_id,
-                    ResetType(type),
-                )
+    @after(Action.reset)
+    async def after_reset(
+        self,
+        type: ResetType,
+        call_unique_id: Optional[str] = None,
+        **kwargs,
+    ) -> None:
+        if call_unique_id not in self._accepted_resets:
+            return
+        # damit der Reset nicht mehrfach ausgeführt wird
+        self._accepted_resets.discard(call_unique_id)
+
+        try:
+            await self.reset_callback(self.chargebox_id, ResetType(type))
+        except Exception:
+            log.exception(
+                "OCPP Reset-Callback für %s ist fehlgeschlagen",
+                self.chargebox_id,
             )
-        )
 
-        return call_result.Reset(
-            status=ResetStatus.accepted
-        )
+    def _track_background_task(self, task: asyncio.Task) -> None:
+        self._background_tasks.add(task)
+
+        def done(completed: asyncio.Task) -> None:
+            self._background_tasks.discard(completed)
+            if completed.cancelled():
+                return
+            exception = completed.exception()
+            if exception is not None:
+                log.error(
+                    "OCPP-Hintergrundtask für %s fehlgeschlagen: %s",
+                    self.chargebox_id,
+                    exception,
+                    exc_info=(type(exception), exception, exception.__traceback__),
+                )
+
+        task.add_done_callback(done)
 
     @on(Action.get_diagnostics)
     async def get_diagnostics(self,
@@ -523,15 +550,30 @@ class OcppChargePoint(cp):
                               stop_time: Optional[str] = None,
                               **kwargs):
         print(
-            f"GET_DIAGNOSTICS  CP_Nr: {self.openwb_num} "
+            f"# GET_DIAGNOSTICS  CP_Nr: {self.openwb_num} "
             f"OCPP_Nr: {self.chargebox_id} "
-            f"\nKwargs: {kwargs}"
+            f"Kwargs: {kwargs}"
         )
-        log.debug("#############################. TEST")
+        log.debug(
+            "Get Diagnostics called for CP_Nr: %s, OCPP_Nr: %s, Location: %s,"
+            "Retries: %s, Retry Interval: %s, Start Time: %s, Stop Time: %s, Kwargs: %s",
+            self.openwb_num,
+            self.chargebox_id,
+            location,
+            retries,
+            retry_interval,
+            start_time,
+            stop_time,
+            kwargs,
+        )
         filename = await create_diagnostics(start_time, stop_time)
 
-        # Upload in einem eigenen Task
-        asyncio.create_task(self._upload_diagnostics(filename, location, retries or 0, retry_interval or 0))
+        # Upload in einem eigenen, getrackten Task.
+        upload_task = asyncio.create_task(
+            self._upload_diagnostics(filename, location, retries or 0, retry_interval or 0),
+            name=f"ocpp-diagnostics-{self.chargebox_id}",
+        )
+        self._track_background_task(upload_task)
 
         # Nur den Namen der Datei zurückgeben, nicht den gesamten Pfad
         return call_result.GetDiagnostics(
@@ -543,31 +585,48 @@ class OcppChargePoint(cp):
                                   location,
                                   retries: Optional[int] = None,
                                   retry_interval: Optional[int] = None):
+
+        # Aus Sicherheitsgründen nur Schema und Host protokollieren,
+        # damit Zugangsdaten aus der URL nicht in den Logs landen.
+        parsed_location = urlsplit(location)
         log.debug(
-            "Uploading diagnostics file: %s to location: %s with retries: %s and retry_interval: %s",
+            "Uploading diagnostics file %s via %s to host %s with retries=%s retry_interval=%s",
             filepath,
-            location,
+            parsed_location.scheme or "(kein Schema)",
+            parsed_location.hostname or "(kein Host)",
             retries,
-            retry_interval
+            retry_interval,
         )
 
         try:
-            # Set status to uploading
             await self._diagnostics_status(DiagnosticsStatus.uploading)
-
             await upload_diagnostics(filepath, location, retries or 0, retry_interval or 0)
-
             await self._diagnostics_status(DiagnosticsStatus.uploaded)
+        except asyncio.CancelledError:
+            raise
         except Exception as e:
             log.exception("Fehler beim Hochladen der Diagnosedatei: %s", e)
-            await self._diagnostics_status(DiagnosticsStatus.upload_failed)
+            try:
+                await self._diagnostics_status(DiagnosticsStatus.upload_failed)
+            except Exception:
+                log.debug(
+                    "DiagnosticsStatus UploadFailed für %s konnte nicht gesendet werden",
+                    self.chargebox_id,
+                    exc_info=True,
+                )
         finally:
-            # Status wieder auf 'idle' setzen
-            # damit bei späteren Upload-Versuchen kein veralteter Status verwendet wird
-            await self._diagnostics_status(DiagnosticsStatus.idle)
-            # Temp-file wieder löschen
-            # egal ob das Hochladen erfolgreich war oder nicht
-            Path(filepath).unlink(missing_ok=True)
+            try:
+                await self._diagnostics_status(DiagnosticsStatus.idle)
+            except asyncio.CancelledError:
+                raise
+            except Exception:
+                log.debug(
+                    "DiagnosticsStatus Idle für %s konnte nicht gesendet werden",
+                    self.chargebox_id,
+                    exc_info=True,
+                )
+            finally:
+                Path(filepath).unlink(missing_ok=True)
 
     async def _diagnostics_status(self, status: DiagnosticsStatus = None):
 
@@ -596,8 +655,13 @@ class OcppChargePoint(cp):
                               connector_id: Optional[int] = None,
                               call_unique_id: Optional[str] = None, **kwargs):
 
+        # Bei StatusNotification und MeterValues ist connectorId relevant.
+        # openWB bildet aktuell genau einen OCPP-Connector (1) pro Chargebox ab.
+        if (requested_message in (MessageTrigger.status_notification, MessageTrigger.meter_values)
+                and connector_id not in (None, 0, 1)):
+            return call_result.TriggerMessage(status=TriggerMessageStatus.rejected)
+
         if connector_id is None or connector_id == 0:
-            # Bei uns gibt es immer nur einen Connector pro Ladepunkt/Ladepunkt_id
             connector_id = 1
 
         log.debug(
@@ -615,8 +679,7 @@ class OcppChargePoint(cp):
                                      MessageTrigger.diagnostics_status_notification):
             return call_result.TriggerMessage(status=TriggerMessageStatus.not_implemented)
 
-        if (self.trigger_msg_callback is None or self.openwb_cp is None or
-                (requested_message == MessageTrigger.status_notification and connector_id not in (None, 0, 1))):
+        if self.trigger_msg_callback is None or self.openwb_cp is None:
             return call_result.TriggerMessage(status=TriggerMessageStatus.rejected)
 
         if call_unique_id is not None:

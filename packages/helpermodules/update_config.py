@@ -669,28 +669,30 @@ class UpdateConfig:
 
         # todo
         # oben einsortieren
-        # "^openWB/chargepoint/[0-9]+/get/ocpp/availability$",
-        # "^openWB/chargepoint/[0-9]+/get/ocpp/tag_accepted$",
-        # "^openWB/chargepoint/[0-9]+/get/ocpp/transaction_id$",
-        # "^openWB/chargepoint/[0-9]+/get/ocpp/remote_stop$",
-        # "^openWB/chargepoint/[0-9]+/get/ocpp/test_reconnect$",
+        # Die Folgenden Topics müssen unbedingt hier stehen, damit die Daten auch nach einem Neustart
+        # noch verfübar sind und nicht verloren gehen
+        "^openWB/chargepoint/[0-9]+/get/ocpp/config$",
 
-        # "^openWB/chargepoint/[0-9]+/get/ocpp/transaction_id_tag$",
+        "^openWB/chargepoint/[0-9]+/get/ocpp/availability$",
+        "^openWB/chargepoint/[0-9]+/get/ocpp/pending_availability$",
+
+        "^openWB/chargepoint/[0-9]+/get/ocpp/pending_transactions$",
+        "^openWB/chargepoint/[0-9]+/get/ocpp/tag_accepted$",
+        "^openWB/chargepoint/[0-9]+/get/ocpp/transaction_id_tag$",
+        "^openWB/chargepoint/[0-9]+/get/ocpp/transaction_id$",
+
+        "^openWB/chargepoint/[0-9]+/get/ocpp/remote_stop$",
+        "^openWB/chargepoint/[0-9]+/get/ocpp/reset$",
+
+
     ]
+
     default_topic = (
-        # TEMP
-        ("openWB/chargepoint/3/get/ocpp/availability", True),
-        ("openWB/chargepoint/4/get/ocpp/availability", True),
-        ("openWB/chargepoint/5/get/ocpp/availability", True),
 
-        ("openWB/chargepoint/3/get/ocpp/tag_accepted", False),
-        ("openWB/chargepoint/3/get/ocpp/transaction_id", None),
-        ("openWB/chargepoint/3/get/ocpp/remote_stop", False),
-        ("openWB/chargepoint/3/get/ocpp/test_reconnect", False),
-        ("openWB/chargepoint/3/get/ocpp/transaction_id_tag", None),
-
+        # Topics die hier drin stehen werden beim Neustart mit default Werten überschrieben
+        # -> vorrausgesetzt, dass die Topics nicht oben drin stehen
+        # <- immer auf False, da nach restart noch keine Verbindung besteht
         ("openWB/chargepoint/3/get/ocpp/connected", False),
-        ("openWB/chargepoint/3/get/ocpp/config", {"HeartbeatInterval": 10, "MeterValueSampleInterval": 20}),
 
 
         ("openWB/bat/config/bat_control_activated", False),

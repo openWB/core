@@ -137,7 +137,9 @@ def test_sync_chargepoint_lifecycle(
 
 def test_status_notification_skips_connection_check_when_status_is_unchanged():
     client = object.__new__(OcppClient)
-    client._last_update = {("cp1", 1): (ChargePointStatus.available, "NoError")}
+    client._last_update = {
+        ("cp1", 1): (ChargePointStatus.available, "NoError", ""),
+    }
     client.connection_manager = SimpleNamespace(connect=AsyncMock())
 
     asyncio.run(client._send_status_notification(
@@ -167,16 +169,18 @@ def test_status_notification_updates_client_cache_after_successful_send():
         chargebox_id="cp1",
         connector_id=1,
         fault_state=0,
-        fault_state_str="",
+        fault_state_str="x" * 60,
         status=ChargePointStatus.available,
         force=False,
     ))
 
     client.connection_manager.connect.assert_awaited_once_with("cp1")
     chargepoint._status_notification.assert_awaited_once()
+    assert chargepoint._status_notification.await_args.kwargs["fault_state_str"] == "x" * 50
     assert client._last_update[("cp1", 1)] == (
         ChargePointStatus.available,
         "NoError",
+        "x" * 50,
     )
 
 
@@ -508,7 +512,7 @@ def test_rejected_boot_notification_retries_on_same_connection_until_accepted(mo
 
     async def check():
         connection.retry_task = asyncio.create_task(
-            client._retry_rejected_registration(connection),
+            client._retry_registration(connection),
         )
         await connection.retry_task
 
