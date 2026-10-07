@@ -71,7 +71,7 @@ def _create_diagnostics_sync(
         mode="w",
         encoding="utf-8",
         prefix="openwb-diagnostics-",
-        suffix=".txt",
+        suffix=".log",
         delete=False,
     ) as diagnostics_file:
         diagnostics_file.writelines(log_lines)

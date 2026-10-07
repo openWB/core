@@ -617,6 +617,16 @@ class OcppClient:
             imported=int(imported),
         )
 
+    def authorize(
+        self,
+        chargebox_id: str,
+        id_tag: str,
+    ):
+        return self._submit(
+            self.transactions.authorize(chargebox_id=chargebox_id, id_tag=id_tag),
+            f"Authorize {chargebox_id}",
+        )
+
     def request_start(
         self,
         chargebox_id: str,
@@ -650,8 +660,9 @@ class OcppClient:
         imported: int,
         id_tag: str = "",
         reason: str = "EVDisconnected",
+        authorize_stop: bool = False,
     ) -> None:
-
+        """Fuer benutzerinitiierte RFID-Stops authorize_stop=True setzen."""
         if not chargebox_id:
             return
 
@@ -661,6 +672,7 @@ class OcppClient:
                 imported=imported,
                 id_tag=id_tag,
                 reason=reason,
+                authorize_stop=authorize_stop,
             ),
             f"StopTransaction {chargebox_id}",
         )

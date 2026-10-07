@@ -26,6 +26,16 @@ class TransactionState(str, Enum):
 
 
 @dataclass
+class AuthorizationResult:
+    status: Optional[str] = None
+    error: Optional[str] = None
+
+    @property
+    def accepted(self) -> bool:
+        return self.error is None and self.status == "Accepted"
+
+
+@dataclass
 class PendingStop:
     meter_stop: int
     id_tag: str
@@ -71,6 +81,39 @@ class TransactionCoordinator:
         self._transactions: dict[str, OcppTransaction] = {}
         self._start_blocked: set[str] = set()
         self._replay_tasks: dict[str, asyncio.Task] = {}
+
+    async def authorize(
+        self,
+        chargebox_id: str,
+        id_tag: str,
+    ) -> AuthorizationResult:
+        """Prueft einen Tag, ohne den Transaktionszustand zu veraendern."""
+        if not chargebox_id or not id_tag:
+            return AuthorizationResult(error="Chargebox-ID und id_tag sind erforderlich")
+
+        connection = await self._get_connection(chargebox_id, "Authorize")
+        if connection is None:
+            return AuthorizationResult(error="Keine OCPP-Verbindung verfuegbar")
+        if not connection.boot_accepted:
+            return AuthorizationResult(error="BootNotification nicht akzeptiert")
+
+        return await self._authorize_on_connection(chargebox_id, connection, id_tag)
+
+    async def _authorize_on_connection(
+        self,
+        chargebox_id: str,
+        connection: OcppConnection,
+        id_tag: str,
+    ) -> AuthorizationResult:
+        try:
+            response = await connection.cp._authorize(id_tag=id_tag)
+        except asyncio.CancelledError:
+            raise
+        except Exception as exc:
+            log.exception("Authorize fuer %s fehlgeschlagen", chargebox_id)
+            return AuthorizationResult(error=str(exc))
+
+        return AuthorizationResult(status=_get_id_tag_status(response))
 
     async def start(
         self,
@@ -201,13 +244,10 @@ class TransactionCoordinator:
             TransactionState.AUTHORIZING,
         )
 
-        try:
-            response = await cp._authorize(id_tag=id_tag)
-        except asyncio.CancelledError:
-            raise
+        authorization = await self._authorize_on_connection(chargebox_id, connection, id_tag)
 
-        except Exception as exc:
-            transaction.last_error = str(exc)
+        if authorization.error is not None:
+            transaction.last_error = authorization.error
             transaction.pending_stop = None
 
             # Authorize selbst startet noch keine Transaction.
@@ -217,16 +257,10 @@ class TransactionCoordinator:
                 TransactionState.IDLE,
             )
 
-            log.exception(
-                f"Authorize für {chargebox_id} fehlgeschlagen",
-            )
-
             return False
 
-        status = _get_id_tag_status(response)
-
-        if status != "Accepted":
-            transaction.last_error = f"Authorize: {status}"
+        if not authorization.accepted:
+            transaction.last_error = f"Authorize: {authorization.status}"
             transaction.pending_stop = None
 
             self._transition(
@@ -362,11 +396,44 @@ class TransactionCoordinator:
         imported: int,
         id_tag: str = "",
         reason: str = "EVDisconnected",
+        authorize_stop: bool = False,
     ) -> bool:
-        if not chargebox_id:
+        """authorize_stop verlangt eine erfolgreiche Pruefung des expliziten RFID-Tags."""
+        if not chargebox_id or (authorize_stop and not id_tag):
             return False
 
         transaction = self._get_transaction(chargebox_id)
+
+        if authorize_stop:
+            stoppable_states = (TransactionState.ACTIVE, TransactionState.ERROR)
+            transaction_id = transaction.transaction_id
+            if transaction_id is None or transaction.state not in stoppable_states:
+                return False
+
+            print(f"!!!!!!!!!!!__Authorize stop for chargebox_id={chargebox_id}, id_tag={id_tag}")
+            authorization = await self.authorize(chargebox_id, id_tag)
+            if not authorization.accepted:
+                return False
+
+            if (
+                self._transactions.get(chargebox_id) is not transaction
+                or transaction.transaction_id != transaction_id
+                or transaction.state not in stoppable_states
+            ):
+                return False
+
+            openwb_cp = get_cp_from_chargebox_id(chargebox_id)
+            if openwb_cp is None:
+                log.warning(
+                    f"OCPP {chargebox_id}: Start nicht möglich, openWB-Ladepunkt nicht gefunden.",
+                )
+                return False
+
+            # Setzen, damit nicht dirket wieder eine Ladung beginnt
+            # da der Stecker noch nicht gezogen wurde
+            # Der eigentlich Stop wird nachfolgend durchgeführt
+            openwb_cp.data.get.ocpp.remote_stop = True
+            Pub().pub(f"openWB/set/chargepoint/{openwb_cp.num}/get/ocpp/remote_stop", True)
 
         stop_request = PendingStop(
             meter_stop=int(imported),
