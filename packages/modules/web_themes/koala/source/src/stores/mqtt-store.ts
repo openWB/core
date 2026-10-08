@@ -1409,7 +1409,7 @@ export const useMqttStore = defineStore('mqtt', () => {
       return dcMaxCurrent === undefined
         ? undefined
         : convertDcCurrentToPower(dcMaxCurrent);
-  });
+    });
 
   /**
    * Get or set the charge point connected vehicle instant charging DC power identified by the charge point id
@@ -3711,12 +3711,12 @@ export const useMqttStore = defineStore('mqtt', () => {
    */
   const consumerList = computed<Consumer[]>(() => {
     const modules = getWildcardValues.value('openWB/consumer/+/module');
-    return getObjectIds.value('consumer')
+    return getObjectIds
+      .value('consumer')
       .filter((id) => `openWB/consumer/${id}/module` in modules)
       .map((id) => {
         const module = modules[`openWB/consumer/${id}/module`] as
-          | ConsumerModule
-          | undefined;
+          ConsumerModule | undefined;
         return { id, name: module?.name ?? `Verbraucher ${id}` };
       });
   });
@@ -3790,8 +3790,7 @@ export const useMqttStore = defineStore('mqtt', () => {
   const consumerSumPower = computed(() => {
     return (returnType: string = 'textValue') => {
       const power = getValue.value('openWB/consumer/get/power') as
-        | number
-        | undefined;
+        number | undefined;
       const valueObject = getValueObject.value(power);
       if (Object.hasOwn(valueObject, returnType)) {
         return valueObject[returnType as keyof ValueObject];
@@ -3841,8 +3840,7 @@ export const useMqttStore = defineStore('mqtt', () => {
   const consumerOnTime = computed(() => {
     return (consumerId: number): number | undefined => {
       return getValue.value(`openWB/consumer/${consumerId}/set/on_time`) as
-        | number
-        | undefined;
+        number | undefined;
     };
   });
 
@@ -3891,8 +3889,7 @@ export const useMqttStore = defineStore('mqtt', () => {
   const consumerStateStr = computed(() => {
     return (consumerId: number): string | undefined => {
       return getValue.value(`openWB/consumer/${consumerId}/get/state_str`) as
-        | string
-        | undefined;
+        string | undefined;
     };
   });
 
@@ -3921,8 +3918,7 @@ export const useMqttStore = defineStore('mqtt', () => {
   const consumerFaultStr = computed(() => {
     return (consumerId: number): string | undefined => {
       return getValue.value(`openWB/consumer/${consumerId}/get/fault_str`) as
-        | string
-        | undefined;
+        string | undefined;
     };
   });
 
@@ -3934,8 +3930,7 @@ export const useMqttStore = defineStore('mqtt', () => {
   const consumerUsageType = computed(() => {
     return (consumerId: number): ConsumerUsageType | undefined => {
       return getValue.value(`openWB/consumer/${consumerId}/usage`, 'type') as
-        | ConsumerUsageType
-        | undefined;
+        ConsumerUsageType | undefined;
     };
   });
 
@@ -4350,7 +4345,7 @@ export const useMqttStore = defineStore('mqtt', () => {
     );
   });
 
-   /**
+  /**
    * Get the hybrid inverter/battery pairs. A battery is treated as "hybrid"
    * when it is a direct child of an inverter in the component hierarchy
    * The pairing is needed for the flow calculation - (Sankey Chart).
