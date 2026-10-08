@@ -7,7 +7,7 @@ from random import randrange
 import subprocess
 from threading import Event
 from time import sleep
-from typing import Dict, Optional
+from typing import Any, Dict, Optional
 import re
 import traceback
 from pathlib import Path
@@ -81,12 +81,13 @@ class Command:
     def __init__(self, event_command_completed: Event):
         try:
             self.event_command_completed = event_command_completed
-            self._get_max_ids()
-            self._get_max_id_by_json_object("hierarchy", "counter/get/hierarchy/", -1)
+            max_id_received_topics = ProcessBrokerBranch("").get_max_id()
+            self._get_max_ids(max_id_received_topics)
+            self._get_max_id_hierarchy_by_topics(max_id_received_topics, -1)
         except Exception:
             log.exception("Fehler im Command-Modul")
 
-    def _get_max_ids(self) -> None:
+    def _get_max_ids(self, max_id_received_topics: Dict[str, Any]) -> None:
         """ ermittelt die maximale ID vom Broker """
         plan_extractors = {
             "autolock_plan": lambda p: p.get("autolock", {}).get("plans", []),
@@ -97,11 +98,10 @@ class Command:
             "consumer_time_plan": lambda p: p.get("time_charging", {}).get("plans", []),
         }
         try:
-            received_topics = ProcessBrokerBranch("").get_max_id()
             for max_id_type in self.MAX_IDS.keys():
                 for id_topic, topic_str, default in self.MAX_IDS[max_id_type]:
                     max_id = default
-                    for topic, payload in received_topics.items():
+                    for topic, payload in max_id_received_topics.items():
                         try:
                             if max_id_type == "nested payload":
                                 if re.search(topic_str, topic) is not None and payload is not None:
@@ -125,13 +125,21 @@ class Command:
         except Exception:
             log.exception("Fehler im Command-Modul")
 
-    def _get_max_id_by_json_object(self, id_topic: str, topic: str, default: int) -> None:
-        """ ermittelt die maximale ID vom Broker """
+    def _get_max_id_hierarchy_by_topics(self, max_id_received_topics: Dict[str, Any], default: int) -> None:
+        """Ermittelt die maximale Hierarchie-ID ausschließlich aus Topics."""
         try:
-            hierarchy = ProcessBrokerBranch(topic).get_payload()
-            max_id = counter_all.get_max_id_in_hierarchy(hierarchy, default)
-            setattr(self, f'max_id_{id_topic}', max_id)
-            Pub().pub(f'openWB/set/command/max_id/{id_topic}', max_id)
+            max_id = default
+            hierarchy_topic_pattern = re.compile(r"openWB/(counter|chargepoint|consumer|pv|bat)/[0-9]+(/|$)")
+            for topic in max_id_received_topics.keys():
+                if hierarchy_topic_pattern.search(topic) is None:
+                    continue
+                try:
+                    max_id = max(max_id, int(get_index(topic)))
+                except ValueError:
+                    continue
+
+            self.max_id_hierarchy = max_id
+            Pub().pub("openWB/set/command/max_id/hierarchy", max_id)
         except Exception:
             log.exception("Fehler im Command-Modul")
 

@@ -1,7 +1,10 @@
 from typing import Dict, List, Optional, Union
 from unittest.mock import Mock
 import pytest
+from control.consumer.consumer import Consumer
+from control.consumer.consumer_data import ConsumerData
 from packages.conftest import hierarchy_hybrid, hierarchy_nested, hierarchy_standard
+from control import data
 from control.counter import Counter
 
 
@@ -399,6 +402,43 @@ def test_add_missing_entries(hierarchy, expected_hierarchy, data_, monkeypatch):
 
     # evaluation
     assert counter_all.data.get.hierarchy == expected_hierarchy
+
+
+def test_add_missing_entries_re_adds_removed_linked_counter(monkeypatch):
+    # setup
+    data.data_init(Mock())
+    data.data.counter_data = {
+        "counter0": Mock(spec=Counter, num=0),
+        "counter6": Mock(spec=Counter, num=6),
+    }
+    data.data.bat_data = {}
+    data.data.cp_data = {}
+    data.data.pv_data = {}
+    data.data.consumer_data = {"consumer7": Mock(spec=Consumer, data=Mock(spec=ConsumerData, extra_meter=6))}
+
+    counter_all = CounterAll()
+    counter_all.data.get.hierarchy = [{
+        "id": 0,
+        "type": "counter",
+        "children": [
+            {"id": 7, "type": "consumer", "children": []},
+        ]
+    }]
+
+    c = Mock(spec=Counter, num=0)
+    monkeypatch.setattr(CounterAll, "get_evu_counter", Mock(return_value=c))
+
+    # execution
+    counter_all._add_missing_entries()
+
+    # evaluation
+    assert counter_all.data.get.hierarchy == [{
+        "id": 0,
+        "type": "counter",
+        "children": [
+            {"id": 7, "type": "consumer", "children": []},
+        ]
+    }]
 
 
 @pytest.mark.parametrize("hierarchy, expected_ids",

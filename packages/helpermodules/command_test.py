@@ -46,7 +46,7 @@ def subdata_fixture() -> None:
 def test_check_max_num_of_internal_chargepoints(additional_cp_mode, config, expected_msg, subdata_fixture, monkeypatch):
     # setup
     monkeypatch.setattr(Command, "_get_max_ids", Mock())
-    monkeypatch.setattr(Command, "_get_max_id_by_json_object", Mock())
+    monkeypatch.setattr(Command, "_get_max_id_hierarchy_by_topics", Mock())
     if additional_cp_mode:
         SubData.cp_data.update(
             {"cp1": Mock(spec=ChargepointStateUpdate, chargepoint=Mock(
@@ -107,3 +107,15 @@ def test_add_consumer_uses_module_default_usage_type(usage_type, mock_pub, monke
                    if call.args[0] == "openWB/set/consumer/1/usage"]
     assert len(usage_calls) == 1
     assert usage_calls[0].args[1]["type"] == usage_type.value
+
+
+def test_get_max_id_hierarchy_by_topics(mock_pub, monkeypatch):
+    command_instance = Command.__new__(Command)
+    command_instance._get_max_id_hierarchy_by_topics({
+        "openWB/counter/4/get/power": 500,
+        "openWB/chargepoint/9/config": {"id": 9},
+        "openWB/consumer/5/module": {"type": "dummy"},
+    }, -1)
+
+    assert command_instance.max_id_hierarchy == 9
+    mock_pub.pub.assert_any_call("openWB/set/command/max_id/hierarchy", 9)
