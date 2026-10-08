@@ -30,10 +30,10 @@ FACTORS = {"9s45": 45000,
            "E2M3": 6500,
            "M1": 3000}
 REG_MAPPING = (
-    (Register.POWER, [ModbusDataType.INT_16]),
-    (Register.TEMP0, [ModbusDataType.INT_16]),
-    (Register.TEMP1, [ModbusDataType.INT_16]),
-    (Register.TEMP2, [ModbusDataType.INT_16]),
+    (Register.POWER, ModbusDataType.INT_16),
+    (Register.TEMP0, ModbusDataType.INT_16),
+    (Register.TEMP1, ModbusDataType.INT_16),
+    (Register.TEMP2, ModbusDataType.INT_16),
     (Register.STATUS, ModbusDataType.INT_16),
 )
 
