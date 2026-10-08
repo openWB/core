@@ -110,21 +110,12 @@ def test_add_consumer_uses_module_default_usage_type(usage_type, mock_pub, monke
 
 
 def test_get_max_id_hierarchy_by_topics(mock_pub, monkeypatch):
-    class ProcessBrokerBranchMock:
-        def __init__(self, topic_str: str) -> None:
-            self.topic_str = topic_str
-
-        def get_max_id(self):
-            return {
-                "openWB/counter/4/get/power": 500,
-                "openWB/chargepoint/9/config": {"id": 9},
-                "openWB/consumer/5/module": {"type": "dummy"},
-            }
-
-    monkeypatch.setattr(command, "ProcessBrokerBranch", ProcessBrokerBranchMock)
-
     command_instance = Command.__new__(Command)
-    command_instance._get_max_id_hierarchy_by_topics(-1)
+    command_instance._get_max_id_hierarchy_by_topics({
+        "openWB/counter/4/get/power": 500,
+        "openWB/chargepoint/9/config": {"id": 9},
+        "openWB/consumer/5/module": {"type": "dummy"},
+    }, -1)
 
     assert command_instance.max_id_hierarchy == 9
     mock_pub.pub.assert_any_call("openWB/set/command/max_id/hierarchy", 9)
