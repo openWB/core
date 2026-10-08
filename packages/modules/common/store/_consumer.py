@@ -4,7 +4,7 @@ from modules.common.component_type import ComponentType
 from modules.common.store import ValueStore
 from modules.common.store._api import LoggingValueStore
 from modules.common.store._broker import pub_to_broker
-from modules.common.utils.component_parser import get_hierarchy_obj_by_id
+from modules.common.utils.component_parser import get_consumer_name_by_id, get_hierarchy_obj_by_id
 
 
 class ConsumerValueStoreBroker(ValueStore[ConsumerState]):
@@ -54,6 +54,10 @@ class PurgeConsumerState(ValueStore[ConsumerState]):
                     currents=consumer_state.currents,
                     powers=consumer_state.powers,
                 ))
+            except ValueError:
+                raise Exception(
+                    f"Zähler {extra_meter_id} für die separate Leistungsmessung von Verbraucher "
+                    f"{get_consumer_name_by_id(self.delegate.delegate.num)} ist im Fehlerzustand oder gelöscht worden.")
             except Exception:
                 raise Exception(f"Fehler beim Auslesen des Verbrauchszählers {extra_meter_id} "
                                 f"für Verbraucher {self.delegate.delegate.num}")
