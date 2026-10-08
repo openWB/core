@@ -4,7 +4,6 @@ import { updateShSummary } from '../smartHome/processMessages'
 
 // Process incoming messages for consumers based on the topic
 export function processConsumerMessages(topic: string, message: string) {
-	// console.debug('Consumer: Received message on topic ' + topic + ': ' + message)
 	if (topic.match(/^openWB\/consumer\/config\//i)) {
 		processConsumerConfigMessages(topic, message)
 	} else if (topic.match(/^openWB\/consumer\/[0-9]+\//i)) {
@@ -22,7 +21,7 @@ function processConsumerDeviceMessages(topic: string, message: string) {
 		return
 	}
 	if (!consumers.has(index)) {
-		addConsumer(index)
+		console.warn('Invalid consumer id received: ' + index)
 	}
 	const dev = consumers.get(index)!
 	if (topic.match(/^openWB\/consumer\/[0-9]+\/get\/power$/i)) {
@@ -56,7 +55,7 @@ function processConsumerConfigMessages(topic: string, message: string) {
 	}
 	if (!consumers.has(index)) {
 		console.warn('Invalid device id received: ' + index)
-		addConsumer(index)
+		// addConsumer(index)
 	}
 	const dev = consumers.get(index)!
 	if (

@@ -32,6 +32,7 @@ import {
 import { mqttClientId } from './mqttClient'
 import { add } from '@/components/mqttViewer/model'
 import { globalConfig } from './themeConfig'
+import { addConsumer } from '@/components/consumerList/model'
 
 const topicsToSubscribe = [
 	'openWB/counter/#',
@@ -158,6 +159,9 @@ function processHierarchy(hierarchy: Hierarchy) {
 			break
 		case 'inverter':
 			addPvSystem(hierarchy.id)
+			break
+		case 'consumer':
+			addConsumer(hierarchy.id)
 			break
 		default:
 		// console.warn('Ignored Hierarchy type: ' + hierarchy.type)
