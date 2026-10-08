@@ -122,7 +122,7 @@ LIST_PATH = "/proxy_api/euda-apim/datadelivery/vehicles/{vin}/{identifier}/list"
 DOWNLOAD_PATH = "/proxy_api/euda-apim/datadelivery/vehicles/{vin}/{identifier}/download"
 
 DOMAIN = "vw_eu_data_act"
-VERSION = "0.3.2"
+VERSION = "0.3.3"
 USER_AGENT = f"{DOMAIN}/{VERSION}"
 
 # --- Config entry keys ----------------------------------------------------
