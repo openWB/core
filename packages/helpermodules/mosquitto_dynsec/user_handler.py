@@ -3,6 +3,7 @@ from secrets import token_hex
 from typing import Tuple
 from json import dump as json_dump
 
+INTERNAL_DISPLAY_IP = "127.0.0.1"
 from helpermodules.mosquitto_dynsec.role_handler import _get_base_path
 from helpermodules.utils.run_command import run_command
 
@@ -28,7 +29,7 @@ def add_user_to_group(username: str, groupname: str) -> None:
 
 
 def create_display_user(ip_address: str) -> Tuple[bool, str]:
-    user_name = "Display-Intern" if ip_address == "127.0.0.1" else f"Display-{ip_address}"
+    user_name = "Display-Intern" if ip_address == INTERNAL_DISPLAY_IP else f"Display-{ip_address}"
     file_name = f"display-{ip_address}".replace('.', '_')
     if user_exists(user_name):
         log.info(f"User '{user_name}' already exists")
@@ -48,7 +49,7 @@ def create_display_user(ip_address: str) -> Tuple[bool, str]:
 
 
 def remove_display_user(ip_address: str) -> bool:
-    if ip_address == "127.0.0.1":
+    if ip_address == INTERNAL_DISPLAY_IP:
         log.error("Cannot remove the internal display user")
         return False
     user_name = f"Display-{ip_address}"
@@ -62,9 +63,7 @@ def remove_display_user(ip_address: str) -> bool:
 
 def user_exists(username: str) -> bool:
     result = run_command(["mosquitto_ctrl", "dynsec", "getClient", username], process_exception=True)
-    if result is not None and username in result:
-        return True
-    return False
+    return result is not None and username in result
 
 
 def add_user(username: str, password: str) -> bool:
