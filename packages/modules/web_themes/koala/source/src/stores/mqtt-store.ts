@@ -3706,18 +3706,19 @@ export const useMqttStore = defineStore('mqtt', () => {
   ////////////////////////////// consumer data ////////////////////////////////
 
   /**
-   * Get a list of all consumers.
+   * Get a list of all consumers in the order of the hierarchy.
    * @returns Consumer[]
    */
   const consumerList = computed<Consumer[]>(() => {
     const modules = getWildcardValues.value('openWB/consumer/+/module');
-    return Object.keys(modules)
-      .map((key) => {
-        const id = parseInt(key.split('/')[2]);
-        const module = modules[key] as ConsumerModule | undefined;
+    return getObjectIds.value('consumer')
+      .filter((id) => `openWB/consumer/${id}/module` in modules)
+      .map((id) => {
+        const module = modules[`openWB/consumer/${id}/module`] as
+          | ConsumerModule
+          | undefined;
         return { id, name: module?.name ?? `Verbraucher ${id}` };
-      })
-      .sort((a, b) => a.id - b.id);
+      });
   });
 
   /**
