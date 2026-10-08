@@ -56,7 +56,7 @@ class PurgeConsumerState(ValueStore[ConsumerState]):
                 ))
             except ValueError:
                 raise Exception(
-                    f"Zähler {extra_meter_id} für die separate Lesitungsmessung von Verbraucher "
+                    f"Zähler {extra_meter_id} für die separate Leistungsmessung von Verbraucher "
                     f"{get_consumer_name_by_id(self.delegate.delegate.num)} ist im Fehlerzustand oder gelöscht worden.")
             except Exception:
                 raise Exception(f"Fehler beim Auslesen des Verbrauchszählers {extra_meter_id} "
