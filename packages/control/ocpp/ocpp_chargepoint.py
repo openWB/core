@@ -23,6 +23,7 @@ with ImportErrorContext():
         MessageTrigger,
         TriggerMessageStatus,
         ClearCacheStatus,
+        DataTransferStatus,
     )
     from ocpp.routing import after, on
 from typing import Optional
@@ -118,7 +119,7 @@ class OcppChargePoint(cp):
                          id_tag: str) -> Optional[object]:
 
         print(f"# AUTHORIZE        CP_Nr: {self.openwb_num}  OCPP_Nr: {self.chargebox_id}")
-        log.debug(f"Authorize request for CP {self.openwb_num} OCPP_Nr: {self.chargebox_id} with id_tag: {id_tag}")
+        log.debug("Authorize request for CP %s OCPP_Nr: %s", self.openwb_num, self.chargebox_id)
         request = call.Authorize(
             id_tag=id_tag if id_tag else ""
         )
@@ -264,6 +265,18 @@ class OcppChargePoint(cp):
         Pub().pub(f"openWB/set/chargepoint/{self.openwb_num}/get/ocpp/availability",
                   available)
 
+    @on(Action.data_transfer)
+    async def data_transfer(self, vendor_id: str, message_id: Optional[str] = None,
+                            data: Optional[str] = None, **kwargs):
+        # auch wenn wir das nicht unterstützen, müssen wir die Anfrage beantworten.
+        log.debug(
+            "DataTransfer nicht unterstützt für OCPP %s: vendor_id=%s message_id=%s",
+            self.chargebox_id,
+            vendor_id,
+            message_id,
+        )
+        return call_result.DataTransfer(status=DataTransferStatus.unknown_vendor_id)
+
     async def apply_pending_availability(self):
         openwb_cp = self.openwb_cp
         if openwb_cp is None or not openwb_cp.data.get.ocpp.pending_availability:
@@ -365,8 +378,13 @@ class OcppChargePoint(cp):
                 status=ConfigurationStatus.rejected
             )
 
-        # diese Parameter unterstützen nur nur Werte größer 0
-        if key in ("HeartbeatInterval", "MeterValueSampleInterval"):
+        # diese Parameter unterstützen nur Werte größer 0
+        if key in (
+            "HeartbeatInterval",
+            "MeterValueSampleInterval",
+            "TransactionMessageAttempts",
+            "TransactionMessageRetryInterval",
+        ):
             if parsed_value <= 0:
                 return call_result.ChangeConfiguration(
                     status=ConfigurationStatus.rejected
@@ -399,7 +417,6 @@ class OcppChargePoint(cp):
         print(
             f"# REMOTE_START_TRANSACTION  CP_Nr: {self.openwb_num} "
             f"OCPP_Nr: {self.chargebox_id} "
-            f"Id Tag: {id_tag} "
         )
 
         log.debug(
@@ -554,12 +571,14 @@ class OcppChargePoint(cp):
             f"OCPP_Nr: {self.chargebox_id} "
             f"Kwargs: {kwargs}"
         )
+        parsed_location = urlsplit(location)
         log.debug(
-            "Get Diagnostics called for CP_Nr: %s, OCPP_Nr: %s, Location: %s,"
+            "Get Diagnostics called for CP_Nr: %s, OCPP_Nr: %s, Scheme: %s, Host: %s,"
             "Retries: %s, Retry Interval: %s, Start Time: %s, Stop Time: %s, Kwargs: %s",
             self.openwb_num,
             self.chargebox_id,
-            location,
+            parsed_location.scheme or "(kein Schema)",
+            parsed_location.hostname or "(kein Host)",
             retries,
             retry_interval,
             start_time,
@@ -599,34 +618,46 @@ class OcppChargePoint(cp):
         )
 
         try:
-            await self._diagnostics_status(DiagnosticsStatus.uploading)
+            await self._try_diagnostics_status(DiagnosticsStatus.uploading)
             await upload_diagnostics(filepath, location, retries or 0, retry_interval or 0)
-            await self._diagnostics_status(DiagnosticsStatus.uploaded)
+            await self._try_diagnostics_status(DiagnosticsStatus.uploaded)
         except asyncio.CancelledError:
             raise
         except Exception as e:
             log.exception("Fehler beim Hochladen der Diagnosedatei: %s", e)
-            try:
-                await self._diagnostics_status(DiagnosticsStatus.upload_failed)
-            except Exception:
-                log.debug(
-                    "DiagnosticsStatus UploadFailed für %s konnte nicht gesendet werden",
-                    self.chargebox_id,
-                    exc_info=True,
-                )
+            await self._try_diagnostics_status(DiagnosticsStatus.upload_failed)
         finally:
             try:
-                await self._diagnostics_status(DiagnosticsStatus.idle)
+                await self._try_diagnostics_status(DiagnosticsStatus.idle)
             except asyncio.CancelledError:
                 raise
-            except Exception:
-                log.debug(
-                    "DiagnosticsStatus Idle für %s konnte nicht gesendet werden",
-                    self.chargebox_id,
-                    exc_info=True,
-                )
             finally:
                 Path(filepath).unlink(missing_ok=True)
+
+    async def _try_diagnostics_status(self, status: DiagnosticsStatus) -> None:
+        try:
+            await self._diagnostics_status(status)
+        except asyncio.CancelledError:
+            raise
+        except Exception:
+            # Ein Fehler auf dem OCPP-WebSocket darf den eigentlichen Dateiupload
+            # nicht verhindern oder einen erfolgreichen Upload in UploadFailed umdeuten.
+            log.debug(
+                "DiagnosticsStatus %s für %s konnte nicht gesendet werden",
+                status,
+                self.chargebox_id,
+                exc_info=True,
+            )
+
+    async def cancel_background_tasks(self) -> None:
+        current_task = asyncio.current_task()
+        tasks = [task for task in self._background_tasks if task is not current_task]
+        for task in tasks:
+            if not task.done():
+                task.cancel()
+        if tasks:
+            await asyncio.gather(*tasks, return_exceptions=True)
+        self._background_tasks.difference_update(tasks)
 
     async def _diagnostics_status(self, status: DiagnosticsStatus = None):
 
@@ -657,12 +688,15 @@ class OcppChargePoint(cp):
 
         # Bei StatusNotification und MeterValues ist connectorId relevant.
         # openWB bildet aktuell genau einen OCPP-Connector (1) pro Chargebox ab.
-        if (requested_message in (MessageTrigger.status_notification, MessageTrigger.meter_values)
+        if (requested_message == MessageTrigger.status_notification
                 and connector_id not in (None, 0, 1)):
             return call_result.TriggerMessage(status=TriggerMessageStatus.rejected)
 
-        if connector_id is None or connector_id == 0:
-            connector_id = 1
+        # openWB hat aktuell Messwerte nur für Connector 1. Connector 0 darf daher
+        # für einen MeterValues-Trigger nicht stillschweigend zu Connector 1 werden.
+        if (requested_message == MessageTrigger.meter_values
+                and connector_id not in (None, 1)):
+            return call_result.TriggerMessage(status=TriggerMessageStatus.rejected)
 
         log.debug(
             "TRIGGER_MESSAGE CP_Nr: %s OCPP_Nr: %s Requested Message: %s Connector: %s",

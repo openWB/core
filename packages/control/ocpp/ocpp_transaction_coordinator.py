@@ -6,7 +6,7 @@ from typing import Awaitable, Callable, Optional
 
 from helpermodules.pub import Pub
 
-from control.ocpp.helper import get_cp_from_chargebox_id
+from control.ocpp.helper import get_cp_from_chargebox_id, _get_config
 
 from control.ocpp.ocpp_connection import OcppConnection
 
@@ -639,21 +639,45 @@ class TransactionCoordinator:
         if not pending_transactions:
             return True
         entry = pending_transactions[-1]
-        try:
-            transaction_id = entry.get("transaction_id")
-            meter_stop = entry.get("imported", 0)
-        except (TypeError, ValueError) as exc:
+        if not isinstance(entry, dict):
             log.error(
-                "OCPP %s: ungültiger persistierter StopTransaction-Eintrag: %s; Eintrag wird verworfen",
+                "OCPP %s: ungültiger persistierter StopTransaction-Eintrag (%r); "
+                "Eintrag bleibt zur Diagnose erhalten und wird nicht gesendet",
                 chargebox_id,
-                exc,
+                entry,
             )
-            self._clear_pending_transactions(openwb_cp)
+            return True
+
+        action = entry.get("action")
+        transaction_id = entry.get("transaction_id")
+        meter_stop = entry.get("imported")
+        id_tag = entry.get("id_tag", "")
+        reason = entry.get("reason", "EVDisconnected")
+
+        valid = (
+            action == "stop"
+            and isinstance(transaction_id, int)
+            and not isinstance(transaction_id, bool)
+            and transaction_id >= 0
+            and isinstance(meter_stop, int)
+            and not isinstance(meter_stop, bool)
+            and meter_stop >= 0
+            and isinstance(id_tag, str)
+            and isinstance(reason, str)
+            and bool(reason)
+        )
+        if not valid:
+            log.error(
+                "OCPP %s: ungültiger persistierter StopTransaction-Eintrag (%r); "
+                "Eintrag bleibt zur Diagnose erhalten und wird nicht gesendet",
+                chargebox_id,
+                entry,
+            )
             return True
 
         transaction = self._get_transaction(chargebox_id)
         transaction.transaction_id = transaction_id
-        transaction.id_tag = str(entry.get("id_tag", ""))
+        transaction.id_tag = id_tag
         transaction.pending_stop = None
         transaction.last_error = None
 
@@ -667,8 +691,8 @@ class TransactionCoordinator:
         # openWB-Transaction bereits freigegeben.
         stop_request = PendingStop(
             meter_stop=meter_stop,
-            id_tag=str(entry.get("id_tag", "")),
-            reason=str(entry.get("reason", "EVDisconnected")),
+            id_tag=id_tag,
+            reason=reason,
         )
 
         successful = await self._stop_active(
@@ -689,7 +713,14 @@ class TransactionCoordinator:
         chargebox_id: str,
         connection: OcppConnection,
     ) -> None:
-        attempts = 3  # <- muss langfristig in die Konfiguration verschoben werden
+        openwb_cp = get_cp_from_chargebox_id(chargebox_id)
+        if openwb_cp is None:
+            return
+        attempts = _get_config(
+            openwb_cp,
+            "TransactionMessageAttempts",
+            default=3,
+        )
         if attempts <= 1:
             return
 
@@ -710,7 +741,14 @@ class TransactionCoordinator:
     ) -> None:
         try:
             for retry_number in range(1, attempts):
-                retry_interval = 60  # <-  muss langfristig in config
+                openwb_cp = get_cp_from_chargebox_id(chargebox_id)
+                if openwb_cp is None:
+                    return
+                retry_interval = _get_config(
+                    openwb_cp,
+                    "TransactionMessageRetryInterval",
+                    default=60,
+                )
                 # OCPP 1.6: Wartezeit vor jeder Wiederholung = Basisintervall
                 # * Anzahl der vorangegangenen Übertragungen.
                 await asyncio.sleep(retry_interval * retry_number)
