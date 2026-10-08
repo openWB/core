@@ -68,15 +68,13 @@ function processConsumerConfigMessages(topic: string, message: string) {
 
 // Consumers global messages
 function processConsumerGlobalMessages(topic: string, message: string) {
-	if (topic.match(/^openWB\/consumer\/get\/daily_exported$/i)) {
-		//console.info('Consumer: Total exported energy: ' + message)
+	if (topic.match(/^openWB\/consumer\/get\/daily_imported$/i)) {
 		registry.setEnergy('consumers', +message)
 	} else if (topic.match(/^openWB\/consumer\/get\/power$/i)) {
-		//console.info('Consumer: Total power: ' + message)
 		registry.setPower('consumers', +message)
 		updateShSummary('power')
 	} else {
-		//console.warn('Ignored Consumer global message: ' + topic)
+		//console.warn('Ignored Consumer global message: ' + topic + ' with message: ' + message)
 	}
 }
 

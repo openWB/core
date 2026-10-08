@@ -115,9 +115,11 @@ const devicesToShow = computed(() => {
 })
 
 const consumersToShow = computed(() => {
-	return [...consumers.values()].sort((a, b) => {
-		return b.power - a.power
-	})
+	return [...consumers.values()]
+		.filter((c) => c.showInGraph)
+		.sort((a, b) => {
+			return b.power - a.power
+		})
 })
 
 const batteriesToShow = computed(() =>
