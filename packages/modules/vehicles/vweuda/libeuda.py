@@ -121,10 +121,9 @@ METADATA_PATH = "/proxy_api/euda-apim/datarequest/vehicles/{vin}/metadata/partia
 LIST_PATH = "/proxy_api/euda-apim/datadelivery/vehicles/{vin}/{identifier}/list"
 DOWNLOAD_PATH = "/proxy_api/euda-apim/datadelivery/vehicles/{vin}/{identifier}/download"
 
-USER_AGENT = (
-    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "
-    "(KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36"
-)
+DOMAIN = "vw_eu_data_act"
+VERSION = "0.3.2"
+USER_AGENT = f"{DOMAIN}/{VERSION}"
 
 # --- Config entry keys ----------------------------------------------------
 CONF_EMAIL = "email"
@@ -182,11 +181,31 @@ _LOGGER = logging.getLogger(__name__)
 
 
 class ApiError(Exception):
-    """Generic API failure."""
+    """Generic API failure.
+
+    Carries the HTTP ``status`` when the failure came from an HTTP response, so
+    callers can branch on it (e.g. retry 5xx) without grepping the message
+    string. ``None`` for non-HTTP failures (connection errors, bad JSON, …).
+    """
+
+    def __init__(self, message: str, *, status: int | None = None) -> None:
+        super().__init__(message)
+        self.status = status
 
 
 class AuthError(ApiError):
     """Authentication failed or session expired."""
+
+
+# Non-5xx statuses the identity provider returns for reasons unrelated to the
+# credentials: 404 when the sign-in service is (re)deploying / a step URL is
+# temporarily missing, 429 when we are rate limited.
+_TRANSIENT_LOGIN_STATUSES = frozenset({404, 429})
+
+
+def _is_transient_login_status(status: int) -> bool:
+    """True when a login-step HTTP status is an upstream problem, not bad credentials."""
+    return status >= 500 or status in _TRANSIENT_LOGIN_STATUSES
 
 
 class _FormParser(HTMLParser):
@@ -342,23 +361,16 @@ class EudaApiClient:
         self._logged_in = True
 
     async def _do_login(self) -> None:
-        # 0. Prime the portal session (the browser loads the site first; this
-        #    sets the AEM load-balancer/session cookies the callback needs).
-        try:
-            async with await self._get(f"{BASE_URL}/") as resp:
-                await resp.read()
-        except aiohttp.ClientError as err:
-            _LOGGER.debug("login step0: priming GET failed (ignored): %s", err)
-
-        # 1. Start the OIDC flow directly at the identity provider. We build the
-        #    authorize URL ourselves because the portal's
-        #    /services/redirect/authentication servlet returns HTTP 500 for
-        #    non-browser clients.
         authorize_url = self._build_authorize_url(self._brand)
         _LOGGER.debug("login step1: authorize url = %s", authorize_url)
         async with await self._get(authorize_url) as resp:
             signin_url = str(resp.url)
             signin_html = await resp.text()
+            if _is_transient_login_status(resp.status):
+                raise ApiError(
+                    f"Identity provider error on sign-in page (HTTP {resp.status})",
+                    status=resp.status,
+                )
         _LOGGER.debug("login step2: signin page = %s (%d bytes)", signin_url, len(signin_html))
 
         # 2. POST the email (identifier step). Fields come from HTML inputs
@@ -382,6 +394,11 @@ class EudaApiClient:
         _LOGGER.debug(
             "login step3: after identifier POST status=%s url=%s", status, authenticate_url
         )
+        if _is_transient_login_status(status):
+            raise ApiError(
+                f"Identity provider error on identifier step (HTTP {status})",
+                status=status,
+            )
 
         # 3. The identifier step lands on the password (authenticate) page,
         #    whose hidden fields live in the JS templateModel, not HTML inputs.
@@ -418,6 +435,15 @@ class EudaApiClient:
                 _LOGGER.debug(
                     "login step4: HTTP %s body[:500]=%s", resp.status, landing_html[:500]
                 )
+                # 5xx / 404 / 429 is the identity provider failing (or
+                # throttling us), not our credentials — surface it as a
+                # retryable ApiError so the coordinator keeps the entry alive
+                # instead of demanding reauthentication.
+                if _is_transient_login_status(resp.status):
+                    raise ApiError(
+                        f"Identity provider error (HTTP {resp.status})",
+                        status=resp.status,
+                    )
                 err = _login_error(landing_html)
                 raise AuthError(err or f"Login rejected (HTTP {resp.status})")
         _LOGGER.debug("login step4: landed on %s", landing)
@@ -721,6 +747,8 @@ def parse_vehicle_data(payload: dict) -> dict:
     range = get_field_value_by_key(data, '153e8c40-4c6c-3c17-a11b-0ecc35d55b81', 'range')
     if range is None:
         range = get_field_value_by_key(data, '0ca40e18-0564-3eda-bcc0-7aee9ef44f04', 'range')
+    if range is None:
+        range = get_field_value_by_key(data, '55e0d40b-38ed-3cb5-9dcd-6193df6fc493', 'range')
 
     odometer = get_field_value_by_key(data, '41c0805c-43e5-313e-9dfb-356cb8d20f7c', 'odometer')
     if odometer is None:
