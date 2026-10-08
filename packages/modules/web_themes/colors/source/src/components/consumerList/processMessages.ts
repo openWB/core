@@ -41,8 +41,6 @@ function processConsumerDeviceMessages(topic: string, message: string) {
 		}
 	} else if (topic.match(/^openWB\/consumer\/[0-9]+\/set\/on_time$/i)) {
 		dev.runningTime = +message
-	} else {
-		// console.warn('Ignored Consumer device message: ' + topic)
 	}
 }
 
@@ -55,7 +53,6 @@ function processConsumerConfigMessages(topic: string, message: string) {
 	}
 	if (!consumers.has(index)) {
 		console.warn('Invalid device id received: ' + index)
-		// addConsumer(index)
 	}
 	const dev = consumers.get(index)!
 	if (
@@ -73,8 +70,6 @@ function processConsumerGlobalMessages(topic: string, message: string) {
 	} else if (topic.match(/^openWB\/consumer\/get\/power$/i)) {
 		registry.setPower('consumers', +message)
 		updateShSummary('power')
-	} else {
-		//console.warn('Ignored Consumer global message: ' + topic + ' with message: ' + message)
 	}
 }
 
