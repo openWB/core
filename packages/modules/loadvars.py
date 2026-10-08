@@ -67,6 +67,11 @@ class Loadvars:
                 if consumer.module is None:
                     # Verbraucher, dessen Modul nicht erstellt werden konnte (z.B. defekte Konfiguration).
                     continue
+                if consumer.data.extra_meter is not None:
+                    # Verbraucher hat ein zusätzliches Messgerät, wird übersprungen.
+                    consumer.module.fault_state.no_error()
+                    consumer.module.fault_state.store_error()
+                    continue
                 modules_threads.append(Thread(target=consumer.module.update,
                                               args=(),
                                               name=f"set values consumer{consumer.data.module.id}"))
