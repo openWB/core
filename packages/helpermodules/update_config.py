@@ -2382,6 +2382,8 @@ class UpdateConfig:
         self._append_datastore_version(79)
 
     # moved and corrected to 87
+    def upgrade_datastore_80(self) -> None:
+        self._append_datastore_version(80)
 
     def upgrade_datastore_81(self) -> None:
         def upgrade(topic: str, payload) -> None:
@@ -2794,6 +2796,12 @@ class UpdateConfig:
                     return {topic: payload}
         self._loop_all_received_topics(upgrade)
         self._append_datastore_version(95)
+
+    def upgrade_datastore_96(self) -> None:
+        self._append_datastore_version(96)
+
+    def upgrade_datastore_97(self) -> None:
+        self._append_datastore_version(97)
 
     def upgrade_datastore_98(self) -> None:
         version_str = decode_payload(
