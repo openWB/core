@@ -98,12 +98,12 @@ def verify_password_reset_token(username: str, token: str) -> bool:
 
 
 def check_required_users():
-    def create_user(ip_address: str = "127.0.0.1"):
-        success, user_name = create_display_user(ip_address)
+    def create_user(ip_address: Optional[str] = None):
+        success, user_name, assigned_ip = create_display_user(ip_address)
         if success:
-            log.info(f"Created user '{user_name}' for cp display at {ip_address}")
+            log.info(f"Created user '{user_name}' for cp display at {assigned_ip}")
         else:
-            log.error(f"Failed to create user for cp display at {ip_address}")
+            log.error(f"Failed to create user for cp display at {assigned_ip}")
 
     # Always create user for localhost to ensure access to local displays, even if no chargepoints are configured
     create_user()
