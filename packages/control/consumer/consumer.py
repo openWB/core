@@ -48,14 +48,24 @@ class Consumer(Load):
             if self.data.usage.type in NOT_CONTROLLED:
                 return
             else:
-                if self.data.get.voltages is None:
-                    self.data.get.voltages = [230 for i in range(0, self.data.config.connected_phases)]
-                if self.data.get.currents is None:
-                    self.data.get.currents = [0]*3
-                    for i in range(0, self.data.config.connected_phases):
-                        self.data.get.currents[i] = (self.data.get.power /
-                                                     self.data.config.connected_phases /
-                                                     self.data.get.voltages[i])
+                # Index wie required_currents in set_control_parameter() am EVU-Phasen-Index ausrichten, nicht an 0.
+                try:
+                    connected_evu_phases = {
+                        convert_single_evu_phase_to_cp_phase(self.data.config.phase_1, i)
+                        for i in range(0, self.data.config.connected_phases)}
+                except KeyError:
+                    connected_evu_phases = set(range(0, self.data.config.connected_phases))
+                # neu berechnen, wenn sich connected_phases oder phase_1 geändert haben, nicht nur bei None
+                phase_config_changed = (self.data.get.voltages is None or
+                                        len(self.data.get.voltages) != 3 or
+                                        {i for i, v in enumerate(self.data.get.voltages) if v} != connected_evu_phases)
+                if phase_config_changed:
+                    self.data.get.voltages = [230 if i in connected_evu_phases else 0 for i in range(3)]
+                if self.data.get.currents is None or phase_config_changed:
+                    self.data.get.currents = [
+                        (self.data.get.power / self.data.config.connected_phases / self.data.get.voltages[i])
+                        if i in connected_evu_phases else 0
+                        for i in range(3)]
                 self.data.get.phases_in_use = self.data.config.connected_phases
                 self.data.set.phases_to_use = self.data.config.connected_phases
                 self.data.get.charge_state = max(self.data.get.currents) > self.STANDBY_THRESHOLD
