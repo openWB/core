@@ -691,8 +691,12 @@ class UpdateConfig:
 
         # Topics die hier drin stehen werden beim Neustart mit default Werten überschrieben
         # -> vorrausgesetzt, dass die Topics nicht oben drin stehen
+
         # <- immer auf False, da nach restart noch keine Verbindung besteht
         ("openWB/chargepoint/3/get/ocpp/connected", False),
+        # nur zum Debugging
+        # -> muss später noch entfernt werden
+        ("^openWB/chargepoint/[0-9]+/get/ocpp/test_reconnect$", True),
 
 
         ("openWB/bat/config/bat_control_activated", False),

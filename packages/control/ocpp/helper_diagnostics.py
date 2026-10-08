@@ -1,6 +1,7 @@
 
 import asyncio
 import ftplib
+import posixpath
 import tempfile
 from datetime import datetime
 from pathlib import Path
@@ -93,8 +94,8 @@ def _parse_ftp_location(location: str) -> SplitResult:
         raise ValueError(f"Nicht unterstütztes Upload-Protokoll: {parsed.scheme or '(kein Schema)'}")
     if not parsed.hostname:
         raise ValueError("FTP-Ziel enthält keinen Hostnamen")
-    if not parsed.path or parsed.path == "/":
-        raise ValueError("FTP-Ziel enthält keinen Dateipfad")
+    if not parsed.path:
+        raise ValueError("FTP-Ziel enthält kein Zielverzeichnis")
     if parsed.query or parsed.fragment:
         raise ValueError("FTP-Ziel darf keine Query oder Fragment enthalten")
     try:
@@ -122,7 +123,11 @@ def _upload_ftp_sync(file_path: str, location: SplitResult) -> None:
             password = "" if location.username else "anonymous@"
         ftp.login(username, password)
         ftp.set_pasv(True)
-        remote_path = unquote(location.path)
+        remote_directory = unquote(location.path)
+        remote_path = posixpath.join(
+            remote_directory.rstrip("/") or "/",
+            Path(file_path).name,
+        )
         with open(file_path, "rb") as diagnostics_file:
             ftp.storbinary(f"STOR {remote_path}", diagnostics_file)
     finally:

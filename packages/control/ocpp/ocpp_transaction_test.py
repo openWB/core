@@ -1,4 +1,5 @@
 import asyncio
+from dataclasses import asdict
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, call
 
@@ -11,6 +12,7 @@ from control.ocpp import ocpp_client
 from control.ocpp import ocpp_chargepoint
 from control.ocpp import ocpp_connection_manager
 from control.ocpp import ocpp_transaction_coordinator
+from control.ocpp.helper import _get_config
 from control.ocpp.ocpp_chargepoint import OcppChargePoint
 from control.ocpp.ocpp_client import OcppClient
 from control.ocpp.ocpp_connection_manager import OcppConnectionManager
@@ -640,6 +642,19 @@ def test_get_configuration_reads_dataclass_values(handler_setup):
     assert response.unknown_key == []
 
 
+def test_get_config_supports_strings_and_preserves_integer_minimum():
+    openwb_cp = SimpleNamespace(data=SimpleNamespace(get=SimpleNamespace(ocpp=SimpleNamespace(
+        config=SimpleNamespace(
+            TextSetting={"value": "hello"},
+            IntSetting={"value": "0"},
+        ),
+    ))))
+
+    assert _get_config(openwb_cp, "TextSetting", "fallback") == "hello"
+    assert _get_config(openwb_cp, "IntSetting", 10) == 1
+    assert _get_config(openwb_cp, "MissingSetting", "fallback") == "fallback"
+
+
 def test_change_configuration_rejects_readonly_parameter(handler_setup):
     make_charge_point, openwb_cp = handler_setup
     openwb_cp.data.get.ocpp.config.HeartbeatInterval["readonly"] = True
@@ -715,30 +730,14 @@ def test_set_configuration_value_publishes_parameter_dictionary(handler_setup, m
 
     async def check():
         charge_point = make_charge_point()
-        await charge_point.set_configuration_value("MeterValueSampleInterval", 30)
+        await charge_point.set_configuration_value("MeterValueSampleInterval", 42)
 
     asyncio.run(check())
 
-    expected_config = {
-        "HeartbeatInterval": {
-            "value": 10,
-            "readonly": False,
-            "type": "int",
-        },
-        "MeterValueSampleInterval": {
-            "value": 30,
-            "readonly": False,
-            "type": "int",
-        },
-    }
-    assert expected_config["MeterValueSampleInterval"] == {
-        "value": 30,
-        "readonly": False,
-        "type": "int",
-    }
+    assert openwb_cp.data.get.ocpp.config.MeterValueSampleInterval["value"] == 42
     mock_pub.pub.assert_called_once_with(
         "openWB/set/chargepoint/1/get/ocpp/config",
-        expected_config,
+        asdict(openwb_cp.data.get.ocpp.config),
     )
 
 
@@ -770,6 +769,8 @@ def test_websocket_transaction_survives_reconnect(monkeypatch):
     openwb_cp = SimpleNamespace(
         num=1,
         data=SimpleNamespace(get=SimpleNamespace(
+            fault_state=0,
+            fault_str="",
             ocpp=SimpleNamespace(transaction_id=None, transaction_id_tag=None,
                                  tag_accepted=False, availability=True,
                                  pending_availability=False, pending_transactions=[],
@@ -777,6 +778,7 @@ def test_websocket_transaction_survives_reconnect(monkeypatch):
                                  config=ocpp_config_factory()),
             serial_number="serial-1",
         )),
+        get_ocpp_status=lambda: ChargePointStatus.available,
         chargepoint_module=SimpleNamespace(config=SimpleNamespace(type="test-cp")),
     )
     monkeypatch.setattr(ocpp_client, "get_cp_from_chargebox_id", lambda _: openwb_cp)

@@ -85,6 +85,30 @@ class OcppConfig:
     MeterValueSampleInterval: OcppConfigKey = field(
         default_factory=lambda: ocpp_config_key_factory(value=20, readonly=False, value_type="int")
     )
+    NumberOfConnectors: OcppConfigKey = field(
+        default_factory=lambda: ocpp_config_key_factory(value=1, readonly=True, value_type="int")
+    )
+    SupportedFeatureProfiles: OcppConfigKey = field(
+        default_factory=lambda: ocpp_config_key_factory(
+            value="Core,RemoteTrigger", readonly=True, value_type="str"
+        )
+    )
+    # Remote Reqest werden bei uns auch immer erst Authorize (siehe Remote_Start)
+    AuthorizeRemoteTxRequests: OcppConfigKey = field(
+        default_factory=lambda: ocpp_config_key_factory(value=True, readonly=True, value_type="bool")
+    )
+
+    MeterValuesSampledData: OcppConfigKey = field(
+        default_factory=lambda: ocpp_config_key_factory(
+            value="Energy.Active.Import.Register", readonly=True, value_type="str"
+        )
+    )
+    TransactionMessageAttempts: OcppConfigKey = field(
+        default_factory=lambda: ocpp_config_key_factory(value=3, readonly=False, value_type="int")
+    )
+    TransactionMessageRetryInterval: OcppConfigKey = field(
+        default_factory=lambda: ocpp_config_key_factory(value=60, readonly=False, value_type="int")
+    )
 
 
 def ocpp_config_factory() -> OcppConfig:

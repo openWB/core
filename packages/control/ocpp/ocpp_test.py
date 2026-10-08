@@ -234,11 +234,12 @@ def test_status_notification_updates_client_cache_after_successful_send():
     chargepoint = SimpleNamespace(_status_notification=AsyncMock(return_value=object()))
     client = object.__new__(OcppClient)
     client._last_update = {}
+    connection = SimpleNamespace(
+        cp=chargepoint,
+        boot_accepted=True,
+    )
     client.connection_manager = SimpleNamespace(
-        connect=AsyncMock(return_value=SimpleNamespace(
-            cp=chargepoint,
-            boot_accepted=True,
-        )),
+        connect=AsyncMock(),
     )
 
     asyncio.run(client._send_status_notification(
@@ -248,15 +249,41 @@ def test_status_notification_updates_client_cache_after_successful_send():
         fault_state_str="x" * 60,
         status=ChargePointStatus.available,
         force=False,
+        connection=connection,
     ))
 
-    client.connection_manager.connect.assert_awaited_once_with("cp1")
+    client.connection_manager.connect.assert_not_awaited()
     chargepoint._status_notification.assert_awaited_once()
     assert chargepoint._status_notification.await_args.kwargs["fault_state_str"] == "x" * 50
     assert client._last_update[("cp1", 1)] == (
         ChargePointStatus.available,
         "NoError",
         "x" * 50,
+    )
+
+
+def test_initial_status_notifications_reuse_existing_connection():
+    client = object.__new__(OcppClient)
+    client._send_status_notification = AsyncMock()
+    openwb_cp = SimpleNamespace(
+        data=SimpleNamespace(get=SimpleNamespace(
+            fault_state=0,
+            fault_str="",
+            ocpp=SimpleNamespace(availability=True),
+        )),
+        get_ocpp_status=Mock(return_value=ChargePointStatus.available),
+    )
+    connection = SimpleNamespace(
+        chargebox_id="box-1",
+        cp=SimpleNamespace(openwb_cp=openwb_cp),
+    )
+
+    asyncio.run(client._send_initial_status_notifications(connection))
+
+    assert client._send_status_notification.await_count == 2
+    assert all(
+        call.kwargs["connection"] is connection
+        for call in client._send_status_notification.await_args_list
     )
 
 
@@ -283,8 +310,19 @@ def test_trigger_message_decisions(monkeypatch):
     asyncio.run(check())
 
 
-@pytest.mark.parametrize("connector_id", [None, 0, 1])
-def test_trigger_status_message_after_confirmation(monkeypatch, connector_id):
+@pytest.mark.parametrize(
+    "connector_id, expected_notifications",
+    [
+        (None, [(0, ChargePointStatus.faulted), (1, ChargePointStatus.charging)]),
+        (0, [(0, ChargePointStatus.faulted)]),
+        (1, [(1, ChargePointStatus.charging)]),
+    ],
+)
+def test_trigger_status_message_after_confirmation(
+    monkeypatch,
+    connector_id,
+    expected_notifications,
+):
     from control.ocpp import ocpp_chargepoint
 
     events = []
@@ -315,6 +353,7 @@ def test_trigger_status_message_after_confirmation(monkeypatch, connector_id):
         cp.call = call
         client.connection_manager = SimpleNamespace(
             is_active_charge_point=Mock(return_value=True),
+            connect=AsyncMock(return_value=SimpleNamespace(cp=cp, boot_accepted=True)),
         )
         await cp.route_message(json.dumps([2, "trigger-1", "TriggerMessage", request]))
         await asyncio.sleep(0)
@@ -323,11 +362,15 @@ def test_trigger_status_message_after_confirmation(monkeypatch, connector_id):
 
     assert events[0] == [3, "trigger-1", {"status": "Accepted"}]
     notifications = events[1:]
-    assert len(notifications) == 1
-    assert notifications[0].connector_id == 1
-    assert notifications[0].status == ChargePointStatus.charging
-    assert notifications[0].info == "error"
-    openwb_cp.get_ocpp_status.assert_called_once_with()
+    assert [
+        (notification.connector_id, notification.status)
+        for notification in notifications
+    ] == expected_notifications
+    assert all(notification.info == "error" for notification in notifications)
+    if connector_id in (None, 1):
+        openwb_cp.get_ocpp_status.assert_called_once_with()
+    else:
+        openwb_cp.get_ocpp_status.assert_not_called()
 
 
 def test_trigger_status_forces_repeat_and_skips_old_connection(monkeypatch):
@@ -353,6 +396,7 @@ def test_trigger_status_forces_repeat_and_skips_old_connection(monkeypatch):
         cp.call = record
         client.connection_manager = SimpleNamespace(
             is_active_charge_point=Mock(side_effect=[True, True, False]),
+            connect=AsyncMock(return_value=SimpleNamespace(cp=cp, boot_accepted=True)),
         )
         await client.handler_trigger_msg(cp, MessageTrigger.status_notification, 1)
         await client.handler_trigger_msg(cp, MessageTrigger.status_notification, 1)
@@ -418,13 +462,16 @@ def test_trigger_meter_values_uses_snapshot_or_skips_when_missing(has_snapshot):
     chargepoint = SimpleNamespace(
         chargebox_id="box-1",
         _meter_values=AsyncMock(),
+        openwb_cp=SimpleNamespace(data=SimpleNamespace(get=SimpleNamespace(ocpp=SimpleNamespace(
+            config=SimpleNamespace(MeterValuesSampledData={"value": "Power.Active.Import"}),
+        )))),
     )
     client = object.__new__(OcppClient)
     client.connection_manager = SimpleNamespace(
         is_active_charge_point=Mock(return_value=True),
     )
     client._meter_snapshots = (
-        {"box-1": SimpleNamespace(connector_id=1, imported=9876)}
+        {"box-1": SimpleNamespace(connector_id=1, imported=9876, )}
         if has_snapshot else {}
     )
     client.transactions = SimpleNamespace(
@@ -448,7 +495,7 @@ def test_trigger_meter_values_uses_snapshot_or_skips_when_missing(has_snapshot):
             "value": "9876",
             "context": "Trigger",
             "format": "Raw",
-            "measurand": "Energy.Active.Import.Register",
+            "measurand": "Power.Active.Import",
             "unit": "Wh",
         }
     else:

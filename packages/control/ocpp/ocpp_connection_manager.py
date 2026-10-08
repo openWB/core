@@ -209,6 +209,13 @@ class OcppConnectionManager:
             subprotocols=[version],
         )
 
+        if ws.subprotocol != version:
+            negotiated = ws.subprotocol
+            await ws.close()
+            raise ConnectionError(
+                f"OCPP-Subprotocol nicht ausgehandelt: erwartet {version!r}, erhalten {negotiated!r}"
+            )
+
         connection: Optional[OcppConnection] = None
 
         try:
@@ -275,6 +282,19 @@ class OcppConnectionManager:
             cancelled = False
 
         current_task = asyncio.current_task()
+
+        cancel_background_tasks = getattr(connection.cp, "cancel_background_tasks", None)
+        if cancel_background_tasks is not None:
+            try:
+                await cancel_background_tasks()
+            except asyncio.CancelledError:
+                cancelled = True
+            except Exception:
+                log.exception(
+                    "Fehler beim Beenden der OCPP-Hintergrundtasks für %s",
+                    chargebox_id,
+                )
+
         tasks = [
             connection.retry_task,
             connection.heartbeat_task,
