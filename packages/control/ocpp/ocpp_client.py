@@ -14,7 +14,7 @@ from typing import Optional
 from helpermodules.pub import Pub, pub_single
 
 from modules.common.fault_state import FaultState
-from control.ocpp.helper import _get_formatted_time, get_cp_from_chargebox_id
+from control.ocpp.helper import _get_formatted_time, get_cp_from_chargebox_id, _get_config
 
 from control.ocpp.ocpp_chargepoint import OcppChargePoint, get_ocpp_error_code
 from control.ocpp.ocpp_connection import OcppConnection, RegistrationState
@@ -343,11 +343,55 @@ class OcppClient:
             # beim reconnect nur machen, wenn keine aktive Transaktion läuft
             await cp.apply_pending_availability()
 
+        # Nach BootNotification muss der aktuelle Status von Connector 0
+        # und allen Connectoren gemeldet werden.
+        # Erst nach apply_pending_availability(), damit wir nicht
+        # direkt nach dem Boot einen veralteten Available-Status melden.
+        await self._send_initial_status_notifications(connection)
+
         connection.heartbeat_task = asyncio.create_task(self._heartbeat_loop(
             connection), name=f"ocpp-heartbeat-loop_{chargebox_id}")
 
         connection.meter_task = asyncio.create_task(self._meter_loop(
             connection), name=f"ocpp-meter-loop_{chargebox_id}")
+
+    async def _send_initial_status_notifications(self, connection: OcppConnection) -> None:
+        cp = connection.cp
+        openwb_cp = cp.openwb_cp
+        if openwb_cp is None:
+            return
+
+        fault_state = openwb_cp.data.get.fault_state
+        fault_state_str = openwb_cp.data.get.fault_str
+
+        # Connector 0 darf in OCPP 1.6 nur Available, Unavailable oder Faulted melden.
+        if fault_state:
+            controller_status = ChargePointStatus.faulted
+        elif openwb_cp.data.get.ocpp.availability is False:
+            controller_status = ChargePointStatus.unavailable
+        else:
+            controller_status = ChargePointStatus.available
+
+        # Wir müssen hier die breits aufgebaute Verbindung nutzen,
+        # damit wir nicht in einen Deadlock geraten.
+        await self._send_status_notification(
+            connection.chargebox_id,
+            0,
+            fault_state,
+            fault_state_str,
+            controller_status,
+            True,
+            connection=connection,
+        )
+        await self._send_status_notification(
+            connection.chargebox_id,
+            1,
+            fault_state,
+            fault_state_str,
+            openwb_cp.get_ocpp_status(),
+            True,
+            connection=connection,
+        )
 
     async def _connection_closed(self, connection: OcppConnection):
         chargebox_id = connection.chargebox_id
@@ -476,7 +520,8 @@ class OcppClient:
                                     "context": "Sample.Periodic",
                                     "format": "Raw",
                                     "measurand":
-                                        "Energy.Active.Import.Register",
+                                        _get_config(connection.cp.openwb_cp, "MeterValuesSampledData",
+                                                    default="Energy.Active.Import.Register"),
                                     "unit": "Wh",
                                 }
                             ],
@@ -502,9 +547,11 @@ class OcppClient:
         chargebox_id: str,
         method_name: str,
         *args,
+        connection: Optional[OcppConnection] = None,
         **kwargs,
     ):
-        connection = await self.connection_manager.connect(chargebox_id)
+        if connection is None:
+            connection = await self.connection_manager.connect(chargebox_id)
 
         if connection is None:
             log.error(f"Keine Verbindung zu {chargebox_id} verfügbar")
@@ -561,6 +608,7 @@ class OcppClient:
         fault_state_str: str,
         status: ChargePointStatus,
         force: bool,
+        connection: Optional[OcppConnection] = None,
     ) -> None:
         key = (chargebox_id, connector_id)
         fault_state_str = (fault_state_str or "")[:50]
@@ -571,7 +619,8 @@ class OcppClient:
         )
 
         # Prüfung im Client und nicht im CP, da sonst ständig Verbindung überprüft wird
-        # ohne was zu senden
+        # im _call aufruf auch wenn sich der Status nicht geändert hat
+        # und wir dementsprechend keine Nachricht raussenden
         if not force and self._last_update.get(key) == current_status:
             return
 
@@ -583,6 +632,7 @@ class OcppClient:
             fault_state_str=fault_state_str,
             status=status,
             force=True,
+            connection=connection,
         )
 
         if response is not None:
@@ -823,19 +873,28 @@ class OcppClient:
             if openwb_cp is None:
                 return
 
-            status = openwb_cp.get_ocpp_status()
-            response = await cp._status_notification(
-                connector_id=1,
-                fault_state=openwb_cp.data.get.fault_state,
-                fault_state_str=openwb_cp.data.get.fault_str,
-                status=status,
-                force=True,
-            )
-            if response is not None:
-                self._last_update[(cp.chargebox_id, 1)] = (
+            fault_state = openwb_cp.data.get.fault_state
+            fault_state_str = openwb_cp.data.get.fault_str
+
+            connectors = (0, 1) if connector_id is None else (connector_id,)
+            for requested_connector in connectors:
+                if requested_connector == 0:
+                    if fault_state:
+                        status = ChargePointStatus.faulted
+                    elif openwb_cp.data.get.ocpp.availability is False:
+                        status = ChargePointStatus.unavailable
+                    else:
+                        status = ChargePointStatus.available
+                else:
+                    status = openwb_cp.get_ocpp_status()
+
+                await self._send_status_notification(
+                    cp.chargebox_id,
+                    requested_connector,
+                    fault_state,
+                    fault_state_str,
                     status,
-                    get_ocpp_error_code(openwb_cp.data.get.fault_state),
-                    openwb_cp.data.get.fault_str or "",
+                    True,
                 )
             return
 
@@ -854,7 +913,7 @@ class OcppClient:
                 return
 
             await cp._meter_values(
-                connector_id=1,
+                connector_id=1 if connector_id is None else connector_id,
                 transaction_id=transaction_id,
                 meter_value=[
                     {
@@ -865,7 +924,8 @@ class OcppClient:
                                 "context": "Trigger",
                                 "format": "Raw",
                                 "measurand":
-                                    "Energy.Active.Import.Register",
+                                    _get_config(cp.openwb_cp, "MeterValuesSampledData",
+                                                default="Energy.Active.Import.Register"),
                                 "unit": "Wh",
                             }
                         ],
