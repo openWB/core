@@ -80,7 +80,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
 import { useMqttStore } from 'src/stores/mqtt-store';
-import { Screen, useQuasar } from 'quasar';
 import BaseCarousel from 'src/components/BaseCarousel.vue';
 import BaseTable from 'src/components/BaseTable.vue';
 import { VehicleRow } from 'src/components/models/table-model';
@@ -89,13 +88,10 @@ import VehicleConnectionStateIcon from './VehicleConnectionStateIcon.vue';
 import VehicleFaultIcon from './VehicleFaultIcon.vue';
 import VehicleCard from 'src/components/VehicleCard.vue';
 import { ColumnConfiguration } from 'src/components/models/table-model';
+import { useTable } from 'src/composables/useTable';
 
-const $q = useQuasar();
-
-const tooltipsEnabled = !$q.platform.is.mobile;
-
+const { tooltipsEnabled, compactTable, titleIfTruncated } = useTable();
 const mqttStore = useMqttStore();
-const compactTable = computed(() => Screen.lt.md);
 const modalChargeVehicleCardVisible = ref(false);
 const selectedVehicleId = ref<number | null>(null);
 const filter = ref('');
@@ -164,16 +160,6 @@ const columnConfigCompact: ColumnConfiguration[] = [
     autoWidth: true,
   },
 ];
-
-const titleIfTruncated = (event: MouseEvent) => {
-  const element = event.currentTarget as HTMLElement;
-  const text = element.textContent?.trim() ?? '';
-  if (text && element.scrollWidth - element.clientWidth > 1) {
-    element.title = text;
-  } else {
-    element.removeAttribute('title');
-  }
-};
 
 const onRowClick = (row: VehicleRow) => {
   selectedVehicleId.value = row.id;
