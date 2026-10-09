@@ -526,3 +526,12 @@ class Consumer(Load):
             self.reset_wait_for_start()
         else:
             self.chargemode_changed = False
+
+    def set_plug_state(self):
+        if self.data.usage.type in NOT_CONTROLLED:
+            if self.data.get.power == 0:
+                self.data.get.plug_state = False
+            else:
+                self.data.get.plug_state = True
+        else:
+            self.data.get.plug_state = self.data.set.current > 0
