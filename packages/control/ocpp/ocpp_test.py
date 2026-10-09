@@ -147,6 +147,55 @@ def test_authorize_for_rfid_publishes_result_and_deduplicates(monkeypatch, mock_
     ]
 
 
+def test_authorize_for_rfid_publishes_rejected_when_authorize_raises(monkeypatch, mock_pub):
+    client = object.__new__(OcppClient)
+    client._rfid_authorize_pending = set()
+    client.authorize = Mock(side_effect=RuntimeError("offline"))
+    openwb_cp = SimpleNamespace(
+        num=1,
+        data=SimpleNamespace(get=SimpleNamespace(
+            rfid="TAG",
+            ocpp=SimpleNamespace(authorize_only_response=None),
+        )),
+    )
+    monkeypatch.setattr(ocpp_client, "get_cp_from_chargebox_id", lambda _: openwb_cp)
+
+    assert client.authorize_for_rfid("box-1", "TAG") is None
+
+    assert client._rfid_authorize_pending == set()
+    assert openwb_cp.data.get.ocpp.authorize_only_response == "rejected"
+    assert mock_pub.pub.call_args_list == [
+        call("openWB/set/chargepoint/1/get/ocpp/authorize_only_response", "init"),
+        call("openWB/set/chargepoint/1/get/ocpp/authorize_only_response", "rejected"),
+    ]
+
+
+def test_authorize_for_rfid_ignores_result_after_rfid_changes(monkeypatch, mock_pub):
+    client = object.__new__(OcppClient)
+    client._rfid_authorize_pending = set()
+    authorization_future = concurrent.futures.Future()
+    client.authorize = Mock(return_value=authorization_future)
+    openwb_cp = SimpleNamespace(
+        num=1,
+        data=SimpleNamespace(get=SimpleNamespace(
+            rfid="TAG",
+            ocpp=SimpleNamespace(authorize_only_response=None),
+        )),
+    )
+    monkeypatch.setattr(ocpp_client, "get_cp_from_chargebox_id", lambda _: openwb_cp)
+
+    client.authorize_for_rfid("box-1", "TAG")
+    openwb_cp.data.get.rfid = "NEW-TAG"
+    authorization_future.set_result(AuthorizationResult(status="Accepted"))
+
+    assert client._rfid_authorize_pending == set()
+    assert openwb_cp.data.get.ocpp.authorize_only_response is None
+    assert mock_pub.pub.call_args_list == [
+        call("openWB/set/chargepoint/1/get/ocpp/authorize_only_response", "init"),
+        call("openWB/set/chargepoint/1/get/ocpp/authorize_only_response", None),
+    ]
+
+
 def test_client_authorize_future_can_be_cancelled(monkeypatch):
     client = object.__new__(OcppClient)
     client.loop = Mock()
@@ -902,3 +951,175 @@ def test_persisted_stop_is_sent_once(monkeypatch):
         "openWB/set/chargepoint/1/get/ocpp/pending_transactions",
         [],
     )
+
+
+def _make_reset_test_client(monkeypatch, transaction_stopped):
+    events = []
+    openwb_cp = SimpleNamespace(
+        num=1,
+        data=SimpleNamespace(get=SimpleNamespace(
+            imported=1234,
+            ocpp=SimpleNamespace(reset=False),
+        )),
+        chargepoint_module=SimpleNamespace(config=SimpleNamespace(
+            configuration=SimpleNamespace(ip_address="192.0.2.10"),
+        )),
+    )
+
+    async def stop_and_wait(**_kwargs):
+        events.append("stop")
+        return transaction_stopped
+
+    async def reconnect_now(chargebox_id):
+        events.append("reconnect")
+        return SimpleNamespace(chargebox_id=chargebox_id)
+
+    client = object.__new__(OcppClient)
+    client.transactions = SimpleNamespace(
+        block_start=Mock(),
+        stop_and_wait=AsyncMock(side_effect=stop_and_wait),
+        get_id_tag=Mock(return_value="TAG"),
+        get_state=Mock(return_value=SimpleNamespace(value="IDLE")),
+        get_transaction_id=Mock(return_value=42),
+    )
+    client.connection_manager = SimpleNamespace(
+        is_wanted=Mock(return_value=True),
+        reconnect_now=AsyncMock(side_effect=reconnect_now),
+    )
+    monkeypatch.setattr(ocpp_client, "get_cp_from_chargebox_id", lambda _: openwb_cp)
+
+    return client, openwb_cp, events
+
+
+def test_handle_soft_reset_stops_transaction_before_reconnecting(monkeypatch, mock_pub):
+    client, openwb_cp, events = _make_reset_test_client(monkeypatch, transaction_stopped=True)
+
+    asyncio.run(client._handle_reset("box-1", ocpp_client.ResetType.soft))
+
+    assert events == ["stop", "reconnect"]
+    client.transactions.stop_and_wait.assert_awaited_once_with(
+        chargebox_id="box-1",
+        imported=1234,
+        id_tag="TAG",
+        reason="SoftReset",
+    )
+    client.connection_manager.reconnect_now.assert_awaited_once_with("box-1")
+    assert openwb_cp.data.get.ocpp.reset is True
+    mock_pub.pub.assert_called_once_with("openWB/set/chargepoint/1/get/ocpp/reset", True)
+
+
+def test_handle_hard_reset_publishes_reboot_command(monkeypatch, mock_pub):
+    client, openwb_cp, events = _make_reset_test_client(monkeypatch, transaction_stopped=True)
+    publish_reboot = Mock()
+    monkeypatch.setattr(ocpp_client, "pub_single", publish_reboot)
+
+    asyncio.run(client._handle_reset("box-1", ocpp_client.ResetType.hard))
+
+    assert events == ["stop"]
+    client.connection_manager.reconnect_now.assert_not_awaited()
+    assert openwb_cp.data.get.ocpp.reset is True
+    publish_reboot.assert_called_once_with(
+        "openWB/set/command/primary/todo",
+        {"command": "systemReboot", "data": {}},
+        hostname="192.0.2.10",
+    )
+    mock_pub.pub.assert_called_once_with("openWB/set/chargepoint/1/get/ocpp/reset", True)
+
+
+def test_handle_reset_aborts_when_transaction_cannot_be_stopped(monkeypatch, mock_pub):
+    client, openwb_cp, events = _make_reset_test_client(monkeypatch, transaction_stopped=False)
+    publish_reboot = Mock()
+    monkeypatch.setattr(ocpp_client, "pub_single", publish_reboot)
+
+    asyncio.run(client._handle_reset("box-1", ocpp_client.ResetType.hard))
+
+    assert events == ["stop"]
+    client.connection_manager.reconnect_now.assert_not_awaited()
+    assert openwb_cp.data.get.ocpp.reset is False
+    publish_reboot.assert_not_called()
+    mock_pub.pub.assert_not_called()
+
+
+def test_meter_loop_skips_snapshot_for_stale_transaction(monkeypatch):
+    chargepoint = SimpleNamespace(
+        openwb_cp=SimpleNamespace(data=SimpleNamespace(get=SimpleNamespace(ocpp=SimpleNamespace(
+            config=SimpleNamespace(MeterValueSampleInterval={"value": "1"}),
+        )))),
+        _meter_values=AsyncMock(),
+    )
+    connection = SimpleNamespace(
+        chargebox_id="box-1",
+        closing=False,
+        boot_accepted=True,
+        cp=chargepoint,
+    )
+    client = object.__new__(OcppClient)
+    client.transactions = SimpleNamespace(get_transaction_id=Mock(return_value=123))
+    client._meter_snapshots = {
+        "box-1": SimpleNamespace(transaction_id=999, connector_id=1, imported=9876),
+    }
+    sleep_calls = 0
+
+    async def stop_after_stale_snapshot(_interval):
+        nonlocal sleep_calls
+        sleep_calls += 1
+        if sleep_calls == 2:
+            connection.closing = True
+
+    monkeypatch.setattr(ocpp_client.asyncio, "sleep", stop_after_stale_snapshot)
+
+    asyncio.run(client._meter_loop(connection))
+
+    client.transactions.get_transaction_id.assert_called_once_with("box-1")
+    chargepoint._meter_values.assert_not_awaited()
+
+
+def test_heartbeat_loop_closes_connection_after_heartbeat_error(monkeypatch):
+    chargepoint = SimpleNamespace(
+        openwb_cp=SimpleNamespace(data=SimpleNamespace(get=SimpleNamespace(ocpp=SimpleNamespace(
+            config=SimpleNamespace(HeartbeatInterval={"value": "1"}),
+        )))),
+        _heartbeat=AsyncMock(side_effect=RuntimeError("heartbeat failed")),
+    )
+    websocket = SimpleNamespace(closed=False, close=AsyncMock())
+    connection = SimpleNamespace(
+        chargebox_id="box-1",
+        closing=False,
+        boot_accepted=True,
+        cp=chargepoint,
+        ws=websocket,
+    )
+    client = object.__new__(OcppClient)
+
+    async def no_wait(_interval):
+        return None
+
+    monkeypatch.setattr(ocpp_client.asyncio, "sleep", no_wait)
+
+    asyncio.run(client._heartbeat_loop(connection))
+
+    chargepoint._heartbeat.assert_awaited_once_with()
+    websocket.close.assert_awaited_once_with()
+
+
+def test_connection_closed_removes_only_matching_status_cache(monkeypatch, mock_pub):
+    ocpp_data = SimpleNamespace(connected=True)
+    chargepoint = SimpleNamespace(
+        openwb_num=1,
+        openwb_cp=SimpleNamespace(data=SimpleNamespace(get=SimpleNamespace(ocpp=ocpp_data))),
+    )
+    connection = SimpleNamespace(chargebox_id="box-1", cp=chargepoint)
+    client = object.__new__(OcppClient)
+    client._last_update = {
+        ("box-1", 0): ("status-a", "error-a", ""),
+        ("box-1", 1): ("status-b", "error-b", ""),
+        ("box-2", 1): ("status-c", "error-c", ""),
+    }
+    client.transactions = SimpleNamespace(on_disconnected=AsyncMock())
+
+    asyncio.run(client._connection_closed(connection))
+
+    client.transactions.on_disconnected.assert_awaited_once_with("box-1", connection)
+    assert client._last_update == {("box-2", 1): ("status-c", "error-c", "")}
+    assert ocpp_data.connected is False
+    mock_pub.pub.assert_called_once_with("openWB/set/chargepoint/1/get/ocpp/connected", False)
