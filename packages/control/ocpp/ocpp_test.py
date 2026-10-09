@@ -126,7 +126,10 @@ def test_authorize_for_rfid_publishes_result_and_deduplicates(monkeypatch, mock_
     client.authorize = Mock(return_value=authorization_future)
     openwb_cp = SimpleNamespace(
         num=1,
-        data=SimpleNamespace(get=SimpleNamespace(ocpp=SimpleNamespace(authorize_only_response=None))),
+        data=SimpleNamespace(get=SimpleNamespace(
+            rfid="TAG",
+            ocpp=SimpleNamespace(authorize_only_response=None),
+        )),
     )
     monkeypatch.setattr(ocpp_client, "get_cp_from_chargebox_id", lambda _: openwb_cp)
 
@@ -181,7 +184,9 @@ def test_client_request_stop_forwards_authorization(monkeypatch, authorize_stop)
     monkeypatch.setattr(ocpp_client.asyncio, "run_coroutine_threadsafe", submit)
     options = {"authorize_stop": True} if authorize_stop else {}
 
-    assert client.request_stop("box-1", 150, "TAG", "Local", **options) is None
+    future = client.request_stop("box-1", 150, "TAG", "Local", **options)
+    assert isinstance(future, concurrent.futures.Future)
+    assert future.result(timeout=1) is True
 
     client.transactions.stop.assert_awaited_once_with(
         chargebox_id="box-1", imported=150, id_tag="TAG", reason="Local", authorize_stop=authorize_stop,

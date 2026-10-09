@@ -78,7 +78,7 @@ class OcppConnectionManager:
             return
 
         # Zu erst die Verbindung als nicht mehr gewollt markieren
-        # kein nueer Reconnect versuch wird gestartet
+        # damit kein neuer Reconnect versuch gestartet wird
         self._wanted_connections.discard(chargebox_id)
 
         await self._cancel_reconnect(chargebox_id)
@@ -141,6 +141,7 @@ class OcppConnectionManager:
     ) -> Optional[OcppConnection]:
         """
         Sofortige Wiederverbindung erzwingen.
+        -> Für reset des Ladepunkts
         """
         if not self.is_wanted(chargebox_id):
             return None
@@ -263,7 +264,7 @@ class OcppConnectionManager:
         connection.closing = True
         chargebox_id = connection.chargebox_id
 
-        # Zuerst entfernen. Ein während der Bereinigung endender Empfänger darf
+        # Zuerst entfernen. Ein während der Bereinigung beendeter Empfänger darf
         # diese veraltete Verbindung nicht mehr als aktuelle Verbindung behandeln.
         if self._connections.get(chargebox_id) is connection:
             self._connections.pop(chargebox_id, None)
