@@ -248,6 +248,7 @@ class Chargepoint(ChargepointRfidMixin, Load):
         self.data.set.plug_state_prev = self.data.get.plug_state
         self.data.set.current_prev = self.data.set.current
         self.data.set.ev_prev = self.data.config.ev
+        self.data.set.state_prev = self.data.control_parameter.state
 
     def reset_log_data_chargemode_switch(self) -> None:
         reset_log = Log()
@@ -284,9 +285,13 @@ class Chargepoint(ChargepointRfidMixin, Load):
                 if self.data.config.control_pilot_interruption_hw:
                     control_parameter = self.data.control_parameter
                     retry_interval = charging_ev.ev_template.data.control_pilot_interruption_retry_interval
-                    # Wird die Ladung gestartet? (nicht nach Phasenumschaltung, da diese bereits CP umschaltet)
+                    # Wird die Ladung gestartet? (nicht direkt nach einer Phasenumschaltung, da diese
+                    # bereits CP umschaltet - state_prev statt state, da WAIT_FOR_USING_PHASES auch
+                    # unabhängig von einer Phasenumschaltung erreicht wird, zB direkt nach Ablauf der
+                    # Einschaltverzögerung. Nur wenn der vorherige Zyklus tatsächlich noch
+                    # PERFORMING_PHASE_SWITCH war, hat die Umschaltung selbst gerade erst CP umgeschaltet.)
                     started_now = (self.data.set.current_prev == 0 and self.data.set.current != 0 and
-                                   self.data.control_parameter.state != ChargepointState.WAIT_FOR_USING_PHASES)
+                                   self.data.set.state_prev != ChargepointState.PERFORMING_PHASE_SWITCH)
                     # Ladung angefordert, Auto lädt aber trotz gültigem Signal seit geraumer Zeit nicht.
                     stuck = (
                         retry_interval > 0 and
