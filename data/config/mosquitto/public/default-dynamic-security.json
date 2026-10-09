@@ -3002,6 +3002,12 @@
 				},
 				{
 					"acltype": "publishClientReceive",
+					"topic": "openWB/counter/set/unmeasured_home_consumption",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
 					"topic": "openWB/counter/set/imported_home_consumption",
 					"priority": 0,
 					"allow": true
