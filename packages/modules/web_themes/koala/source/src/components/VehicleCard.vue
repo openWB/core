@@ -31,8 +31,8 @@
         {{ vehicleInfo?.model || 'keine Angabe' }}
       </div>
     </q-card-section>
-     <q-card-section>
-      <VehicleMessage :vehicle-id="props.vehicleId" />
+    <q-card-section>
+      <BaseFaultMessage :fault-state="faultState" :message="faultMessage" />
     </q-card-section>
     <q-separator inset class="q-mt-sm" />
     <q-card-section>
@@ -69,7 +69,7 @@ import { useMqttStore } from 'src/stores/mqtt-store';
 import { useQuasar } from 'quasar';
 import SliderDouble from './SliderDouble.vue';
 import ManualSocDialog from './ManualSocDialog.vue';
-import VehicleMessage from './VehicleMessage.vue';
+import BaseFaultMessage from './BaseFaultMessage.vue';
 import VehicleConnectionStateIcon from './VehicleConnectionStateIcon.vue';
 
 const cardRef = ref<{ $el: HTMLElement } | null>(null);
@@ -94,6 +94,12 @@ const vehicle = computed(() => {
 const vehicleInfo = computed(() => {
   return mqttStore.vehicleInfo(props.vehicleId);
 });
+
+const faultState = computed(() => mqttStore.vehicleFaultState(props.vehicleId));
+
+const faultMessage = computed(
+  () => mqttStore.vehicleFaultMessage(props.vehicleId) ?? '',
+);
 
 const vehicleSocType = computed(() => {
   return mqttStore.vehicleSocType(props.vehicleId);
