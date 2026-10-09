@@ -27,6 +27,7 @@ class Loadvars:
         try:
             not_finished_threads = self._set_values()
             levels = data.data.counter_all_data.get_list_of_elements_per_level()
+            self._add_extra_meter_counters_to_levels(levels)
             levels.reverse()
             for level in levels:
                 self._update_values_of_level_buttom_top(level, not_finished_threads)
@@ -45,6 +46,33 @@ class Loadvars:
                 self.ep_get_prices()
         except Exception:
             log.exception("Fehler im loadvars-Modul")
+
+    def _add_extra_meter_counters_to_levels(self, levels: List[List[dict]]) -> None:
+        """Ergänzt Zähler, die als separate Leistungsmessung einem Verbraucher zugeordnet sind.
+
+        Diese Zähler werden aus der Hierarchie entfernt, damit sie nicht zusätzlich in die
+        Summenbildung eingehen. Ihre Werte müssen aber trotzdem veröffentlicht werden, bevor
+        der zugehörige Verbraucher seine Werte aus dem Zähler übernimmt.
+        """
+        known_counter_ids = {
+            element["id"]
+            for level in levels
+            for element in level
+            if element["type"] == ComponentType.COUNTER.value
+        }
+        extra_meter_level = []
+        for consumer in data.data.consumer_data.values():
+            extra_meter_id = consumer.data.extra_meter
+            if extra_meter_id is None:
+                continue
+            if f"counter{extra_meter_id}" not in data.data.counter_data:
+                continue
+            if extra_meter_id in known_counter_ids:
+                continue
+            extra_meter_level.append({"type": ComponentType.COUNTER.value, "id": extra_meter_id})
+            known_counter_ids.add(extra_meter_id)
+        if extra_meter_level:
+            levels.append(extra_meter_level)
 
     def _set_values(self) -> List[str]:
         """Threads, um Werte von Geräten abzufragen"""
