@@ -1714,6 +1714,43 @@
 			]
 		},
 		{
+			"rolename": "forecast-configuration-access",
+			"textname": "Zugang zu der PV-Prognose",
+			"textdescription": "Erlaubt den Zugang zu der PV-Prognose.",
+			"acls": [
+				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/optional/forecast/provider",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/optional/forecast/get/force_update",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/system/security/access/ForecastConfiguration",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/system/configurable/forecasts",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/optional/forecast/#",
+					"priority": 0,
+					"allow": true
+				}
+			]
+		},
+		{
 			"rolename": "charge-point-installation-access",
 			"textname": "Zugang zu der Ladepunkt-Installation",
 			"textdescription": "Erlaubt den Zugang zu der Ladepunkt-Installation.",
