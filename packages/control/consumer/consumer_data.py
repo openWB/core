@@ -62,7 +62,7 @@ class ConsumerConfig:
 
 @dataclass
 class Get:
-    charge_state: bool = False
+    charge_state: bool = field(default=False, metadata={"topic": "get/charge_state"})
     currents: List[float] = field(default_factory=currents_list_factory)
     daily_imported: float = field(default=0, metadata={"topic": "get/daily_imported"})
     error_timestamp: int = 0
@@ -71,6 +71,7 @@ class Get:
     fault_state: int = 0
     imported: float = 0
     phases_in_use: int = 0
+    plug_state: bool = field(default=False, metadata={"topic": "get/plug_state"})
     power: float = 0
     powers: Optional[List[Optional[float]]] = None
     set_power: Optional[float] = None

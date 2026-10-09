@@ -92,6 +92,7 @@ class Process:
                         consumer.data.get.state_str = self._prepend_state_message(
                             "Strom freigegeben, warten auf Verbraucher.", consumer.data.get.state_str)
 
+                    consumer.set_plug_state()
                     consumer_thread = self._start_consumer(consumer)
                     if consumer_thread is not None:
                         modules_threads.append(consumer_thread)
