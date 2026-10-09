@@ -70,6 +70,14 @@ checkoutBranch() {
 	fi
 }
 
+clearUpdateFlagOnFailure() {
+	local status=$?
+	if [[ $status -ne 0 && $DRY_RUN -eq 0 ]]; then
+		mosquitto_pub -p 1886 -t "openWB/system/update_in_progress" -r -m 'false' || true
+	fi
+}
+trap clearUpdateFlagOnFailure EXIT
+
 echo "#### running update ####" >"$LOG_FILE"
 
 {
