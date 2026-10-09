@@ -66,13 +66,12 @@ ConnectionProvider = Callable[
 
 class TransactionCoordinator:
     """
-    Owns the OCPP transaction lifecycle for all chargeboxes.
-    Verwaltet den State der OCPP-Transaktionen für alle Ladepunkte.
-    -> sorgt dafür das Reihenfolgen eingehalten werden und
-    keine parallelen Konflikte entstehen.
-    Bsp.:
+    Verwaltet den Lebenszyklus der OCPP-Transaktionen für alle Ladepunkte.
+    Stellt sicher, dass Abläufe eingehalten werden und keine parallelen
+    Konflikte entstehen.
+    Beispiele:
         - Ein Start wird blockiert, wenn bereits ein anderer Start läuft.
-        - Nur Start, wenn Auth erfolgreich war.
+        - Ein Start erfolgt nur, wenn die Autorisierung erfolgreich war.
         - usw.
     """
 
@@ -928,6 +927,25 @@ class TransactionCoordinator:
             f"{prefix}/tag_accepted",
             accepted,
         )
+
+        # State veröffentlichen, damit der CP Meldung machen kann
+        state_responses = {
+            TransactionState.START_PENDING: "start_pending",
+            TransactionState.AUTHORIZING: "start_authorizing",
+            TransactionState.STARTING: "start_starting",
+            TransactionState.REJECTED: "start_rejected",
+            TransactionState.ERROR: "start_error",
+        }
+        response = state_responses.get(transaction.state)
+        if (transaction.state == TransactionState.IDLE and
+                transaction.id_tag is not None and transaction.last_error is not None):
+            response = "start_error"
+        previous_response = getattr(ocpp_data, "authorize_only_response", None)
+        if response != previous_response and (
+            response is not None or previous_response in state_responses.values()
+        ):
+            ocpp_data.authorize_only_response = response
+            Pub().pub(f"{prefix}/authorize_only_response", response)
 
     async def _stop_active(
         self,
