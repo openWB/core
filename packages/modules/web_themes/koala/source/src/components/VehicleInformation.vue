@@ -155,7 +155,7 @@ const columnConfig: ColumnConfiguration[] = [
 ];
 
 const columnConfigCompact: ColumnConfiguration[] = [
-  { field: 'name', label: 'Fahrzeug' },
+  { field: 'name', label: 'Fahrzeug', shrink: true },
   { field: 'plugged', label: 'Status', align: 'center', autoWidth: true },
   {
     field: 'vehicleSocValue',
