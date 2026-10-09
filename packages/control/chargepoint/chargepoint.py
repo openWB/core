@@ -208,7 +208,7 @@ class Chargepoint(ChargepointRfidMixin, Load):
             print("#####################################")
             print("OCPP Tag nicht akzeptiert")
             print("#####################################")
-            message = "Keine Ladung: RFID nicht vom OCPP-Server akzeptiert."
+            message = "Keine Ladung: RFID fehlt oder wurde vom OCPP-Server nicht akzeptiert."
             state = False
         else:
             message = None
