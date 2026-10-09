@@ -300,6 +300,24 @@ def _resolve_vin(config: BydConfiguration, session: Dict[str, Any]) -> str:
     return vin
 
 
+def _is_realtime_ready(data: Dict[str, Any]) -> bool:
+    """Die Trigger-Antwort (und ggf. frühe Poll-Antworten) ist nur eine Platzhalter-
+    Quittung mit denselben Feldern wie die echten Daten, aber zB elecPercent=0 statt
+    fehlend - "elecPercent is not None" greift daher nicht. Übernimmt stattdessen das
+    (in pyBYD als VehicleRealtimeData.is_ready_raw erprobte) Kriterium: offline sicher
+    nicht bereit, sonst gilt ein tatsächlicher Zeitstempel/Reifendruck/Restreichweite
+    als Beleg für echte Daten."""
+    if not data or data.get("onlineState") == 0:
+        return False
+    tire_fields = ("leftFrontTirepressure", "rightFrontTirepressure",
+                   "leftRearTirepressure", "rightRearTirepressure")
+    if any(float(data.get(f) or 0) > 0 for f in tire_fields):
+        return True
+    if int(data.get("time") or 0) > 0:
+        return True
+    return float(data.get("enduranceMileage") or 0) > 0
+
+
 def _fetch_realtime(config: BydConfiguration, session: Dict[str, Any]) -> Dict[str, Any]:
     """Trigger + Poll: löst die Fahrzeug-Abfrage aus und pollt dann bis zu
     POLL_ATTEMPTS mal im Abstand von POLL_INTERVAL_S, bis Daten vorliegen."""
@@ -309,7 +327,7 @@ def _fetch_realtime(config: BydConfiguration, session: Dict[str, Any]) -> Dict[s
     result = _post_token_json(REALTIME_TRIGGER_ENDPOINT, config, session, trigger_inner)
     request_serial = result.get("requestSerial") if isinstance(result, dict) else None
 
-    if isinstance(result, dict) and result.get("elecPercent") is not None:
+    if isinstance(result, dict) and _is_realtime_ready(result):
         return result
 
     for attempt in range(1, POLL_ATTEMPTS + 1):
@@ -324,7 +342,7 @@ def _fetch_realtime(config: BydConfiguration, session: Dict[str, Any]) -> Dict[s
             continue
         if isinstance(result, dict):
             request_serial = result.get("requestSerial") or request_serial
-            if result.get("elecPercent") is not None:
+            if _is_realtime_ready(result):
                 return result
 
     raise BydApiError("Keine Realtime-Daten erhalten (Fahrzeug antwortet nicht rechtzeitig, evtl. im Tiefschlaf)")
