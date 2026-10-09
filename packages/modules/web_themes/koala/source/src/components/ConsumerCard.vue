@@ -64,6 +64,15 @@
       </div>
     </q-card-section>
 
+    <q-card-section
+      class="row q-mt-sm text-subtitle2 justify-between full-width"
+    >
+      <div>Tagesverbrauch:</div>
+      <div class="q-ml-sm">
+        {{ dailyImported }}
+      </div>
+    </q-card-section>
+
     <template v-if="!meterOnly">
       <q-card-section>
         <ConsumerModeButtons :consumer-id="props.consumerId" />
@@ -118,6 +127,11 @@ const runTime = computed<string>(() => {
   const minutes = totalMinutes % 60;
   return `${hours}:${String(minutes).padStart(2, '0')} h`;
 });
+
+const dailyImported = computed(
+  () =>
+    mqttStore.consumerDailyImported('textValue', props.consumerId) as string,
+);
 
 const faultState = computed(() =>
   mqttStore.consumerFaultState(props.consumerId),
