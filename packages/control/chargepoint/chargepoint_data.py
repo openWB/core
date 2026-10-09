@@ -141,6 +141,11 @@ class Ocpp:
     pending_availability: bool = False
     reset: bool = False
 
+    # Nur für only Authorize
+    authorize_only_response: Optional[str] = None
+
+    rfid_stop: bool = False
+
     config: OcppConfig = field(default_factory=ocpp_config_factory,
                                metadata={"topic": "get/ocpp/config"})
 
