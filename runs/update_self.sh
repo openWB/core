@@ -19,6 +19,12 @@ validateTag() {
 		echo "#### ERROR: tag '$tag' does not resolve to a commit ####"
 		return 1
 	fi
+	if [[ $SELECTED_BRANCH == "Release" || $SELECTED_BRANCH == "Beta" ]]; then
+		if ! tagMatchesTrain "$SELECTED_BRANCH" "$tag"; then
+			echo "#### ERROR: tag '$tag' does not belong to train '$SELECTED_BRANCH' ####"
+			return 1
+		fi
+	fi
 	return 0
 }
 

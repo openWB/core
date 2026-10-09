@@ -1,5 +1,28 @@
 #!/bin/bash
 
+getTrainTagPattern() {
+	local branch=$1
+	case "$branch" in
+	"Release")
+		echo '^([2-9]|[1-9][0-9]+)\.[0-9]+\.[0-9]+(-Patch\.[0-9]+)?$'
+		;;
+	"Beta")
+		echo '^([2-9]|[1-9][0-9]+)\.[0-9]+\.[0-9]+(-Patch\.[0-9]+|-Beta\.[0-9]+|-[Rr][Cc]\.[0-9]+)?$'
+		;;
+	*)
+		return 1
+		;;
+	esac
+}
+
+tagMatchesTrain() {
+	local branch=$1
+	local tag=$2
+	local pattern
+	pattern=$(getTrainTagPattern "$branch") || return 1
+	[[ $tag =~ $pattern ]]
+}
+
 latestTagByPattern() {
 	local pattern=$1
 	git -C "$OPENWB_BASE_DIR" tag --sort=-version:refname | grep -E -m1 "$pattern"
@@ -21,17 +44,17 @@ selectLatestTrainTag() {
 	local branch=$1
 	local baseVersion
 	local basePattern
+	local trainPattern
+	trainPattern=$(getTrainTagPattern "$branch") || return 1
+	baseVersion=$(highestBaseByPattern "$trainPattern") || return 1
+	basePattern=${baseVersion//./\\.}
 
 	case "$branch" in
 	"Release")
-		baseVersion=$(highestBaseByPattern '^[0-9]+\.[0-9]+\.[0-9]+(-Patch\.[0-9]+)?$') || return 1
-		basePattern=${baseVersion//./\\.}
 		latestTagByPattern "^${basePattern}-Patch\\.[0-9]+$" ||
 			latestTagByPattern "^${basePattern}$"
 		;;
 	"Beta")
-		baseVersion=$(highestBaseByPattern '^[0-9]+\.[0-9]+\.[0-9]+(-Patch\.[0-9]+|-Beta\.[0-9]+|-[Rr][Cc]\.[0-9]+)?$') || return 1
-		basePattern=${baseVersion//./\\.}
 		latestTagByPattern "^${basePattern}-Patch\\.[0-9]+$" ||
 			latestTagByPattern "^${basePattern}$" ||
 			latestTagByPattern "^${basePattern}-[Rr][Cc]\\.[0-9]+$" ||
