@@ -74,7 +74,7 @@ echo "#### running update ####" >"$LOG_FILE"
 
 	# fetch new release from GitHub
 	echo "#### 1. fetching latest data from '$GIT_REMOTE' ####"
-	git -C "$OPENWB_BASE_DIR" fetch -v --prune "$GIT_REMOTE" || exit 1
+	git -C "$OPENWB_BASE_DIR" fetch -v --prune --tags --prune-tags --force "$GIT_REMOTE" || exit 1
 	echo "#### done"
 
 	if [[ -z $SELECTED_TAG ]] || [[ $SELECTED_TAG == "$DEFAULT_TAG" ]]; then
