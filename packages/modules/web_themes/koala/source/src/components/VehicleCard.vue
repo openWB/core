@@ -31,6 +31,9 @@
         {{ vehicleInfo?.model || 'keine Angabe' }}
       </div>
     </q-card-section>
+     <q-card-section>
+      <VehicleMessage :vehicle-id="props.vehicleId" />
+    </q-card-section>
     <q-separator inset class="q-mt-sm" />
     <q-card-section>
       <VehicleConnectionStateIcon :vehicle-id="vehicleId" class="q-mt-sm" />
@@ -66,6 +69,7 @@ import { useMqttStore } from 'src/stores/mqtt-store';
 import { useQuasar } from 'quasar';
 import SliderDouble from './SliderDouble.vue';
 import ManualSocDialog from './ManualSocDialog.vue';
+import VehicleMessage from './VehicleMessage.vue';
 import VehicleConnectionStateIcon from './VehicleConnectionStateIcon.vue';
 
 const cardRef = ref<{ $el: HTMLElement } | null>(null);

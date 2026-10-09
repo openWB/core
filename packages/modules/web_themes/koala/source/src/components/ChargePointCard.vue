@@ -40,6 +40,7 @@
       />
     </q-card-section>
     <q-card-section>
+      <VehicleMessage v-if="vehicleId !== undefined" :vehicle-id="vehicleId" />
       <ChargePointMessage
         fault-message
         :charge-point-id="props.chargePointId"
@@ -131,6 +132,7 @@ import ChargePointStateIcon from './ChargePointStateIcon.vue';
 import ChargePointPriority from './ChargePointPriority.vue';
 import ChargePointModeButtons from './ChargePointModeButtons.vue';
 import ChargePointMessage from './ChargePointMessage.vue';
+import VehicleMessage from './VehicleMessage.vue';
 import ChargePointVehicleSelect from './ChargePointVehicleSelect.vue';
 import ChargePointSettings from './ChargePointSettings.vue';
 import ChargePointChargeLimits from './ChargePointChargeLimits.vue';

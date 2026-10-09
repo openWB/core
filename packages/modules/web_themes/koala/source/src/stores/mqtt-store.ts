@@ -2995,6 +2995,33 @@ export const useMqttStore = defineStore('mqtt', () => {
   });
 
   /**
+   * Get the vehicle fault message identified by the vehicle id
+   * @param vehicleId vehicle id
+   * @returns string | undefined
+   */
+  const vehicleFaultMessage = computed(() => {
+    return (vehicleId: number) => {
+      return getValue.value(`openWB/vehicle/${vehicleId}/get/fault_str`) as
+        string | undefined;
+    };
+  });
+
+  /**
+   * Get the vehicle fault state identified by the vehicle id
+   * @param vehicleId vehicle id
+   * @returns number
+   */
+  const vehicleFaultState = computed(() => {
+    return (vehicleId: number) => {
+      return (
+        (getValue.value(
+          `openWB/vehicle/${vehicleId}/get/fault_state`,
+        ) as number) || 0
+      );
+    };
+  });
+
+  /**
    * Get or set the manual SoC by vehicle id
    * @param vehicleId vehicle id
    * @param chargePointId charge point id, only necessary for updating the charge point connected vehicle soc value
@@ -4652,6 +4679,8 @@ export const useMqttStore = defineStore('mqtt', () => {
     vehicleSocType,
     vehicleColor,
     vehicleSocValue,
+    vehicleFaultMessage,
+    vehicleFaultState,
     vehicleSocManualValue,
     vehicleForceSocUpdate,
     chargePointConnectedVehicleSoc,
