@@ -595,11 +595,11 @@ def test_reset_chargemode_at_time(
 @pytest.mark.parametrize(
     "connected_phases, previous_voltages, previous_currents, power, expected_voltages, expected_currents",
     [
-        pytest.param(1, [230.0]*3, [0.0]*3, 0, [230], [0.0, 0.0, 0.0],
+        pytest.param(1, [230.0]*3, [0.0]*3, 0, [230, 0, 0], [0.0, 0.0, 0.0],
                      id="noch beim Default (3 Phasen): Spannung wird auf 1 Phase neu berechnet"),
-        pytest.param(1, [230.0]*3, [0.0]*3, 230, [230], [1.0, 0.0, 0.0],
+        pytest.param(1, [230.0]*3, [0.0]*3, 230, [230, 0, 0], [1.0, 0.0, 0.0],
                      id="Neuberechnung respektiert die tatsächliche Leistung"),
-        pytest.param(1, [230], [0.0], 0, [230], [0.0],
+        pytest.param(1, [230, 0, 0], [0.0, 1.0, 0.0], 0, [230, 0, 0], [0.0, 1.0, 0.0],
                      id="bereits korrekt (nicht beim Default): keine Neuberechnung nötig, bleibt stabil"),
     ],
 )
