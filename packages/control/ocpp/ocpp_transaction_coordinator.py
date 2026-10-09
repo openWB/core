@@ -433,7 +433,7 @@ class TransactionCoordinator:
             # da der Stecker noch nicht gezogen wurde
             # Der eigentlich Stop wird nachfolgend durchgeführt
             openwb_cp.data.get.ocpp.remote_stop = True
-            Pub().pub(f"openWB/set/chargepoint/{openwb_cp.num}/get/ocpp/remote_stop", True)
+            Pub().pub(f"openWB/set/chargepoint/{openwb_cp.num}/get/ocpp/rfid_stop", True)
 
         stop_request = PendingStop(
             meter_stop=int(imported),

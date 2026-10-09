@@ -73,6 +73,7 @@ class OcppClient:
 
         # Neuester Zählerstand aus dem openWB-Backend.
         self._meter_snapshots = {}
+        self._rfid_authorize_pending = set()
 
         self.connection_manager = OcppConnectionManager(
             chargepoint_factory=self._created_charge_point,
@@ -676,6 +677,42 @@ class OcppClient:
             self.transactions.authorize(chargebox_id=chargebox_id, id_tag=id_tag),
             f"Authorize {chargebox_id}",
         )
+
+    def authorize_for_rfid(
+        self,
+        chargebox_id: str,
+        id_tag: str,
+    ):
+        openwb_cp = get_cp_from_chargebox_id(chargebox_id)
+        if openwb_cp is None:
+            return self.authorize(chargebox_id, id_tag)
+
+        ocpp_data = openwb_cp.data.get.ocpp
+        if (chargebox_id in self._rfid_authorize_pending
+                or ocpp_data.authorize_only_response is not None):
+            return None
+
+        self._rfid_authorize_pending.add(chargebox_id)
+        topic = f"openWB/set/chargepoint/{openwb_cp.num}/get/ocpp/authorize_only_response"
+        Pub().pub(topic, "init")
+        future = self.authorize(chargebox_id, id_tag)
+
+        def publish_result(completed_future):
+            self._rfid_authorize_pending.discard(chargebox_id)
+            try:
+                result = completed_future.result()
+            except (asyncio.CancelledError, concurrent.futures.CancelledError):
+                response = None
+            except Exception:
+                log.exception("OCPP Authorize für %s fehlgeschlagen", chargebox_id)
+                response = "rejected"
+            else:
+                response = "accepted" if result.accepted else "rejected"
+
+            Pub().pub(topic, response)
+
+        future.add_done_callback(publish_result)
+        return future
 
     def request_start(
         self,

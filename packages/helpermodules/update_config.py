@@ -683,6 +683,7 @@ class UpdateConfig:
 
         "^openWB/chargepoint/[0-9]+/get/ocpp/remote_stop$",
         "^openWB/chargepoint/[0-9]+/get/ocpp/reset$",
+        "^openWB/chargepoint/[0-9]+/get/ocpp/rfid_stop$",
 
 
     ]
@@ -694,6 +695,7 @@ class UpdateConfig:
 
         # <- immer auf False, da nach restart noch keine Verbindung besteht
         ("openWB/chargepoint/3/get/ocpp/connected", False),
+        ("openWB/chargepoint/3/get/ocpp/authorize_only_response", None),
         # nur zum Debugging
         # -> muss später noch entfernt werden
         ("^openWB/chargepoint/[0-9]+/get/ocpp/test_reconnect$", True),

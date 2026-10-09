@@ -2,7 +2,7 @@ import asyncio
 import concurrent.futures
 import json
 from types import SimpleNamespace
-from unittest.mock import AsyncMock, Mock
+from unittest.mock import AsyncMock, Mock, call
 import pytest
 
 from control import data
@@ -117,6 +117,31 @@ def test_client_authorize_returns_result_future(monkeypatch, result):
         assert await asyncio.wrap_future(future) is result
 
     asyncio.run(check())
+
+
+def test_authorize_for_rfid_publishes_result_and_deduplicates(monkeypatch, mock_pub):
+    client = object.__new__(OcppClient)
+    client._rfid_authorize_pending = set()
+    authorization_future = concurrent.futures.Future()
+    client.authorize = Mock(return_value=authorization_future)
+    openwb_cp = SimpleNamespace(
+        num=1,
+        data=SimpleNamespace(get=SimpleNamespace(ocpp=SimpleNamespace(authorize_only_response=None))),
+    )
+    monkeypatch.setattr(ocpp_client, "get_cp_from_chargebox_id", lambda _: openwb_cp)
+
+    future = client.authorize_for_rfid("box-1", "TAG")
+
+    assert future is authorization_future
+    assert client.authorize_for_rfid("box-1", "TAG") is None
+    client.authorize.assert_called_once_with("box-1", "TAG")
+    authorization_future.set_result(AuthorizationResult(status="Accepted"))
+
+    assert client._rfid_authorize_pending == set()
+    assert mock_pub.pub.call_args_list == [
+        call("openWB/set/chargepoint/1/get/ocpp/authorize_only_response", "init"),
+        call("openWB/set/chargepoint/1/get/ocpp/authorize_only_response", "accepted"),
+    ]
 
 
 def test_client_authorize_future_can_be_cancelled(monkeypatch):
