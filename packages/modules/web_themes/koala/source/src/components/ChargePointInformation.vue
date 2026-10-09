@@ -26,9 +26,9 @@
     <!-- full view table body slots -->
     <template #body-cell-name="slotProps">
       <div class="row items-center no-wrap">
-        <ChargePointFaultIcon
+        <BaseFaultIcon
           v-if="faultPresent"
-          :charge-point-id="slotProps.row.id"
+          :fault-state="slotProps.row.faultState"
           class="q-mr-xs"
         />
         <div class="col ellipsis" @mouseenter="titleIfTruncated">
@@ -79,9 +79,9 @@
     <!-- compact view charge point name and vehicle name displayed in one field -->
     <template #body-cell-nameAndVehicle="slotProps">
       <div class="row items-center no-wrap">
-        <ChargePointFaultIcon
+        <BaseFaultIcon
           v-if="faultPresent"
-          :charge-point-id="slotProps.row.id"
+          :fault-state="slotProps.row.faultState"
           class="q-mr-xs"
         />
         <div class="col">
@@ -161,7 +161,7 @@ import ChargePointStateIcon from 'src/components/ChargePointStateIcon.vue';
 import ChargePointMode from './ChargePointMode.vue';
 import ChargePointTimeCharging from './ChargePointTimeCharging.vue';
 import ChargePointPowerData from './ChargePointPowerData.vue';
-import ChargePointFaultIcon from './ChargePointFaultIcon.vue';
+import BaseFaultIcon from './BaseFaultIcon.vue';
 import {
   ColumnConfiguration,
   ChargePointRow,

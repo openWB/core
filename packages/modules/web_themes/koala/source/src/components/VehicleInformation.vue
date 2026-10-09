@@ -29,9 +29,9 @@
     </template>
     <template #body-cell-name="slotProps">
       <div class="row items-center no-wrap">
-        <VehicleFaultIcon
+        <BaseFaultIcon
           v-if="faultPresent"
-          :vehicle-id="slotProps.row.id"
+          :fault-state="slotProps.row.faultState"
           class="q-ml-sm"
         />
         <div
@@ -85,7 +85,7 @@ import BaseTable from 'src/components/BaseTable.vue';
 import { VehicleRow } from 'src/components/models/table-model';
 import ChargePointStateIcon from 'src/components/ChargePointStateIcon.vue';
 import VehicleConnectionStateIcon from './VehicleConnectionStateIcon.vue';
-import VehicleFaultIcon from './VehicleFaultIcon.vue';
+import BaseFaultIcon from './BaseFaultIcon.vue';
 import VehicleCard from 'src/components/VehicleCard.vue';
 import { ColumnConfiguration } from 'src/components/models/table-model';
 import { useTable } from 'src/composables/useTable';
