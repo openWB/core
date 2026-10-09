@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 import logging
-from typing import TypedDict, Any, Optional
+from typing import TypedDict, Any
 
 from modules.common.abstract_device import AbstractBat
 from modules.common.component_state import BatState
@@ -12,6 +12,7 @@ from modules.common.store import get_component_value_store
 from modules.devices.mtec.mtec.config import MTecBatSetup
 from modules.common.utils.peak_filter import PeakFilter
 from modules.common.component_type import ComponentType
+from control.bat import Set as SetPoint
 
 log = logging.getLogger(__name__)
 
@@ -56,21 +57,21 @@ class MTecBat(AbstractBat):
         )
         self.store.set(bat_state)
 
-    def set_power_limit(self, power_limit: Optional[int]) -> None:
+    def set_power_limit(self, setpoint: SetPoint) -> None:
         modbus_id = self.component_config.configuration.modbus_id
-        if power_limit is None:
+        if setpoint.power_limit is None:
             log.debug("Keine Batteriesteuerung, Selbstregelung durch Speicher")
             if self.last_mode is not None:
                 self.__tcp_client.write_register(50000, 257, data_type=ModbusDataType.UINT_16, unit=modbus_id)
                 self.last_mode = None
-        elif power_limit <= 0:
+        elif setpoint.power_limit <= 0:
             log.debug("Aktive Batteriesteuerung. Batterie wird auf Stop gesetzt und nicht entladen")
             if self.last_mode != 'stop':
                 self.__tcp_client.write_register(50000, 258, data_type=ModbusDataType.UINT_16, unit=modbus_id)
                 self.last_mode = 'stop'
-        elif power_limit > 0:
+        elif setpoint.power_limit > 0:
             log.debug(f"Aktive Batteriesteuerung M-Tec:"
-                      f"Speicher soll mit {power_limit} W geladen werden. "
+                      f"Speicher soll mit {setpoint.power_limit} W geladen werden. "
                       "kann aber nur mit maximaler Leistung laden")
             if self.last_mode != 'charge':
                 self.__tcp_client.write_register(50000, 259, data_type=ModbusDataType.UINT_16, unit=modbus_id)
