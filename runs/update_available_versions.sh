@@ -95,11 +95,11 @@ runUpdate() {
 	declare -a betaTags
 	for tagLine in "${allTags[@]}"; do
 		tagName="${tagLine%%: *}"
-		if [[ $tagName =~ ^[2-9]+\.[0-9]+\.[0-9]+(-Patch\.[0-9]+)?$ ]]; then
+		if [[ $tagName =~ ^([2-9]|[1-9][0-9]+)\.[0-9]+\.[0-9]+(-Patch\.[0-9]+)?$ ]]; then
 			releaseTags+=("$tagLine")
 			betaTags+=("$tagLine")
 		
-		elif [[ $tagName =~ ^[2-9]+\.[0-9]+\.[0-9]+(-Patch\.[0-9]+|-Beta\.[0-9]+|-[Rr][Cc]\.[0-9]+)?$ ]]; then
+		elif [[ $tagName =~ ^([2-9]|[1-9][0-9]+)\.[0-9]+\.[0-9]+(-Patch\.[0-9]+|-Beta\.[0-9]+|-[Rr][Cc]\.[0-9]+)?$ ]]; then
 			betaTags+=("$tagLine")
 		fi
 	done
