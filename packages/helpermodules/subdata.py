@@ -584,6 +584,8 @@ class SubData:
                         self.set_json_payload_class(var["pv"+index].data.config, msg)
                     elif re.search("/pv/[0-9]+/get/", msg.topic) is not None:
                         self.set_json_payload_class(var["pv"+index].data.get, msg)
+                    elif re.search("/pv/[0-9]+/set/", msg.topic) is not None:
+                        self.set_json_payload_class(var["pv"+index].data.set, msg)
             elif re.search("/pv/", msg.topic) is not None:
                 if re.search("/pv/config/", msg.topic) is not None:
                     self.set_json_payload_class(self.pv_all_data.data.config, msg)

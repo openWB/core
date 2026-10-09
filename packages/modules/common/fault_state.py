@@ -3,9 +3,9 @@ import traceback
 from types import TracebackType
 from typing import Optional, Callable, Type, TypeVar
 
-from helpermodules import exceptions
+from helpermodules import exceptions, timecheck
 from helpermodules.pub import Pub
-from helpermodules.constants import NO_ERROR
+from helpermodules.constants import COMPONENT_ERROR_DURATION, NO_ERROR
 from modules.common import component_type
 from modules.common.component_setup import ComponentSetup
 from modules.common.fault_state_level import FaultStateLevel
@@ -40,9 +40,15 @@ class FaultState(Exception):
         self.component_info = component_info
         self.fault_str = NO_ERROR
         self.fault_state = FaultStateLevel.NO_ERROR
+        self.error_timestamp: Optional[float] = None
+        # vom Modul gesetzter Callback (zB Leistung nullen), feuert aus dem Lese-Zyklus heraus.
+        self.on_sustained_error: Optional[Callable[[], None]] = None
 
     def store_error(self) -> None:
         try:
+            self._track_error_timestamp()
+            if self.error_duration_exceeded() and self.on_sustained_error is not None:
+                self.on_sustained_error()
             if self.fault_state != FaultStateLevel.NO_ERROR:
                 log.error(self.component_info.name + ": FaultState " +
                           str(self.fault_state) + ", FaultStr " +
@@ -86,6 +92,18 @@ class FaultState(Exception):
         else:
             self.fault_str, self.fault_state = exceptions.get_default_exception_registry().translate_exception(
                 exception)
+
+    def _track_error_timestamp(self) -> None:
+        if self.fault_state == FaultStateLevel.ERROR:
+            if self.error_timestamp is None:
+                self.error_timestamp = timecheck.create_timestamp()
+        else:
+            self.error_timestamp = None
+
+    def error_duration_exceeded(self, duration: float = COMPONENT_ERROR_DURATION) -> bool:
+        """ analog zu ErrorTimerContext.error_counter_exceeded() (helpermodules/utils/error_handling.py) """
+        return (self.fault_state == FaultStateLevel.ERROR and self.error_timestamp is not None and
+                timecheck.check_timestamp(self.error_timestamp, duration) is False)
 
 
 class FaultStateContext:

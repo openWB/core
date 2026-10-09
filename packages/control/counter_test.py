@@ -135,6 +135,27 @@ def test_set_current_left_nets_out_own_current_despite_noise_on_unused_phase(mon
     assert counter.data.set.raw_currents_left == [45, 40.05, 37.95]
 
 
+def test_set_power_left_reads_consumer_power_directly(monkeypatch, data_):
+    # setup
+    # Fehlerfall ist bereits vom Verbraucher-Modul selbst abgebildet - _set_power_left() liest nur noch.
+    get_evu_counter_str_mock = Mock(return_value="counter0")
+    monkeypatch.setattr(data.data.counter_all_data, "get_evu_counter_str", get_evu_counter_str_mock)
+    counter = Counter(0)
+    counter.data.config.max_total_power = 24000
+    counter.data.get.power = 1000
+    data.data.cp_data = {}
+    data.data.consumer_data = {"consumer1": Consumer(1)}
+    data.data.consumer_data["consumer1"].data.get.power = 0
+    data.data.consumer_data["consumer1"].data.set.switch_interval_elapsed = True
+
+    # execution
+    counter._set_power_left(True)
+
+    # evaluation
+    # power_raw = 1000 - 0 -> raw_power_left = 24000 - 1000
+    assert counter.data.set.raw_power_left == 23000
+
+
 @dataclass
 class Params:
     name: str

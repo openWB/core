@@ -113,6 +113,7 @@ class ConfigurableDevice(Generic[T_COMPONENT, T_DEVICE_CONFIG, T_COMPONENT_CONFI
             component.initialized = False
             self.components["component" + str(component_config.id)] = component
             component.initialize()
+            _wire_sustained_error_handler(component)
             component.initialized = True
 
     def update(self):
@@ -123,11 +124,25 @@ class ConfigurableDevice(Generic[T_COMPONENT, T_DEVICE_CONFIG, T_COMPONENT_CONFI
             else:
                 try:
                     component.initialize()
+                    _wire_sustained_error_handler(component)
                     component.initialized = True
                     initialized_components.append(component)
                 except Exception:
                     log.exception(f"Initialisierung der Komponente {component} fehlgeschlagen")
         self.__component_updater(initialized_components, self.error_handler)
+
+
+def _wire_sustained_error_handler(component: Any) -> None:
+    if hasattr(component, "fault_state") and hasattr(component, "store"):
+        store = component.store
+
+        def handler() -> None:
+            try:
+                store.zero_power_on_sustained_error()
+                store.update()
+            except AttributeError:
+                pass
+        component.fault_state.on_sustained_error = handler
 
 
 def set_power_limit_wrapper(bat_component: AbstractBat, power_limit: Optional[int]):

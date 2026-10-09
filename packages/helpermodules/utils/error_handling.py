@@ -2,6 +2,7 @@ import logging
 import time
 
 from helpermodules import timecheck
+from helpermodules.constants import COMPONENT_ERROR_DURATION
 from helpermodules.messaging import MessageType
 from helpermodules.pub import Pub
 
@@ -12,7 +13,8 @@ CP_ERROR = "Soll-Stromstärke, Lade- und Stecker-Status wird zurückgesetzt."
 
 
 class ErrorTimerContext:
-    def __init__(self, topic: str, exceeded_msg: str, timeout: int = 60, hide_exception: bool = False):
+    def __init__(self, topic: str, exceeded_msg: str, timeout: int = COMPONENT_ERROR_DURATION,
+                 hide_exception: bool = False):
         self.topic = topic
         self.timeout = timeout
         self.hide_exception = hide_exception
