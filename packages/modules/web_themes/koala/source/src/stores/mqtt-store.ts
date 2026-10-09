@@ -3713,6 +3713,7 @@ export const useMqttStore = defineStore('mqtt', () => {
     const modules = getWildcardValues.value('openWB/consumer/+/module');
     return getObjectIds
       .value('consumer')
+      // user management: module topic is only received if access is allowed
       .filter((id) => `openWB/consumer/${id}/module` in modules)
       .map((id) => {
         const module = modules[`openWB/consumer/${id}/module`] as
