@@ -3713,13 +3713,24 @@ export const useMqttStore = defineStore('mqtt', () => {
     const modules = getWildcardValues.value('openWB/consumer/+/module');
     return getObjectIds
       .value('consumer')
-      // user management: module topic is only received if access is allowed
-      .filter((id) => `openWB/consumer/${id}/module` in modules)
+      .filter((id) => accessConsumerAllowed.value(id))
       .map((id) => {
         const module = modules[`openWB/consumer/${id}/module`] as
           ConsumerModule | undefined;
         return { id, name: module?.name ?? `Verbraucher ${id}` };
       });
+  });
+
+  /**
+   * Check if access to a specific consumer is allowed
+   * @param consumerId
+   * @returns boolean
+   */
+  const accessConsumerAllowed = computed(() => {
+    return (consumerId: number) => {
+      const modules = getWildcardValues.value('openWB/consumer/+/module');
+      return `openWB/consumer/${consumerId}/module` in modules;
+    };
   });
 
   /**
@@ -4710,6 +4721,7 @@ export const useMqttStore = defineStore('mqtt', () => {
     batteryColor,
     // Consumer data
     consumerList,
+    accessConsumerAllowed,
     consumerIds,
     consumerName,
     consumerColor,
