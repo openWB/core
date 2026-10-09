@@ -53,6 +53,7 @@ class OcppClient:
             tuple[str, int],
             tuple[ChargePointStatus, ChargePointErrorCode, str]
         ] = {}
+        self._status_send_locks: dict[tuple[str, int], asyncio.Lock] = {}
         self._chargepoint_lifecycle: dict[int, tuple[Optional[str], bool]] = {}
 
         with OcppClient._ocpp_runtime_lock:
@@ -625,19 +626,32 @@ class OcppClient:
         if not force and self._last_update.get(key) == current_status:
             return
 
-        response = await self._call(
-            chargebox_id,
-            "_status_notification",
-            connector_id=connector_id,
-            fault_state=fault_state,
-            fault_state_str=fault_state_str,
-            status=status,
-            force=True,
-            connection=connection,
-        )
+        # Sicherstellen, das das Status_Notificarion aus dem CP Update-Loop nicht
+        # in die Status_Notification von Boot dazwischen funkt
+        if connection is None:
+            connection = await self.connection_manager.connect(chargebox_id)
+            if connection is None:
+                return
+        locks = getattr(self, "_status_send_locks", None)
+        if locks is None:
+            locks = self._status_send_locks = {}
+        lock = locks.setdefault(key, asyncio.Lock())
+        async with lock:
+            if not force and self._last_update.get(key) == current_status:
+                return
 
-        if response is not None:
-            self._last_update[key] = current_status
+            response = await self._call(
+                chargebox_id,
+                "_status_notification",
+                connector_id=connector_id,
+                fault_state=fault_state,
+                fault_state_str=fault_state_str,
+                status=status,
+                force=True,
+                connection=connection,
+            )
+            if response is not None:
+                self._last_update[key] = current_status
 
     def transfer_values(
         self,
