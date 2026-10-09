@@ -45,9 +45,16 @@ class ChargepointRfidMixin:
             if data.data.optional_data.data.rfid.active:
                 if (rfid in self.template.data.valid_tags or
                         any(rfid in v.data.tag_id for v in data.data.ev_data.values())):
-                    if (self.data.set.log.imported_at_plugtime == 0 or
-                            self.data.set.log.imported_at_plugtime == self.data.get.imported):
-                        if self.data.get.rfid_timestamp is None:
+                    if ((self.data.set.log.imported_at_plugtime == 0 or
+                            self.data.set.log.imported_at_plugtime == self.data.get.imported) or
+                            data.data.optional_data.data.rfid.active):
+                        # <-bei aktiv OCPP dürfen tags weiter hin gescannt werden
+                        if (self.data.get.ocpp.authorize_only_response is not None and
+                                self.data.get.ocpp.authorize_only_response != "accepted"):
+                            pass
+                            # mach nix, nur zurücksetzen
+
+                        elif self.data.get.rfid_timestamp is None:
                             self.data.get.rfid_timestamp = timecheck.create_timestamp()
                             Pub().pub(f"openWB/set/chargepoint/{self.num}/get/rfid_timestamp",
                                       self.data.get.rfid_timestamp)
@@ -78,6 +85,8 @@ class ChargepointRfidMixin:
             Pub().pub(f"openWB/set/chargepoint/{self.num}/get/rfid", None)
             self.data.get.rfid_timestamp = None
             Pub().pub(f"openWB/set/chargepoint/{self.num}/get/rfid_timestamp", None)
+            self.data.get.ocpp.authorize_only_response = None
+            Pub().pub(f"openWB/set/chargepoint/{self.num}/get/ocpp/authorize_only_response", None)
             self.chargepoint_module.clear_rfid()
             self.set_state_and_log(msg)
 
