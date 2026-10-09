@@ -394,11 +394,14 @@ class EudaApiClient:
             headers={"User-Agent": USER_AGENT, "Referer": referer},
             allow_redirects=False,
         )
-        for _ in range(_MAX_LOGIN_REDIRECTS):
+        for redirects in range(_MAX_LOGIN_REDIRECTS + 1):
             if _is_portal_callback(str(resp.url)):
                 return resp
             if resp.status not in _LOGIN_REDIRECT_STATUSES:
                 return resp
+            if redirects == _MAX_LOGIN_REDIRECTS:
+                resp.release()
+                raise ApiError(f"Login redirect chain exceeded {_MAX_LOGIN_REDIRECTS} hops")
             location = resp.headers.get("Location")
             if not location:
                 return resp
@@ -411,9 +414,6 @@ class EudaApiClient:
                 headers={"Referer": previous_url},
                 allow_redirects=False,
             )
-
-        resp.release()
-        raise ApiError(f"Login redirect chain exceeded {_MAX_LOGIN_REDIRECTS} hops")
 
     # -- authentication ----------------------------------------------------
 
