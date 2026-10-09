@@ -51,7 +51,7 @@ class Consumer(Load):
                 # Gegen den Default statt auf None prüfen, sonst bleibt ein Array mit der alten Phasenzahl stehen,
                 # wenn connected_phases nachträglich geändert wird (zB 3 auf 1 Phase).
                 if self.data.get.voltages == [230.0]*3:
-                    self.data.get.voltages = [230 for i in range(0, self.data.config.connected_phases)]
+                    self.data.get.voltages = [230 if i < self.data.config.connected_phases else 0 for i in range(0, self.data.config.connected_phases)]
                 if self.data.get.currents == [0.0]*3:
                     for i in range(0, self.data.config.connected_phases):
                         self.data.get.currents[i] = (self.data.get.power /
