@@ -21,6 +21,9 @@ class BydConfiguration:
     # Wert noetig, aber (Stand dort) noch nicht bestätigt. Vorsicht: jeder Loginversuch
     # zaehlt gegen das Fehlversuch-Limit des BYD-Accounts.
     identifier_type: str = "0"
+    # Android-Geräte-Fingerprint (JSON), einmalig generiert und dauerhaft gespeichert, damit der
+    # Account immer als dasselbe Gerät auftritt - siehe soc.py. Nicht vom Nutzer editierbar.
+    device_fingerprint: str = ""
 
 
 @dataclass

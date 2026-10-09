@@ -27,7 +27,7 @@ from typing import Any, Dict, List, Optional
 
 from modules.common import req
 from modules.common.component_state import CarState
-from modules.vehicles.byd import crypto
+from modules.vehicles.byd import crypto, device_fingerprint
 from modules.vehicles.byd.config import BydConfiguration
 
 log = logging.getLogger(__name__)
@@ -46,24 +46,6 @@ VEHICLE_UNREACHABLE_CODES = {"6002"}
 POLL_ATTEMPTS = 10
 POLL_INTERVAL_S = 1.5
 
-# Geräte-Fingerprint, wie ihn auch pyBYD standardmäßig verwendet (ein beliebiges,
-# aber plausibles Android-Gerät). Muss nicht dem echten Gerät entsprechen, auf
-# dem die BYD-App läuft.
-_DEVICE = {
-    "ostype": "and",
-    "imei": "BANGCLE01234",
-    "mac": "00:00:00:00:00:00",
-    "model": "POCO F1",
-    "sdk": "35",
-    "mod": "Xiaomi",
-    "mobileBrand": "XIAOMI",
-    "mobileModel": "POCO F1",
-    "deviceType": "0",
-    "networkType": "wifi",
-    "osType": "15",
-    "osVersion": "35",
-}
-
 _ENERGY_TYPE_CODES = {"ev": "0", "hybrid": "2"}
 
 # Prozess-weiter Session-Cache je Account (Session ist account-, nicht fahrzeugbezogen,
@@ -71,6 +53,11 @@ _ENERGY_TYPE_CODES = {"ev": "0", "hybrid": "2"}
 # Fahrzeugliste ermittelt wird): {username: {"user_id", "sign_token", "encry_token", "created_at"}}
 _session_cache: Dict[str, Dict[str, Any]] = {}
 _SESSION_TTL_S = 12 * 3600
+
+# Jeder fehlgeschlagene Login verbraucht einen von wenigen Versuchen, bevor der BYD-Account
+# gesperrt wird - Cooldown verhindert, dass jeder Zyklus (alle 5min) den Account weiter verbrennt.
+_login_failure_cache: Dict[str, Dict[str, Any]] = {}
+_LOGIN_FAILURE_COOLDOWN_S = 3600
 
 
 class BydApiError(Exception):
@@ -81,8 +68,15 @@ class BydAuthenticationError(BydApiError):
     """Login fehlgeschlagen oder Session ungültig."""
 
 
-def _imei_md5(username: str) -> str:
-    return crypto.md5_hex(username)
+def _device(config: BydConfiguration) -> Dict[str, str]:
+    """Fallback für Direktaufrufe ohne soc.fetch() (zB Tests): generiert nur im
+    Speicher, ohne MQTT-Persistenz."""
+    if not config.device_fingerprint:
+        fingerprint = device_fingerprint.generate()
+        config.device_fingerprint = json.dumps(fingerprint)
+        log.debug("BYD: Fingerprint generiert (ungespeichert): %s %s",
+                  fingerprint["mobileBrand"], fingerprint["mobileModel"])
+    return json.loads(config.device_fingerprint)
 
 
 def _post_secure(endpoint: str, outer_payload: Dict[str, Any]) -> Dict[str, Any]:
@@ -117,22 +111,23 @@ def _login(config: BydConfiguration) -> Dict[str, Any]:
     now_ms = int(time.time() * 1000)
     random_hex = secrets.token_hex(16).upper()
     req_timestamp = str(now_ms)
-    imei_md5 = _imei_md5(config.username)
+    device = _device(config)
+    imei_md5 = device["imeiMd5"]
 
     inner = {
         "agreeStatus": "0",
         "agreementType": "[1,2]",
         "appInnerVersion": "323",
         "appVersion": "3.2.3",
-        "deviceName": _DEVICE["mobileBrand"] + _DEVICE["mobileModel"],
-        "deviceType": _DEVICE["deviceType"],
+        "deviceName": device["mobileBrand"] + device["mobileModel"],
+        "deviceType": device["deviceType"],
         "imeiMD5": imei_md5,
         "isAuto": "1",
-        "mobileBrand": _DEVICE["mobileBrand"],
-        "mobileModel": _DEVICE["mobileModel"],
-        "networkType": _DEVICE["networkType"],
-        "osType": _DEVICE["osType"],
-        "osVersion": _DEVICE["osVersion"],
+        "mobileBrand": device["mobileBrand"],
+        "mobileModel": device["mobileModel"],
+        "networkType": device["networkType"],
+        "osType": device["osType"],
+        "osVersion": device["osVersion"],
         "random": random_hex,
         "softType": "0",
         "timeStamp": req_timestamp,
@@ -164,12 +159,12 @@ def _login(config: BydConfiguration) -> Dict[str, Any]:
         "reqTimestamp": req_timestamp,
         "sign": sign,
         "signKey": config.password,
-        "ostype": _DEVICE["ostype"],
-        "imei": _DEVICE["imei"],
-        "mac": _DEVICE["mac"],
-        "model": _DEVICE["model"],
-        "sdk": _DEVICE["sdk"],
-        "mod": _DEVICE["mod"],
+        "ostype": device["ostype"],
+        "imei": device["imei"],
+        "mac": device["mac"],
+        "model": device["model"],
+        "sdk": device["sdk"],
+        "mod": device["mod"],
         "serviceTime": str(int(time.time() * 1000)),
     }
     outer["checkcode"] = crypto.compute_checkcode(outer)
@@ -202,15 +197,32 @@ def _get_session(config: BydConfiguration, force_relogin: bool = False) -> Dict[
     if (not force_relogin and cached is not None
             and (time.monotonic() - cached["created_at"]) < _SESSION_TTL_S):
         return cached
-    session = _login(config)
+
+    failure = _login_failure_cache.get(cache_key)
+    if failure is not None:
+        age_s = time.monotonic() - failure["timestamp"]
+        if age_s < _LOGIN_FAILURE_COOLDOWN_S:
+            raise BydAuthenticationError(
+                f"BYD-Login für {config.username} wird für weitere "
+                f"{int(_LOGIN_FAILURE_COOLDOWN_S - age_s)}s nicht erneut versucht (letzter "
+                f"Versuch vor {int(age_s)}s fehlgeschlagen mit: {failure['message']}). Account/"
+                "Zugangsdaten prüfen, um keine Login-Fehlversuche zu verbrauchen.")
+
+    try:
+        session = _login(config)
+    except BydAuthenticationError as exc:
+        _login_failure_cache[cache_key] = {"timestamp": time.monotonic(), "message": str(exc)}
+        raise
     _session_cache[cache_key] = session
+    _login_failure_cache.pop(cache_key, None)
     return session
 
 
 def _post_token_json(endpoint: str, config: BydConfiguration, session: Dict[str, Any],
                      inner: Dict[str, str]) -> Any:
     keys = crypto.session_keys(session["sign_token"], session["encry_token"])
-    imei_md5 = _imei_md5(config.username)
+    device = _device(config)
+    imei_md5 = device["imeiMd5"]
     req_timestamp = str(int(time.time() * 1000))
 
     encry_data = crypto.aes_encrypt_hex(json.dumps(inner, separators=(",", ":")), keys["content_key"])
@@ -232,12 +244,12 @@ def _post_token_json(endpoint: str, config: BydConfiguration, session: Dict[str,
         "language": "en",
         "reqTimestamp": req_timestamp,
         "sign": sign,
-        "ostype": _DEVICE["ostype"],
-        "imei": _DEVICE["imei"],
-        "mac": _DEVICE["mac"],
-        "model": _DEVICE["model"],
-        "sdk": _DEVICE["sdk"],
-        "mod": _DEVICE["mod"],
+        "ostype": device["ostype"],
+        "imei": device["imei"],
+        "mac": device["mac"],
+        "model": device["model"],
+        "sdk": device["sdk"],
+        "mod": device["mod"],
         "serviceTime": str(int(time.time() * 1000)),
     }
     outer["checkcode"] = crypto.compute_checkcode(outer)
@@ -263,10 +275,11 @@ def _post_token_json(endpoint: str, config: BydConfiguration, session: Dict[str,
 
 
 def _inner_base(config: BydConfiguration, request_serial: Optional[str] = None) -> Dict[str, str]:
+    device = _device(config)
     inner = {
-        "deviceType": _DEVICE["deviceType"],
-        "imeiMD5": _imei_md5(config.username),
-        "networkType": _DEVICE["networkType"],
+        "deviceType": device["deviceType"],
+        "imeiMD5": device["imeiMd5"],
+        "networkType": device["networkType"],
         "random": secrets.token_hex(16).upper(),
         "timeStamp": str(int(time.time() * 1000)),
         "version": "351",
@@ -301,12 +314,9 @@ def _resolve_vin(config: BydConfiguration, session: Dict[str, Any]) -> str:
 
 
 def _is_realtime_ready(data: Dict[str, Any]) -> bool:
-    """Die Trigger-Antwort (und ggf. frühe Poll-Antworten) ist nur eine Platzhalter-
-    Quittung mit denselben Feldern wie die echten Daten, aber zB elecPercent=0 statt
-    fehlend - "elecPercent is not None" greift daher nicht. Übernimmt stattdessen das
-    (in pyBYD als VehicleRealtimeData.is_ready_raw erprobte) Kriterium: offline sicher
-    nicht bereit, sonst gilt ein tatsächlicher Zeitstempel/Reifendruck/Restreichweite
-    als Beleg für echte Daten."""
+    """Trigger-Antwort ist nur eine Platzhalter-Quittung mit zB elecPercent=0 statt
+    fehlend, "is not None" greift daher nicht. Kriterium wie pyBYDs is_ready_raw:
+    offline nie bereit, sonst zählt ein echter Zeitstempel/Reifendruck/Restreichweite."""
     if not data or data.get("onlineState") == 0:
         return False
     tire_fields = ("leftFrontTirepressure", "rightFrontTirepressure",
@@ -375,9 +385,8 @@ def fetch_soc(config: BydConfiguration, vehicle: int) -> CarState:
 
     try:
         session = _get_session(config)
-        # per (nur einmal pro Account nötigen) Fahrzeugliste ermittelt und auf config
-        # zwischengespeichert, falls keine VIN konfiguriert ist - analog zu key_expires_at
-        # bei myskoda
+        # falls keine VIN konfiguriert ist: per Fahrzeugliste ermittelt und nur im
+        # Speicher gecacht (anders als der Fingerprint nicht dauerhaft gespeichert)
         config.vin = _resolve_vin(config, session)
         try:
             data = _fetch_realtime(config, session)
