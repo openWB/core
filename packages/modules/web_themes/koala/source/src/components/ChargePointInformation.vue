@@ -26,9 +26,9 @@
     <!-- full view table body slots -->
     <template #body-cell-name="slotProps">
       <div class="row items-center no-wrap">
-        <ChargePointFaultIcon
+        <BaseFaultIcon
           v-if="faultPresent"
-          :charge-point-id="slotProps.row.id"
+          :fault-state="slotProps.row.faultState"
           class="q-mr-xs"
         />
         <div class="col ellipsis" @mouseenter="titleIfTruncated">
@@ -79,9 +79,9 @@
     <!-- compact view charge point name and vehicle name displayed in one field -->
     <template #body-cell-nameAndVehicle="slotProps">
       <div class="row items-center no-wrap">
-        <ChargePointFaultIcon
+        <BaseFaultIcon
           v-if="faultPresent"
-          :charge-point-id="slotProps.row.id"
+          :fault-state="slotProps.row.faultState"
           class="q-mr-xs"
         />
         <div class="col">
@@ -151,7 +151,7 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue';
-import { Screen, useQuasar } from 'quasar';
+import { Screen } from 'quasar';
 import { useMqttStore } from 'src/stores/mqtt-store';
 import { useChargeModes } from 'src/composables/useChargeModes';
 import BaseCarousel from 'src/components/BaseCarousel.vue';
@@ -161,15 +161,14 @@ import ChargePointStateIcon from 'src/components/ChargePointStateIcon.vue';
 import ChargePointMode from './ChargePointMode.vue';
 import ChargePointTimeCharging from './ChargePointTimeCharging.vue';
 import ChargePointPowerData from './ChargePointPowerData.vue';
-import ChargePointFaultIcon from './ChargePointFaultIcon.vue';
+import BaseFaultIcon from './BaseFaultIcon.vue';
 import {
   ColumnConfiguration,
   ChargePointRow,
 } from 'src/components/models/table-model';
+import { useTable } from 'src/composables/useTable';
 
-const $q = useQuasar();
-
-const tooltipsEnabled = !$q.platform.is.mobile;
+const { tooltipsEnabled, compactTable, titleIfTruncated } = useTable();
 
 const mqttStore = useMqttStore();
 const { chargeModes } = useChargeModes();
@@ -185,7 +184,6 @@ const faultPresent = computed(() =>
   chargePointIds.value.some((id) => mqttStore.chargePointFaultState(id) > 0),
 );
 const isSmallScreen = computed(() => Screen.lt.sm);
-const compactTable = computed(() => Screen.lt.md);
 const selectedChargePointId = ref<number | null>(null);
 const modalChargePointCardVisible = ref(false);
 const filter = ref('');
@@ -280,20 +278,6 @@ const tableColumnsCompact = columnConfigCompact.filter(
 const expansionColumnsCompact = columnConfigCompact.filter(
   (column) => column.expandField,
 );
-
-// the browser tooltip is only set if the text is really cut off by the
-// ellipsis, otherwise it would pop up next to the fault message tooltip
-// without adding any information
-const titleIfTruncated = (event: MouseEvent) => {
-  const element = event.currentTarget as HTMLElement;
-  const text = element.textContent?.trim() ?? '';
-  // one pixel tolerance, scrollWidth and clientWidth are rounded values
-  if (text && element.scrollWidth - element.clientWidth > 1) {
-    element.title = text;
-  } else {
-    element.removeAttribute('title');
-  }
-};
 
 const onRowClick = (row: ChargePointRow) => {
   selectedChargePointId.value = row.id;
