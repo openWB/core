@@ -28,7 +28,7 @@ class BydConfiguration:
 
 @dataclass
 class Byd:
-    name: str = "BYD (Cloud, Community)"
+    name: str = "BYD"
     type: str = "byd"
     official: bool = False
     configuration: BydConfiguration = None
