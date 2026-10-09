@@ -21,7 +21,7 @@ def fetch(vehicle_config: Byd, vehicle: int) -> CarState:
     if not config.device_fingerprint:
         fingerprint = device_fingerprint.generate()
         config.device_fingerprint = json.dumps(fingerprint)
-        log.info("BYD: neuer Geräte-Fingerprint für Fahrzeug %d generiert: %s %s (IMEI %s)",
+        log.info("BYD: neuer Geräte-Fingerprint für Fahrzeug %s generiert: %s %s (IMEI %s)",
                  vehicle, fingerprint["mobileBrand"], fingerprint["mobileModel"], fingerprint["imei"])
         Pub().pub(f"openWB/set/vehicle/{vehicle}/soc_module/config", asdict(vehicle_config))
 

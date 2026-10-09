@@ -391,7 +391,7 @@ def fetch_soc(config: BydConfiguration, vehicle: int) -> CarState:
         try:
             data = _fetch_realtime(config, session)
         except BydAuthenticationError:
-            log.info("BYD: Session abgelaufen, neuer Login für Fahrzeug %d", vehicle)
+            log.info("BYD: Session abgelaufen, neuer Login für Fahrzeug %s", vehicle)
             session = _get_session(config, force_relogin=True)
             data = _fetch_realtime(config, session)
     except BydApiError:
