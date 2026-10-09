@@ -694,21 +694,39 @@ class OcppClient:
 
         self._rfid_authorize_pending.add(chargebox_id)
         topic = f"openWB/set/chargepoint/{openwb_cp.num}/get/ocpp/authorize_only_response"
+        # Lokal und auf MQTT setzen: Der Ladepunkt muss 'init' sofort sehen,
+        # auch wenn die MQTT-Rückmeldung erst im nächsten Update eintrifft.
+        ocpp_data.authorize_only_response = "init"
         Pub().pub(topic, "init")
-        future = self.authorize(chargebox_id, id_tag)
+        try:
+            future = self.authorize(chargebox_id, id_tag)
+        except Exception:
+            self._rfid_authorize_pending.discard(chargebox_id)
+            ocpp_data.authorize_only_response = "rejected"
+            Pub().pub(topic, "rejected")
+            log.exception("OCPP Authorize für %s konnte nicht gestartet werden", chargebox_id)
+            return None
 
         def publish_result(completed_future):
             self._rfid_authorize_pending.discard(chargebox_id)
             try:
                 result = completed_future.result()
             except (asyncio.CancelledError, concurrent.futures.CancelledError):
-                response = None
+                response = "rejected"
             except Exception:
                 log.exception("OCPP Authorize für %s fehlgeschlagen", chargebox_id)
                 response = "rejected"
             else:
-                response = "accepted" if result.accepted else "rejected"
+                response = "accepted" if getattr(result, "accepted", False) else "rejected"
 
+            # Der Scan kann während der asynchronen Antwort bereits verworfen
+            # worden sein. Dann darf eine verspätete Antwort nichts freigeben.
+            if openwb_cp.data.get.rfid != id_tag:
+                if ocpp_data.authorize_only_response == "init":
+                    ocpp_data.authorize_only_response = None
+                    Pub().pub(topic, None)
+                return
+            ocpp_data.authorize_only_response = response
             Pub().pub(topic, response)
 
         future.add_done_callback(publish_result)
@@ -748,12 +766,12 @@ class OcppClient:
         id_tag: str = "",
         reason: str = "EVDisconnected",
         authorize_stop: bool = False,
-    ) -> None:
+    ) -> Optional[concurrent.futures.Future]:
         """Fuer benutzerinitiierte RFID-Stops authorize_stop=True setzen."""
         if not chargebox_id:
             return
 
-        self._submit(
+        return self._submit(
             self.transactions.stop(
                 chargebox_id=chargebox_id,
                 imported=imported,
