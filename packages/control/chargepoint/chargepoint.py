@@ -208,7 +208,17 @@ class Chargepoint(ChargepointRfidMixin, Load):
             print("#####################################")
             print("OCPP Tag nicht akzeptiert")
             print("#####################################")
-            message = "Keine Ladung: RFID fehlt oder wurde vom OCPP-Server nicht akzeptiert."
+
+            message = {
+                "init": "RFID-Autorisierung am OCPP-Server läuft.",
+                "start_pending": "OCPP-Transaktionstart wird vorbereitet.",
+                "start_authorizing": "RFID-Autorisierung am OCPP-Server läuft.",
+                "start_starting": "RFID akzeptiert. OCPP-Transaktion wird gestartet.",
+                "start_rejected": "Keine Ladung: OCPP Authorisierung abgelehnt.",
+                "start_error": "Keine Ladung: Fehler beim OCPP-Transaktionstart.",
+            }.get(self.data.get.ocpp.authorize_only_response,
+                  "Keine Ladung: RFID fehlt oder wurde vom OCPP-Server nicht akzeptiert.")
+            # message = "Keine Ladung: RFID fehlt oder wurde vom OCPP-Server nicht akzeptiert."
             state = False
         else:
             message = None
@@ -917,7 +927,10 @@ class Chargepoint(ChargepointRfidMixin, Load):
                     data.data.ocpp_client.clear_start_block(chargebox_id)
                 elif (self.data.get.ocpp.connected  # <- mit OCPP-Server verbunden
                         and self.data.get.plug_state and id_tag
-                        and self.data.get.ocpp.authorize_only_response != "init"):
+                        # and self.data.get.ocpp.authorize_only_response != "init"):
+                        and self.data.get.ocpp.authorize_only_response not in (
+                            "init", "start_pending", "start_starting", "start_authorizing"
+                        )):
                     data.data.ocpp_client.request_start(
                         chargebox_id=chargebox_id,
                         connector_id=1,
@@ -925,8 +938,11 @@ class Chargepoint(ChargepointRfidMixin, Load):
                         imported=self.data.get.imported,
                     )
                 elif (self.data.get.plug_state and id_tag and
-                      self.data.get.ocpp.authorize_only_response == "init"):
-                    log.debug("OCPP %s: Start wartet auf RFID-Autorisierung.", chargebox_id)
+                      # self.data.get.ocpp.authorize_only_response == "init"):
+                      self.data.get.ocpp.authorize_only_response in (
+                          "init", "start_pending", "start_starting", "start_authorizing"
+                      )):
+                    log.debug("OCPP %s: Start wartet auf RFID-Autorisierung/StartTransaktion", chargebox_id)
                 elif self.data.get.plug_state and id_tag:
                     log.info(f"OCPP {chargebox_id} kein Start ohne Verbindung zum OCPP-Server.")
 

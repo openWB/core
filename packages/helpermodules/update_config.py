@@ -698,7 +698,7 @@ class UpdateConfig:
         ("openWB/chargepoint/3/get/ocpp/authorize_only_response", None),
         # nur zum Debugging
         # -> muss später noch entfernt werden
-        ("^openWB/chargepoint/[0-9]+/get/ocpp/test_reconnect$", True),
+        ("^openWB/chargepoint/3/get/ocpp/test_reconnect$", True),
 
 
         ("openWB/bat/config/bat_control_activated", False),

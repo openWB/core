@@ -41,8 +41,12 @@ class ChargepointRfidMixin:
         Pub().pub(f"openWB/set/chargepoint/{self.num}/get/rfid", None)
         self.data.get.rfid_timestamp = None
         Pub().pub(f"openWB/set/chargepoint/{self.num}/get/rfid_timestamp", None)
-        self.data.get.ocpp.authorize_only_response = None
-        Pub().pub(f"openWB/set/chargepoint/{self.num}/get/ocpp/authorize_only_response", None)
+        # self.data.get.ocpp.authorize_only_response = None
+        # Pub().pub(f"openWB/set/chargepoint/{self.num}/get/ocpp/authorize_only_response", None)
+        if (not data.data.optional_data.data.rfid.active or
+                self.data.get.ocpp.authorize_only_response not in (
+                    "start_pending", "start_starting", "start_authorizing", "start_rejected", "start_error")):
+            Pub().pub(f"openWB/set/chargepoint/{self.num}/get/ocpp/authorize_only_response", None)
         self.chargepoint_module.clear_rfid()
 
     def _validate_rfid(self) -> None:
@@ -55,12 +59,13 @@ class ChargepointRfidMixin:
             if data.data.optional_data.data.rfid.active:
                 if (rfid in self.template.data.valid_tags or
                         any(rfid in v.data.tag_id for v in data.data.ev_data.values())):
-                    if ((self.data.set.log.imported_at_plugtime == 0 or
-                            self.data.set.log.imported_at_plugtime == self.data.get.imported)):
+                    # <-bei aktiv OCPP dürfen tags weiter hin gescannt werden
+                    ocpp_active = (data.data.optional_data.data.ocpp.config.active and
+                                   self.data.config.ocpp_chargebox_id)
+                    # Sobalt ocpp aktice ist, dürfen tags auch währedn dem laden gescannt werden
+                    if (ocpp_active or (self.data.set.log.imported_at_plugtime == 0 or
+                                        self.data.set.log.imported_at_plugtime == self.data.get.imported)):
 
-                        # <-bei aktiv OCPP dürfen tags weiter hin gescannt werden
-                        ocpp_active = (data.data.optional_data.data.ocpp.config.active and
-                                       self.data.config.ocpp_chargebox_id)
                         if ocpp_active and self.data.get.ocpp.transaction_id is not None:
                             # Scan während einer Transaktion wird in chargepoint.py behandelt.
                             return
@@ -75,7 +80,7 @@ class ChargepointRfidMixin:
                                 self.set_state_and_log("OCPP-RFID-Autorisierung nach 5 Minuten abgebrochen.")
                             return
 
-                        if (self.data.get.ocpp.authorize_only_response is not None and
+                        if (ocpp_active and self.data.get.ocpp.authorize_only_response is not None and
                                 self.data.get.ocpp.authorize_only_response != "accepted"):
                             pass
                             # OCPP-Ablehnung wird in chargepoint.py ausgewertet und bereinigt.
@@ -107,7 +112,13 @@ class ChargepointRfidMixin:
                     msg = f"Der ID-Tag {rfid} ist an diesem Ladepunkt nicht gültig."
             else:
                 msg = "Identifikation von Fahrzeugen ist nicht aktiviert."
-            self._clear_scanned_rfid()
+            self.data.get.rfid = None
+            Pub().pub(f"openWB/set/chargepoint/{self.num}/get/rfid", None)
+            self.data.get.rfid_timestamp = None
+            Pub().pub(f"openWB/set/chargepoint/{self.num}/get/rfid_timestamp", None)
+            self.data.get.ocpp.authorize_only_response = None
+            Pub().pub(f"openWB/set/chargepoint/{self.num}/get/ocpp/authorize_only_response", None)
+            self.chargepoint_module.clear_rfid()
             self.set_state_and_log(msg)
 
     def find_duo_partner(self: ChargepointProtocol) -> Optional[int]:
