@@ -5,6 +5,8 @@ GIT_REMOTE="origin"
 YOUR_CHARGE_PREFIX="yc/"
 DRY_RUN=0 # set to 1 for testing without writing to files or publishing to MQTT
 
+source "$OPENWB_BASE_DIR/runs/update_version_helpers.sh"
+
 if [ "$(id -u -n)" != "openwb" ]; then
 	echo "this script has to be run as user openwb"
 	exit 1
@@ -105,14 +107,14 @@ runUpdate() {
 	tagsJson["Release"]=$(buildTagJson false "${releaseTags[@]}")
 	tagsJson["Beta"]=$(buildTagJson false "${betaTags[@]}")
 
-	latestReleaseTag=$(git -C "$OPENWB_BASE_DIR" tag --sort=-version:refname | grep -E -m1 '^[0-9]+\.[0-9]+\.[0-9]+(-Patch\.[0-9]+)?$')
+	latestReleaseTag=$(selectLatestTrainTag "Release")
 	if [[ -n $latestReleaseTag ]]; then
 		availableBranches["Release"]=$(git -C "$OPENWB_BASE_DIR" log --pretty='format:%ci [%h]' -n1 "$latestReleaseTag")
 	else
 		availableBranches["Release"]=${availableBranches["master"]}
 	fi
 
-	latestBetaTag=$(git -C "$OPENWB_BASE_DIR" tag --sort=-version:refname | grep -E -m1 '^[0-9]+\.[0-9]+\.[0-9]+(-Patch\.[0-9]+|-Beta\.[0-9]+|-[Rr][Cc]\.[0-9]+)?$')
+	latestBetaTag=$(selectLatestTrainTag "Beta")
 	if [[ -n $latestBetaTag ]]; then
 		availableBranches["Beta"]=$(git -C "$OPENWB_BASE_DIR" log --pretty='format:%ci [%h]' -n1 "$latestBetaTag")
 	else
@@ -133,13 +135,51 @@ runUpdate() {
 
 	# update current branch
 	currentBranch=$(git -C "$OPENWB_BASE_DIR" branch --no-color --show-current)
+	if [[ -z $currentBranch ]]; then
+		logicalBranch=$(git -C "$OPENWB_BASE_DIR" config --local --get openwb.updateBranch)
+		if [[ -z $logicalBranch ]]; then
+			local -a headTags
+			local train headTag
+			read -r -d '' -a headTags < <(git -C "$OPENWB_BASE_DIR" tag --points-at HEAD && printf '\0')
+			for train in Release Beta; do
+				for headTag in "${headTags[@]}"; do
+					if jq -e --arg tag "$headTag" 'has($tag)' <<<"${tagsJson[$train]}" >/dev/null; then
+						logicalBranch="$train"
+						break 2
+					fi
+				done
+			done
+			if [[ -n $logicalBranch ]]; then
+				echo "inferred update branch '$logicalBranch' from tags at HEAD"
+				if [[ $DRY_RUN -eq 0 ]]; then
+					git -C "$OPENWB_BASE_DIR" config --local openwb.updateBranch "$logicalBranch" || return 1
+				else
+					echo "DRY RUN: would persist update branch '$logicalBranch'"
+				fi
+			fi
+		fi
+		if [[ $logicalBranch == "Release" || $logicalBranch == "Beta" ]]; then
+			currentBranch="$logicalBranch"
+		fi
+	fi
 	echo "currently selected branch: $currentBranch"
 	mqttPublish "openWB/system/current_branch" "\"$currentBranch\""
 
 	# update $currentBranch commit and list missing commits
 	remoteCurrentBranch="$GIT_REMOTE/$currentBranch"
 	echo "changes:"
-	if [[ -n $currentBranch ]] && git -C "$OPENWB_BASE_DIR" show-ref --verify --quiet "refs/remotes/$remoteCurrentBranch"; then
+	latestTrainTag=""
+	case "$currentBranch" in
+	"Release") latestTrainTag="$latestReleaseTag" ;;
+	"Beta") latestTrainTag="$latestBetaTag" ;;
+	esac
+	if [[ -n $latestTrainTag ]]; then
+		currentBranchCommit=$(git -C "$OPENWB_BASE_DIR" log --pretty='format:%ci [%h]' -n1 "refs/tags/$latestTrainTag")
+		echo "last commit in '$currentBranch' train: $currentBranchCommit"
+		mqttPublish "openWB/system/current_branch_commit" "\"$currentBranchCommit\""
+		IFS=$'\n'
+		read -r -d '' -a commitDiff < <(git -C "$OPENWB_BASE_DIR" log --pretty='format:%ci [%h] - %s' "HEAD..refs/tags/$latestTrainTag" && printf '\0')
+	elif [[ -n $currentBranch ]] && git -C "$OPENWB_BASE_DIR" show-ref --verify --quiet "refs/remotes/$remoteCurrentBranch"; then
 		currentBranchCommit=$(git -C "$OPENWB_BASE_DIR" log --pretty='format:%ci [%h]' -n1 "$remoteCurrentBranch")
 		echo "last commit in '$currentBranch' branch: $currentBranchCommit"
 		mqttPublish "openWB/system/current_branch_commit" "\"$currentBranchCommit\""
