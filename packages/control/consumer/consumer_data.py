@@ -4,7 +4,7 @@ from typing import List, Optional
 from control.chargemode import Chargemode
 from control.chargepoint.control_parameter import ControlParameter, control_parameter_factory
 from control.consumer.usage import ConsumerUsage
-from dataclass_utils.factories import empty_list_factory, voltages_list_factory
+from dataclass_utils.factories import currents_list_factory, empty_list_factory, voltages_list_factory
 from helpermodules.abstract_plans import ScheduledPlanConsumer, TimeChargingPlanConsumer, TimepointPlan
 from helpermodules.constants import NO_ERROR
 from modules.common.consumer_setup import ConsumerSetup
@@ -63,7 +63,7 @@ class ConsumerConfig:
 @dataclass
 class Get:
     charge_state: bool = False
-    currents: Optional[List[Optional[float]]] = None
+    currents: List[float] = field(default_factory=currents_list_factory)
     daily_imported: float = field(default=0, metadata={"topic": "get/daily_imported"})
     error_timestamp: int = 0
     exported: float = 0
