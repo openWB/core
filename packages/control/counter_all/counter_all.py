@@ -54,9 +54,10 @@ class CounterAll(HierarchyMixin, LoadmanagementPrioMixin):
             home_consumption = round(home_consumption, 2)
             not_in_home_consumption = round(not_in_home_consumption, 2)
             unmeasured_home_consumption = round(unmeasured_home_consumption, 2)
-            if home_consumption < 0:
+            if home_consumption < 0 or unmeasured_home_consumption < 0:
                 log.error(
-                    f"Ungültiger Hausverbrauch: {home_consumption}W, Berücksichtigte Komponenten neben EVU {elements}")
+                    f"Ungültiger Hausverbrauch: {home_consumption}W, nicht erfasster Verbrauch: "
+                    f"{unmeasured_home_consumption}W, Berücksichtigte Komponenten neben EVU {elements}")
                 hc_counter_source = self.get_evu_counter_str()
                 hc_counter_data = data.data.counter_data[hc_counter_source].data
                 if hc_counter_data.get.fault_state == FaultStateLevel.NO_ERROR:

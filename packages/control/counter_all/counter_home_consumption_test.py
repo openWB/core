@@ -77,8 +77,12 @@ def test_calc_home_consumption_with_configured_home_consumption_counter(
                           "expected_unmeasured_home_consumption"],
                          [pytest.param(500, 150, 350, 0, 42, 500, 0, 150, 350, id="valid home consumption"),
                           pytest.param(-100, 150, 350, 0, 42, 200, 1, 42, 0, id="first invalid home consumption"),
+                          pytest.param(500, 150, -100, 0, 42, 200, 1, 42, 0,
+                                       id="first invalid unmeasured home consumption"),
                           pytest.param(-100, 150, 350, 3, 42, 0, 3, 150, 0,
-                                       id="invalid home consumption, reset home consumption")])
+                                       id="invalid home consumption, reset home consumption"),
+                          pytest.param(500, 150, -100, 3, 42, 0, 3, 150, 0,
+                                       id="invalid unmeasured home consumption, reset home consumption")])
 def test_set_home_consumption(home_consumption: int,
                               not_in_home_consumption: int,
                               unmeasured_home_consumption: int,
@@ -952,3 +956,37 @@ def test_calc_unmeasured_home_consumption_subtracts_hybrid_battery_at_inverter()
     }
 
     assert c._calc_unmeasured_home_consumption() == 2000
+
+
+def test_calc_unmeasured_home_consumption_can_return_negative_value_for_invalid_handling():
+    data.data_init(Mock())
+    c = CounterAll()
+    c.data.get.hierarchy = [{
+        "id": 0,
+        "type": "counter",
+        "children": [{"id": 1, "type": "inverter", "children": []}],
+    }]
+
+    data.data.counter_data = {
+        "counter0": Mock(
+            spec=Counter,
+            num=0,
+            data=Mock(
+                spec=CounterData,
+                get=Mock(spec=CounterGet, power=1000, fault_state=0),
+                config=Mock(spec=CounterConfig, is_home_consumption_counter=CounterMode.AUTO_HOME_CONSUMPTION.value),
+            ),
+        ),
+    }
+    data.data.pv_data = {
+        "pv1": Mock(
+            spec=Pv,
+            data=Mock(
+                spec=PvData,
+                get=Mock(spec=PvGet, power=3000, fault_state=0),
+                config=Mock(spec=PvConfig, max_ac_out=10000),
+            ),
+        ),
+    }
+
+    assert c._calc_unmeasured_home_consumption() == -2000
