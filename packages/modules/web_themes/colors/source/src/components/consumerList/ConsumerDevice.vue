@@ -8,6 +8,9 @@
 			</div>
 		</template>
 		<template #buttons>
+			<WbBadge v-if="device.priority > 0" bgcolor="var(--color-menu)"
+				>Prio: {{ device.priority }}
+			</WbBadge>
 			<WbBadge v-if="device.power >= 0" bgcolor="var(--color-consumers)"
 				>{{ formatWatt(device.power) }}
 			</WbBadge>

@@ -63,6 +63,7 @@ export class Consumer implements PowerItem {
 	private _showInGraph = true
 	color = 'white'
 	showInList = true
+	priority = 0
 	usage: ConsumerUsage | null = null
 	now: EnergyData = {
 		energy: 0,

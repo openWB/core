@@ -16,6 +16,12 @@
 		<template #buttons>
 			<div class="d-flex float-right justify-content-end align-items-center">
 				<span
+					v-if="chargepoint.priority > 0"
+					class="badge rounded-pill priobadge mx-2"
+					bgcolor="var(--color-menu)"
+					>Prio: {{ chargepoint.priority }}
+				</span>
+				<span
 					class="badge rounded-pill modebadge mx-2"
 					type="button"
 					:style="modeStyle"
@@ -143,6 +149,7 @@ import { updateServer } from '@/assets/js/sendMessages'
 import ModalComponent from '@/components/shared/ModalComponent.vue'
 import WbSubwidget from '@/components/shared/WbSubwidget.vue'
 import InfoItem from '@/components/shared/InfoItem.vue'
+import WbBadge from '@/components/shared/WbBadge.vue'
 const props = defineProps<{
 	chargepoint: ChargePoint
 }>()
@@ -347,6 +354,11 @@ const chargeLimitsString = computed(() => {
 }
 .modebadge {
 	color: var(--color-bg);
+}
+.priobadge {
+	color: var(--color-bg);
+	background-color: var(--color-menu);
+	font-size: var(--font-verysmall);
 }
 .cpname {
 	font-size: var(--font-small);
