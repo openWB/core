@@ -1,22 +1,21 @@
-"""Native openWB configuration; credentials follow its existing storage lifecycle."""
+from dataclasses import dataclass, field
 from typing import Optional
 
 
+@dataclass
 class NissanConnectConfiguration:
-    """EU account credentials and optional VIN; never log or export this object."""
-
-    def __init__(self, user_id: Optional[str] = None, password: Optional[str] = None,
-                 vin: Optional[str] = None):
-        self.user_id = user_id
-        self.password = password
-        self.vin = vin
+    user_id: Optional[str] = field(default=None, repr=False)
+    password: Optional[str] = field(default=None, repr=False)
+    vin: Optional[str] = field(default=None, repr=False)
 
 
+@dataclass
 class NissanConnect:
-    """Descriptor defaults consumed by the standard module loader and settings UI."""
+    name: str = "Nissan – MyNISSAN EU (experimental)"
+    type: str = "nissanconnect"
+    official: bool = False
+    configuration: NissanConnectConfiguration = None
 
-    def __init__(self, name: str = "Nissan – MyNISSAN EU (experimental)",
-                 type: str = "nissanconnect", configuration: NissanConnectConfiguration = None):
-        self.name = name
-        self.type = type
-        self.configuration = configuration or NissanConnectConfiguration()
+    def __post_init__(self):
+        if self.configuration is None:
+            self.configuration = NissanConnectConfiguration()
