@@ -105,7 +105,7 @@ Hagen */
 				data-bs-toggle="tab"
 				data-bs-target="#ConsumerList"
 			>
-				<i class="fa-solid fa-lg fa-plug" />
+				<i class="fa-solid fa-lg fa-lightbulb" />
 				<span class="d-none d-md-inline ms-2">Verbraucher</span>
 			</a>
 			<a
@@ -386,5 +386,8 @@ function haveFocus() {
 }
 .fa-solar-panel {
 	color: var(--color-pv);
+}
+.fa-lightbulb {
+	color: var(--color-consumers);
 }
 </style>
