@@ -142,7 +142,11 @@ echo "#### running update ####" >"$LOG_FILE"
 
 		if [[ $DRY_RUN -eq 0 ]]; then
 			echo "#### resetting working dir to '$resetTarget' ####"
-			git -C "$OPENWB_BASE_DIR" reset --hard "$resetTarget" && echo "#### done"
+			if ! git -C "$OPENWB_BASE_DIR" reset --hard "$resetTarget"; then
+				echo "#### ERROR: reset to '$resetTarget' failed, aborting update ####"
+				exit 1
+			fi
+			echo "#### done"
 		else
 			echo "DRY RUN: would reset working dir to '$resetTarget'"
 		fi
