@@ -184,14 +184,28 @@ def test_vehicle_selection(http, configured_vin, vehicles, expected):
             instance._select_vehicle()
 
 
-def test_transport_and_json_errors_omit_private_data(http):
-    http.get(BATTERY_URL, exc=requests.Timeout("synthetic-private-url"))
-    instance = client()
-    with pytest.raises(api.NissanError, match="^Nissan could not be reached.$"):
-        instance.fetch_battery()
+@pytest.mark.parametrize("exception_type,message", [
+    (requests.ConnectTimeout, "Nissan request timed out."),
+    (requests.ReadTimeout, "Nissan request timed out."),
+    (requests.exceptions.SSLError, "Nissan TLS connection failed."),
+    (requests.ConnectionError, "Nissan connection failed."),
+    (requests.RequestException, "Nissan could not be reached."),
+])
+def test_transport_errors_omit_private_data(http, caplog, exception_type, message):
+    caplog.set_level(logging.DEBUG)
+    http.get(BATTERY_URL, exc=exception_type("synthetic-private-url"))
+    with pytest.raises(api.NissanError) as failure:
+        client().fetch_battery()
+    assert str(failure.value) == message
+    assert failure.value.__suppress_context__
+    assert "synthetic-private-url" not in caplog.text
+    assert http.call_count == 1
+
+
+def test_json_errors_omit_private_data(http):
     http.get(BATTERY_URL, text="synthetic-private-body")
     with pytest.raises(api.NissanError, match="^Nissan returned an invalid response.$"):
-        instance.fetch_battery()
+        client().fetch_battery()
 
 
 def test_native_configuration_roundtrip_and_private_repr():
@@ -232,7 +246,7 @@ def test_transport_logs_hide_private_urls_without_muting_other_requests(monkeypa
 
     monkeypatch.setattr(instance._session, "request", request)
     if fail:
-        with pytest.raises(api.NissanError, match="^Nissan could not be reached.$"):
+        with pytest.raises(api.NissanError, match="^Nissan request timed out.$"):
             instance._request("GET", "https://example.invalid" + path)
     else:
         assert instance._request("GET", "https://example.invalid" + path).status_code == 200

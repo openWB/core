@@ -35,7 +35,8 @@ import time
 from typing import Optional, Tuple
 from urllib.parse import parse_qs, quote, urlencode, urljoin, urlsplit
 
-from requests import RequestException
+from requests import ConnectionError, RequestException, Timeout
+from requests.exceptions import SSLError
 from modules.common.req import get_http_session
 
 log = logging.getLogger(__name__)
@@ -154,6 +155,12 @@ class NissanClient:
         try:
             response = self._session.request(method, url, timeout=REQUEST_TIMEOUT_SECONDS,
                                              allow_redirects=False, **kwargs)
+        except Timeout:
+            raise NissanError("Nissan request timed out.") from None
+        except SSLError:
+            raise NissanError("Nissan TLS connection failed.") from None
+        except ConnectionError:
+            raise NissanError("Nissan connection failed.") from None
         except RequestException:
             raise NissanError("Nissan could not be reached.") from None
         finally:
