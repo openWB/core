@@ -144,6 +144,9 @@ class CounterAll(HierarchyMixin, LoadmanagementPrioMixin):
 
             if comp.data.get.fault_state < 2:
                 if child["type"] == ComponentType.COUNTER.value:
+                    # Die Funktion muss in jedem Rekursionsschritt ausgeführt werden, da die Funktion nur
+                    # Hybrid-Batterien berücksichtigt, wenn diese direkt unter dem aktuellen Zähler hängen
+                    child["children"] = self.get_elements_for_downstream_calculation(child["id"])
                     add_home_consumption, add_not_home_consumption = self._calc_home_consumption_from_counter(
                         child, child_home_consumption)
                     home_consumption += add_home_consumption
