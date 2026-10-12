@@ -11,6 +11,7 @@ import type {
 	EvTemplate,
 	ChargeTemplate,
 } from './model'
+import { globalConfig } from '@/assets/js/themeConfig'
 
 export function processChargepointMessages(topic: string, message: string) {
 	const index = getIndex(topic)
@@ -124,6 +125,7 @@ export function processVehicleMessages(topic: string, message: string) {
 		if (!(index in vehicles)) {
 			const v = new Vehicle(index)
 			vehicles[index] = v
+			v.priority = globalConfig.priorities.get(index) ?? 0
 			// console.info('New vehicle created: ' + index)
 		}
 		if (topic.match(/^openwb\/vehicle\/[0-9]+\/name$/i)) {

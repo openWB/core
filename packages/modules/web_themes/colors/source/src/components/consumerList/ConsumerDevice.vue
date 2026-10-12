@@ -8,11 +8,31 @@
 			</div>
 		</template>
 		<template #buttons>
+			<WbBadge v-if="device.priority > 0" bgcolor="var(--color-menu)"
+				>Prio: {{ device.priority }}
+			</WbBadge>
 			<WbBadge v-if="device.power >= 0" bgcolor="var(--color-consumers)"
 				>{{ formatWatt(device.power) }}
 			</WbBadge>
 		</template>
+
 		<div class="subgrid pt-1">
+			<RadioBarInput
+				:id="'chargemode-' + device.name"
+				v-model="device.chargeMode"
+				class="chargemodes mt-3 mb-3"
+				:options="
+					Object.entries(chargemodes).map((v) => {
+						return {
+							text: v[1].name,
+							value: v[0],
+							color: v[1].color,
+							icon: v[1].icon,
+							active: v[1].mode == device.chargeMode,
+						}
+					})
+				"
+			/>
 			<InfoItem heading="Heute:" :small="true" class="grid-col-4 grid-left">
 				<FormatWattH :watt-h="device.now.energy"></FormatWattH>
 			</InfoItem>
@@ -26,10 +46,13 @@
 <script setup lang="ts">
 import WbSubwidget from '@/components/shared/WbSubwidget.vue'
 import type { Consumer } from './model.ts'
+import { formatWatt, formatTime } from '@/assets/js/helpers'
+import { type ChargeModeInfo } from '@/assets/js/types'
+import { chargemodes } from '@/assets/js/themeConfig'
 import WbBadge from '@/components/shared/WbBadge.vue'
 import InfoItem from '@/components/shared/InfoItem.vue'
 import FormatWattH from '@/components/shared/FormatWattH.vue'
-import { formatWatt, formatTime } from '@/assets/js/helpers'
+import RadioBarInput from '../shared/RadioBarInput.vue'
 
 const props = defineProps<{
 	device: Consumer
@@ -54,12 +77,6 @@ const props = defineProps<{
 	font-size: var(--font-small);
 }
 
-.buttoncell {
-	background-color: var(--color-bg);
-	padding: 0;
-	margin: 0;
-}
-
 .left {
 	text-align: left;
 }
@@ -68,61 +85,11 @@ const props = defineProps<{
 	text-align: right;
 }
 
-.tablecolum1 {
-	color: var(--color-fg);
-	text-align: left;
-	margin: 0;
-	padding: 0;
-}
-
-.tableicon {
-	color: var(--color-menu);
-}
-
-.fa-star {
-	color: var(--color-evu);
-}
-
-.fa-clock {
-	color: var(--color-battery);
-}
-
-.socEditor {
-	border: 1px solid var(--color-menu);
-	background-color: var(--color-bg);
-}
-
-.socEditRow td {
-	background-color: var(--color-bg);
-}
-
-.fa-circle-check {
-	color: var(--color-menu);
-}
-
-.socEditTitle {
-	color: var(--color-fg);
-}
-
-.statusbadge {
-	background-color: var(--color-bg);
-	font-weight: bold;
-	font-size: var(--font-verysmall);
-}
-.modebadge {
-	color: var(--color-bg);
-}
-.cpname {
-	font-size: var(--font-small);
-}
-
-.fa-edit {
-	color: var(--color-menu);
-}
-.infolist {
-	justify-content: center;
-}
 .devname {
 	font-size: var(--font-medium);
+}
+.chargemodes {
+	grid-column: 1 / 13;
+	justify-self: center;
 }
 </style>

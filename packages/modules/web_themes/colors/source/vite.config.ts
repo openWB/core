@@ -1,7 +1,9 @@
 import { fileURLToPath, URL } from 'url'
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
-import { nodePolyfills } from 'vite-plugin-node-polyfills';
+// Node polyfills caused a dependency-scan failure during Vite pre-bundling
+// (see: "Failed to run dependency scan. Not implemented").
+// Temporarily disable the plugin; re-enable only if needed.
 
 // https://vitejs.dev/config/
 export default defineConfig(({ command, mode }) => {
@@ -13,13 +15,9 @@ export default defineConfig(({ command, mode }) => {
 				}
 			}
 		}),
-		nodePolyfills({
-			globals: {
-				Buffer: true,
-				global: true,
-				process: true,
-			}
-		})],
+		// nodePolyfills() removed to avoid dependency-scan error during pre-bundling
+		// Re-enable here if you need Node global shims in the browser build
+	],
 		resolve: {
 			alias: {
 				'@': fileURLToPath(new URL('./src', import.meta.url)),

@@ -4,9 +4,7 @@ import { updateShSummary } from '../smartHome/processMessages'
 
 // Process incoming messages for consumers based on the topic
 export function processConsumerMessages(topic: string, message: string) {
-	if (topic.match(/^openWB\/consumer\/config\//i)) {
-		processConsumerConfigMessages(topic, message)
-	} else if (topic.match(/^openWB\/consumer\/[0-9]+\//i)) {
+	if (topic.match(/^openWB\/consumer\/[0-9]+\//i)) {
 		processConsumerDeviceMessages(topic, message)
 	} else {
 		processConsumerGlobalMessages(topic, message)
@@ -41,25 +39,15 @@ function processConsumerDeviceMessages(topic: string, message: string) {
 		}
 	} else if (topic.match(/^openWB\/consumer\/[0-9]+\/set\/on_time$/i)) {
 		dev.runningTime = +message
-	}
-}
-
-// Consumers config messages
-function processConsumerConfigMessages(topic: string, message: string) {
-	const index = getIndex(topic)
-	if (index == undefined) {
-		console.warn('Consumer: Missing index in ' + topic)
-		return
-	}
-	if (!consumers.has(index)) {
-		console.warn('Invalid device id received: ' + index)
-	}
-	const dev = consumers.get(index)!
-	if (
-		topic.match(
-			/^openWB\/consumer\/config\/get\/Devices\/[0-9]+\/device_configured$/i,
-		)
-	) {
+	} else if (topic.match(/^openWB\/consumer\/[0-9]+\/usage$/i)) {
+		try {
+			const usage = JSON.parse(message)
+			if (usage) {
+				dev.usage = usage
+			}
+		} catch (e) {
+			console.warn('Error parsing consumer usage data: ' + e)
+		}
 	}
 }
 

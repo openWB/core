@@ -101,3 +101,10 @@ export function updateChargeTemplate(cp: number) {
 		JSON.stringify(chargePoints[cp].chargeTemplate),
 	)
 }
+
+export function updateConsumerUsage(consumerId: number, usage: object) {
+	mqttPublish(
+		'openWB/set/consumer/' + consumerId + '/usage',
+		JSON.stringify(usage),
+	)
+}

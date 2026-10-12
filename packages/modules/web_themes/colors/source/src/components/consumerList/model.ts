@@ -5,8 +5,53 @@ import {
 	PowerItemType,
 	type EnergyData,
 	type PowerItem,
+	ChargeMode,
 } from '@/assets/js/types'
-import { shDevices } from '../smartHome/model'
+import { updateConsumerUsage } from '@/assets/js/sendMessages'
+
+type ConsumerUsage = {
+	chargemode: string
+	eco_charging: {
+		price_limit: number
+	}
+	scheduled_charging: {
+		plans: any[]
+	}
+	time_charging: {
+		active: boolean
+		plans: any[]
+	}
+	type: 'continuous' | 'discrete'
+	reset_chargemode: {
+		active: boolean
+		time: string
+		frequency: {
+			selected: 'daily' | 'once' | 'weekly'
+			once: string
+			weekly: boolean[]
+		}
+		chargemode: string
+	}
+	wait_for_start_active: boolean
+}
+const usageSample: ConsumerUsage = {
+	chargemode: ChargeMode.pv_charging,
+	eco_charging: { price_limit: 0.0002 },
+	scheduled_charging: { plans: [] },
+	time_charging: { active: false, plans: [] },
+	type: 'continuous',
+	reset_chargemode: {
+		active: false,
+		time: '07:00',
+		frequency: {
+			selected: 'daily',
+			once: '2026-10-09',
+			weekly: [false, false, false, false, false, false, false],
+		},
+		chargemode: ChargeMode.instant_charging,
+	},
+	wait_for_start_active: true,
+}
 
 export class Consumer implements PowerItem {
 	id: number
@@ -18,6 +63,8 @@ export class Consumer implements PowerItem {
 	private _showInGraph = true
 	color = 'white'
 	showInList = true
+	priority = 0
+	usage: ConsumerUsage | null = null
 	now: EnergyData = {
 		energy: 0,
 		energyPv: 0,
@@ -30,7 +77,6 @@ export class Consumer implements PowerItem {
 		energyBat: 0,
 		pvPercentage: 0,
 	}
-
 	constructor(index: number, showInList = true) {
 		this.id = index
 		this.showInList = showInList
@@ -45,6 +91,19 @@ export class Consumer implements PowerItem {
 	}
 	setShowInGraph(val: boolean) {
 		this._showInGraph = val
+	}
+	get chargeMode() {
+		const u = this.usage
+		if (u) {
+			return u.chargemode as ChargeMode
+		}
+		return ChargeMode['pv_charging']
+	}
+	set chargeMode(cm: ChargeMode) {
+		if (this.usage) {
+			this.usage.chargemode = cm
+			updateConsumerUsage(this.id, this.usage)
+		}
 	}
 }
 
