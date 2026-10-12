@@ -12,6 +12,7 @@ from dataclasses import dataclass
 from typing import Optional
 
 from helpermodules.pub import Pub, pub_single
+from helpermodules.logging_context import ocpp_logging_context
 
 from modules.common.fault_state import FaultState
 from control.ocpp.helper import _get_formatted_time, get_cp_from_chargebox_id, _get_config
@@ -99,25 +100,27 @@ class OcppClient:
         self.loop.run_forever()
 
     # startet asynchron Funktionen (Coroutinen) innerhalb des OCPP-Threads
-    def _submit(self, coroutine, description: str):
+    def _submit(self, coroutine, description: str, chargebox_id: Optional[str] = None):
         """
         Coroutine im OCPP-Thread starten.
 
         WICHTIG:
         Der aufrufende openWB-Thread wartet NICHT auf das Ergebnis.
         """
-        future = asyncio.run_coroutine_threadsafe(
-            coroutine,
-            self.loop,
-        )
+        with ocpp_logging_context(chargebox_id):
+            future = asyncio.run_coroutine_threadsafe(
+                coroutine,
+                self.loop,
+            )
 
         def done_callback(f):
-            try:
-                f.result()
-            except (asyncio.CancelledError, concurrent.futures.CancelledError):
-                pass
-            except Exception:
-                log.exception(f"Fehler in OCPP-Job: {description}")
+            with ocpp_logging_context(chargebox_id):
+                try:
+                    f.result()
+                except (asyncio.CancelledError, concurrent.futures.CancelledError):
+                    pass
+                except Exception:
+                    log.exception(f"Fehler in OCPP-Job: {description}")
 
         future.add_done_callback(done_callback)
 
@@ -131,6 +134,7 @@ class OcppClient:
         self._submit(
             self.connection_manager.connect(chargebox_id),
             f"connect {chargebox_id}",
+            chargebox_id=chargebox_id,
         )
 
     def disconnect(self, chargebox_id: str) -> None:
@@ -138,6 +142,7 @@ class OcppClient:
         self._submit(
             self.connection_manager.disconnect(chargebox_id),
             f"disconnect {chargebox_id}",
+            chargebox_id=chargebox_id,
         )
 
     def sync_chargepoint_lifecycle(
@@ -207,6 +212,7 @@ class OcppClient:
 
         if state in (RegistrationState.PENDING, RegistrationState.REJECTED):
             connection.boot_accepted = False
+            self._set_connected(connection.cp, False)
             await self._stop_registration_tasks(connection)
             connection.retry_interval = self._get_boot_interval(response, chargebox_id)
             log.warning(
@@ -607,6 +613,7 @@ class OcppClient:
                 force,
             ),
             f"StatusNotification {chargebox_id}",
+            chargebox_id=chargebox_id,
         )
 
     async def _send_status_notification(
@@ -703,6 +710,7 @@ class OcppClient:
         return self._submit(
             self.transactions.authorize(chargebox_id=chargebox_id, id_tag=id_tag),
             f"Authorize {chargebox_id}",
+            chargebox_id=chargebox_id,
         )
 
     def authorize_for_rfid(
@@ -778,6 +786,7 @@ class OcppClient:
                 imported=imported,
             ),
             f"StartTransaction {chargebox_id}",
+            chargebox_id=chargebox_id,
         )
 
     def clear_start_block(self, chargebox_id: str) -> None:
@@ -807,6 +816,7 @@ class OcppClient:
                 authorize_stop=authorize_stop,
             ),
             f"StopTransaction {chargebox_id}",
+            chargebox_id=chargebox_id,
         )
 
     async def _handle_reset(
@@ -864,13 +874,15 @@ class OcppClient:
             )
             return
 
-        # Blockiert weitere Ladungen
-        #   -> Stecker muss erst neu eingesteckt werden
-        openwb_cp.data.get.ocpp.reset = True
-        Pub().pub(
-            f"openWB/set/chargepoint/{openwb_cp.num}/get/ocpp/reset",
-            True,
-        )
+        # nur senden, wenn ein Stecker steckt
+        if openwb_cp.data.get.plug_state:
+            # Blockiert weitere Ladungen
+            #   -> Stecker muss erst neu eingesteckt werden
+            openwb_cp.data.get.ocpp.reset = True
+            Pub().pub(
+                f"openWB/set/chargepoint/{openwb_cp.num}/get/ocpp/reset",
+                True,
+            )
 
         if reset_type == ResetType.soft:
             # Soft reset: nur temporäre Zustände zurücksetzen

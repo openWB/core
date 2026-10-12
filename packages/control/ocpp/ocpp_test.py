@@ -1,6 +1,9 @@
 import asyncio
 import concurrent.futures
+import io
 import json
+import logging
+import threading
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, Mock, call
 import pytest
@@ -26,6 +29,100 @@ from ocpp.v16.enums import (
 )
 from modules.chargepoints.mqtt.chargepoint_module import ChargepointModule
 from modules.chargepoints.mqtt.config import Mqtt
+from helpermodules.logger import FORMAT_STR_DETAILED, FORMAT_STR_OCPP
+from helpermodules.logging_context import OcppContextFilter, ocpp_logging_context
+
+
+def test_ocpp_logging_context_is_task_local(monkeypatch):
+    client = object.__new__(OcppClient)
+    client.loop = asyncio.new_event_loop()
+    output = io.StringIO()
+    handler = logging.StreamHandler(output)
+    handler.setFormatter(logging.Formatter(FORMAT_STR_OCPP))
+    handler.addFilter(OcppContextFilter())
+    loggers = [logging.getLogger("control.ocpp"), logging.getLogger("ocpp")]
+    for logger in loggers:
+        monkeypatch.setattr(logger, "level", logging.INFO)
+        logger.addHandler(handler)
+    thread = threading.Thread(target=client.loop.run_forever, name="OCPP-EventLoop", daemon=True)
+    thread.start()
+    ready = []
+
+    async def worker(number):
+        loggers[0].info("before %s", number)
+        ready.append(number)
+        while len(ready) < 2:
+            await asyncio.sleep(0)
+        loggers[1].info("after %s", number)
+
+        async def child():
+            loggers[1].info("child %s", number)
+
+        await asyncio.create_task(child())
+
+    try:
+        futures = [client._submit(worker(number), "logging probe", f"box-{number}") for number in (3, 5)]
+        for future in futures:
+            future.result(timeout=5)
+        for number in (3, 5):
+            for message in ("before", "after", "child"):
+                assert f"{{INFO:box-{number}}} - {message} {number}" in output.getvalue()
+        loggers[0].info("global")
+        assert "{INFO:MainThread} - global" in output.getvalue()
+        record = logging.LogRecord("ocpp", logging.INFO, __file__, 1, "main", (), None)
+        with ocpp_logging_context("box-3"):
+            handler.filter(record)
+        assert "{INFO:MainThread}" in logging.Formatter(FORMAT_STR_DETAILED).format(record)
+    finally:
+        client.loop.call_soon_threadsafe(client.loop.stop)
+        thread.join(timeout=5)
+        client.loop.close()
+        for logger in loggers:
+            logger.removeHandler(handler)
+        handler.close()
+
+
+@pytest.mark.parametrize("exception", [ValueError, asyncio.CancelledError])
+def test_ocpp_logging_context_resets_after_exception(exception):
+    context_filter = OcppContextFilter()
+    with ocpp_logging_context("box-0"):
+        with pytest.raises(exception):
+            with ocpp_logging_context("box-5"):
+                raise exception()
+        record = logging.LogRecord("ocpp", logging.INFO, __file__, 1, "probe", (), None)
+        context_filter.filter(record)
+        assert record.ocpp_context == "box-0"
+    context_filter.filter(record)
+    assert record.ocpp_context == record.threadName
+
+
+def test_ocpp_submit_error_uses_chargebox_context(monkeypatch):
+    client = object.__new__(OcppClient)
+    client.loop = Mock()
+    future = concurrent.futures.Future()
+    future.set_exception(ValueError("probe"))
+
+    def submit(coroutine, loop):
+        coroutine.close()
+        return future
+
+    monkeypatch.setattr(ocpp_client.asyncio, "run_coroutine_threadsafe", submit)
+    records = []
+
+    def capture_error(*args):
+        record = logging.LogRecord("control.ocpp", logging.ERROR, __file__, 1, "probe", (), None)
+        OcppContextFilter().filter(record)
+        records.append(record)
+
+    monkeypatch.setattr(ocpp_client.log, "exception", capture_error)
+
+    async def job():
+        pass
+
+    assert client._submit(job(), "error probe", "old-box") is future
+    assert records[0].ocpp_context == "old-box"
+    OcppContextFilter().filter(records[0])
+    assert records[0].ocpp_context == records[0].threadName
 
 
 @pytest.fixture()
@@ -658,6 +755,7 @@ def test_pending_boot_notification_keeps_connection_unaccepted():
     client = object.__new__(OcppClient)
     client.connection_manager = SimpleNamespace()
     connection = OcppConnection("box-1", SimpleNamespace(closed=False), SimpleNamespace())
+    client._set_connected = Mock()
 
     async def check():
         result = await client._handle_boot_response(
@@ -671,6 +769,7 @@ def test_pending_boot_notification_keeps_connection_unaccepted():
     assert connection.registration_state == RegistrationState.PENDING
     assert connection.cp.registration_state == RegistrationState.PENDING
     assert connection.boot_accepted is False
+    client._set_connected.assert_called_once_with(connection.cp, False)
     assert connection.heartbeat_task is None
     assert connection.meter_task is None
 
@@ -967,6 +1066,7 @@ def _make_reset_test_client(monkeypatch, transaction_stopped):
         num=1,
         data=SimpleNamespace(get=SimpleNamespace(
             imported=1234,
+            plug_state=True,
             ocpp=SimpleNamespace(reset=False),
         )),
         chargepoint_module=SimpleNamespace(config=SimpleNamespace(
