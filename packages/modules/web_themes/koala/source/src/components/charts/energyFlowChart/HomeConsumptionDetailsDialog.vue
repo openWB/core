@@ -87,7 +87,7 @@ const items = computed((): DetailsItem[] => {
       ? [
           {
             key: 'unmeasured',
-            name: 'nicht erfasst',
+            name: 'Nicht erfasst',
             icon: HouseIcon,
             color: 'var(--q-home-stroke)',
             power: mqttStore.unmeasuredHomeConsumptionPower() as string,
