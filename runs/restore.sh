@@ -7,6 +7,7 @@ MOSQUITTO_DB_DIR="/var/lib/mosquitto"
 MOSQUITTO_LOCAL_DB_DIR="/var/lib/mosquitto_local"
 MOSQUITTO_CONF_DIR="/etc/mosquitto"
 LOG_FILE="$OPENWB_BASE_DIR/data/log/restore.log"
+GIT_REMOTE="origin"
 
 {
 	echo "$(date +"%Y-%m-%d %H:%M:%S") Restore of backup started..."
@@ -22,18 +23,53 @@ LOG_FILE="$OPENWB_BASE_DIR/data/log/restore.log"
 	# give systemctl some time to finish, may be unnecessary?
 	sleep 2
 	echo "****************************************"
-	echo "Step 6: checkout matching git branch and tag"
+	echo "Step 6: checkout matching git branch and hash"
 	BRANCH=$(<"$WORKING_DIR/GIT_BRANCH")
-	TAG=$(<"$WORKING_DIR/GIT_HASH")
-	echo "Step 6.1: checkout branch: $BRANCH"
-	if ! git -C "$OPENWB_BASE_DIR" checkout --force "$BRANCH"; then
-		echo "checkout of branch \"$BRANCH\" failed! aborting restore"
+	HASH=$(<"$WORKING_DIR/GIT_HASH")
+	echo "Step 6.1: checkout"
+	UPDATE_BRANCH=""
+	if [[ -f "$WORKING_DIR/GIT_UPDATE_BRANCH" ]]; then
+		UPDATE_BRANCH=$(<"$WORKING_DIR/GIT_UPDATE_BRANCH")
+	fi
+	case "$UPDATE_BRANCH" in
+	"Release"|"Beta"|"") ;;
+	*)
+		echo "invalid logical update branch '$UPDATE_BRANCH'! aborting restore"
+		exit 1
+		;;
+	esac
+	if [[ -n $BRANCH && -n $UPDATE_BRANCH ]]; then
+		echo "logical update branch requires detached HEAD! aborting restore"
 		exit 1
 	fi
-	echo "Step 6.2: reset to matching version: [$TAG]"
-	if ! git -C "$OPENWB_BASE_DIR" reset --hard "$TAG"; then
-		echo "reset to version [$TAG] failed! aborting restore"
+	if [[ -z $BRANCH ]]; then
+		echo "Step 6.1a: checkout detached commit: $HASH"
+		if ! git -C "$OPENWB_BASE_DIR" checkout --detach --force "$HASH"; then
+			echo "checkout of commit [$HASH] failed! aborting restore"
+			exit 1
+		fi
+	else
+		echo "Step 6.1b: checkout branch from remote: $GIT_REMOTE/$BRANCH"
+		if ! git -C "$OPENWB_BASE_DIR" checkout --force -B "$BRANCH" --track "refs/remotes/$GIT_REMOTE/$BRANCH"; then
+			echo "checkout of remote branch \"$GIT_REMOTE/$BRANCH\" failed! aborting restore"
+			exit 1
+		fi
+	fi
+	echo "Step 6.2: reset to matching version: [$HASH]"
+	if ! git -C "$OPENWB_BASE_DIR" reset --hard "$HASH"; then
+		echo "reset to version [$HASH] failed! aborting restore"
 		exit 1
+	fi
+	echo "Step 6.3: set logical update branch"
+	if [[ -n $UPDATE_BRANCH ]]; then
+		git -C "$OPENWB_BASE_DIR" config --local openwb.updateBranch "$UPDATE_BRANCH" || exit 1
+	else
+		git -C "$OPENWB_BASE_DIR" config --local --unset-all openwb.updateBranch
+		configStatus=$?
+		if [[ $configStatus -ne 0 && $configStatus -ne 5 ]]; then
+			echo "failed to clear logical update branch! aborting restore"
+			exit 1
+		fi
 	fi
 	echo "****************************************"
 	echo "Step 7: restore contents of backup"
