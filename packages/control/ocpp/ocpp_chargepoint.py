@@ -523,6 +523,13 @@ class OcppChargePoint(cp):
         call_unique_id: Optional[str] = None,
         **kwargs,
     ):
+        print(f"# RESET  CP_Nr: {self.openwb_num} OCPP_Nr: {self.chargebox_id} Type: {type}")
+        log.debug(
+            "OCPP Reset angefordert für CP_Nr: %s OCPP_Nr: %s Type: %s",
+            self.openwb_num,
+            self.chargebox_id,
+            type,
+        )
         if self.reset_callback is None:
             log.error(
                 "Kein Reset-Callback für OCPP Chargebox %s registriert",
@@ -600,7 +607,11 @@ class OcppChargePoint(cp):
             stop_time,
             kwargs,
         )
-        filename = await create_diagnostics(start_time, stop_time)
+        filename = await create_diagnostics(
+            chargebox_id=self.chargebox_id,
+            start_time=start_time,
+            stop_time=stop_time,
+        )
 
         # Upload in einem eigenen, getrackten Task.
         upload_task = asyncio.create_task(
