@@ -55,8 +55,12 @@ runUpdate() {
 	writeFile "$OPENWB_BASE_DIR/web/lastcommit" "$currentCommit"
 
 	# fetch data from git
-	echo "fetching latest data from '$GIT_REMOTE'..."
-	git -C "$OPENWB_BASE_DIR" fetch --verbose --prune --tags --prune-tags --force "$GIT_REMOTE" && echo "done"
+	if [[ ${1:-} == "--no-fetch" ]]; then
+		echo "skipping remote fetch, using locally cached refs"
+	else
+		echo "fetching latest data from '$GIT_REMOTE'..."
+		git -C "$OPENWB_BASE_DIR" fetch --verbose --prune --tags --prune-tags --force "$GIT_REMOTE" && echo "done"
+	fi
 
 	# update branches from $GIT_REMOTE
 	echo "branches:"
@@ -197,4 +201,4 @@ runUpdate() {
 	mqttPublish "openWB/system/current_missing_commits" "$commitDiffMessage"
 }
 
-runUpdate >"$LOG_FILE" 2>&1
+runUpdate "$@" >"$LOG_FILE" 2>&1

@@ -337,7 +337,8 @@ chmod 666 "$LOGFILE"
 		echo "load versions..."
 		"$OPENWBBASEDIR/runs/update_available_versions.sh"
 	else
-		echo "no internet connection, skipping version update"
+		echo "no internet connection, updating versions from local git data"
+		"$OPENWBBASEDIR/runs/update_available_versions.sh" --no-fetch
 	fi
 
 	# set restore dir permissions to allow file upload for apache
