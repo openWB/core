@@ -12,6 +12,7 @@ import { chargePoints } from '../chargePointList/model'
 import { shDevices } from '../smartHome/model'
 import { counters } from '../counterList/model'
 import { PowerItemType, type PowerItem } from '@/assets/js/types'
+import { consumers } from '../consumerList/model'
 
 let columnValues: { [key: string]: number } = {}
 const consumerCategories = ['charging', 'house', 'batIn', 'devices']
@@ -66,6 +67,7 @@ export function processYearGraphMessages(topic: string, message: string) {
 		names: itemNames2,
 		totals: energyValues,
 	} = JSON.parse(message)
+	console.log(inputTable)
 	itemNames.value = new Map(Object.entries(itemNames2))
 	resetHistoricData()
 	gridCounters = []
@@ -104,12 +106,15 @@ function transformDatatable(
 			}
 		})
 	})
+	console.log(outputTable)
 	return outputTable
 }
 function transformRow(inputRow: RawDayGraphDataItem): GraphDataItem {
 	const outputRow: GraphDataItem = {}
 	// date
-	const d = timeParse('%Y%m%d')(inputRow.date as string)
+	console.log('date: '+ inputRow.date)
+	const d = (graphData.graphMode == 'month') ? timeParse('%Y%m%d')(inputRow.date as string) 
+		: timeParse('%Y%m')(inputRow.date as string)
 	if (d) {
 		outputRow.date =
 			graphData.graphMode == 'month' ? d.getDate() : d.getMonth() + 1
@@ -161,7 +166,7 @@ function transformRow(inputRow: RawDayGraphDataItem): GraphDataItem {
 	Object.entries(inputRow.cp).forEach(([id, values]) => {
 		if (id != 'all') {
 			if (!registry.keys().includes(id)) {
-				const cp: PowerItem =
+					const cp: PowerItem =
 					chargePoints[+id.slice(2)] ??
 					createPowerItem(
 						id,
@@ -185,7 +190,8 @@ function transformRow(inputRow: RawDayGraphDataItem): GraphDataItem {
 	outputRow.devices = Object.entries(inputRow.sh).reduce<number>(
 		(sum: number, item) => {
 			if (!registry.keys().includes(item[0])) {
-				registry.duplicateItem(item[0], shDevices.get(item[0])!)
+				const dev = shDevices.get(item[0]) ?? createPowerItem (item[0], PowerItemType.device, 'var(--color-devices')
+				registry.duplicateItem(item[0], dev)
 			}
 			if (item[1].energy_imported >= 0) {
 				sum += item[1].energy_imported
@@ -198,6 +204,21 @@ function transformRow(inputRow: RawDayGraphDataItem): GraphDataItem {
 		},
 		0,
 	)
+	// Consumers
+	Object.entries(inputRow.consumer).forEach(([id,values]) => {
+		if (id != 'all') {
+			if (!registry.keys().includes(id)) {
+				const cns : PowerItem =
+					consumers.get(+id.slice(8)) ??
+					createPowerItem(id, PowerItemType.consumer,'var(--color-consumer')
+				registry.duplicateItem (id,cns)	
+			}
+			outputRow[id] = values.energy_imported
+		} else {
+			outputRow['charging'] = values.energy_imported
+		}
+	})
+
 	// Counters
 	outputRow.counters = 0
 	Object.entries(inputRow.counter).forEach(([id, values]) => {
@@ -205,7 +226,8 @@ function transformRow(inputRow: RawDayGraphDataItem): GraphDataItem {
 			outputRow.counters += values.power_imported ?? 0
 			outputRow[id] = values.power_imported ?? 0
 			if (!registry.keys().includes(id)) {
-				registry.duplicateItem(id, counters.get(+id.slice(7))!)
+				const ctr = counters.get(+id.slice(7)) ?? createPowerItem (id, PowerItemType.counter, 'var(--color-counter)')
+				registry.duplicateItem(id, ctr)
 				registry.items.get(id)!.showInGraph = true
 			}
 		}
