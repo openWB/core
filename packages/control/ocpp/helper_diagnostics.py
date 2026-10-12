@@ -31,9 +31,9 @@ def _parse_server_time(value: str) -> datetime:
     return parsed.astimezone().replace(tzinfo=None)
 
 
-# Filtert die OCPP-Logeinträge nach einem gegebenen Start- und Stoppzeitpunkt
-# Wenn keine Start- oder Stoppzeit angegeben ist, werden alle Logeinträge zurückgegeben.
-def filter_ocpp_log(start: Optional[str], stop: Optional[str]) -> list[str]:
+# Filtert die OCPP-Logeinträge einer Chargebox nach einem gegebenen Start- und Stoppzeitpunkt.
+# Ohne Zeitgrenzen werden alle Logeinträge dieser Chargebox zurückgegeben.
+def filter_ocpp_log(chargebox_id: str, start: Optional[str], stop: Optional[str]) -> list[str]:
     log_path = Path(__file__).resolve().parents[3] / "ramdisk" / "ocpp.log"
     with log_path.open(encoding="utf-8") as log_file:
         lines = log_file.readlines()
@@ -43,20 +43,28 @@ def filter_ocpp_log(start: Optional[str], stop: Optional[str]) -> list[str]:
     if start_time is not None and stop_time is not None and start_time > stop_time:
         raise ValueError("start muss vor oder gleich stop liegen")
 
-    if start_time is None and stop_time is None:
-        return lines
-
     matching_lines = []
     for line in lines:
-        try:
-            line_time = datetime.strptime(line.split(" - ", 1)[0], "%Y-%m-%d %H:%M:%S,%f")
-        except ValueError:
+        log_fields = line.split(" - ", 3)
+        if len(log_fields) != 4:
+            continue
+        context_field = log_fields[2]
+        if not context_field.startswith("{") or not context_field.endswith("}"):
+            continue
+        _, separator, logged_chargebox_id = context_field[1:-1].partition(":")
+        if not separator or logged_chargebox_id != chargebox_id:
             continue
 
-        if start_time is not None and line_time < start_time:
-            continue
-        if stop_time is not None and line_time > stop_time:
-            continue
+        if start_time is not None or stop_time is not None:
+            try:
+                line_time = datetime.strptime(log_fields[0], "%Y-%m-%d %H:%M:%S,%f")
+            except ValueError:
+                continue
+
+            if start_time is not None and line_time < start_time:
+                continue
+            if stop_time is not None and line_time > stop_time:
+                continue
         matching_lines.append(line)
     return matching_lines
 
@@ -64,10 +72,11 @@ def filter_ocpp_log(start: Optional[str], stop: Optional[str]) -> list[str]:
 # Erstellt eine Diagnosedatei basierend auf den gefilterten OCPP-Logeinträgen.
 # diese Datei wird dann per FTP übertragen
 def _create_diagnostics_sync(
+    chargebox_id: str,
     start_time: Optional[str] = None,
     stop_time: Optional[str] = None,
 ) -> str:
-    log_lines = filter_ocpp_log(start_time, stop_time)
+    log_lines = filter_ocpp_log(chargebox_id, start_time, stop_time,)
     with tempfile.NamedTemporaryFile(
         mode="w",
         encoding="utf-8",
@@ -82,10 +91,11 @@ def _create_diagnostics_sync(
 # Auslagerung in einen eigenen Thread,
 # damit der OCPP-Event-Loop nicht blockiert wird.
 async def create_diagnostics(
+    chargebox_id: str,
     start_time: Optional[str] = None,
     stop_time: Optional[str] = None,
 ) -> str:
-    return await asyncio.to_thread(_create_diagnostics_sync, start_time, stop_time)
+    return await asyncio.to_thread(_create_diagnostics_sync, chargebox_id, start_time, stop_time)
 
 
 def _parse_ftp_location(location: str) -> SplitResult:
