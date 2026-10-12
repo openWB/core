@@ -10,6 +10,7 @@ import paho.mqtt.client as mqtt
 
 import logging
 from control import data
+from control.chargepoint.chargepoint_data import normalize_ocpp_connector_values
 from helpermodules import hardware_configuration, subdata
 from helpermodules.broker import BrokerClient
 from helpermodules.pub import Pub
@@ -588,10 +589,18 @@ class SetData:
             self._validate_value(msg, int)
         elif "/get/phases_in_use" in msg.topic:
             self._validate_value(msg, int, [(0, 3)])
+        elif (msg.topic.endswith("/get/ocpp/availability") or
+              msg.topic.endswith("/get/ocpp/pending_availability")):
+            try:
+                value = normalize_ocpp_connector_values(decode_payload(msg.payload))
+            except ValueError:
+                log.error("Invalid OCPP connector values: Topic %s, Payload %s", msg.topic, msg.payload)
+            else:
+                Pub().pub(msg.topic.replace('set/', '', 1), value, retain=True)
+            finally:
+                Pub().pub(msg.topic, "")
         elif ("/get/charge_state" in msg.topic or
                 "/get/plug_state" in msg.topic or
-                "/get/ocpp/availability" in msg.topic or
-                "/get/ocpp/pending_availability" in msg.topic or
                 "/get/ocpp/remote_stop" in msg.topic or
                 "/get/ocpp/tag_accepted" in msg.topic or
                 "/get/ocpp/test_reconnect" in msg.topic or

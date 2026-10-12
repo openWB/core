@@ -169,7 +169,7 @@ class Chargepoint(ChargepointRfidMixin, Load):
         ):
             return True, None
 
-        state = self.data.get.ocpp.availability
+        state = all(self.data.get.ocpp.availability)
         if not self.data.get.ocpp.connected and self.data.get.ocpp.transaction_id is None:
             print("#####################################")
             print("OCPP NO CONN")
@@ -902,6 +902,9 @@ class Chargepoint(ChargepointRfidMixin, Load):
                 print(
                     f"                                                             "
                     f"                                           {self.get_ocpp_status()}")
+                print(
+                    f"                                                             "
+                    f"                                           {self.get_ocpp_status_connector_0()}")
                 self.ocpp_send_status_notification()
 
             chargebox_id = self.data.config.ocpp_chargebox_id
@@ -1077,7 +1080,7 @@ class Chargepoint(ChargepointRfidMixin, Load):
     def get_ocpp_status(self):
         # Hier dann get_OCPP_Status
         #   -> mapped den "openWB-Status" auf nen OCPP_Status
-        if self.data.get.ocpp.availability is False:
+        if not all(self.data.get.ocpp.availability):
             return ChargePointStatus.unavailable
 
         if self.data.get.ocpp.remote_stop or self.data.get.ocpp.reset:
@@ -1100,10 +1103,29 @@ class Chargepoint(ChargepointRfidMixin, Load):
 
         return ChargePointStatus.suspended_ev
 
+    def get_ocpp_status_connector_0(self):
+        # Connector 0 kann nur die folgenden 3 Status annehmen
+        # Available, Unavailable and Faulted.
+
+        if not self.data.get.ocpp.availability[0]:
+            return ChargePointStatus.unavailable
+
+        if self.data.get.fault_state:
+            return ChargePointStatus.faulted
+
+        return ChargePointStatus.available
+
     def ocpp_send_status_notification(self):
         # Hier dann die StatusNotification versenden
         # im Ocpp wird sich der Status gemerkt und
         # nur neu gesendet, wenn sich der Status geändert hat
+        data.data.ocpp_client.status_notification(
+            chargebox_id=self.data.config.ocpp_chargebox_id,
+            connector_id=0,
+            fault_state=self.data.get.fault_state,
+            fault_state_str=self.data.get.fault_str,
+            status=self.get_ocpp_status_connector_0()
+        )
         data.data.ocpp_client.status_notification(
             chargebox_id=self.data.config.ocpp_chargebox_id,
             connector_id=1,

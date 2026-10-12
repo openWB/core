@@ -369,7 +369,7 @@ class OcppClient:
         # Connector 0 darf in OCPP 1.6 nur Available, Unavailable oder Faulted melden.
         if fault_state:
             controller_status = ChargePointStatus.faulted
-        elif openwb_cp.data.get.ocpp.availability is False:
+        elif not openwb_cp.data.get.ocpp.availability[0]:
             controller_status = ChargePointStatus.unavailable
         else:
             controller_status = ChargePointStatus.available
@@ -416,12 +416,19 @@ class OcppClient:
                        cp: "OcppChargePoint",
                        connected: bool,
                        ):
-        if cp is None or getattr(cp, "openwb_cp", None) is None:
+        if cp is None:
             return
 
-        cp.openwb_cp.data.get.ocpp.connected = connected
+        openwb_cp = getattr(cp, "openwb_cp", None)
+        if openwb_cp is not None:
+            openwb_cp.data.get.ocpp.connected = connected
+
+        openwb_num = getattr(cp, "openwb_num", None)
+        if openwb_num is None:
+            return
+
         Pub().pub(
-            f"openWB/set/chargepoint/{cp.openwb_num}/get/ocpp/connected",
+            f"openWB/set/chargepoint/{openwb_num}/get/ocpp/connected",
             connected,
         )
 
@@ -639,7 +646,13 @@ class OcppClient:
         async with lock:
             if not force and self._last_update.get(key) == current_status:
                 return
-
+            print(
+                f"# Sending status notification for chargebox_id={chargebox_id}, connector_id={connector_id}, "
+                f"status={status}, fault_state={fault_state}, fault_state_str={fault_state_str}")
+            log.debug(
+                f"Sending status notification for chargebox_id={chargebox_id}, connector_id={connector_id}, "
+                f"status={status}, fault_state={fault_state}, fault_state_str={fault_state_str}"
+            )
             response = await self._call(
                 chargebox_id,
                 "_status_notification",
@@ -950,7 +963,7 @@ class OcppClient:
                 if requested_connector == 0:
                     if fault_state:
                         status = ChargePointStatus.faulted
-                    elif openwb_cp.data.get.ocpp.availability is False:
+                    elif not openwb_cp.data.get.ocpp.availability[0]:
                         status = ChargePointStatus.unavailable
                     else:
                         status = ChargePointStatus.available
