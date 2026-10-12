@@ -112,9 +112,11 @@ function transformDatatable(
 function transformRow(inputRow: RawDayGraphDataItem): GraphDataItem {
 	const outputRow: GraphDataItem = {}
 	// date
-	console.log('date: '+ inputRow.date)
-	const d = (graphData.graphMode == 'month') ? timeParse('%Y%m%d')(inputRow.date as string) 
-		: timeParse('%Y%m')(inputRow.date as string)
+	console.log('date: ' + inputRow.date)
+	const d =
+		graphData.graphMode == 'month'
+			? timeParse('%Y%m%d')(inputRow.date as string)
+			: timeParse('%Y%m')(inputRow.date as string)
 	if (d) {
 		outputRow.date =
 			graphData.graphMode == 'month' ? d.getDate() : d.getMonth() + 1
@@ -166,7 +168,7 @@ function transformRow(inputRow: RawDayGraphDataItem): GraphDataItem {
 	Object.entries(inputRow.cp).forEach(([id, values]) => {
 		if (id != 'all') {
 			if (!registry.keys().includes(id)) {
-					const cp: PowerItem =
+				const cp: PowerItem =
 					chargePoints[+id.slice(2)] ??
 					createPowerItem(
 						id,
@@ -190,7 +192,9 @@ function transformRow(inputRow: RawDayGraphDataItem): GraphDataItem {
 	outputRow.devices = Object.entries(inputRow.sh).reduce<number>(
 		(sum: number, item) => {
 			if (!registry.keys().includes(item[0])) {
-				const dev = shDevices.get(item[0]) ?? createPowerItem (item[0], PowerItemType.device, 'var(--color-devices')
+				const dev =
+					shDevices.get(item[0]) ??
+					createPowerItem(item[0], PowerItemType.device, 'var(--color-devices')
 				registry.duplicateItem(item[0], dev)
 			}
 			if (item[1].energy_imported >= 0) {
@@ -205,13 +209,13 @@ function transformRow(inputRow: RawDayGraphDataItem): GraphDataItem {
 		0,
 	)
 	// Consumers
-	Object.entries(inputRow.consumer).forEach(([id,values]) => {
+	Object.entries(inputRow.consumer).forEach(([id, values]) => {
 		if (id != 'all') {
 			if (!registry.keys().includes(id)) {
-				const cns : PowerItem =
+				const cns: PowerItem =
 					consumers.get(+id.slice(8)) ??
-					createPowerItem(id, PowerItemType.consumer,'var(--color-consumer')
-				registry.duplicateItem (id,cns)	
+					createPowerItem(id, PowerItemType.consumer, 'var(--color-consumer')
+				registry.duplicateItem(id, cns)
 			}
 			outputRow[id] = values.energy_imported
 		} else {
@@ -226,7 +230,9 @@ function transformRow(inputRow: RawDayGraphDataItem): GraphDataItem {
 			outputRow.counters += values.power_imported ?? 0
 			outputRow[id] = values.power_imported ?? 0
 			if (!registry.keys().includes(id)) {
-				const ctr = counters.get(+id.slice(7)) ?? createPowerItem (id, PowerItemType.counter, 'var(--color-counter)')
+				const ctr =
+					counters.get(+id.slice(7)) ??
+					createPowerItem(id, PowerItemType.counter, 'var(--color-counter)')
 				registry.duplicateItem(id, ctr)
 				registry.items.get(id)!.showInGraph = true
 			}

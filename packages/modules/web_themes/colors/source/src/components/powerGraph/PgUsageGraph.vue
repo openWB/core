@@ -319,10 +319,10 @@ function drawGraph(graph: Selection<SVGGElement, unknown, HTMLElement, never>) {
 function drawBarGraph(
 	graph: Selection<SVGGElement, unknown, HTMLElement, never>,
 ) {
-	console.log("drawbargraph")
+	console.log('drawbargraph')
 	if (animateUsageGraph) {
 		graph.selectAll('*').remove()
-		
+
 		rects = graph
 			.selectAll('.usagebar')
 			.data(stackedSeries.value as [number, number][][])
@@ -339,7 +339,7 @@ function drawBarGraph(
 			.attr('y', () => yScale.value(0))
 			.attr('height', 0)
 			.attr('width', xScaleMonth.value.bandwidth())
-			
+
 		rects
 			.transition()
 			.duration(duration)
@@ -382,16 +382,16 @@ function drawBarGraph(
 			.attr('height', (d) => {
 				console.log(d[1])
 				console.log(d[0])
-				console.log(yScale.value(d[1]/1000))
-				console.log(yScale.value(d[0]/1000))
+				console.log(yScale.value(d[1] / 1000))
+				console.log(yScale.value(d[0] / 1000))
 				console.log(yScale.value(d[1] / 1000) - yScale.value(d[0] / 1000))
 				return graphData.graphMode == 'year'
 					? yScale.value(d[1] / 1000) - yScale.value(d[0] / 1000)
 					: yScale.value(d[1]) - yScale.value(d[0])
-				})
+			})
 			.attr('width', xScaleMonth.value.bandwidth())
-			console.log(rects)
-		}
+		console.log(rects)
+	}
 }
 
 const autozoom = computed(() => {
