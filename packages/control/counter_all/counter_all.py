@@ -50,11 +50,14 @@ class CounterAll(HierarchyMixin, LoadmanagementPrioMixin):
     def set_home_consumption(self) -> None:
         try:
             home_consumption, not_in_home_consumption, elements = self._calc_home_consumption()
+            unmeasured_home_consumption = self._calc_unmeasured_home_consumption()
             home_consumption = round(home_consumption, 2)
             not_in_home_consumption = round(not_in_home_consumption, 2)
-            if home_consumption < 0:
+            unmeasured_home_consumption = round(unmeasured_home_consumption, 2)
+            if home_consumption < 0 or unmeasured_home_consumption < 0:
                 log.error(
-                    f"Ungültiger Hausverbrauch: {home_consumption}W, Berücksichtigte Komponenten neben EVU {elements}")
+                    f"Ungültiger Hausverbrauch: {home_consumption}W, nicht erfasster Verbrauch: "
+                    f"{unmeasured_home_consumption}W, Berücksichtigte Komponenten neben EVU {elements}")
                 hc_counter_source = self.get_evu_counter_str()
                 hc_counter_data = data.data.counter_data[hc_counter_source].data
                 if hc_counter_data.get.fault_state == FaultStateLevel.NO_ERROR:
@@ -68,9 +71,11 @@ class CounterAll(HierarchyMixin, LoadmanagementPrioMixin):
                     return
                 else:
                     home_consumption = 0
+                    unmeasured_home_consumption = 0
             else:
                 self.data.set.invalid_home_consumption = 0
             self.data.set.not_in_home_consumption = not_in_home_consumption
+            self.data.set.unmeasured_home_consumption = unmeasured_home_consumption
             self.data.set.home_consumption = home_consumption
             imported, _ = self.sim_counter.sim_count(self.data.set.home_consumption)
             self.data.set.imported_home_consumption = round(imported, 2)
@@ -160,6 +165,23 @@ class CounterAll(HierarchyMixin, LoadmanagementPrioMixin):
 
         return home_consumption, not_home_consumption
 
+    def _calc_unmeasured_home_consumption_from_counter(self, element: Dict) -> float:
+        elements = self.get_elements_for_downstream_calculation(element["id"])
+        element_for_calculation = {"id": element["id"], "type": ComponentType.COUNTER.value, "children": elements}
+        unmeasured_home_consumption = self._get_local_power_from_counter(element_for_calculation)
+
+        for child in elements:
+            comp = self._get_component(child)
+
+            if comp.data.get.fault_state < 2:
+                if child["type"] == ComponentType.COUNTER.value:
+                    unmeasured_home_consumption += self._calc_unmeasured_home_consumption_from_counter(child)
+            else:
+                log.warning(
+                    f"Komponente {element['type']}{comp.num} ist im Fehlerzustand und wird nicht berücksichtigt.")
+
+        return unmeasured_home_consumption
+
     def _calc_home_consumption(self) -> Tuple[float, float, Dict]:
         evu_id = self.get_id_evu_counter()
 
@@ -178,11 +200,19 @@ class CounterAll(HierarchyMixin, LoadmanagementPrioMixin):
         # Rekursion startet immer beim EVU-Zähler.
         home_consumption, not_in_home_consumption = self._calc_home_consumption_from_counter(
             evu_element, CounterMode.HOME_CONSUMPTION.value)
-
         home_consumption -= self.data.set.smarthome_power_excluded_from_home_consumption
         not_in_home_consumption += self.data.set.smarthome_power_excluded_from_home_consumption
 
         return home_consumption, not_in_home_consumption, evu_element
+
+    def _calc_unmeasured_home_consumption(self) -> float:
+        evu_id = self.get_id_evu_counter()
+        evu_element = {"id": evu_id, "type": ComponentType.COUNTER.value}
+
+        unmeasured_home_consumption = self._calc_unmeasured_home_consumption_from_counter(evu_element)
+        unmeasured_home_consumption -= self.data.set.smarthome_power_excluded_from_home_consumption
+
+        return unmeasured_home_consumption
 
     def _add_hybrid_bat(self, id: int) -> List:
         elements = []
