@@ -1181,6 +1181,13 @@ class Command:
     def addConsumer(self, connection_id: str, payload: dict) -> None:
         """ sendet das Topic, zu dem ein neues Device erstellt werden soll.
         """
+        if payload["data"]["type"] == "gpio_sdm120" and any(
+                getattr(consumer.data.module, "type", None) == "gpio_sdm120"
+                for consumer in SubData.consumer_data.values()):
+            pub_user_message(payload, connection_id,
+                             "Die lokale Steckdose kann nur einem Verbraucher zugeordnet werden.",
+                             MessageType.ERROR)
+            return
         new_id = self.max_id_hierarchy + 1
         dev = importlib.import_module(f'.consumers.{payload["data"]["vendor"]}'
                                       f'.{payload["data"]["type"]}.consumer',
@@ -1232,6 +1239,9 @@ class Command:
                 payload, connection_id,
                 f'Die ID \'{payload["data"]["consumer_id"]}\' ist größer als die maximal vergebene '
                 f'ID \'{self.max_id_hierarchy}\'.', MessageType.ERROR)
+        consumer = SubData.consumer_data.get(f'consumer{payload["data"]["consumer_id"]}')
+        if consumer is not None and getattr(consumer.data.module, "type", None) == "gpio_sdm120":
+            consumer.module.switch_off()
         ProcessBrokerBranch(f'consumer/{payload["data"]["consumer_id"]}/').remove_topics()
         SubData.counter_all_data.hierarchy_remove_item(payload["data"]["consumer_id"])
         Pub().pub("openWB/set/counter/get/hierarchy", SubData.counter_all_data.data.get.hierarchy)

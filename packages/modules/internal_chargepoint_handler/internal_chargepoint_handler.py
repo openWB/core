@@ -101,7 +101,7 @@ class InternalChargepointHandler:
         fault_state_info_cp1 = FaultState(
             ComponentInfo(1, "Interner Ladepunkt 1", "internal_chargepoint", hierarchy_id=hierarchy_id_cp1))
         with SingleComponentUpdateContext(self.fault_state_info_cp0, reraise=True):
-            self.init_gpio()
+            self.init_gpio(mode)
         try:
             with SingleComponentUpdateContext(self.fault_state_info_cp0, reraise=True):
                 # Allgemeine Fehlermeldungen an LP 1:
@@ -116,7 +116,7 @@ class InternalChargepointHandler:
             self.cp0 = None
         try:
             if ((mode == InternalChargepointMode.DUO or mode == InternalChargepointMode.SE) and
-                    hierarchy_id_cp0 is not None):
+                    hierarchy_id_cp1 is not None):
                 with SingleComponentUpdateContext(fault_state_info_cp1, reraise=True):
                     log.debug("Zweiter Ladepunkt für Duo konfiguriert.")
                     self.cp1_client_handler = client_factory(mode, 1, fault_state_info_cp1, self.cp0_client_handler)
@@ -129,7 +129,7 @@ class InternalChargepointHandler:
             self.cp1 = None
             self.cp1_client_handler = None
 
-    def init_gpio(self) -> None:
+    def init_gpio(self, mode: InternalChargepointMode) -> None:
         GPIO.setwarnings(False)
         GPIO.setmode(GPIO.BOARD)
         GPIO.setup(37, GPIO.OUT)
@@ -140,10 +140,26 @@ class InternalChargepointHandler:
         GPIO.setup(15, GPIO.OUT)
         # GPIOs for socket
         GPIO.setup(23, GPIO.OUT)
-        GPIO.setup(26, GPIO.OUT)
+        if mode in (InternalChargepointMode.SERIES, InternalChargepointMode.SE):
+            GPIO.setup(26, GPIO.OUT, initial=GPIO.LOW)
+            GPIO.setup(23, GPIO.OUT, initial=GPIO.LOW)
+        else:
+            GPIO.setup(26, GPIO.OUT)
         GPIO.setup(19, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
     def loop(self) -> None:
+        from modules.internal_chargepoint_handler.local_socket import local_socket
+
+        socket_supported = (self.cp0 is not None and self.cp1 is None and
+                            self.cp0.mode in (InternalChargepointMode.SERIES, InternalChargepointMode.SE) and
+                            self.cp0_client_handler is not None)
+        if socket_supported:
+            from modules.common.component_type import ComponentType
+            from modules.common.fault_state import FaultState
+
+            socket_fault = FaultState(ComponentInfo(54, "Lokale Steckdosenmessung", ComponentType.CONSUMER.value))
+            local_socket.start(self.cp0_client_handler.client, socket_fault)
+
         def _loop():
             while True:
                 if self.event_stop.is_set():
@@ -158,6 +174,8 @@ class InternalChargepointHandler:
                     heartbeat_cp0 = self.cp0.update(data["global_data"], data["cp0"].data, data["rfid_data"])
                 if self.cp1:
                     heartbeat_cp1 = self.cp1.update(data["global_data"], data["cp1"].data, data["rfid_data"])
+                if socket_supported:
+                    local_socket.poll()
                 self.heartbeat = True if heartbeat_cp0 and heartbeat_cp1 else False
                 time.sleep(1.1)
         with SingleComponentUpdateContext(self.fault_state_info_cp0, update_always=False):
@@ -272,7 +290,11 @@ class GeneralInternalChargepointHandler:
                         hierarchy_id_cp1,
                         self.event_start,
                         self.event_stop)
-                    self.internal_chargepoint_handler.loop()
+                    try:
+                        self.internal_chargepoint_handler.loop()
+                    finally:
+                        from modules.internal_chargepoint_handler.local_socket import local_socket
+                        local_socket.stop()
                 except UnboundLocalError:
                     log.debug("Kein interner Ladepunkt konfiguriert.")
             except Exception:

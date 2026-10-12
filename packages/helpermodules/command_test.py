@@ -119,3 +119,70 @@ def test_get_max_id_hierarchy_by_topics(mock_pub, monkeypatch):
 
     assert command_instance.max_id_hierarchy == 9
     mock_pub.pub.assert_any_call("openWB/set/command/max_id/hierarchy", 9)
+
+
+@pytest.mark.parametrize("consumer_type", ["gpio_sdm120", "mqtt"])
+def test_remove_local_socket_switches_off_before_removing_topics(consumer_type, mock_pub, monkeypatch):
+    order = []
+    consumer = SimpleNamespace(data=SimpleNamespace(module=SimpleNamespace(type=consumer_type)), module=Mock())
+    consumer.module.switch_off.side_effect = lambda: order.append("off")
+    branch = Mock()
+    branch.remove_topics.side_effect = lambda: order.append("remove")
+    monkeypatch.setattr(command, "ProcessBrokerBranch", Mock(return_value=branch))
+    monkeypatch.setattr(command, "pub_user_message", Mock())
+    monkeypatch.setattr(SubData, "consumer_data", {"consumer2": consumer})
+    monkeypatch.setattr(SubData, "counter_all_data", Mock())
+    monkeypatch.setattr(SubData, "system_data", {
+        "system": SimpleNamespace(data={"security": {"user_management_active": False}})})
+    instance = Command.__new__(Command)
+    instance.max_id_hierarchy = 2
+    instance.removeConsumer("test", {"data": {"consumer_id": 2}})
+    assert order == (["off", "remove"] if consumer_type == "gpio_sdm120" else ["remove"])
+
+
+@pytest.mark.parametrize("existing_type, requested_type, blocked", [
+    ("gpio_sdm120", "gpio_sdm120", True),
+    ("mqtt", "gpio_sdm120", False),
+    (None, "gpio_sdm120", False),
+    ("gpio_sdm120", "mqtt", False),
+])
+def test_add_consumer_rejects_second_local_socket_before_side_effects(
+        existing_type, requested_type, blocked, mock_pub, monkeypatch):
+    existing_module = SimpleNamespace(type=existing_type) if existing_type else None
+    monkeypatch.setattr(SubData, "consumer_data", {
+        "consumer2": SimpleNamespace(data=SimpleNamespace(module=existing_module))})
+    counter = Mock()
+    counter.get_id_evu_counter.return_value = 0
+    counter.data.get.hierarchy = []
+    counter.data.get.loadmanagement_prios = []
+    monkeypatch.setattr(SubData, "counter_all_data", counter)
+    monkeypatch.setattr(SubData, "system_data", {
+        "system": SimpleNamespace(data={"security": {"user_management_active": False}})})
+    message = Mock()
+    monkeypatch.setattr(command, "pub_user_message", message)
+    setup = SimpleNamespace(id=0, type=requested_type, name="Test-Verbraucher", info={},
+                            configuration=SimpleNamespace(), vendor="generic",
+                            usage=(ConsumerUsage.SUSPENDABLE_ONOFF,))
+    module_import = Mock(return_value=SimpleNamespace(device_descriptor=SimpleNamespace(
+        configuration_factory=Mock(return_value=setup))))
+    monkeypatch.setattr(command.importlib, "import_module", module_import)
+    instance = Command.__new__(Command)
+    instance.max_id_hierarchy = 2
+    payload = {"data": {"vendor": "generic", "type": requested_type}}
+
+    instance.addConsumer("test", payload)
+
+    if blocked:
+        message.assert_called_once_with(
+            payload, "test", "Die lokale Steckdose kann nur einem Verbraucher zugeordnet werden.",
+            command.MessageType.ERROR)
+        module_import.assert_not_called()
+        counter.get_id_evu_counter.assert_not_called()
+        counter.hierarchy_add_item_below.assert_not_called()
+        counter.add_loadmanagement_prio_item.assert_not_called()
+        mock_pub.pub.assert_not_called()
+        assert instance.max_id_hierarchy == 2
+    else:
+        assert instance.max_id_hierarchy == 3
+        counter.hierarchy_add_item_below.assert_called_once()
+        assert any(call.args[0] == "openWB/set/consumer/3/module" for call in mock_pub.pub.call_args_list)
