@@ -35,7 +35,7 @@ checkoutTag() {
 		echo "#### checking out tag '$tag' ####"
 		if [[ $DRY_RUN -eq 0 ]]; then
 			git -C "$OPENWB_BASE_DIR" checkout --detach --force "refs/tags/$tag" || return 1
-			git -C "$OPENWB_BASE_DIR" config --local openwb.updateBranch "$SELECTED_BRANCH" || return 1
+			setLogicalUpdateBranch "$OPENWB_BASE_DIR" "$SELECTED_BRANCH" || return 1
 			echo "#### done"
 		else
 			echo "DRY RUN: would checkout tag '$tag'"
@@ -45,7 +45,7 @@ checkoutTag() {
 
 validateBranch() {
 	local branch=$1
-	if ! git -C "$OPENWB_BASE_DIR" show-ref --verify --quiet "refs/remotes/$GIT_REMOTE/$branch"; then
+	if ! remoteBranchExists "$OPENWB_BASE_DIR" "$GIT_REMOTE" "$branch"; then
 		echo "#### ERROR: remote branch '$GIT_REMOTE/$branch' does not exist ####"
 		return 1
 	fi
@@ -58,11 +58,7 @@ checkoutBranch() {
 		echo "#### checking out branch '$branch' ####"
 		if [[ $DRY_RUN -eq 0 ]]; then
 			git -C "$OPENWB_BASE_DIR" checkout --force -B "$branch" --track "refs/remotes/$GIT_REMOTE/$branch" || return 1
-			git -C "$OPENWB_BASE_DIR" config --local --unset-all openwb.updateBranch
-			local configStatus=$?
-			if [[ $configStatus -ne 0 && $configStatus -ne 5 ]]; then
-				return "$configStatus"
-			fi
+			setLogicalUpdateBranch "$OPENWB_BASE_DIR" "" || return $?
 			echo "#### done"
 		else
 			echo "DRY RUN: would checkout branch '$branch' from '$GIT_REMOTE/$branch'"
@@ -88,7 +84,7 @@ echo "#### running update ####" >"$LOG_FILE"
 
 	# fetch new release from GitHub
 	echo "#### 1. fetching latest data from '$GIT_REMOTE' ####"
-	git -C "$OPENWB_BASE_DIR" fetch -v --prune --tags --prune-tags --force "$GIT_REMOTE" || exit 1
+	fetchVersionRefs "$OPENWB_BASE_DIR" "$GIT_REMOTE" || exit 1
 	echo "#### done"
 
 	if [[ -z $SELECTED_TAG ]] || [[ $SELECTED_TAG == "$DEFAULT_TAG" ]]; then

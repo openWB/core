@@ -59,7 +59,7 @@ runUpdate() {
 		echo "skipping remote fetch, using locally cached refs"
 	else
 		echo "fetching latest data from '$GIT_REMOTE'..."
-		git -C "$OPENWB_BASE_DIR" fetch --verbose --prune --tags --prune-tags --force "$GIT_REMOTE" && echo "done"
+		fetchVersionRefs "$OPENWB_BASE_DIR" "$GIT_REMOTE" && echo "done"
 	fi
 
 	# update branches from $GIT_REMOTE
@@ -156,7 +156,7 @@ runUpdate() {
 			if [[ -n $logicalBranch ]]; then
 				echo "inferred update branch '$logicalBranch' from tags at HEAD"
 				if [[ $DRY_RUN -eq 0 ]]; then
-					git -C "$OPENWB_BASE_DIR" config --local openwb.updateBranch "$logicalBranch" || return 1
+					setLogicalUpdateBranch "$OPENWB_BASE_DIR" "$logicalBranch" || return 1
 				else
 					echo "DRY RUN: would persist update branch '$logicalBranch'"
 				fi
@@ -183,7 +183,7 @@ runUpdate() {
 		mqttPublish "openWB/system/current_branch_commit" "\"$currentBranchCommit\""
 		IFS=$'\n'
 		read -r -d '' -a commitDiff < <(git -C "$OPENWB_BASE_DIR" log --pretty='format:%ci [%h] - %s' "HEAD..refs/tags/$latestTrainTag" && printf '\0')
-	elif [[ -n $currentBranch ]] && git -C "$OPENWB_BASE_DIR" show-ref --verify --quiet "refs/remotes/$remoteCurrentBranch"; then
+	elif [[ -n $currentBranch ]] && remoteBranchExists "$OPENWB_BASE_DIR" "$GIT_REMOTE" "$currentBranch"; then
 		currentBranchCommit=$(git -C "$OPENWB_BASE_DIR" log --pretty='format:%ci [%h]' -n1 "$remoteCurrentBranch")
 		echo "last commit in '$currentBranch' branch: $currentBranchCommit"
 		mqttPublish "openWB/system/current_branch_commit" "\"$currentBranchCommit\""
