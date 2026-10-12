@@ -134,7 +134,7 @@ class TransactionCoordinator:
             )
             return False
 
-        if openwb_cp.data.get.ocpp.availability is False:
+        if not all(openwb_cp.data.get.ocpp.availability):
             log.debug(
                 f"OCPP {chargebox_id}: Start blockiert, ChargePoint ist nicht verfügbar.",
             )
@@ -1028,7 +1028,7 @@ class TransactionCoordinator:
         # nach erfolgreichem Stop anwenden.
         #
 
-        if cp.openwb_cp.data.get.ocpp.pending_availability:
+        if any(cp.openwb_cp.data.get.ocpp.pending_availability):
             await cp.apply_pending_availability()
 
         return True

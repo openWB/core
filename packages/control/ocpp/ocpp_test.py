@@ -341,14 +341,20 @@ def test_status_notification_updates_client_cache_after_successful_send():
     )
 
 
-def test_initial_status_notifications_reuse_existing_connection():
+@pytest.mark.parametrize("availability,controller_status", [
+    ([True, True], ChargePointStatus.available),
+    ([True, False], ChargePointStatus.available),
+    ([False, True], ChargePointStatus.unavailable),
+    ([False, False], ChargePointStatus.unavailable),
+])
+def test_initial_status_notifications_reuse_existing_connection(availability, controller_status):
     client = object.__new__(OcppClient)
     client._send_status_notification = AsyncMock()
     openwb_cp = SimpleNamespace(
         data=SimpleNamespace(get=SimpleNamespace(
             fault_state=0,
             fault_str="",
-            ocpp=SimpleNamespace(availability=True),
+            ocpp=SimpleNamespace(availability=availability),
         )),
         get_ocpp_status=Mock(return_value=ChargePointStatus.available),
     )
@@ -360,6 +366,8 @@ def test_initial_status_notifications_reuse_existing_connection():
     asyncio.run(client._send_initial_status_notifications(connection))
 
     assert client._send_status_notification.await_count == 2
+    assert client._send_status_notification.await_args_list[0].args[1] == 0
+    assert client._send_status_notification.await_args_list[0].args[4] == controller_status
     assert all(
         call.kwargs["connection"] is connection
         for call in client._send_status_notification.await_args_list
@@ -372,7 +380,7 @@ def test_trigger_message_decisions(monkeypatch):
     openwb_cp = SimpleNamespace(
         num=1,
         data=SimpleNamespace(get=SimpleNamespace(
-            ocpp=SimpleNamespace(availability=True),
+            ocpp=SimpleNamespace(availability=[True, True]),
         )),
     )
     monkeypatch.setattr(ocpp_chargepoint, "get_cp_from_chargebox_id", lambda _: openwb_cp)
@@ -415,7 +423,7 @@ def test_trigger_status_message_after_confirmation(
     openwb_cp = SimpleNamespace(
         num=1,
         data=SimpleNamespace(get=SimpleNamespace(
-            ocpp=SimpleNamespace(availability=True), fault_state=1, fault_str="error",
+            ocpp=SimpleNamespace(availability=[True, True]), fault_state=1, fault_str="error",
         )),
         get_ocpp_status=Mock(return_value=ChargePointStatus.charging),
     )
@@ -458,7 +466,7 @@ def test_trigger_status_forces_repeat_and_skips_old_connection(monkeypatch):
     openwb_cp = SimpleNamespace(
         num=1,
         data=SimpleNamespace(get=SimpleNamespace(
-            ocpp=SimpleNamespace(availability=True), fault_state=0, fault_str="",
+            ocpp=SimpleNamespace(availability=[True, True]), fault_state=0, fault_str="",
         )),
         get_ocpp_status=Mock(return_value=ChargePointStatus.available),
     )
@@ -493,7 +501,7 @@ def test_trigger_heartbeat_ignores_connector_and_rejects_unsupported(monkeypatch
     openwb_cp = SimpleNamespace(
         num=1,
         data=SimpleNamespace(get=SimpleNamespace(
-            ocpp=SimpleNamespace(availability=True),
+            ocpp=SimpleNamespace(availability=[True, True]),
         )),
     )
     monkeypatch.setattr(ocpp_chargepoint, "get_cp_from_chargebox_id", lambda _: openwb_cp)
@@ -761,7 +769,7 @@ def test_pending_trigger_is_sent_after_confirmation(monkeypatch):
         events.append(json.loads(message))
 
     openwb_cp = SimpleNamespace(num=1, data=SimpleNamespace(get=SimpleNamespace(
-        ocpp=SimpleNamespace(availability=True),
+        ocpp=SimpleNamespace(availability=[True, True]),
     )))
     monkeypatch.setattr(ocpp_chargepoint, "get_cp_from_chargebox_id", lambda _: openwb_cp)
     client = object.__new__(OcppClient)
@@ -810,7 +818,7 @@ def test_pending_rejects_remote_transaction_requests(action, payload, monkeypatc
     openwb_cp = SimpleNamespace(
         num=1,
         data=SimpleNamespace(get=SimpleNamespace(ocpp=SimpleNamespace(
-            availability=True,
+            availability=[True, True],
             transaction_id=42,
             remote_stop=False,
         ))),
@@ -832,7 +840,7 @@ def test_transaction_start_does_not_authorize_before_boot_accepted(monkeypatch):
     openwb_cp = SimpleNamespace(
         num=1,
         data=SimpleNamespace(get=SimpleNamespace(ocpp=SimpleNamespace(
-            availability=True,
+            availability=[True, True],
             transaction_id=None,
             transaction_id_tag=None,
         ))),
@@ -907,7 +915,7 @@ def test_persisted_stop_is_sent_once(monkeypatch):
             transaction_id=None,
             transaction_id_tag=None,
             tag_accepted=False,
-            pending_availability=False,
+            pending_availability=[False, False],
             pending_transactions=[{
                 "action": "stop",
                 "transaction_id": 42,
@@ -1122,4 +1130,13 @@ def test_connection_closed_removes_only_matching_status_cache(monkeypatch, mock_
     client.transactions.on_disconnected.assert_awaited_once_with("box-1", connection)
     assert client._last_update == {("box-2", 1): ("status-c", "error-c", "")}
     assert ocpp_data.connected is False
+    mock_pub.pub.assert_called_once_with("openWB/set/chargepoint/1/get/ocpp/connected", False)
+
+
+def test_connection_closed_publishes_disconnected_when_openwb_cp_is_gone(mock_pub):
+    chargepoint = SimpleNamespace(openwb_cp=None, openwb_num=1)
+    client = object.__new__(OcppClient)
+
+    client._set_connected(chargepoint, False)
+
     mock_pub.pub.assert_called_once_with("openWB/set/chargepoint/1/get/ocpp/connected", False)
