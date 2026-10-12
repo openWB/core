@@ -41,6 +41,10 @@
     </q-card-section>
     <q-card-section>
       <BaseFaultMessage :fault-state="faultState" :message="faultMessage" />
+      <BaseFaultMessage
+        :fault-state="vehicleFaultState"
+        :message="vehicleFaultMessage"
+      />
       <BaseMessage :message="stateMessage" type="info" />
     </q-card-section>
     <q-card-section
@@ -153,6 +157,18 @@ const vehicleId = computed(() => {
   return mqttStore.chargePointConnectedVehicleInfo(props.chargePointId).value
     ?.id;
 });
+
+const vehicleFaultState = computed(() =>
+  vehicleId.value !== undefined
+    ? mqttStore.vehicleFaultState(vehicleId.value)
+    : 0,
+);
+
+const vehicleFaultMessage = computed(() =>
+  vehicleId.value !== undefined
+    ? (mqttStore.vehicleFaultMessage(vehicleId.value) ?? '')
+    : '',
+);
 
 const faultState = computed(() =>
   mqttStore.chargePointFaultState(props.chargePointId),
