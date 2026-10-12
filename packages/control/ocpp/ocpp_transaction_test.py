@@ -1,5 +1,7 @@
 import asyncio
+import json
 from dataclasses import asdict
+from threading import Event
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, call
 
@@ -7,7 +9,7 @@ import pytest
 import websockets
 
 from control import data
-from control.chargepoint.chargepoint_data import ocpp_config_factory
+from control.chargepoint.chargepoint_data import Ocpp, ocpp_config_factory
 from control.ocpp import ocpp_client
 from control.ocpp import ocpp_chargepoint
 from control.ocpp import ocpp_connection_manager
@@ -18,9 +20,11 @@ from control.ocpp.ocpp_client import OcppClient
 from control.ocpp.ocpp_connection_manager import OcppConnectionManager
 from control.ocpp.ocpp_transaction_coordinator import TransactionCoordinator, TransactionState
 from ocpp.v16.enums import (AvailabilityStatus, AvailabilityType, ChargePointStatus,
-                            ConfigurationStatus, RegistrationStatus, Action)
+                            ConfigurationStatus, RegistrationStatus, RemoteStartStopStatus, Action)
 from ocpp.v16 import ChargePoint as ServerChargePoint, call_result
 from ocpp.routing import on
+from helpermodules.setdata import SetData
+from helpermodules.subdata import SubData
 
 
 def ocpp_config_for_test():
@@ -39,9 +43,9 @@ def transaction_setup(monkeypatch):
             transaction_id=None,
             transaction_id_tag=None,
             tag_accepted=False,
-            availability=True,
+            availability=[True, True],
             pending_transactions=[],
-            pending_availability=False,
+            pending_availability=[False, False],
         ))),
     )
     charge_point = SimpleNamespace(
@@ -59,6 +63,15 @@ def transaction_setup(monkeypatch):
     coordinator = TransactionCoordinator(ensure_connected=ensure_connected)
     monkeypatch.setattr(ocpp_transaction_coordinator, "get_cp_from_chargebox_id", lambda _: openwb_cp)
     return coordinator, connection, openwb_cp
+
+
+@pytest.mark.parametrize("availability", [[True, False], [False, True], [False, False]])
+def test_transaction_start_rejects_unavailable_connector(transaction_setup, availability):
+    coordinator, connection, openwb_cp = transaction_setup
+    openwb_cp.data.get.ocpp.availability = availability
+    assert asyncio.run(coordinator.start("box-1", 1, "TAG", 0)) is False
+    connection.cp._authorize.assert_not_awaited()
+    connection.cp._start_transaction.assert_not_awaited()
 
 
 @pytest.mark.parametrize("status", ["Accepted", "Blocked", None])
@@ -541,7 +554,7 @@ def handler_setup(monkeypatch):
     openwb_cp = SimpleNamespace(
         num=1,
         data=SimpleNamespace(get=SimpleNamespace(ocpp=SimpleNamespace(
-            transaction_id=None, availability=True, pending_availability=False,
+            transaction_id=None, availability=[True, True], pending_availability=[False, False],
             config=ocpp_config_for_test(),
         ))),
     )
@@ -566,15 +579,18 @@ def test_inoperative_availability_is_scheduled_until_stop(handler_setup, mock_pu
             connector_id, AvailabilityType.inoperative,
         )
         assert result.status == AvailabilityStatus.scheduled
-        assert openwb_cp.data.get.ocpp.availability is True
-        assert openwb_cp.data.get.ocpp.pending_availability is True
+        assert openwb_cp.data.get.ocpp.availability == [True, True]
+        assert openwb_cp.data.get.ocpp.pending_availability == [connector_id == 0, True]
+        await charge_point.apply_pending_availability()
+        assert openwb_cp.data.get.ocpp.availability == [True, True]
+        openwb_cp.data.get.ocpp.transaction_id = None
         await charge_point.apply_pending_availability()
 
     asyncio.run(check())
 
-    assert openwb_cp.data.get.ocpp.availability is False
-    assert openwb_cp.data.get.ocpp.pending_availability is False
-    mock_pub.pub.assert_any_call("openWB/set/chargepoint/1/get/ocpp/availability", False)
+    assert openwb_cp.data.get.ocpp.availability == [connector_id == 1, False]
+    assert openwb_cp.data.get.ocpp.pending_availability == [False, False]
+    mock_pub.pub.assert_any_call("openWB/set/chargepoint/1/get/ocpp/availability", [connector_id == 1, False])
 
 
 def test_change_availability_rejects_unknown_connector(handler_setup):
@@ -587,12 +603,12 @@ def test_change_availability_rejects_unknown_connector(handler_setup):
     result = asyncio.run(check())
 
     assert result.status == AvailabilityStatus.rejected
-    assert openwb_cp.data.get.ocpp.availability is True
+    assert openwb_cp.data.get.ocpp.availability == [True, True]
 
 
 def test_immediate_availability_change_clears_pending_request(handler_setup, mock_pub):
     make_charge_point, openwb_cp = handler_setup
-    openwb_cp.data.get.ocpp.pending_availability = True
+    openwb_cp.data.get.ocpp.pending_availability = [False, True]
 
     async def check():
         charge_point = make_charge_point()
@@ -601,12 +617,124 @@ def test_immediate_availability_change_clears_pending_request(handler_setup, moc
     response = asyncio.run(check())
 
     assert response.status == AvailabilityStatus.accepted
-    assert openwb_cp.data.get.ocpp.availability is False
-    assert openwb_cp.data.get.ocpp.pending_availability is False
+    assert openwb_cp.data.get.ocpp.availability == [True, False]
+    assert openwb_cp.data.get.ocpp.pending_availability == [False, False]
     mock_pub.pub.assert_any_call(
         "openWB/set/chargepoint/1/get/ocpp/pending_availability",
-        False,
+        [False, False],
     )
+
+
+def test_availability_defaults_are_independent():
+    first, second = Ocpp(), Ocpp()
+    first.availability[0] = False
+    first.pending_availability[1] = True
+    assert second.availability == [True, True]
+    assert second.pending_availability == [False, False]
+
+
+@pytest.mark.parametrize("field_name", ["availability", "pending_availability"])
+@pytest.mark.parametrize("payload,expected", [
+    ([True, False], [True, False]),
+    ([False, True], [False, True]),
+])
+def test_availability_mqtt_roundtrip(mock_pub, field_name, payload, expected):
+    set_handler = SetData(Event(), Event(), Event(), Event())
+    topic = f"openWB/chargepoint/1/get/ocpp/{field_name}"
+    set_message = SimpleNamespace(topic=topic.replace("openWB/", "openWB/set/", 1),
+                                  payload=json.dumps(payload).encode())
+    set_handler.process_chargepoint_get_topics(set_message)
+    mock_pub.pub.assert_any_call(topic, expected, retain=True)
+    mock_pub.pub.assert_any_call(set_message.topic, "")
+
+    subscriber = object.__new__(SubData)
+    ocpp_state = Ocpp()
+    chargepoints = {"cp1": SimpleNamespace(chargepoint=SimpleNamespace(
+        data=SimpleNamespace(get=SimpleNamespace(ocpp=ocpp_state))))}
+    mock_pub.pub.reset_mock()
+    subscriber.process_chargepoint_topic(
+        chargepoints, SimpleNamespace(topic=topic, payload=json.dumps(payload).encode()))
+    assert getattr(ocpp_state, field_name) == expected
+    mock_pub.pub.assert_not_called()
+    subscriber.process_chargepoint_topic(
+        chargepoints, SimpleNamespace(topic=topic, payload=json.dumps(expected).encode()))
+    assert getattr(ocpp_state, field_name) == expected
+
+
+@pytest.mark.parametrize("field_name", ["availability", "pending_availability"])
+@pytest.mark.parametrize("payload", [[], [True], [True, False, True], [True, 0], [1, False],
+                                     [True, "false"], None, {}, "false", 1, True, False])
+def test_availability_mqtt_rejects_invalid_arrays(mock_pub, field_name, payload):
+    set_handler = SetData(Event(), Event(), Event(), Event())
+    topic = f"openWB/chargepoint/1/get/ocpp/{field_name}"
+    set_message = SimpleNamespace(topic=topic.replace("openWB/", "openWB/set/", 1),
+                                  payload=json.dumps(payload).encode())
+    set_handler.process_chargepoint_get_topics(set_message)
+    mock_pub.pub.assert_called_once_with(set_message.topic, "")
+
+
+@pytest.mark.parametrize("connector_id,availability_type,initial,expected", [
+    (0, AvailabilityType.inoperative, [True, True], [False, False]),
+    (1, AvailabilityType.inoperative, [True, True], [True, False]),
+    (1, AvailabilityType.operative, [False, False], [False, True]),
+    (0, AvailabilityType.operative, [False, False], [True, True]),
+])
+def test_availability_changes_target_connectors(handler_setup, connector_id, availability_type, initial, expected):
+    make_charge_point, openwb_cp = handler_setup
+    openwb_cp.data.get.ocpp.availability = initial
+
+    async def check():
+        return await make_charge_point().on_change_availability(connector_id, availability_type)
+
+    response = asyncio.run(check())
+    assert response.status == AvailabilityStatus.accepted
+    assert openwb_cp.data.get.ocpp.availability == expected
+    assert initial in ([True, True], [False, False])
+
+
+def test_availability_operative_clears_only_targeted_pending_entries(handler_setup, mock_pub):
+    make_charge_point, openwb_cp = handler_setup
+    openwb_cp.data.get.ocpp.transaction_id = 42
+
+    async def check():
+        charge_point = make_charge_point()
+        await charge_point.on_change_availability(0, AvailabilityType.inoperative)
+        await charge_point.on_change_availability(1, AvailabilityType.operative)
+        assert openwb_cp.data.get.ocpp.pending_availability == [True, False]
+        openwb_cp.data.get.ocpp.transaction_id = None
+        await charge_point.apply_pending_availability()
+
+    asyncio.run(check())
+    assert openwb_cp.data.get.ocpp.availability == [False, True]
+    assert openwb_cp.data.get.ocpp.pending_availability == [False, False]
+    mock_pub.pub.assert_any_call("openWB/set/chargepoint/1/get/ocpp/pending_availability", [True, True])
+
+
+@pytest.mark.parametrize("availability,expected_status", [
+    ([True, True], RemoteStartStopStatus.accepted),
+    ([True, False], RemoteStartStopStatus.rejected),
+    ([False, True], RemoteStartStopStatus.rejected),
+    ([False, False], RemoteStartStopStatus.rejected),
+])
+def test_remote_start_checks_both_connector_availabilities(handler_setup, availability, expected_status):
+    make_charge_point, openwb_cp = handler_setup
+    openwb_cp.data.get.ocpp.availability = availability
+
+    async def check():
+        return await make_charge_point().remote_start_transaction("TAG", 1)
+
+    assert asyncio.run(check()).status == expected_status
+
+
+def test_pending_availability_without_request_is_not_applied(handler_setup, mock_pub):
+    make_charge_point, openwb_cp = handler_setup
+
+    async def check():
+        await make_charge_point().apply_pending_availability()
+
+    asyncio.run(check())
+    assert openwb_cp.data.get.ocpp.availability == [True, True]
+    mock_pub.pub.assert_not_called()
 
 
 @pytest.mark.parametrize("value", ["0", "-1", "not-a-number", "1.5"])
@@ -772,8 +900,8 @@ def test_websocket_transaction_survives_reconnect(monkeypatch):
             fault_state=0,
             fault_str="",
             ocpp=SimpleNamespace(transaction_id=None, transaction_id_tag=None,
-                                 tag_accepted=False, availability=True,
-                                 pending_availability=False, pending_transactions=[],
+                                 tag_accepted=False, availability=[True, True],
+                                 pending_availability=[False, False], pending_transactions=[],
                                  test_reconnect=False,
                                  config=ocpp_config_factory()),
             serial_number="serial-1",

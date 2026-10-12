@@ -115,11 +115,17 @@ def ocpp_config_factory() -> OcppConfig:
     return OcppConfig()
 
 
+def normalize_ocpp_connector_values(value: List[bool]) -> List[bool]:
+    if not isinstance(value, list) or len(value) != 2 or not all(isinstance(item, bool) for item in value):
+        raise ValueError("Expected two boolean connector values")
+    return value.copy()
+
+
 @dataclass
 class Ocpp:
     connected: bool = False
     # neu erzeugte CPs sind per default erstmal available
-    availability: bool = True
+    availability: List[bool] = field(default_factory=lambda: [True, True])
     transaction_id: Optional[int] = None
     tag_accepted: bool = False
     remote_stop: bool = False
@@ -132,13 +138,7 @@ class Ocpp:
     pending_transactions: list = field(default_factory=list,
                                        metadata={"topic": "get/ocpp/pending_transactions"})
 
-    # Bei True
-    # -> Availability wurde gescheduled
-    # -> nach stop muss availability auf False gesetzt werden
-    # Bei False
-    # -> wurde nichts gescheduled
-    # - mach dementsprechend auch nix
-    pending_availability: bool = False
+    pending_availability: List[bool] = field(default_factory=lambda: [False, False])
     reset: bool = False
 
     # Nur für only Authorize

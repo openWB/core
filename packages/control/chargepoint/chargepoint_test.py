@@ -17,11 +17,39 @@ from modules.vehicles.manual.config import ManualSoc
 from modules.vehicles.manual.soc import create_vehicle as create_manual_vehicle
 from modules.vehicles.tesla.config import TeslaSoc
 from modules.vehicles.tesla.soc import create_vehicle as create_tesla_vehicle
+from ocpp.v16.enums import ChargePointStatus
 
 
 @pytest.fixture()
 def mock_data() -> None:
     data.data_init(Mock())
+
+
+@pytest.mark.parametrize("availability,controller_status,connector_status", [
+    ([True, True], ChargePointStatus.available, ChargePointStatus.preparing),
+    ([True, False], ChargePointStatus.available, ChargePointStatus.unavailable),
+    ([False, True], ChargePointStatus.unavailable, ChargePointStatus.unavailable),
+    ([False, False], ChargePointStatus.unavailable, ChargePointStatus.unavailable),
+])
+def test_ocpp_availability_status_and_permission(
+    mock_data, monkeypatch, availability, controller_status, connector_status
+):
+    cp = Chargepoint(1, None)
+    cp.data.config.ocpp_chargebox_id = "box-1"
+    data.data.optional_data.data.ocpp.config.active = True
+    cp.data.get.ocpp.connected = True
+    cp.data.get.ocpp.tag_accepted = True
+    cp.data.get.ocpp.availability = availability
+    cp.data.get.plug_state = True
+    assert cp.get_ocpp_status_connector_0() == controller_status
+    assert cp.get_ocpp_status() == connector_status
+    assert cp._is_ocpp()[0] is all(availability)
+    notification = Mock()
+    monkeypatch.setattr(data.data.ocpp_client, "status_notification", notification)
+    cp.ocpp_send_status_notification()
+    assert [request.kwargs["connector_id"] for request in notification.call_args_list] == [0, 1]
+    assert [request.kwargs["status"] for request in notification.call_args_list] == [
+        controller_status, connector_status]
 
 
 @pytest.mark.parametrize("phase_1, phases, expected_required_currents",

@@ -52,6 +52,8 @@ class OcppChargePoint(cp):
         self._diagnostics_status_stored = None
         self._background_tasks: set[asyncio.Task] = set()
         self.registration_state = None
+        openwb_cp = self.openwb_cp
+        self._openwb_num = openwb_cp.num if openwb_cp is not None else None
 
     async def _handle_call(self, msg):
         state = getattr(self.registration_state, "value", self.registration_state)
@@ -71,7 +73,7 @@ class OcppChargePoint(cp):
     @property
     def openwb_num(self):
         openwb_cp = self.openwb_cp
-        return openwb_cp.num if openwb_cp is not None else None
+        return openwb_cp.num if openwb_cp is not None else self._openwb_num
 
     async def _start_transaction(self,
                                  connector_id: int,
@@ -229,20 +231,26 @@ class OcppChargePoint(cp):
                     status=AvailabilityStatus.rejected
                 )
 
+            connectors = (0, 1) if connector_id == 0 else (1,)
+            pending = self.openwb_cp.data.get.ocpp.pending_availability.copy()
             if (availability_type == AvailabilityType.inoperative
                     and self.openwb_cp.data.get.ocpp.transaction_id is not None):
-                self.openwb_cp.data.get.ocpp.pending_availability = True
-                Pub().pub(f"openWB/set/chargepoint/{self.openwb_num}/get/ocpp/pending_availability", True)
+                for connector in connectors:
+                    pending[connector] = True
+                self.openwb_cp.data.get.ocpp.pending_availability = pending
+                Pub().pub(f"openWB/set/chargepoint/{self.openwb_num}/get/ocpp/pending_availability", pending)
                 return call_result.ChangeAvailability(
                     status=AvailabilityStatus.scheduled
                 )
 
-            await self._set_availability(availability_type)
+            await self._set_availability(connector_id, availability_type)
 
-            self.openwb_cp.data.get.ocpp.pending_availability = False
+            for connector in connectors:
+                pending[connector] = False
+            self.openwb_cp.data.get.ocpp.pending_availability = pending
             Pub().pub(
                 f"openWB/set/chargepoint/{self.openwb_num}/get/ocpp/pending_availability",
-                False,
+                pending,
             )
 
             return call_result.ChangeAvailability(
@@ -255,15 +263,18 @@ class OcppChargePoint(cp):
                 status=AvailabilityStatus.rejected
             )
 
-    async def _set_availability(self, availability_type: AvailabilityType):
+    async def _set_availability(self, connector_id: int, availability_type: AvailabilityType):
         openwb_cp = self.openwb_cp
         if openwb_cp is None:
             return
         available = availability_type == AvailabilityType.operative
-        openwb_cp.data.get.ocpp.availability = available
+        availability = openwb_cp.data.get.ocpp.availability.copy()
+        for connector in ((0, 1) if connector_id == 0 else (1,)):
+            availability[connector] = available
+        openwb_cp.data.get.ocpp.availability = availability
 
         Pub().pub(f"openWB/set/chargepoint/{self.openwb_num}/get/ocpp/availability",
-                  available)
+                  availability)
 
     @on(Action.data_transfer)
     async def data_transfer(self, vendor_id: str, message_id: Optional[str] = None,
@@ -279,12 +290,16 @@ class OcppChargePoint(cp):
 
     async def apply_pending_availability(self):
         openwb_cp = self.openwb_cp
-        if openwb_cp is None or not openwb_cp.data.get.ocpp.pending_availability:
+        if (openwb_cp is None or openwb_cp.data.get.ocpp.transaction_id is not None
+                or not any(openwb_cp.data.get.ocpp.pending_availability)):
             return
 
-        await self._set_availability(AvailabilityType.inoperative)
-        openwb_cp.data.get.ocpp.pending_availability = False
-        Pub().pub(f"openWB/set/chargepoint/{self.openwb_num}/get/ocpp/pending_availability", False)
+        availability = [available and not pending for available, pending in zip(
+            openwb_cp.data.get.ocpp.availability, openwb_cp.data.get.ocpp.pending_availability)]
+        openwb_cp.data.get.ocpp.availability = availability
+        Pub().pub(f"openWB/set/chargepoint/{self.openwb_num}/get/ocpp/availability", availability)
+        openwb_cp.data.get.ocpp.pending_availability = [False, False]
+        Pub().pub(f"openWB/set/chargepoint/{self.openwb_num}/get/ocpp/pending_availability", [False, False])
 
     @on(Action.get_configuration)
     async def get_configuration(self, key=None, **kwargs):
@@ -429,7 +444,7 @@ class OcppChargePoint(cp):
         requested_connector_id = connector_id if connector_id is not None else 1
         openwb_cp = self.openwb_cp
         if (openwb_cp is None or requested_connector_id != 1 or
-                not openwb_cp.data.get.ocpp.availability):
+                not all(openwb_cp.data.get.ocpp.availability)):
             return call_result.RemoteStartTransaction(
                 status=RemoteStartStopStatus.rejected
             )
