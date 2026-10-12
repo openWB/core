@@ -1,5 +1,52 @@
 #!/bin/bash
 
+fetchVersionRefs() {
+	local baseDir=$1
+	local remote=$2
+	git -C "$baseDir" fetch --verbose --prune --tags --prune-tags --force "$remote"
+}
+
+remoteBranchExists() {
+	local baseDir=$1
+	local remote=$2
+	local branch=$3
+	git -C "$baseDir" show-ref --verify --quiet "refs/remotes/$remote/$branch"
+}
+
+setLogicalUpdateBranch() {
+	local baseDir=$1
+	local train=$2
+	case "$train" in
+	"Release"|"Beta")
+		git -C "$baseDir" config --local openwb.updateBranch "$train"
+		;;
+	"")
+		local configStatus=0
+		git -C "$baseDir" config --local --unset-all openwb.updateBranch || configStatus=$?
+		if [[ $configStatus -eq 5 ]]; then
+			return 0
+		fi
+		return "$configStatus"
+		;;
+	*)
+		return 1
+		;;
+	esac
+}
+
+validateRestoreGitMetadata() {
+	local branch=$1
+	local train=$2
+	case "$train" in
+	"Release"|"Beta"|"") ;;
+	*) return 1 ;;
+	esac
+	if [[ -n $branch && -n $train ]]; then
+		return 2
+	fi
+	return 0
+}
+
 getTrainTagPattern() {
 	local branch=$1
 	case "$branch" in

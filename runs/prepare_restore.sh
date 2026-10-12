@@ -6,6 +6,8 @@ WORKING_DIR="/home/openwb/openwb_restore"
 LOG_FILE="$OPENWB_BASE_DIR/data/log/restore.log"
 GIT_REMOTE="origin"
 
+source "$OPENWB_BASE_DIR/runs/update_version_helpers.sh" || exit 1
+
 declare resultMessage
 declare resultStatus
 
@@ -66,16 +68,18 @@ declare resultStatus
 				if [[ -f "$WORKING_DIR/GIT_UPDATE_BRANCH" ]]; then
 					UPDATE_BRANCH=$(<"$WORKING_DIR/GIT_UPDATE_BRANCH")
 				fi
+				metadataStatus=0
+				validateRestoreGitMetadata "$BRANCH" "$UPDATE_BRANCH" || metadataStatus=$?
 				echo "Step 4.1: fetch info from git"
-				if [[ -n $UPDATE_BRANCH && $UPDATE_BRANCH != "Release" && $UPDATE_BRANCH != "Beta" ]]; then
+				if [[ $metadataStatus -eq 1 ]]; then
 					echo "invalid logical update branch '$UPDATE_BRANCH'"
 					resultMessage="Der logische Update-Zweig des Archivs ist ungültig."
 					resultStatus=1
-				elif [[ -n $BRANCH && -n $UPDATE_BRANCH ]]; then
+				elif [[ $metadataStatus -eq 2 ]]; then
 					echo "logical update branch requires detached HEAD"
 					resultMessage="Das Archiv enthält widersprüchliche Git-Zweige."
 					resultStatus=1
-				elif ! git -C "$OPENWB_BASE_DIR" fetch -v --prune --tags --prune-tags --force "$GIT_REMOTE"; then
+				elif ! fetchVersionRefs "$OPENWB_BASE_DIR" "$GIT_REMOTE"; then
 					resultMessage="Beim Abgleich mit dem openWB Git ist ein Fehler aufgetreten!"
 					resultStatus=1
 				else
@@ -83,7 +87,7 @@ declare resultStatus
 					if ! git -C "$OPENWB_BASE_DIR" rev-parse --verify --quiet "$HASH^{commit}" >/dev/null; then
 						resultMessage="Der Git-Stand \"$HASH\" des Archivs ist ungültig."
 						resultStatus=1
-					elif [[ -n $BRANCH ]] && ! git -C "$OPENWB_BASE_DIR" show-ref --verify --quiet "refs/remotes/$GIT_REMOTE/$BRANCH"; then
+					elif [[ -n $BRANCH ]] && ! remoteBranchExists "$OPENWB_BASE_DIR" "$GIT_REMOTE" "$BRANCH"; then
 						resultMessage="Der Entwicklungszweig \"$GIT_REMOTE/$BRANCH\" des Archivs ist ungültig."
 						resultStatus=1
 					else

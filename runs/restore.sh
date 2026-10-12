@@ -9,6 +9,8 @@ MOSQUITTO_CONF_DIR="/etc/mosquitto"
 LOG_FILE="$OPENWB_BASE_DIR/data/log/restore.log"
 GIT_REMOTE="origin"
 
+source "$OPENWB_BASE_DIR/runs/update_version_helpers.sh" || exit 1
+
 {
 	echo "$(date +"%Y-%m-%d %H:%M:%S") Restore of backup started..."
 	echo "****************************************"
@@ -31,14 +33,12 @@ GIT_REMOTE="origin"
 	if [[ -f "$WORKING_DIR/GIT_UPDATE_BRANCH" ]]; then
 		UPDATE_BRANCH=$(<"$WORKING_DIR/GIT_UPDATE_BRANCH")
 	fi
-	case "$UPDATE_BRANCH" in
-	"Release"|"Beta"|"") ;;
-	*)
+	metadataStatus=0
+	validateRestoreGitMetadata "$BRANCH" "$UPDATE_BRANCH" || metadataStatus=$?
+	if [[ $metadataStatus -eq 1 ]]; then
 		echo "invalid logical update branch '$UPDATE_BRANCH'! aborting restore"
 		exit 1
-		;;
-	esac
-	if [[ -n $BRANCH && -n $UPDATE_BRANCH ]]; then
+	elif [[ $metadataStatus -eq 2 ]]; then
 		echo "logical update branch requires detached HEAD! aborting restore"
 		exit 1
 	fi
@@ -62,11 +62,9 @@ GIT_REMOTE="origin"
 	fi
 	echo "Step 6.3: set logical update branch"
 	if [[ -n $UPDATE_BRANCH ]]; then
-		git -C "$OPENWB_BASE_DIR" config --local openwb.updateBranch "$UPDATE_BRANCH" || exit 1
+		setLogicalUpdateBranch "$OPENWB_BASE_DIR" "$UPDATE_BRANCH" || exit 1
 	else
-		git -C "$OPENWB_BASE_DIR" config --local --unset-all openwb.updateBranch
-		configStatus=$?
-		if [[ $configStatus -ne 0 && $configStatus -ne 5 ]]; then
+		if ! setLogicalUpdateBranch "$OPENWB_BASE_DIR" ""; then
 			echo "failed to clear logical update branch! aborting restore"
 			exit 1
 		fi
