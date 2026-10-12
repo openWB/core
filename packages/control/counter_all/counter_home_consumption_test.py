@@ -39,6 +39,31 @@ def test_calc_home_consumption(counter_all: Callable[[], CounterAll], data_):
 
 
 @pytest.mark.parametrize(
+    "battery_power",
+    [pytest.param(-500, id="discharging"), pytest.param(500, id="charging")],
+)
+def test_calc_home_consumption_with_hybrid_battery_below_nested_counter(battery_power: int, data_):
+    c = hierarchy_nested()
+    root = c.data.get.hierarchy[0]
+    nested_counter = root["children"][1]
+    inverter = root["children"].pop(2)
+    inverter["children"].append(root["children"].pop(2))
+    nested_counter["children"].append(inverter)
+
+    data.data.bat_data["bat2"].data.get.power = battery_power
+    data.data.pv_data["pv1"].data.get.power = -1000
+    for chargepoint in data.data.cp_data.values():
+        chargepoint.data.get.power = 100
+    data.data.counter_data["counter6"].data.get.power = battery_power - 700
+    data.data.counter_data["counter0"].data.get.power = battery_power - 400
+
+    home_consumption, not_in_home_consumption, _ = c._calc_home_consumption()
+
+    assert home_consumption == 200
+    assert not_in_home_consumption == 100
+
+
+@pytest.mark.parametrize(
     ["counter_all", "expected_home_consumption"],
     [
         pytest.param("hierarchy_home_consumption_standard", 0, id="hierarchy_home_consumption_standard"),
