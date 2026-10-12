@@ -16,6 +16,13 @@ from control.optional_data import OptionalData, PricingGet
 # Stunden für tägliche Tarifaktualisierung, manche Anbieter aktualisieren mehrfach täglich
 T_TARIFF_CONFIG = TypeVar("T_TARIFF_CONFIG")
 ONE_HOUR_SECONDS: int = 3600
+# Wartezeit, bevor nach einem erfolglosen Abruf (keine neuen Preise oder Fehler) erneut versucht wird -
+# ohne das würde bei einem Anbieter ohne aktuelle Daten jeden Regelzyklus neu abgefragt (siehe #3703)
+RETRY_BACKOFF_SECONDS: int = 20 * 60
+# So viele Stunden nach der ersten konfigurierten Tarifaktualisierungsstunde löst ein immer noch
+# fehlender Preis für den Folgetag eine Warnung aus statt stillschweigend weiter zu versuchen -
+# vorher ist das noch der normale, erwartete Fall
+LATE_WARNING_OFFSET_HOURS: int = 2
 
 log = logging.getLogger(__name__)
 
@@ -48,13 +55,17 @@ class ConfigurableTariff(Generic[T_TARIFF_CONFIG]):
             if self.get.next_query_time is None or self.get.next_query_time <= timecheck.create_timestamp():
                 log.debug(f"Tarifaktualisierung für {self.tariff_type}")
                 try:
-                    with SingleComponentUpdateContext(self.fault_state):
+                    # reraise=True: ohne das verschluckt der Context-Manager die Exception bereits in
+                    # __exit__, bevor der except-Block unten next_query_time neu setzen kann (siehe #3703) -
+                    # fault_state wird trotzdem unabhängig davon schon in __exit__ aus der Exception gesetzt
+                    with SingleComponentUpdateContext(self.fault_state, reraise=True):
                         tariff_state, timeslot_length_seconds = self.__update_et_provider_data()
                         self.__store_and_publish_updated_data(tariff_state)
                         self.__log_and_publish_progress(timeslot_length_seconds, tariff_state)
+                        self.__warn_if_tomorrow_missing(tariff_state)
                 except Exception as e:
                     log.exception(f"Fehler beim Aktualisieren der Tarifdaten {e}")
-                    self.fault_state.warning("Error updating tariff data, retry in 5 minutes")
+                    self._delay_next_query()
             else:
                 log.info(f"nächste Tarifaktualisierung für {self.tariff_type}" +
                          f" um {datetime.fromtimestamp(self.get.next_query_time)}")
@@ -102,7 +113,30 @@ class ConfigurableTariff(Generic[T_TARIFF_CONFIG]):
         latest_price_timestamp = datetime.fromtimestamp(max((int(ts) for ts in tariff_state.prices.keys()), default=0))
         if last_known_timestamp < latest_price_timestamp:
             self._calculate_next_query_time(latest_price_timestamp)
+        else:
+            # Anbieter hat (noch) keine neueren Preise geliefert, z.B. weil die Preise für den
+            # Folgetag noch nicht veröffentlicht sind - ohne Backoff würde sonst jeden Regelzyklus
+            # neu abgefragt, bis es welche gibt (siehe #3703)
+            self._delay_next_query()
         return tariff_state
+
+    def _delay_next_query(self) -> None:
+        self.get.next_query_time = int(timecheck.create_timestamp()) + RETRY_BACKOFF_SECONDS
+        Pub().pub(f"openWB/set/optional/ep/{self.tariff_type}/get/next_query_time", self.get.next_query_time)
+
+    def __warn_if_tomorrow_missing(self, tariff_state: TariffState) -> None:
+        # __log_and_publish_progress() setzt den Fehlerstatus kurz zuvor auf NO_ERROR zurück - diese
+        # Prüfung läuft deshalb bewusst als letzter Schritt, damit eine Warnung hier nicht sofort
+        # wieder überschrieben wird.
+        now = datetime.now()
+        warning_hour = min(self.tariff_update_hours) + LATE_WARNING_OFFSET_HOURS
+        if now.hour < warning_hour:
+            return
+        tomorrow_start = int(now.replace(hour=0, minute=0, second=0, microsecond=0).timestamp()) + 24*ONE_HOUR_SECONDS
+        if not any(int(ts) >= tomorrow_start for ts in tariff_state.prices.keys()):
+            self.fault_state.warning(
+                f"Noch keine aktuellen Preise für {self.tariff_type} erhalten - "
+                "der Anbieter liefert bisher keine Daten für den Folgetag.")
 
     def __log_and_publish_progress(self, timeslot_length_seconds, tariff_state):
         def publish_info(message_extension: str) -> None:
