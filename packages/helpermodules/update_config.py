@@ -688,19 +688,12 @@ class UpdateConfig:
 
     ]
 
+    default_topics_with_wildcards = (
+        ("openWB/chargepoint/{}/get/ocpp/connected", False),
+        ("openWB/chargepoint/{}/get/ocpp/authorize_only_response", None),
+    )
+
     default_topic = (
-
-        # Topics die hier drin stehen werden beim Neustart mit default Werten überschrieben
-        # -> vorrausgesetzt, dass die Topics nicht oben drin stehen
-
-        # <- immer auf False, da nach restart noch keine Verbindung besteht
-        ("openWB/chargepoint/3/get/ocpp/connected", False),
-        ("openWB/chargepoint/3/get/ocpp/authorize_only_response", None),
-        # nur zum Debugging
-        # -> muss später noch entfernt werden
-        ("^openWB/chargepoint/3/get/ocpp/test_reconnect$", True),
-
-
         ("openWB/bat/config/bat_control_activated", False),
         ("openWB/bat/config/power_limit_mode", "mode_no_discharge"),
         ("openWB/bat/config/power_limit_condition", "vehicle_charging"),
@@ -928,11 +921,31 @@ class UpdateConfig:
         for topic in topics_to_delete:
             self.__update_topic(topic, "")
 
+    def __default_topic_with_wildcards(self):
+        """Expand default topic patterns for all discovered numeric IDs.
+        """
+        expanded_defaults = []
+        for topic_template, default_payload in self.default_topics_with_wildcards:
+            prefix, wildcard, suffix = topic_template.partition("{}")
+            if not wildcard:
+                continue
+            id_pattern = re.compile(rf"^{re.escape(prefix)}([0-9]+)(?:/|$)")
+            topic_ids = {
+                match.group(1)
+                for topic in self.all_received_topics
+                if (match := id_pattern.match(topic)) is not None
+            }
+            for topic_id in topic_ids:
+                topic = f"{prefix}{topic_id}{suffix}"
+                expanded_defaults.append((topic, default_payload))
+        return expanded_defaults
+
     def __pub_missing_defaults(self):
         """ publish missing required default topics to broker and update all_received_topics
         """
         missing_topics = {}
-        for topic, default_payload in self.default_topic:
+        default_topics = (*self.default_topic, *self.__default_topic_with_wildcards())
+        for topic, default_payload in default_topics:
             if topic not in self.all_received_topics.keys():
                 log.debug(f"Setze Topic '{topic}' auf Standardwert '{str(default_payload)}'")
                 missing_topics[topic] = default_payload
