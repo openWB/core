@@ -36,6 +36,60 @@ def consumer() -> Consumer:
     return load
 
 
+@pytest.mark.parametrize(
+    "usage_type, power, expected_plug_state",
+    [
+        pytest.param(ConsumerUsage.METER_ONLY, 0, False, id="meter-only-zero-power"),
+        pytest.param(ConsumerUsage.METER_ONLY, 1, True, id="meter-only-nonzero-power"),
+        pytest.param(ConsumerUsage.SELF_CONTROLLED, 0, False, id="self-controlled-zero-power"),
+        pytest.param(ConsumerUsage.SELF_CONTROLLED, 1, True, id="self-controlled-nonzero-power"),
+    ],
+)
+def test_set_plug_state_for_not_controlled_consumers(
+        consumer: Consumer,
+        usage_type: ConsumerUsage,
+        power: float,
+        expected_plug_state: bool):
+    # setup
+    consumer.data.usage.type = usage_type
+    consumer.data.get.power = power
+    consumer.data.set.current = 0
+
+    # execution
+    consumer.set_plug_state()
+
+    # evaluation
+    assert consumer.data.get.plug_state is expected_plug_state
+
+
+@pytest.mark.parametrize(
+    "usage_type, current, expected_plug_state",
+    [
+        pytest.param(ConsumerUsage.CONTINUOUS, 0, False, id="continuous-zero-current"),
+        pytest.param(ConsumerUsage.CONTINUOUS, 1, True, id="continuous-positive-current"),
+        pytest.param(ConsumerUsage.SUSPENDABLE_ONOFF, 0, False, id="onoff-zero-current"),
+        pytest.param(ConsumerUsage.SUSPENDABLE_ONOFF, 1, True, id="onoff-positive-current"),
+        pytest.param(ConsumerUsage.SUSPENDABLE_TUNABLE, 0, False, id="tunable-zero-current"),
+        pytest.param(ConsumerUsage.SUSPENDABLE_TUNABLE, 1, True, id="tunable-positive-current"),
+    ],
+)
+def test_set_plug_state_for_controlled_consumers(
+        consumer: Consumer,
+        usage_type: ConsumerUsage,
+        current: float,
+        expected_plug_state: bool):
+    # setup
+    consumer.data.usage.type = usage_type
+    consumer.data.get.power = 0
+    consumer.data.set.current = current
+
+    # execution
+    consumer.set_plug_state()
+
+    # evaluation
+    assert consumer.data.get.plug_state is expected_plug_state
+
+
 def test_get_parameter_clears_previous_state_string_when_switch_interval_is_active(consumer: Consumer):
     # setup
     consumer.data.set.switch_interval_elapsed = False
