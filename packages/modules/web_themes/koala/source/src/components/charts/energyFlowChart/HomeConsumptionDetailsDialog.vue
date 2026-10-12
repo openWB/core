@@ -46,6 +46,7 @@ import type { Component } from 'vue';
 import { useMqttStore } from 'src/stores/mqtt-store';
 import ConsumerIcon from 'src/assets/icons/owbConsumer.svg?component';
 import CounterIcon from 'src/assets/icons/owbCounter.svg?component';
+import HouseIcon from 'src/assets/icons/owbHouse.svg?component';
 import InfoIcon from 'src/assets/icons/owbInformation.svg?component';
 
 defineOptions({ name: 'HomeConsumptionDetailsDialog' });
@@ -80,6 +81,19 @@ const items = computed((): DetailsItem[] => {
     props.scope === 'inHome'
       ? mqttStore.inHomeConsumption
       : mqttStore.notInHomeConsumption;
+  const unmeasured =
+    props.scope === 'inHome' &&
+    mqttStore.unmeasuredHomeConsumptionPower('value') !== undefined
+      ? [
+          {
+            key: 'unmeasured',
+            name: 'nicht erfasst',
+            icon: HouseIcon,
+            color: 'var(--q-home-stroke)',
+            power: mqttStore.unmeasuredHomeConsumptionPower() as string,
+          },
+        ]
+      : [];
   return [
     ...consumerIds.map((id) => ({
       key: `consumer-${id}`,
@@ -97,6 +111,7 @@ const items = computed((): DetailsItem[] => {
         'var(--q-secondary-counter-stroke)',
       power: mqttStore.counterPower('textValue', id) as string,
     })),
+    ...unmeasured,
   ];
 });
 </script>

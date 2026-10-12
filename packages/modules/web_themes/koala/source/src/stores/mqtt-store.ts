@@ -4486,6 +4486,28 @@ export const useMqttStore = defineStore('mqtt', () => {
   });
 
   /**
+   * Get the part of the home consumption that is not measured by a
+   * component.
+   * @param returnType type of return value, 'textValue', 'value', 'scaledValue', 'scaledUnit' or 'object'
+   * @returns string | number | ValueObject
+   */
+  const unmeasuredHomeConsumptionPower = computed(() => {
+    return (returnType: string = 'textValue') => {
+      const power = getValue.value(
+        'openWB/counter/set/unmeasured_home_consumption',
+      ) as number | undefined;
+      const valueObject = getValueObject.value(power);
+      if (Object.hasOwn(valueObject, returnType)) {
+        return valueObject[returnType as keyof ValueObject];
+      }
+      if (returnType == 'object') {
+        return valueObject;
+      }
+      console.error('returnType not found!', returnType, power);
+    };
+  });
+
+  /**
    * Get pv power
    * @param returnType type of return value, 'textValue', 'value', 'scaledValue', 'scaledUnit' or 'object'
    * @returns string | number | ValueObject | undefined
@@ -4856,6 +4878,7 @@ export const useMqttStore = defineStore('mqtt', () => {
     inHomeConsumption,
     notInHomeConsumption,
     notInHomeConsumptionPower,
+    unmeasuredHomeConsumptionPower,
     // PV data
     pvConfigured,
     hybridInverters,
