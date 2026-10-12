@@ -1,7 +1,11 @@
 from dataclasses import dataclass, field
-from typing import Dict, Optional, Tuple, Union
+import logging
+from typing import Dict, Iterator, Optional, Tuple, Union
+from control import data
 from control.limiting_value import LoadmanagementLimit
 from helpermodules.constants import NO_ERROR
+from modules.common.configurable_io import ConfigurableIo
+from modules.common.fault_state import FaultStateContext
 from modules.io_actions.controllable_consumers.dimming.api_eebus import DimmingEebus
 from modules.io_actions.controllable_consumers.dimming.api_io import DimmingIo
 
@@ -11,6 +15,18 @@ from modules.io_actions.controllable_consumers.dimming_direct_control.api import
 from modules.io_actions.controllable_consumers.ripple_control_receiver.api import RippleControlReceiver
 from modules.io_actions.generator_systems.stepwise_control.api_eebus import StepwiseControlEebus
 from modules.io_actions.generator_systems.stepwise_control.api_io import StepwiseControlIo
+
+log = logging.getLogger(__name__)
+
+IoAction = Union[
+    DimmingIo,
+    DimmingEebus,
+    DimmingDirectControl,
+    RippleControlReceiver,
+    StepwiseControlEebus,
+    StepwiseControlIo,
+    LoadManager,
+]
 
 
 @dataclass
@@ -57,53 +73,69 @@ class IoStates:
 
 class IoActions:
     def __init__(self):
-        self.actions: Dict[int, Union[DimmingIo, DimmingEebus, DimmingDirectControl,
-                                      RippleControlReceiver, StepwiseControlEebus, StepwiseControlIo,
-                                      LoadManager]] = {}
+        self.actions: Dict[int, IoAction] = {}
+
+    def iter_actions_with_io_device(self) -> Iterator[Tuple[IoAction, ConfigurableIo]]:
+        for action in self.actions.values():
+            io_device = data.data.system_data.get(f"io{action.config.configuration.io_device}")
+            if not isinstance(io_device, ConfigurableIo):
+                log.error(f"I/O device io{action.config.configuration.io_device} not found.")
+                continue
+            yield action, io_device
 
     def setup(self):
-        for action in self.actions.values():
-            action.setup()
+        for action, io_device in self.iter_actions_with_io_device():
+            with FaultStateContext(io_device.fault_state, update_always=False):
+                action.setup()
 
-    def dimming_get_import_power_left(self, device: Dict) -> Tuple[Optional[float], LoadmanagementLimit]:
-        for action in self.actions.values():
-            if isinstance(action, (DimmingIo, DimmingEebus)):
-                for d in action.config.configuration.devices:
-                    if device == d:
-                        return action.dimming_get_import_power_left()
+    def dimming_get_import_power_left(self,
+                                      device: Dict[str, Union[int, str]]
+                                      ) -> Tuple[Optional[float], LoadmanagementLimit]:
+        for action, io_device in self.iter_actions_with_io_device():
+            with FaultStateContext(io_device.fault_state, update_always=False):
+                if isinstance(action, (DimmingIo, DimmingEebus)):
+                    for d in action.config.configuration.devices:
+                        if device == d:
+                            return action.dimming_get_import_power_left()
         else:
             return None, LoadmanagementLimit(None, None)
 
-    def dimming_set_import_power_left(self, device: Dict, used_power: float) -> Optional[float]:
-        for action in self.actions.values():
-            if isinstance(action, (DimmingIo, DimmingEebus)):
-                for d in action.config.configuration.devices:
-                    if d == device:
-                        return action.dimming_set_import_power_left(used_power)
+    def dimming_set_import_power_left(self,
+                                      device: Dict[str, Union[int, str]], used_power: float) -> Optional[float]:
+        for action, io_device in self.iter_actions_with_io_device():
+            with FaultStateContext(io_device.fault_state, update_always=False):
+                if isinstance(action, (DimmingIo, DimmingEebus)):
+                    for d in action.config.configuration.devices:
+                        if d == device:
+                            return action.dimming_set_import_power_left(used_power)
 
-    def dimming_via_direct_control(self, device: Dict) -> Tuple[Optional[float], LoadmanagementLimit]:
-        for action in self.actions.values():
-            if isinstance(action, DimmingDirectControl):
-                for d in action.config.configuration.devices:
-                    if device == d:
-                        return action.dimming_via_direct_control()
+    def dimming_via_direct_control(self,
+                                   device: Dict[str, Union[int, str]]) -> Tuple[Optional[float], LoadmanagementLimit]:
+        for action, io_device in self.iter_actions_with_io_device():
+            with FaultStateContext(io_device.fault_state, update_always=False):
+                if isinstance(action, DimmingDirectControl):
+                    for d in action.config.configuration.devices:
+                        if device == d:
+                            return action.dimming_via_direct_control()
         else:
             return None, LoadmanagementLimit(None, None)
 
-    def ripple_control_receiver(self, device: Dict) -> Tuple[float, LoadmanagementLimit]:
-        for action in self.actions.values():
-            if isinstance(action, RippleControlReceiver):
-                for d in action.config.configuration.devices:
-                    if device == d:
-                        return action.ripple_control_receiver()
+    def ripple_control_receiver(self, device: Dict[str, Union[int, str]]) -> Tuple[float, LoadmanagementLimit]:
+        for action, io_device in self.iter_actions_with_io_device():
+            with FaultStateContext(io_device.fault_state, update_always=False):
+                if isinstance(action, RippleControlReceiver):
+                    for d in action.config.configuration.devices:
+                        if device == d:
+                            return action.ripple_control_receiver()
         else:
             return 1, LoadmanagementLimit(None, None)
 
     def stepwise_control(self, device_id: int) -> Tuple[Optional[float], LoadmanagementLimit]:
-        for action in self.actions.values():
-            if isinstance(action, (StepwiseControlEebus, StepwiseControlIo)):
-                if device_id in [component["id"] for component in action.config.configuration.devices]:
-                    return action.control_stepwise()
+        for action, io_device in self.iter_actions_with_io_device():
+            with FaultStateContext(io_device.fault_state, update_always=False):
+                if isinstance(action, (StepwiseControlEebus, StepwiseControlIo)):
+                    if device_id in [component["id"] for component in action.config.configuration.devices]:
+                        return action.control_stepwise()
         else:
             return None, LoadmanagementLimit(None, None)
 

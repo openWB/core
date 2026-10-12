@@ -50,7 +50,7 @@ def create_device(device_config: Avm):
         challengeResponse = ET.fromstring(response.content)
         session_id = challengeResponse.find('SID').text
         if session_id != INVALID_SESSIONID:
-            return
+            return session_id
         blockTimeXML = challengeResponse.find('BlockTime')
         if blockTimeXML is not None and int(blockTimeXML.text) > 0:
             raise Exception("Durch Anmeldefehler in der Vergangenheit ist der Zugang zur FRITZ!Box "

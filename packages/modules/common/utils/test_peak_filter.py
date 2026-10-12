@@ -95,3 +95,57 @@ def test_check_values_valid(params):
         imp, exp = pf.check_values(params.power, params.imported, params.exported)
         assert imp == params.expected_imported
         assert exp == params.expected_exported
+
+
+def test_check_total_energy_forward_jump_then_accept_second_high_and_wait_after_backward_jump():
+    fs = DummyFaultState()
+    pf = PeakFilter(ComponentType.COUNTER, 1, fs)
+
+    allowed_deviation = 10
+    max_energy = 1_000_000_000
+
+    # Vorwaertssprung: erster Wert wird verworfen, aber als Vergleichsbasis gespeichert.
+    checked, previous = pf.check_total_energy(2000, 1000, allowed_deviation, max_energy)
+    assert checked is None
+    assert previous == 2000
+
+    # Zweiter hoher Wert mit kleiner Differenz wird uebernommen.
+    checked, previous = pf.check_total_energy(2005, previous, allowed_deviation, max_energy)
+    assert checked == 2005
+    assert previous == 2005
+
+    # Rueckwaertssprung: letzter gueltiger Hoechststand bleibt erhalten.
+    checked, previous = pf.check_total_energy(1900, previous, allowed_deviation, max_energy)
+    assert checked == 2005
+    assert previous == 2005
+
+    # Unterhalb des Hoechststands wird weiterhin gewartet.
+    checked, previous = pf.check_total_energy(1990, previous, allowed_deviation, max_energy)
+    assert checked == 2005
+    assert previous == 2005
+
+    # Naechster gleicher oder hoeherer Wert wird wieder zugelassen.
+    checked, previous = pf.check_total_energy(2005, previous, allowed_deviation, max_energy)
+    assert checked == 2005
+    assert previous == 2005
+
+    checked, previous = pf.check_total_energy(2010, previous, allowed_deviation, max_energy)
+    assert checked == 2010
+    assert previous == 2010
+
+    # Der niedrigere Folgewert wird einmal verworfen und als neue Vergleichsbasis gesetzt.
+    allowed_deviation = 10
+    max_energy = 3000
+
+    checked, previous = pf.check_total_energy(4000, 2900, allowed_deviation, max_energy)
+    assert checked is None
+    assert previous == 4000
+
+    checked, previous = pf.check_total_energy(2800, previous, allowed_deviation, max_energy)
+    assert checked is None
+    assert previous == 2800
+
+    # Danach wird ein plausibler Folgewert wieder zugelassen.
+    checked, previous = pf.check_total_energy(2805, previous, allowed_deviation, max_energy)
+    assert checked == 2805
+    assert previous == 2805

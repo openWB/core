@@ -71,7 +71,6 @@ export class ChargePoint implements PowerItem {
 	private _instantTargetSoc = 0
 	private _instantMaxEnergy = 0
 	private _instantTargetPhases = 0
-	private _pvFeedInLimit = false
 	private _pvMinCurrent = 0
 	private _pvMaxSoc = 0
 	private _pvMinSoc = 0
@@ -203,15 +202,6 @@ export class ChargePoint implements PowerItem {
 	set instantTargetPhases(phases: number) {
 		if (this.chargeTemplate) {
 			this.chargeTemplate.chargemode.instant_charging.phases_to_use = phases
-			updateChargeTemplate(this.id)
-		}
-	}
-	get pvFeedInLimit() {
-		return this.chargeTemplate?.chargemode.pv_charging.feed_in_limit ?? false
-	}
-	set pvFeedInLimit(setting: boolean) {
-		if (this.chargeTemplate) {
-			this.chargeTemplate.chargemode.pv_charging.feed_in_limit = setting
 			updateChargeTemplate(this.id)
 		}
 	}
@@ -504,7 +494,6 @@ export interface ChargeTemplate {
 		pv_charging: {
 			dc_min_current: number
 			dc_min_soc_current: number
-			feed_in_limit: boolean
 			limit: ChargeLimit
 			min_current: number
 			min_soc_current: number

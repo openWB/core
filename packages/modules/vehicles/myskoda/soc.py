@@ -27,8 +27,9 @@ def fetch(vehicle_config: Myskoda, vehicle: int) -> CarState:
     soc = api.extract_soc(data)
     range_km = api.extract_range(data)
     odometer_km = api.extract_odometer(data)
+    warning = api.extract_warning(data)
 
-    return CarState(soc=soc, range=range_km, odometer=odometer_km)
+    return CarState(soc=soc, range=range_km, odometer=odometer_km, warning=warning)
 
 
 def create_vehicle(vehicle_config: Myskoda, vehicle: int):

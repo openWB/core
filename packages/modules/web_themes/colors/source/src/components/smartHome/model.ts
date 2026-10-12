@@ -53,11 +53,13 @@ export class ShDevice implements PowerItem {
 }
 
 export const shDevices = reactive(new Map<string, ShDevice>())
+
 export function addShDevice(shIndex: string) {
 	if (!shDevices.has(shIndex)) {
 		shDevices.set(shIndex, new ShDevice(shIndex))
-		shDevices.get(shIndex)!.color = 'var(--color-sh' + shDevices.size + ')'
-		// console.info('Added sh device ' + shIndex)
+		const dev = shDevices.get(shIndex)!
+		dev.color = 'var(--color-sh' + shDevices.size + ')'
+		dev.configured = true
 	} else {
 		console.info('Duplicate sh device message: ' + shIndex)
 	}

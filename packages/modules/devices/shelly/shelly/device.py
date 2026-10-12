@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 import logging
-from modules.common import req
 
 from modules.common.abstract_device import DeviceDescriptor
 from modules.common.configurable_device import ConfigurableDevice, ComponentFactoryByType, IndependentComponentUpdater
@@ -8,6 +7,7 @@ from modules.devices.shelly.shelly.inverter import ShellyInverter
 from modules.devices.shelly.shelly.bat import ShellyBat
 from modules.devices.shelly.shelly.counter import ShellyCounter
 from modules.devices.shelly.shelly.config import Shelly, ShellyInverterSetup, ShellyBatSetup, ShellyCounterSetup
+from modules.devices.shelly.shelly.status_handler import get_generation
 
 
 log = logging.getLogger(__name__)
@@ -42,10 +42,7 @@ def create_device(device_config: Shelly) -> ConfigurableDevice:
 
     def initializer() -> None:
         nonlocal generation
-        device_info = req.get_http_session().get(
-            f"http://{device_config.configuration.ip_address}/shelly", timeout=3).json()
-        if 'gen' in device_info:  # gen 2+
-            generation = int(device_info['gen'])
+        generation, _ = get_generation(device_config.configuration.ip_address)
 
     return ConfigurableDevice(
         device_config=device_config,

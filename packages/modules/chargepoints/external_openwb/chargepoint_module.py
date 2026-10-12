@@ -66,12 +66,15 @@ class ChargepointModule(AbstractChargepoint):
                     received_topics.update({message.topic: decode_payload(message.payload)})
 
                 received_topics = {}
+                # Höheres Timeout als der Default: muss zuverlässig alle ~20 retained Topics über eine
+                # echte Netzwerkverbindung zu einer ggf. gerade stark ausgelasteten Gegenstelle einsammeln
+                # (zB während einer laufenden Ladung), nicht nur ein oder zwei lokale Werte.
                 BrokerClient(f"subscribeSeriesChargepoint{self.config.id}",
                              on_connect,
                              on_message,
                              host=self.config.configuration.ip_address,
                              port=1886 if self.config.configuration.ip_address == "localhost" else 1883
-                             ).start_finite_loop()
+                             ).start_finite_loop(timeout=2)
 
                 if received_topics:
                     log.debug(f"Empfange MQTT Daten für Ladepunkt {self.config.id}: {received_topics}")
@@ -101,16 +104,17 @@ class ChargepointModule(AbstractChargepoint):
                             current_branch=parse_received_topics("current_branch"),
                             current_commit=parse_received_topics("current_commit")
                         )
-                        self.store.set(chargepoint_state)
-                        if received_topics[f"{topic_prefix}fault_state"] == 2:
-                            self.fault_state.error(received_topics[f"{topic_prefix}fault_str"])
-                        elif received_topics[f"{topic_prefix}fault_state"] == 1:
-                            self.fault_state.warning(received_topics[f"{topic_prefix}fault_str"])
-                    except KeyError:
-                        if received_topics[f"{topic_prefix}fault_state"] == 2:
-                            self.fault_state.error(received_topics[f"{topic_prefix}fault_str"])
-                        else:
-                            raise KeyError("Es wurden nicht alle notwendigen Daten empfangen.")
+                    except KeyError as e:
+                        raise KeyError(f"Es wurden nicht alle notwendigen Daten empfangen: {e}")
+                    self.store.set(chargepoint_state)
+
+                    fault_state = received_topics.get(f"{topic_prefix}fault_state")
+                    if fault_state == 2:
+                        self.fault_state.error(received_topics.get(
+                            f"{topic_prefix}fault_str", "Fehlerstatus vom internen Ladepunkt"))
+                    elif fault_state == 1:
+                        self.fault_state.warning(received_topics.get(
+                            f"{topic_prefix}fault_str", "Warnung vom internen Ladepunkt"))
                 else:
                     self.fault_state.warning(f"Keine MQTT-Daten für Ladepunkt {self.config.name} empfangen. Noch keine "
                                              "Daten nach dem Start oder Ladepunkt nicht erreichbar.")

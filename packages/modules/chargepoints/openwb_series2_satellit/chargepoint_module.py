@@ -108,7 +108,8 @@ class ChargepointModule(AbstractChargepoint):
                 except Exception:
                     if self.client_error_context.error_counter_exceeded():
                         run_command(f"{Path(__file__).resolve().parents[3]}/modules/chargepoints/"
-                                    "openwb_series2_satellit/restart_protoss_satellite")
+                                    "openwb_series2_satellit/restart_protoss_satellite",
+                                    self.config.configuration.ip_address)
                         chargepoint_state = ChargepointState(
                             plug_state=None, charge_state=False, imported=None,
                             # bei im-/exported None werden keine Werte gepublished
@@ -147,16 +148,16 @@ class ChargepointModule(AbstractChargepoint):
                             self._client.evse_client.set_current(0)
                             time.sleep(5)
                             if phases_to_use == 1:
-                                self._client.client.delegate.write_register(
+                                self._client.client.write_single_register_raw(
                                     0x0001, 256, unit=self.ID_PHASE_SWITCH_UNIT)
                                 time.sleep(1)
-                                self._client.client.delegate.write_register(
+                                self._client.client.write_single_register_raw(
                                     0x0001, 512, unit=self.ID_PHASE_SWITCH_UNIT)
                             else:
-                                self._client.client.delegate.write_register(
+                                self._client.client.write_single_register_raw(
                                     0x0002, 512, unit=self.ID_PHASE_SWITCH_UNIT)
                                 time.sleep(1)
-                                self._client.client.delegate.write_register(
+                                self._client.client.write_single_register_raw(
                                     0x0002, 256, unit=self.ID_PHASE_SWITCH_UNIT)
                     except AttributeError:
                         self._create_client()

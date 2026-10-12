@@ -9,7 +9,7 @@ import pytest
 from control import data
 from control.chargepoint.chargepoint import Chargepoint
 from control.counter import Counter, CounterData, Get
-from control.counter_all import CounterAll
+from control.counter_all.counter_all import CounterAll
 from modules.chargepoints.mqtt.chargepoint_module import ChargepointModule
 from modules.common.component_state import BatState, ChargepointState, CounterState, InverterState
 from modules.common.component_type import ComponentType
@@ -131,8 +131,15 @@ def test_calc_virtual(params: Params, monkeypatch):
     purge = PurgeCounterState(delegate=Mock(delegate=Mock(num=0)),
                               add_child_values=True,
                               simcounter=SimCounter(0, 0, ComponentType.COUNTER))
-    mock_comp_obj = Mock(side_effect=params.mock_comp)
-    monkeypatch.setattr(_counter, "get_component_obj_by_id", mock_comp_obj)
+    original_get_hierarchy_obj_by_id = _counter.get_hierarchy_obj_by_id
+    mock_comp_obj_iter = iter(params.mock_comp)
+
+    def mock_get_hierarchy_obj_by_id(component_id, component_type):
+        if component_type == ComponentType.CHARGEPOINT.value:
+            return original_get_hierarchy_obj_by_id(component_id, component_type)
+        return next(mock_comp_obj_iter)
+
+    monkeypatch.setattr(_counter, "get_hierarchy_obj_by_id", mock_get_hierarchy_obj_by_id)
 
     # execution
     state = purge.calc_virtual(CounterState(power=-5001, currents=[7.25]*3, exported=200, imported=100))
@@ -228,14 +235,16 @@ def test_calc_uncounted_consumption(monkeypatch):
         )
     )
 
-    def mock_get_component_obj_by_id(component_id):
+    original_get_hierarchy_obj_by_id = _counter.get_hierarchy_obj_by_id
+
+    def mock_get_hierarchy_obj_by_id(component_id, component_type):
         if component_id == 0:  # Parent counter
             return parent_counter_component
         elif component_id == 2:  # Regular counter
             return regular_counter_component
-        return None
+        return original_get_hierarchy_obj_by_id(component_id, component_type)
 
-    monkeypatch.setattr(_counter, "get_component_obj_by_id", mock_get_component_obj_by_id)
+    monkeypatch.setattr(_counter, "get_hierarchy_obj_by_id", mock_get_hierarchy_obj_by_id)
 
     virtual_counter_purge = PurgeCounterState(
         delegate=Mock(delegate=Mock(num=3)),

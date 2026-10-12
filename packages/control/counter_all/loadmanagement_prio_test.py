@@ -1,0 +1,306 @@
+
+from typing import Dict, List
+from unittest.mock import Mock
+
+import pytest
+
+from control.chargepoint.chargepoint import Chargepoint
+from control.consumer.usage import ConsumerUsage
+from control.counter_all.counter_all import CounterAll
+from modules.common.component_type import ComponentType
+
+
+@pytest.fixture
+def cp1():
+    cp = Chargepoint(1, None)
+    cp.data.control_parameter.required_current = 8
+    return cp
+
+
+@pytest.fixture
+def cp2():
+    cp = Chargepoint(2, None)
+    cp.data.control_parameter.required_current = 7
+    return cp
+
+
+@pytest.fixture
+def cp3():
+    cp = Chargepoint(3, None)
+    cp.data.control_parameter.required_current = 6
+    return cp
+
+
+@pytest.mark.parametrize(
+    "loadmanagement_prios, id, type, expected_loadmanagement_prios",
+    [
+        pytest.param([], 2, ComponentType.VEHICLE, [{"type": "vehicle", "id": 2}], id="emtpy list"),
+        pytest.param([{"type": "vehicle", "id": 3}], 2, ComponentType.VEHICLE,
+                     [{"type": "vehicle", "id": 3},
+                      {"type": "vehicle", "id": 2}], id="flat list"),
+        pytest.param([
+            {
+                "type": "group",
+                "label": "Wichtige Fahrzeuge",
+                "children": [
+                        {"type": "vehicle", "id": 0, },
+                        {"type": "vehicle", "id": 1, },
+                ]
+            },
+            {"type": "vehicle", "id": 2},
+        ], 4, ComponentType.VEHICLE, [
+            {
+                "type": "group",
+                "label": "Wichtige Fahrzeuge",
+                "children": [
+                        {"type": "vehicle", "id": 0, },
+                        {"type": "vehicle", "id": 1, },
+                ]
+            },
+            {"type": "vehicle", "id": 2},
+            {"type": "vehicle", "id": 4},
+        ], id="nested list"),
+    ]
+)
+def test_add_item(loadmanagement_prios: List[Dict],
+                  id: int,
+                  type: ComponentType,
+                  expected_loadmanagement_prios: List[Dict]):
+    # setup
+    c = CounterAll()
+    c.data.get.loadmanagement_prios = loadmanagement_prios
+
+    # execution
+    c.add_loadmanagement_prio_item(type, id)
+
+    # assert
+    assert c.data.get.loadmanagement_prios == expected_loadmanagement_prios
+
+
+@pytest.mark.parametrize(
+    "loadmanagement_prios, usage_type, expected_loadmanagement_prios, expected_changed",
+    [
+        pytest.param([], ConsumerUsage.CONTINUOUS, [{"type": "consumer", "id": 2}], True, id="add consumer"),
+        pytest.param([{"type": "consumer", "id": 2}], ConsumerUsage.CONTINUOUS,
+                     [{"type": "consumer", "id": 2}], False, id="do not add duplicate"),
+        pytest.param([{
+            "type": "group",
+            "label": "Verbraucher",
+            "children": [{"type": "consumer", "id": 2}],
+        }], ConsumerUsage.METER_ONLY, [], True, id="remove consumer from group"),
+        pytest.param([], ConsumerUsage.METER_ONLY, [], False, id="ignore absent meter"),
+        pytest.param([{"type": "consumer", "id": 2}], ConsumerUsage.SELF_CONTROLLED, [], True,
+                     id="remove self-controlled consumer"),
+        pytest.param([], ConsumerUsage.SELF_CONTROLLED, [], False, id="ignore absent self-controlled consumer"),
+    ],
+)
+def test_update_consumer_loadmanagement_prio(loadmanagement_prios: List[Dict],
+                                             usage_type: ConsumerUsage,
+                                             expected_loadmanagement_prios: List[Dict],
+                                             expected_changed: bool):
+    c = CounterAll()
+    c.data.get.loadmanagement_prios = loadmanagement_prios
+
+    changed = c.update_consumer_loadmanagement_prio(2, usage_type)
+
+    assert c.data.get.loadmanagement_prios == expected_loadmanagement_prios
+    assert changed is expected_changed
+
+
+@pytest.mark.parametrize(
+    "loadmanagement_prios, type, id, expected_loadmanagement_prios",
+    [
+        pytest.param([{"type": "vehicle", "id": 3}, {"type": "vehicle", "id": 2}],
+                     ComponentType.VEHICLE, 2, [{"type": "vehicle", "id": 3}], id="flat list, remove vehicle"),
+        pytest.param([{"type": "vehicle", "id": 3}, {"type": "consumer", "id": 2}],
+                     ComponentType.CONSUMER, 2, [{"type": "vehicle", "id": 3}], id="flat list, remove consumer"),
+        pytest.param([{"type": "vehicle", "id": 3}, {"type": "consumer", "id": 2}],
+                     ComponentType.CONSUMER, 99, [{"type": "vehicle", "id": 3}, {"type": "consumer", "id": 2}],
+                     id="id not present, must not raise and must not change the list"),
+        pytest.param([
+            {
+                "type": "group",
+                "label": "Wichtige Fahrzeuge",
+                "children": [
+                        {"type": "vehicle", "id": 0, },
+                        {"type": "vehicle", "id": 1, },
+                ]
+            },
+            {"type": "vehicle", "id": 2},
+        ], ComponentType.VEHICLE, 2, [
+            {
+                "type": "group",
+                "label": "Wichtige Fahrzeuge",
+                "children": [
+                        {"type": "vehicle", "id": 0, },
+                        {"type": "vehicle", "id": 1, },
+                ]
+            },
+        ], id="nested list"),
+        pytest.param([
+            {
+                "type": "group",
+                        "label": "Wichtige Fahrzeuge",
+                        "children": [
+                            {"type": "vehicle", "id": 0, },
+                            {"type": "vehicle", "id": 1, },
+                        ]
+            },
+            {"type": "vehicle", "id": 2},
+        ], ComponentType.VEHICLE, 0, [
+            {
+                "type": "group",
+                "label": "Wichtige Fahrzeuge",
+                "children": [
+                        {"type": "vehicle", "id": 1, },
+                ]
+            },
+            {"type": "vehicle", "id": 2},
+        ], id="nested list, remove from group"),
+        pytest.param([
+            {
+                "type": "group",
+                        "label": "Wichtige Fahrzeuge",
+                        "children": [
+                            {"type": "vehicle", "id": 0, },
+                        ]
+            },
+            {"type": "vehicle", "id": 2},
+        ], ComponentType.VEHICLE, 0, [{"type": "vehicle", "id": 2}], id="nested list, empty group"),
+    ]
+)
+def test_remove_loadmanagement_prio_item(loadmanagement_prios: List[Dict],
+                                         type: ComponentType,
+                                         id: int,
+                                         expected_loadmanagement_prios: List[Dict]):
+    # setup
+    c = CounterAll()
+    c.data.get.loadmanagement_prios = loadmanagement_prios
+
+    # execution
+    c.remove_loadmanagement_prio_item(type, id)
+
+    # assert
+    assert c.data.get.loadmanagement_prios == expected_loadmanagement_prios
+
+
+def test_sort_cps_by_loadmanagement_prios_nested_same_vehicle(cp1, cp2, cp3):
+    """Alle LP haben das gleiche Fahrzeug zugeordnet"""
+    # setup
+    cp1.data.config.ev = 0
+    cp2.data.config.ev = 0
+    cp3.data.config.ev = 0
+
+    c = CounterAll()
+    c.data.get.loadmanagement_prios = [{"type": "vehicle", "id": 2}, {"type": "vehicle", "id": 0}]
+
+    # execution
+    result = c.sort_cps_by_loadmanagement_prios_nested([cp1, cp2, cp3])
+
+    # assert - eine Gruppe mit allen CPs (sortiert nach required_current)
+    assert len(result) == 1
+    assert result[0] == [cp1, cp2, cp3]  # direkte Objektvergleiche!
+
+
+def test_sort_cps_by_loadmanagement_prios_nested_different_vehicles(cp1, cp2, cp3):
+    """Alle LP haben unterschiedliche Fahrzeuge"""
+    # setup
+    cp1.data.config.ev = 1
+    cp2.data.config.ev = 2
+    cp3.data.config.ev = 3
+
+    c = CounterAll()
+    c.data.get.loadmanagement_prios = [
+        {"type": "vehicle", "id": 3},
+        {"type": "vehicle", "id": 1},
+        {"type": "vehicle", "id": 2}
+    ]
+
+    # execution
+    result = c.sort_cps_by_loadmanagement_prios_nested([cp1, cp2, cp3])
+
+    # assert - drei separate Gruppen
+    assert len(result) == 3
+    assert result[0] == [cp3]  # vehicle id=3
+    assert result[1] == [cp1]  # vehicle id=1
+    assert result[2] == [cp2]  # vehicle id=2
+
+
+def test_sort_cps_by_loadmanagement_prios_nested_with_group(cp1, cp2, cp3):
+    """LP mit unterschiedlichen Fahrzeugen, einige in Gruppe"""
+    # setup
+    cp1.data.config.ev = 1
+    cp2.data.config.ev = 2
+    cp3.data.config.ev = 3
+
+    c = CounterAll()
+    c.data.get.loadmanagement_prios = [
+        {"type": "vehicle", "id": 3},
+        {
+            "type": "group",
+            "label": "Wichtige Fahrzeuge",
+            "children": [
+                {"type": "vehicle", "id": 1},
+                {"type": "vehicle", "id": 2}
+            ]
+        }
+    ]
+
+    # execution
+    result = c.sort_cps_by_loadmanagement_prios_nested([cp1, cp2, cp3])
+
+    # assert - zwei Gruppen
+    assert len(result) == 2
+    assert result[0] == [cp3]        # vehicle id=3 einzeln
+    assert result[1] == [cp1, cp2]   # vehicles id=1,2 in der Gruppe
+
+
+def test_generator_cps_by_loadmanagement_prios(cp1, cp2, cp3, monkeypatch):
+    # setup
+    mock_sort_cps = Mock(return_value=[[cp3], [cp1, cp2]])
+    monkeypatch.setattr(CounterAll, "sort_cps_by_loadmanagement_prios_nested", mock_sort_cps)
+
+    c = CounterAll()
+
+    # execution
+    result = list(c.generator_cps_by_loadmanagement_prios([cp1, cp2, cp3]))
+
+    # assert
+    assert len(result) == 3
+    assert result[0] == (cp3, [cp3])
+    assert result[1] == (cp1, [cp1, cp2])
+    assert result[2] == (cp2, [cp2])
+
+
+def test_generator_cps_by_loadmanagement_prios_flat(cp1, cp2, cp3, monkeypatch):
+    # setup
+    mock_sort_cps = Mock(return_value=[[cp3], [cp1], [cp2]])
+    monkeypatch.setattr(CounterAll, "sort_cps_by_loadmanagement_prios_nested", mock_sort_cps)
+
+    c = CounterAll()
+
+    # execution
+    result = list(c.generator_cps_by_loadmanagement_prios([cp1, cp2, cp3]))
+
+    # assert
+    assert len(result) == 3
+    assert result[0] == (cp3, [cp3])
+    assert result[1] == (cp1, [cp1])
+    assert result[2] == (cp2, [cp2])
+
+
+def test_generator_cps_by_loadmanagement_prios_one_group(cp1, cp2, cp3, monkeypatch):
+    # setup
+    mock_sort_cps = Mock(return_value=[[cp3, cp1, cp2]])
+    monkeypatch.setattr(CounterAll, "sort_cps_by_loadmanagement_prios_nested", mock_sort_cps)
+
+    c = CounterAll()
+
+    # execution
+    result = list(c.generator_cps_by_loadmanagement_prios([cp1, cp2, cp3]))
+
+    # assert
+    assert len(result) == 3
+    assert result[0] == (cp3, [cp3, cp1, cp2])
+    assert result[1] == (cp1, [cp1, cp2])
+    assert result[2] == (cp2, [cp2])

@@ -118,3 +118,14 @@ def extract_odometer(data: dict) -> Optional[float]:
     if odometer is None or odometer.get("mileageInKm") is None:
         return None
     return float(odometer["mileageInKm"])
+
+
+def extract_warning(data: dict) -> Optional[str]:
+    vehicle = data.get("vehicle") or {}
+    settings = ((vehicle.get("charging") or {}).get("settings")) or {}
+    if settings.get("chargingCareMode") != "ACTIVATED":
+        return None
+    target = settings.get("targetStateOfChargeInPercent")
+    if target is None or target >= 100:
+        return None
+    return f"Battery Care Mode ist im Fahrzeug aktiv und begrenzt die Ladung selbst auf {target}%."

@@ -16,6 +16,10 @@ import type {
   ChargePointConnectedVehicleInfo,
   Vehicle,
   VehicleInfo,
+  Consumer,
+  ConsumerModule,
+  ConsumerUsageType,
+  ConsumerResetTrigger,
   ScheduledChargingPlan,
   ChargePointConnectedVehicleSoc,
   GraphDataPoint,
@@ -779,16 +783,12 @@ export const useMqttStore = defineStore('mqtt', () => {
 
   /**
    * Check if user management is active
-   * Defaults to true if the value is not set as this may be due to insufficient permissions
+   * Returns false until the retained value is received, the topic is readable for all clients (including anonymous)
    * @returns boolean
    */
   const userManagementActive: ComputedRef<boolean> = computed(() => {
     return (
-      getValue.value(
-        'openWB/system/security/user_management_active',
-        undefined,
-        true,
-      ) === true
+      getValue.value('openWB/system/security/user_management_active') === true
     );
   });
 
@@ -1391,6 +1391,27 @@ export const useMqttStore = defineStore('mqtt', () => {
   };
 
   /**
+   * Get the maximum DC power of the charge point template identified by the charge point id
+   * @param chargePointId charge point id
+   * @returns number | undefined
+   */
+  const chargePointDcMaxPower = (chargePointId: number) =>
+    computed(() => {
+      const templateId = getValue.value(
+        `openWB/chargepoint/${chargePointId}/config`,
+        'template',
+      ) as number | undefined;
+      if (templateId === undefined) return undefined;
+      const dcMaxCurrent = getValue.value(
+        `openWB/chargepoint/template/${templateId}`,
+        'dc_max_current',
+      ) as number | undefined;
+      return dcMaxCurrent === undefined
+        ? undefined
+        : convertDcCurrentToPower(dcMaxCurrent);
+    });
+
+  /**
    * Get or set the charge point connected vehicle instant charging DC power identified by the charge point id
    * @param chargePointId charge point id
    * @returns number
@@ -1797,31 +1818,6 @@ export const useMqttStore = defineStore('mqtt', () => {
   };
 
   /**
-   * Get or set the charge point connected vehicle pv feed in limit active identified by the charge point id
-   * @param chargePointId charge point id
-   * @returns object | undefined
-   */
-  const chargePointConnectedVehiclePvChargeFeedInLimit = (
-    chargePointId: number,
-  ) => {
-    return computed({
-      get() {
-        return chargePointConnectedVehicleChargeTemplate(chargePointId).value
-          ?.chargemode?.pv_charging?.feed_in_limit;
-      },
-      set(newValue: boolean) {
-        console.debug('set pv feed in limit active', newValue, chargePointId);
-        return updateTopic(
-          `openWB/chargepoint/${chargePointId}/set/charge_template`,
-          newValue,
-          'chargemode.pv_charging.feed_in_limit',
-          true,
-        );
-      },
-    });
-  };
-
-  /**
    * Get or set the charge point connected vehicle eco charging current identified by the charge point id
    * @param chargePointId charge point id
    * @returns object | undefined
@@ -1958,10 +1954,10 @@ export const useMqttStore = defineStore('mqtt', () => {
   const batteryChargePriorityRange = computed<RangeValue>({
     get() {
       const minSoc = getValue.value(
-        'openWB/general/chargemode_config/pv_charging/min_bat_soc',
+        'openWB/general/chargemode_config/bat/min_soc',
       ) as number | undefined;
       const maxSoc = getValue.value(
-        'openWB/general/chargemode_config/pv_charging/max_bat_soc',
+        'openWB/general/chargemode_config/bat/max_soc',
       ) as number | undefined;
       return {
         min: minSoc ?? 0,
@@ -1970,13 +1966,13 @@ export const useMqttStore = defineStore('mqtt', () => {
     },
     set(newRange: RangeValue) {
       updateTopic(
-        'openWB/general/chargemode_config/pv_charging/min_bat_soc',
+        'openWB/general/chargemode_config/bat/min_soc',
         newRange.min,
         undefined,
         true,
       );
       updateTopic(
-        'openWB/general/chargemode_config/pv_charging/max_bat_soc',
+        'openWB/general/chargemode_config/bat/max_soc',
         newRange.max,
         undefined,
         true,
@@ -2887,13 +2883,13 @@ export const useMqttStore = defineStore('mqtt', () => {
       get() {
         return (
           (getValue.value(
-            'openWB/general/chargemode_config/pv_charging/bat_mode',
+            'openWB/general/chargemode_config/bat/mode',
           ) as string) || undefined
         );
       },
       set(newValue: string) {
         return updateTopic(
-          'openWB/general/chargemode_config/pv_charging/bat_mode',
+          'openWB/general/chargemode_config/bat/mode',
           newValue,
           undefined,
           true,
@@ -3707,6 +3703,430 @@ export const useMqttStore = defineStore('mqtt', () => {
     });
   };
 
+  ////////////////////////////// consumer data ////////////////////////////////
+
+  /**
+   * Get a list of all consumers in the order of the hierarchy.
+   * @returns Consumer[]
+   */
+  const consumerList = computed<Consumer[]>(() => {
+    const modules = getWildcardValues.value('openWB/consumer/+/module');
+    return getObjectIds
+      .value('consumer')
+      .filter((id) => accessConsumerAllowed.value(id))
+      .map((id) => {
+        const module = modules[`openWB/consumer/${id}/module`] as
+          ConsumerModule | undefined;
+        return { id, name: module?.name ?? `Verbraucher ${id}` };
+      });
+  });
+
+  /**
+   * Check if access to a specific consumer is allowed
+   * @param consumerId
+   * @returns boolean
+   */
+  const accessConsumerAllowed = computed(() => {
+    return (consumerId: number) => {
+      const modules = getWildcardValues.value('openWB/consumer/+/module');
+      return `openWB/consumer/${consumerId}/module` in modules;
+    };
+  });
+
+  /**
+   * Get the consumer ids
+   * @returns number[]
+   */
+  const consumerIds = computed(() => {
+    return consumerList.value.map((consumer) => consumer.id);
+  });
+
+  /**
+   * Get the consumer name identified by the consumer id
+   * @param consumerId consumer id
+   * @returns string | undefined
+   */
+  const consumerName = computed(() => {
+    return (consumerId: number): string | undefined => {
+      return consumerList.value.find((consumer) => consumer.id === consumerId)
+        ?.name;
+    };
+  });
+
+  /**
+   * Get the consumer user-defined color identified by the consumer id
+   * @param consumerId consumer id
+   * @returns string | null
+   */
+  const consumerColor = computed(() => {
+    return (consumerId: number): string | null => {
+      const color = getValue.value(
+        `openWB/consumer/${consumerId}/module`,
+        'color',
+        null,
+      ) as string | null;
+      return resolveComponentColor(color, SETTINGS_UI_COLORS.consumer);
+    };
+  });
+
+  /**
+   * Get the current power of a consumer identified by the consumer id
+   * @param consumerId consumer id
+   * @param returnType type of return value, 'textValue', 'value', 'scaledValue', 'scaledUnit' or 'object'
+   * @returns string | number | ValueObject
+   */
+  const consumerPower = computed(() => {
+    return (consumerId: number, returnType: string = 'textValue') => {
+      const power =
+        (getValue.value(
+          `openWB/consumer/${consumerId}/get/power`,
+          undefined,
+          0,
+        ) as number) || 0;
+      const valueObject = getValueObject.value(power);
+      if (Object.hasOwn(valueObject, returnType)) {
+        return valueObject[returnType as keyof ValueObject];
+      }
+      if (returnType == 'object') {
+        return valueObject;
+      }
+      console.error('returnType not found!', returnType, power);
+    };
+  });
+
+  /**
+   * Get the summed power of all consumers.
+   * @param returnType type of return value, 'textValue', 'value', 'scaledValue', 'scaledUnit' or 'object'
+   * @returns string | number | ValueObject
+   */
+  const consumerSumPower = computed(() => {
+    return (returnType: string = 'textValue') => {
+      const power = getValue.value('openWB/consumer/get/power') as
+        number | undefined;
+      const valueObject = getValueObject.value(power);
+      if (Object.hasOwn(valueObject, returnType)) {
+        return valueObject[returnType as keyof ValueObject];
+      }
+      if (returnType == 'object') {
+        return valueObject;
+      }
+      console.error('returnType not found!', returnType, power);
+    };
+  });
+
+  /**
+   * Get the daily imported energy total of all consumers, or of a single
+   * consumer when an id is provided
+   * @param returnType type of return value, 'textValue', 'value', 'scaledValue', 'scaledUnit' or 'object'
+   * @param id optional consumer id; omit for the sum of all consumers
+   * @returns string | number | ValueObject
+   */
+  const consumerDailyImported = computed(() => {
+    return (
+      returnType: string = 'textValue',
+      id: number | undefined = undefined,
+    ) => {
+      const energy =
+        (getValue.value(
+          `openWB/consumer/${id !== undefined ? `${id}/` : ''}get/daily_imported`,
+          undefined,
+          0,
+        ) as number) || 0;
+      const valueObject = getValueObject.value(energy, 'Wh');
+      if (Object.hasOwn(valueObject, returnType)) {
+        return valueObject[returnType as keyof ValueObject];
+      }
+      if (returnType == 'object') {
+        return valueObject;
+      }
+      console.error('returnType not found!', returnType, energy);
+    };
+  });
+
+  /**
+   * Get the running time (on_time, in seconds) of a consumer since it last
+   * started. Resets when the device stops drawing current.
+   * @param consumerId consumer id
+   * @returns number | undefined
+   */
+  const consumerOnTime = computed(() => {
+    return (consumerId: number): number | undefined => {
+      return getValue.value(`openWB/consumer/${consumerId}/set/on_time`) as
+        number | undefined;
+    };
+  });
+
+  /**
+   * Get the temperature readings of a consumer identified by the consumer id.
+   * @param consumerId
+   * @returns { sensorCount, sensors }
+   */
+  const consumerTemperatures = computed(() => {
+    return (
+      consumerId: number,
+    ): {
+      sensorCount: number;
+      sensors: { index: number; textValue: string }[];
+    } => {
+      const temperatures = getValue.value(
+        `openWB/consumer/${consumerId}/get/temperatures`,
+      );
+      if (!Array.isArray(temperatures)) {
+        return { sensorCount: 0, sensors: [] };
+      }
+      if (!temperatures.some((value: unknown) => typeof value === 'number')) {
+        return { sensorCount: 0, sensors: [] };
+      }
+      const sensors = temperatures.map((value: unknown, index: number) => ({
+        index,
+        textValue: getValueObject.value(
+          typeof value === 'number' ? value : undefined,
+          '°C',
+          '',
+          false,
+          false,
+          '---',
+          1,
+        ).textValue,
+      }));
+      return { sensorCount: temperatures.length, sensors };
+    };
+  });
+
+  /**
+   * Get the status text of a consumer identified by the consumer id
+   * @param consumerId consumer id
+   * @returns string | undefined
+   */
+  const consumerStateStr = computed(() => {
+    return (consumerId: number): string | undefined => {
+      return getValue.value(`openWB/consumer/${consumerId}/get/state_str`) as
+        string | undefined;
+    };
+  });
+
+  /**
+   * Get the fault state (0 = ok, 1 = warning, 2 = error) of a consumer
+   * @param consumerId consumer id
+   * @returns number
+   */
+  const consumerFaultState = computed(() => {
+    return (consumerId: number): number => {
+      return (
+        (getValue.value(
+          `openWB/consumer/${consumerId}/get/fault_state`,
+          undefined,
+          0,
+        ) as number) || 0
+      );
+    };
+  });
+
+  /**
+   * Get the fault message of a consumer identified by the consumer id
+   * @param consumerId consumer id
+   * @returns string | undefined
+   */
+  const consumerFaultStr = computed(() => {
+    return (consumerId: number): string | undefined => {
+      return getValue.value(`openWB/consumer/${consumerId}/get/fault_str`) as
+        string | undefined;
+    };
+  });
+
+  /**
+   * Get the usage type of a consumer identified by the consumer id.
+   * @param consumerId consumer id
+   * @returns ConsumerUsageType | undefined
+   */
+  const consumerUsageType = computed(() => {
+    return (consumerId: number): ConsumerUsageType | undefined => {
+      return getValue.value(`openWB/consumer/${consumerId}/usage`, 'type') as
+        ConsumerUsageType | undefined;
+    };
+  });
+
+  /**
+   * Get or set the operating mode (Betriebsmodus) of a consumer.
+   * @param consumerId consumer id
+   * @returns writable computed of string | undefined
+   */
+  const consumerMode = (consumerId: number) => {
+    return computed({
+      get() {
+        return getValue.value(
+          `openWB/consumer/${consumerId}/usage`,
+          'chargemode',
+        ) as string | undefined;
+      },
+      set(newValue: string) {
+        console.debug('set consumer mode', newValue, consumerId);
+        return updateTopic(
+          `openWB/consumer/${consumerId}/usage`,
+          newValue,
+          'chargemode',
+          true,
+        );
+      },
+    });
+  };
+
+  /**
+   * Get or set if automatic consumer mode reset is active.
+   * @param consumerId consumer id
+   * @returns writable computed of boolean
+   */
+  const consumerResetEnabled = (consumerId: number) => {
+    return computed({
+      get() {
+        return (getValue.value(
+          `openWB/consumer/${consumerId}/usage`,
+          'reset_chargemode.active',
+          false,
+        ) ?? false) as boolean;
+      },
+      set(newValue: boolean) {
+        return updateTopic(
+          `openWB/consumer/${consumerId}/usage`,
+          newValue,
+          'reset_chargemode.active',
+          true,
+        );
+      },
+    });
+  };
+
+  /**
+   * Get or set the automatic mode-reset frequency of a consumer.
+   * @param consumerId consumer id
+   * @returns writable computed of ConsumerResetTrigger
+   */
+  const consumerResetTrigger = (consumerId: number) => {
+    return computed({
+      get() {
+        return (getValue.value(
+          `openWB/consumer/${consumerId}/usage`,
+          'reset_chargemode.frequency.selected',
+          'daily',
+        ) ?? 'daily') as ConsumerResetTrigger;
+      },
+      set(newValue: ConsumerResetTrigger) {
+        return updateTopic(
+          `openWB/consumer/${consumerId}/usage`,
+          newValue,
+          'reset_chargemode.frequency.selected',
+          true,
+        );
+      },
+    });
+  };
+
+  /**
+   * Get or set the target mode the consumer is switched to on reset
+   * @param consumerId consumer id
+   * @returns writable computed of string | undefined
+   */
+  const consumerResetTargetMode = (consumerId: number) => {
+    return computed({
+      get() {
+        return getValue.value(
+          `openWB/consumer/${consumerId}/usage`,
+          'reset_chargemode.chargemode',
+        ) as string | undefined;
+      },
+      set(newValue: string) {
+        return updateTopic(
+          `openWB/consumer/${consumerId}/usage`,
+          newValue,
+          'reset_chargemode.chargemode',
+          true,
+        );
+      },
+    });
+  };
+
+  /**
+   * Get or set the reset time (HH:MM) of a consumer.
+   * @param consumerId consumer id
+   * @returns writable computed of string
+   */
+  const consumerResetTime = (consumerId: number) => {
+    return computed({
+      get() {
+        return getValue.value(
+          `openWB/consumer/${consumerId}/usage`,
+          'reset_chargemode.time',
+          '00:00',
+        ) as string;
+      },
+      set(newValue: string) {
+        return updateTopic(
+          `openWB/consumer/${consumerId}/usage`,
+          newValue,
+          'reset_chargemode.time',
+          true,
+        );
+      },
+    });
+  };
+
+  /**
+   * Get or set the once-date (YYYY-MM-DD) of a consumer mode reset.
+   * @param consumerId consumer id
+   * @returns writable computed of string
+   */
+  const consumerResetOnceDate = (consumerId: number) => {
+    return computed({
+      get() {
+        const systemDate = new Date();
+        const pad = (value: number) => String(value).padStart(2, '0');
+        const fallback = `${systemDate.getFullYear()}-${pad(systemDate.getMonth() + 1)}-${pad(systemDate.getDate())}`;
+        return getValue.value(
+          `openWB/consumer/${consumerId}/usage`,
+          'reset_chargemode.frequency.once',
+          fallback,
+        ) as string;
+      },
+      set(newValue: string) {
+        return updateTopic(
+          `openWB/consumer/${consumerId}/usage`,
+          newValue,
+          'reset_chargemode.frequency.once',
+          true,
+        );
+      },
+    });
+  };
+
+  /**
+   * Get or set the selected weekly days for consumer mode reset.
+   * @param consumerId consumer id
+   * @returns writable computed of weekly selection
+   */
+  const consumerResetWeeklyDays = (consumerId: number) => {
+    return computed({
+      get() {
+        const weekly = getValue.value(
+          `openWB/consumer/${consumerId}/usage`,
+          'reset_chargemode.frequency.weekly',
+          [false, false, false, false, false, false, false],
+        ) as boolean[];
+        if (Array.isArray(weekly) && weekly.length === 7) {
+          return weekly;
+        }
+        return [false, false, false, false, false, false, false];
+      },
+      set(newValue: boolean[]) {
+        return updateTopic(
+          `openWB/consumer/${consumerId}/usage`,
+          newValue,
+          'reset_chargemode.frequency.weekly',
+          true,
+        );
+      },
+    });
+  };
+
   /////////////////////////////// Grid Data /////////////////////////////////////
 
   /**
@@ -3937,7 +4357,7 @@ export const useMqttStore = defineStore('mqtt', () => {
     );
   });
 
-   /**
+  /**
    * Get the hybrid inverter/battery pairs. A battery is treated as "hybrid"
    * when it is a direct child of an inverter in the component hierarchy
    * The pairing is needed for the flow calculation - (Sankey Chart).
@@ -4141,6 +4561,7 @@ export const useMqttStore = defineStore('mqtt', () => {
     vehicle: '#17a2b8',
     counter: '#dc3545',
     pv: '#28a745',
+    consumer: '#6f42c1',
   } as const;
 
   const resolveComponentColor = (
@@ -4199,6 +4620,7 @@ export const useMqttStore = defineStore('mqtt', () => {
     chargePointFaultMessage,
     temporaryChargeModeActive,
     chargePointChargeType,
+    chargePointDcMaxPower,
     dcChargingEnabled,
     chargePointConnectedVehicleInfo,
     chargePointConnectedVehicleForceSocUpdate,
@@ -4219,7 +4641,6 @@ export const useMqttStore = defineStore('mqtt', () => {
     chargePointConnectedVehiclePvDcChargePower,
     chargePointConnectedVehiclePvDcMinSocPower,
     chargePointConnectedVehiclePvChargePhasesMinSoc,
-    chargePointConnectedVehiclePvChargeFeedInLimit,
     chargePointConnectedVehicleEcoChargeCurrent,
     chargePointConnectedVehicleEcoChargeDcPower,
     chargePointConnectedVehicleEcoChargePhases,
@@ -4298,6 +4719,28 @@ export const useMqttStore = defineStore('mqtt', () => {
     batteryChargePriorityRange,
     batteryMode,
     batteryColor,
+    // Consumer data
+    consumerList,
+    accessConsumerAllowed,
+    consumerIds,
+    consumerName,
+    consumerColor,
+    consumerPower,
+    consumerSumPower,
+    consumerDailyImported,
+    consumerOnTime,
+    consumerTemperatures,
+    consumerStateStr,
+    consumerFaultState,
+    consumerFaultStr,
+    consumerUsageType,
+    consumerMode,
+    consumerResetEnabled,
+    consumerResetTrigger,
+    consumerResetTargetMode,
+    consumerResetTime,
+    consumerResetOnceDate,
+    consumerResetWeeklyDays,
     // Grid data
     gridId,
     secondaryCounterIds,

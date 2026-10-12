@@ -48,7 +48,7 @@ def write_token_mqtt(topic: str, token: str, config: TronityVehicleSocConfigurat
 
 
 def create_session(config: TronityVehicleSocConfiguration, vehicle: int) -> req.Session:
-    session = req.Session()
+    session = req.get_http_session()
     data = {'grant_type': 'app',
             'client_id': str(config.client_id),
             'client_secret': str(config.client_secret)}

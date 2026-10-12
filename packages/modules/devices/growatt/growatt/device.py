@@ -34,6 +34,7 @@ def create_device(device_config: Growatt):
 
     def create_inverter_component(component_config: GrowattInverterSetup):
         return GrowattInverter(component_config=component_config,
+                               device_id=device_config.id,
                                modbus_id=device_config.configuration.modbus_id,
                                version=GrowattVersion(device_config.configuration.version),
                                client=client)

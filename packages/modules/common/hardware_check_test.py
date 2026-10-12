@@ -66,6 +66,32 @@ def test_hardware_check_fails(evse_side_effect,
         ClientHandler(0, client, [1], Mock())
 
 
+@pytest.mark.parametrize(
+    "transient_exception",
+    [pytest.param(Exception("Modbus"), id="response.isError() in modbus.py"),
+     pytest.param(ValueError("Unbekannter Zustand der EVSE"), id="EvseStatusCode.FAILURE in evse.py")]
+)
+def test_hardware_check_retries_transient_exception(transient_exception, monkeypatch):
+    # Neither modbus.py's response.isError() case nor evse.py's EvseStatusCode.FAILURE case raise
+    # ModbusIOException/ConnectionException. The retry loop must catch those too, or a single
+    # transient glitch fails the whole readout with no retry.
+    mock_evse_client = Mock(spec=Evse, version=18,
+                            get_evse_state=Mock(side_effect=[transient_exception, Mock(spec=EvseState)]))
+    monkeypatch.setattr(ClientHandler, "_evse_factory", Mock(return_value=mock_evse_client))
+
+    counter_state_mock = Mock(spec=CounterState, voltages=[230]*3, currents=[0, 0, 0], powers=[0, 0, 0],
+                              power=0, serial_number="1234")
+    mock_meter_client = Mock(spec=sdm.Sdm630_72, get_counter_state=Mock(return_value=counter_state_mock))
+    monkeypatch.setattr(ClientHandler, "find_meter_client", Mock(return_value=mock_meter_client))
+
+    client = Mock(spec=ModbusSerialClient_, __enter__=Mock(return_value=None), __exit__=Mock(return_value=None))
+
+    # execution and evaluation
+    # keine Exception: der zweite Versuch muss noch innerhalb von request_and_check_hardware laufen
+    ClientHandler(0, client, [1], Mock())
+    assert mock_evse_client.get_evse_state.call_count == 2
+
+
 def test_hardware_check_succeeds(monkeypatch):
     # setup
     mock_evse_client = Mock(spec=Evse, get_evse_state=Mock(return_value=Mock(spec=EvseState)), version=17)

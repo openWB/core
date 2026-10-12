@@ -8,18 +8,20 @@ from control.bat import Bat
 from control.bat_all import BatAll
 from control.chargepoint.chargepoint import Chargepoint
 from control.chargepoint.chargepoint_template import CpTemplate
-from control.counter_all import CounterAll
+from control.consumer.consumer import Consumer
+from control.counter_all.counter_all import CounterAll
 from control.counter import Counter
 from control.ev.ev import Ev
 from control.io_device import IoActions
 from control.pv import Pv
 from control.chargepoint.chargepoint_state import ChargepointState
-from test_utils.default_hierarchies import NESTED_HIERARCHY
 
 
 @pytest.fixture(autouse=True)
 def data_() -> None:
     data.data_init(Mock())
+    data.data.consumer_data.update({"consumer7": Consumer(7)})
+    data.data.consumer_data["consumer7"].data.get.voltages = [230]*3
     data.data.cp_data = {
         "cp3": Chargepoint(3, None),
         "cp4": Chargepoint(4, None),
@@ -27,6 +29,7 @@ def data_() -> None:
     for i in range(3, 6):
         data.data.cp_data[f"cp{i}"].template = CpTemplate()
         data.data.cp_data[f"cp{i}"].data.config.phase_1 = i-2
+        data.data.cp_data[f"cp{i}"].data.config.ev = i
         data.data.cp_data[f"cp{i}"].data.set.charging_ev_data = Ev(i)
         data.data.cp_data[f"cp{i}"].data.set.charging_ev_data.ev_template.data.max_current_single_phase = 32
         data.data.cp_data[f"cp{i}"].data.get.plug_state = True
@@ -49,10 +52,27 @@ def data_() -> None:
     data.data.counter_data["counter6"].data.config.max_currents = [16]*3
     data.data.counter_data["counter6"].data.config.max_total_power = 11000
     data.data.counter_all_data = CounterAll()
-    data.data.counter_all_data.data.get.hierarchy = NESTED_HIERARCHY
+    data.data.counter_all_data.data.get.hierarchy = [{"id": 0, "type": "counter",
+                                                      "children": [
+                                                          {"id": 3, "type": "cp", "children": []},
+                                                          {"id": 7, "type": "consumer", "children": []},
+                                                          {"id": 6, "type": "counter",
+                                                           "children": [
+                                                               {"id": 4, "type": "cp", "children": []},
+                                                               {"id": 5, "type": "cp", "children": []}]},
+                                                          {"id": 1, "type": "inverter", "children": []},
+                                                          {"id": 2, "type": "bat", "children": []}]}]
+    data.data.counter_all_data.data.get.loadmanagement_prios = [{
+        "type": "group",
+        "label": "Fahrzeuge",
+        "children": [
+                {"type": "vehicle", "id": 3}, {"type": "vehicle", "id": 4}, {
+                    "type": "vehicle", "id": 5}, {"type": "consumer", "id": 7}
+        ]
+    }]
     data.data.counter_all_data.data.config.consider_less_charging = True
     data.data.io_actions = IoActions()
-    data.data.general_data.data.chargemode_config.pv_charging.retry_failed_phase_switches = True
+    data.data.general_data.data.chargemode_config.surplus.vehicle.retry_failed_phase_switches = True
 
 
 @dataclass
@@ -60,11 +80,13 @@ class ParamsExpectedSetCurrent:
     expected_current_cp3: float = 0
     expected_current_cp4: float = 0
     expected_current_cp5: float = 0
+    expected_current_consumer7: float = 0
 
 
 def assert_expected_current(params: ParamsExpectedSetCurrent):
     for i in range(3, 6):
         assert data.data.cp_data[f"cp{i}"].data.set.current == getattr(params, f"expected_current_cp{i}")
+    assert data.data.consumer_data["consumer7"].data.set.current == params.expected_current_consumer7
 
 
 @pytest.fixture()
@@ -73,3 +95,6 @@ def all_cp_not_charging():
         data.data.cp_data[f"cp{i}"].data.get.currents = [0]*3
         data.data.cp_data[f"cp{i}"].data.get.charge_state = False
         data.data.cp_data[f"cp{i}"].data.control_parameter.state = ChargepointState.NO_CHARGING_ALLOWED
+    data.data.consumer_data["consumer7"].data.get.currents = [0]*3
+    data.data.consumer_data["consumer7"].data.get.charge_state = False
+    data.data.consumer_data["consumer7"].data.control_parameter.state = ChargepointState.NO_CHARGING_ALLOWED

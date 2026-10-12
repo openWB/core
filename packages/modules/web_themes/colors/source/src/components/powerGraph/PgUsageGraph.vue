@@ -30,6 +30,7 @@ import {
 	zoomedRange,
 } from './model'
 import { chargePoints } from '../chargePointList/model'
+import { consumers } from '../consumerList/model'
 const props = defineProps<{
 	width: number
 	height: number
@@ -41,17 +42,49 @@ const props = defineProps<{
 const keys = computed(() => {
 	if (!globalConfig.showInverters) {
 		return [
-			['house', 'charging', 'devices', 'counters', 'batIn'],
-			['charging', 'devices', 'counters', 'batIn', 'house'],
-			['devices', 'counters', 'batIn', 'charging', 'house'],
-			['batIn', 'charging', 'house', 'devices', 'counters'],
+			['house', 'charging', 'devices', 'consumers', 'counters', 'batIn'],
+			['charging', 'devices', 'consumers', 'counters', 'batIn', 'house'],
+			['devices', 'consumers', 'counters', 'batIn', 'charging', 'house'],
+			['batIn', 'charging', 'house', 'devices', 'consumers', 'counters'],
 		]
 	} else {
 		return [
-			['house', 'charging', 'devices', 'counters', 'batIn', 'evuOut'],
-			['charging', 'devices', 'counters', 'batIn', 'house', 'evuOut'],
-			['devices', 'counters', 'batIn', 'charging', 'house', 'evuOut'],
-			['batIn', 'charging', 'house', 'devices', 'counters', 'evuOut'],
+			[
+				'house',
+				'charging',
+				'devices',
+				'consumers',
+				'counters',
+				'batIn',
+				'evuOut',
+			],
+			[
+				'charging',
+				'devices',
+				'consumers',
+				'counters',
+				'batIn',
+				'house',
+				'evuOut',
+			],
+			[
+				'devices',
+				'consumers',
+				'counters',
+				'batIn',
+				'charging',
+				'house',
+				'evuOut',
+			],
+			[
+				'batIn',
+				'charging',
+				'house',
+				'devices',
+				'consumers',
+				'counters',
+				'evuOut',
+			],
 		]
 	}
 })
@@ -71,6 +104,7 @@ const colors: { [key: string]: string } = {
 	sh2: 'var(--color-sh2)',
 	sh3: 'var(--color-sh3)',
 	sh4: 'var(--color-sh4)',
+	consumers: 'var(--color-consumers)',
 	devices: 'var(--color-devices)',
 	counters: 'var(--color-counters)',
 }
@@ -136,14 +170,14 @@ const keysToUse = computed(() => {
 		return keys.value[props.stackOrder]
 	} else {
 		const k = keys.value[props.stackOrder].slice()
-		const idx = k.indexOf('charging')
-		k.splice(idx, 1)
-		const pattern = /cp\d+/
-		let additionalKeys: string[] = []
+		const idx_charging = k.indexOf('charging')
+		k.splice(idx_charging, 1)
+		const cpPattern = /cp\d+/
+		let chargingKeys: string[] = []
 		if (graphData.data.length > 0) {
-			additionalKeys = Object.keys(graphData.data[0]).reduce(
+			chargingKeys = Object.keys(graphData.data[0]).reduce(
 				(list: string[], element: string) => {
-					if (element.match(pattern)) {
+					if (element.match(cpPattern)) {
 						list.push(element)
 					}
 					return list
@@ -151,10 +185,44 @@ const keysToUse = computed(() => {
 				[],
 			)
 		}
-		additionalKeys.forEach((key, i) => {
-			k.splice(idx + i, 0, key)
-			colors[key] = chargePoints[+key.slice(2)]?.color ?? 'black'
+		chargingKeys.forEach((key, i) => {
+			k.splice(idx_charging + i, 0, key)
+			if (key.match(cpPattern)) {
+				colors[key] = chargePoints[+key.slice(2)]?.color ?? 'black'
+			} else if (key.match(consumerPattern)) {
+				colors[key] = consumers.get(+key.slice(8))?.color ?? 'black'
+				console.log(`color for ${key}: ${colors[key]}`)
+			}
 		})
+
+		const idx_consumers = k.indexOf('consumers')
+		k.splice(idx_consumers, 1)
+
+		const consumerPattern = /consumer\d+/
+		let consumerKeys: string[] = []
+		if (graphData.data.length > 0) {
+			consumerKeys = Object.keys(graphData.data[0]).reduce(
+				(list: string[], element: string) => {
+					if (element.match(consumerPattern)) {
+						list.push(element)
+					}
+					return list
+				},
+				[],
+			)
+		}
+		consumerKeys.forEach((key, i) => {
+			k.splice(idx_consumers + i, 0, key)
+			if (key.match(consumerPattern)) {
+				colors[key] = consumers.get(+key.slice(8))?.color ?? 'black'
+			} else if (key.match(consumerPattern)) {
+				colors[key] = consumers.get(+key.slice(8))?.color ?? 'black'
+				console.log(`color for ${key}: ${colors[key]}`)
+			}
+		})
+
+		//colors[key] = chargePoints[+key.slice(2)]?.color ?? 'black'
+		//})
 		return k
 	}
 })
@@ -162,7 +230,14 @@ const keysToUse = computed(() => {
 const vrange = computed(() => {
 	let result = extent(
 		graphData.data,
-		(d) => d.house + d.charging + d.batIn + d.devices + d.counters + d.evuOut,
+		(d) =>
+			d.house +
+			d.charging +
+			d.batIn +
+			d.devices +
+			d.consumers +
+			d.counters +
+			d.evuOut,
 	)
 	if (result[0] != undefined && result[1] != undefined) {
 		if (graphData.graphMode == 'year') {

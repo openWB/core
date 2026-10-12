@@ -99,8 +99,8 @@ export default {
   methods: {
     setBatteryMode(mode) {
       if(mode !== this.mqttStore.getBatteryMode) {
-        this.mqttStore.updateState("openWB/general/chargemode_config/pv_charging/bat_mode", mode);
-        this.$root.sendTopicToBroker("openWB/general/chargemode_config/pv_charging/bat_mode", mode);
+        this.mqttStore.updateState("openWB/general/chargemode_config/bat/mode", mode);
+        this.$root.sendTopicToBroker("openWB/general/chargemode_config/bat/mode", mode);
       }
     },
   },

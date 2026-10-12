@@ -35,8 +35,8 @@ def get_common_data():
         ip_address = None
     try:
         updateAvailable = subdata.SubData.system_data["system"].data["current_branch_commit"] and \
-                          subdata.SubData.system_data["system"].data["current_branch_commit"] != \
-                          subdata.SubData.system_data["system"].data["current_commit"]
+            subdata.SubData.system_data["system"].data["current_branch_commit"] != \
+            subdata.SubData.system_data["system"].data["current_commit"]
     except Exception:
         updateAvailable = False
 
@@ -113,24 +113,27 @@ def config_and_state():
             chargemode_config = data.data.general_data.data.chargemode_config
             parsed_data += (
                 "\n## General Charge Config/ PV ##\n"
-                f"Phase_Switch_Delay: {chargemode_config.pv_charging.phase_switch_delay} min\n"
-                f"Retry_Failed_Phase_Switches: {chargemode_config.pv_charging.retry_failed_phase_switches}\n"
-                f"Control_Range: {chargemode_config.pv_charging.control_range}W\n"
-                f"Switch_On_Threshold: {chargemode_config.pv_charging.switch_on_threshold}W\n"
-                f"Switch_On_Delay: {chargemode_config.pv_charging.switch_on_delay}s\n"
-                f"Switch_Off_Threshold: {chargemode_config.pv_charging.switch_off_threshold}W\n"
-                f"Switch_Off_Delay: {chargemode_config.pv_charging.switch_off_delay}s\n"
-                f"Feed_In_Yield: {chargemode_config.pv_charging.feed_in_yield}W\n"
-                f"Bat_Mode: {chargemode_config.pv_charging.bat_mode}\n"
-                f"Min_Bat_SoC: {chargemode_config.pv_charging.min_bat_soc}%\n"
-                f"Max_Bat_SoC: {chargemode_config.pv_charging.max_bat_soc}%\n"
-                f"Bat_Power_Reserve_Active: {chargemode_config.pv_charging.bat_power_reserve_active}\n"
-                f"Bat_Power_Reserve: {chargemode_config.pv_charging.bat_power_reserve}W\n"
-                f"Bat_Power_Discharge_Active: {chargemode_config.pv_charging.bat_power_discharge_active}\n"
-                f"Bat_Power_Discharge: {chargemode_config.pv_charging.bat_power_discharge}W\n")
+                f"Phase_Switch_Delay: {chargemode_config.surplus.vehicle.phase_switch_delay} min\n"
+                f"Retry_Failed_Phase_Switches: {chargemode_config.surplus.vehicle.retry_failed_phase_switches}\n"
+                f"Control_Range: {chargemode_config.surplus.control_range}W\n"
+                f"Switch_On_Threshold: {chargemode_config.surplus.vehicle.switch_on_threshold}W\n"
+                f"Switch_On_Delay: {chargemode_config.surplus.vehicle.switch_on_delay}s\n"
+                f"Switch_Off_Threshold: {chargemode_config.surplus.vehicle.switch_off_threshold}W\n"
+                f"Switch_Off_Delay: {chargemode_config.surplus.vehicle.switch_off_delay}s\n"
+                f"Feed_In_Yield: {chargemode_config.surplus.feed_in_yield}W\n"
+                f"Bat_Mode: {chargemode_config.bat.mode}\n"
+                f"Min_Bat_SoC: {chargemode_config.bat.min_soc}%\n"
+                f"Max_Bat_SoC: {chargemode_config.bat.max_soc}%\n"
+                f"Bat_Power_Reserve_Active: {chargemode_config.bat.power_reserve_active}\n"
+                f"Bat_Power_Reserve: {chargemode_config.bat.power_reserve}W\n"
+                f"Bat_Power_Discharge_Active: {chargemode_config.bat.power_discharge_active}\n"
+                f"Bat_Power_Discharge: {chargemode_config.bat.power_discharge}W\n")
     if secondary is False:
         with ErrorHandlingContext():
             parsed_data += f"\n## Hierarchy ##\n{get_hierarchy(data.data.counter_all_data.data.get.hierarchy)}\n"
+        with ErrorHandlingContext():
+            parsed_data += (f"\n## Priorities ##\n"
+                            f"{get_priorities(data.data.counter_all_data.data.get.loadmanagement_prios)}\n")
 
     with ErrorHandlingContext():
         if secondary:
@@ -178,7 +181,7 @@ def config_and_state():
                                                     f"{component_data.data.config.max_currents} A\n"
                                                     "--| Counter_Max_Power_Errorcase: "
                                                     f"{component_data.data.config.max_power_errorcase} W\n")
-                                elif counter_all_data.data.config.home_consumption_source_id == component_data.num:
+                                elif counter_all_data.is_home_consumption_counter(component_data.num):
                                     parsed_data += ("--| Counter_Type: Hausverbrauchszähler\n"
                                                     "--| Counter_Max_Power: "
                                                     f"{component_data.data.config.max_total_power} W\n"
@@ -218,6 +221,11 @@ def config_and_state():
                 except Exception:
                     home_consumption = "Keine Daten"
                 parsed_data += f"Home_Consumption:\n {home_consumption}\n"
+                try:
+                    not_in_home_consumption = filter_log_file('mqtt', 'openWB/counter/set/not_in_home_consumption', 5)
+                except Exception:
+                    not_in_home_consumption = "Keine Daten"
+                parsed_data += f"Not_In_Home_Consumption:\n {not_in_home_consumption}\n"
             with ErrorHandlingContext():
                 parsed_data += "\n## Charge Points ##\n"
                 parsed_data += f"CP_All_Power: {data.data.cp_all_data.data.get.power / 1000} kW\n\n"
@@ -237,6 +245,13 @@ def get_hierarchy(hierarchy, level=0):
                 parsed_data += f"{element['type']}: {cp.name} (ID: {element['id']})\n"
             except Exception:
                 parsed_data += f"{element['type']} (ID: {element['id']})\n"
+        elif element["type"] == "consumer":
+            try:
+                consumer = data.data.consumer_data[f"consumer{element['id']}"].data.module
+                parsed_data += (f"{element['type']}: {consumer.name} "
+                                f"(ID: {element['id']}, consumer_type: {consumer.type})\n")
+            except Exception:
+                parsed_data += f"{element['type']} (ID: {element['id']})\n"
         else:
             try:
                 for key, value in data.data.system_data.items():
@@ -252,8 +267,7 @@ def get_hierarchy(hierarchy, level=0):
                                         counter_all_data = data.data.counter_all_data
                                         if counter_all_data.get_evu_counter_str() == f"counter{component_data.num}":
                                             counter_type = ("EVU-Zähler")
-                                        elif (counter_all_data.data.config.home_consumption_source_id ==
-                                              component_data.num):
+                                        elif counter_all_data.is_home_consumption_counter(component_data.num):
                                             counter_type = ("Hausverbrauchszähler")
                                         else:
                                             counter_type = "Sonstiger Zähler"
@@ -266,6 +280,28 @@ def get_hierarchy(hierarchy, level=0):
                 parsed_data += f"{element['type']} (ID: {element['id']})\n"
         if element["children"]:
             parsed_data += get_hierarchy(element["children"], level + 1)
+    return parsed_data
+
+
+def get_priorities(priorities, level=0):
+    # get friendly names of elements
+    priority = 1
+    parsed_data = ""
+    for element in priorities:
+        parsed_data += "-" * (level * 2) + "| "
+        if level == 0:
+            parsed_data += f"Prio: {priority}, "
+            priority += 1
+        if element["type"] == "group":
+            parsed_data += f"{element['type']}: {element.get('label', 'unnamed')}\n"
+        elif element["type"] == "vehicle":
+            vehicle = data.data.ev_data[f"ev{element['id']}"].data
+            parsed_data += f"{element['type']}: {vehicle.name} (ID: {element['id']})\n"
+        elif element["type"] == "consumer":
+            consumer = data.data.consumer_data[f"consumer{element['id']}"].data.module
+            parsed_data += f"{element['type']}: {consumer.name} (ID: {element['id']}, consumer_type: {consumer.type})\n"
+        if "children" in element and element["children"]:
+            parsed_data += get_priorities(element["children"], level + 1)
     return parsed_data
 
 
@@ -427,11 +463,11 @@ def create_debug_log(input_data) -> Optional[dict]:
             write_to_file(df, lambda: header)
             write_to_file(df, lambda: f'# section: system #\n{get_common_data()}'
                                       f'Kernel: {run_shell_command("uname -s -r -v -m -o")}'
-                                      'Model: '
-                                      f'{run_shell_command("cat /proc/device-tree/model 2>/dev/null||echo unknown")}\n'
-                                      f'CID:\n{run_shell_command("mmc cid read /sys/block/mmcblk0/device")}\n'
                                       f'Uptime:{run_command(["uptime"])}{run_command(["free"])}\n')
-            write_to_file(df, lambda: f'# section: hardware #\n{get_hardware_data()}')
+            write_to_file(df, lambda: '# section: hardware #\nModel: '
+                                      f'{run_shell_command("cat /proc/device-tree/model 2>/dev/null||echo unknown")}\n'
+                                      f'CID:\n{run_shell_command("mmc cid read /sys/block/mmcblk0/device")}')
+            write_to_file(df, lambda: f'{get_hardware_data()}')
             write_to_file(df, lambda: f'USB_Devices:\n{run_shell_command(["lsusb"])}\n')
             write_to_file(df, lambda: f"# section: configuration and state #\n{config_and_state()}")
             write_to_file(df, lambda: f"# section: errors #\n{filter_log_file('main', 'ERROR', 30)}\n")
@@ -465,9 +501,9 @@ def create_debug_log(input_data) -> Optional[dict]:
             json_rsp = req.get_http_session().put("https://debughandler.wb-solution.de",
                                                   data=data,
                                                   params={
-                                                    'debugemail': debug_email,
-                                                    'ticketnumber': ticketnumber,
-                                                    'subject': subject
+                                                      'debugemail': debug_email,
+                                                      'ticketnumber': ticketnumber,
+                                                      'subject': subject
                                                   },
                                                   timeout=10).json()
 

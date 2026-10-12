@@ -1,4 +1,4 @@
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import List, Optional
 from unittest.mock import MagicMock, Mock
 import pytest
@@ -10,7 +10,7 @@ from control.bat_all import BatAll, BatConsiderationMode, BatPowerLimitMode, Bat
 from control import data
 from control.chargepoint.chargepoint import Chargepoint
 from control.chargepoint.chargepoint_all import AllChargepointData, AllChargepoints, AllGet
-from control.general import General, PvCharging
+from control.general import ChargemodeConfigBat, General
 from control.pv import Config, Get, Pv, PvData
 from modules.devices.generic.mqtt.bat import MqttBat
 from modules.devices.generic.mqtt.config import MqttBatSetup
@@ -44,9 +44,9 @@ def test_get_charging_power_left_diff_hybrid(bat_power: int,
     data.data.bat_data["bat1"] = Bat(1)
     data.data.bat_data["bat1"].data.get.power = bat_power
     data.data.bat_data["bat1"].data.get.soc = 71
-    data.data.general_data.data.chargemode_config.pv_charging.bat_mode = BatConsiderationMode.MIN_SOC_BAT.value
-    data.data.general_data.data.chargemode_config.pv_charging.bat_power_discharge = 5000
-    data.data.general_data.data.chargemode_config.pv_charging.bat_power_discharge_active = True
+    data.data.general_data.data.chargemode_config.bat.mode = BatConsiderationMode.MIN_SOC_BAT.value
+    data.data.general_data.data.chargemode_config.bat.power_discharge = 5000
+    data.data.general_data.data.chargemode_config.bat.power_discharge_active = True
     monkeypatch.setattr(data.data.counter_all_data, "get_hybrid_bat_ids", Mock(return_value=[1]))
     monkeypatch.setattr(data.data.counter_all_data, "get_non_hybrid_bat_ids", Mock(return_value=[]))
     monkeypatch.setattr(data.data.counter_all_data, "get_hybrid_inverter_ids", Mock(return_value=[2]))
@@ -99,7 +99,7 @@ def test__absolute_bat_discharge_power(hybrid_bat_ids: List[int],
 @dataclass
 class Params:
     name: str
-    config: PvCharging
+    config: ChargemodeConfigBat
     power: float
     soc: float
     expected_charging_power_left: float
@@ -109,59 +109,70 @@ class Params:
 
 
 cases = [
-    Params("Speicher, Speicher lädt", PvCharging(bat_mode="bat_mode"), 500, 90, -100, True),
-    Params("Speicher, Speicher entlädt", PvCharging(bat_mode="bat_mode"), -500, 90, -600, True),
-    Params("Speicher, Speicher ist voll", PvCharging(bat_mode="bat_mode"), 0, 100, 0, False),
-    Params("EV, Speicher lädt", PvCharging(bat_mode="ev_mode"), 500, 90, 500, False),
-    Params("EV, Speicher entlädt", PvCharging(bat_mode="ev_mode"), -500, 90, -500, False),
-    Params("EV, Speicher ist voll", PvCharging(bat_mode="ev_mode"), 0, 100, 0, False),
+    Params("Speicher, Speicher lädt", ChargemodeConfigBat(mode="bat_mode"), 500, 90, -100, True),
+    Params("Speicher, Speicher entlädt", ChargemodeConfigBat(mode="bat_mode"), -500, 90, -600, True),
+    Params("Speicher, Speicher ist voll", ChargemodeConfigBat(mode="bat_mode"), 0, 100, 0, False),
+    Params("EV, Speicher lädt", ChargemodeConfigBat(mode="ev_mode"), 500, 90, 500, False),
+    Params("EV, Speicher entlädt", ChargemodeConfigBat(mode="ev_mode"), -500, 90, -500, False),
+    Params("EV, Speicher ist voll", ChargemodeConfigBat(mode="ev_mode"), 0, 100, 0, False),
     Params("Mindest-SoC, SoC nicht erreicht, Speicher entlädt",
-           PvCharging(bat_mode="min_soc_bat_mode"), -500, 40, -600, True),
+           ChargemodeConfigBat(mode="min_soc_bat_mode"), -500, 40, -600, True),
     Params("Mindest-SoC, SoC nicht erreicht, Speicher lädt",
-           PvCharging(bat_mode="min_soc_bat_mode"), 500, 40, -100, True),
+           ChargemodeConfigBat(mode="min_soc_bat_mode"), 500, 40, -100, True),
     Params("Mindest-SoC, SoC nicht erreicht, Speicher-Reserve, Speicher entlädt",
-           PvCharging(bat_mode="min_soc_bat_mode", bat_power_reserve=2000, bat_power_reserve_active=True),
+           ChargemodeConfigBat(mode="min_soc_bat_mode", power_reserve=2000, power_reserve_active=True),
            -500, 40, -600, True),
     Params("Mindest-SoC, SoC nicht erreicht, Speicher-Reserve nicht ausgenutzt, Speicher lädt",
-           PvCharging(bat_mode="min_soc_bat_mode", bat_power_reserve=2000, bat_power_reserve_active=True),
+           ChargemodeConfigBat(mode="min_soc_bat_mode", power_reserve=2000, power_reserve_active=True),
            1600, 40, -500, True),
     Params("Mindest-SoC, SoC nicht erreicht, Speicher-Reserve ausgenutzt, Speicher lädt",
-           PvCharging(bat_mode="min_soc_bat_mode", bat_power_reserve=2000, bat_power_reserve_active=True),
+           ChargemodeConfigBat(mode="min_soc_bat_mode", power_reserve=2000, power_reserve_active=True),
            2200, 40, 200, False),
-    Params("Mindest-SoC, SoC erreicht, Speicher entlädt", PvCharging(bat_mode="min_soc_bat_mode"), -500, 90, -500,
-           False),
-    Params("Mindest-SoC, SoC erreicht, Speicher lädt", PvCharging(bat_mode="min_soc_bat_mode"), 500, 90, 500, False),
-    Params("Mindest-SoC, SoC erreicht, Speicher ist voll", PvCharging(bat_mode="min_soc_bat_mode"), 0, 100, 0, False),
+    Params("Mindest-SoC, SoC erreicht, Entladung nicht erlaubt, Speicher entlädt trotzdem",
+           ChargemodeConfigBat(mode="min_soc_bat_mode"), -500, 90, 0, False),
+    Params("Mindest-SoC, SoC erreicht, Entladung nicht erlaubt, Speicher lädt",
+           ChargemodeConfigBat(mode="min_soc_bat_mode"), 500, 90, 0, False),
+    Params("Mindest-SoC, SoC erreicht, Speicher ist voll",
+           ChargemodeConfigBat(mode="min_soc_bat_mode"), 0, 100, 0, False),
     Params("Mindest-SoC, SoC erreicht, Entladung in Auto, Speicher entlädt, Entladeleistung nicht erreicht",
-           PvCharging(bat_mode="min_soc_bat_mode", bat_power_discharge=500, bat_power_discharge_active=True),
+           ChargemodeConfigBat(mode="min_soc_bat_mode", power_discharge=500, power_discharge_active=True),
            -400, 90, 100, False),
     Params("Mindest-SoC, SoC erreicht, Entladung in Auto, Speicher entlädt, mehr als Entladeleistung",
-           PvCharging(bat_mode="min_soc_bat_mode", bat_power_discharge=500, bat_power_discharge_active=True),
+           ChargemodeConfigBat(mode="min_soc_bat_mode", power_discharge=500, power_discharge_active=True),
            -600, 90, -100, False),
     Params("Mindest-SoC, SoC erreicht, Entladung in Auto, Speicher entlädt, Entladeleistung erreicht",
-           PvCharging(bat_mode="min_soc_bat_mode", bat_power_discharge=500, bat_power_discharge_active=True),
+           ChargemodeConfigBat(mode="min_soc_bat_mode", power_discharge=500, power_discharge_active=True),
            -500, 90, 0, False),
     Params("Mindest-SoC, SoC erreicht, Entladung in Auto, Speicher lädt mit mehr als Entladeleistung",
-           PvCharging(bat_mode="min_soc_bat_mode", bat_power_discharge=500, bat_power_discharge_active=True),
+           ChargemodeConfigBat(mode="min_soc_bat_mode", power_discharge=500, power_discharge_active=True),
            650, 90, 1150, False),
     Params("Mindest-SoC, SoC erreicht, Entladung in Auto, Speicher lädt mit weniger als Entladeleistung",
-           PvCharging(bat_mode="min_soc_bat_mode", bat_power_discharge=500, bat_power_discharge_active=True),
+           ChargemodeConfigBat(mode="min_soc_bat_mode", power_discharge=500, power_discharge_active=True),
            400, 90, 900, False),
     Params("Mindest-SoC, SoC erreicht, Entladung in Auto, Speicher voll",
-           PvCharging(bat_mode="min_soc_bat_mode", bat_power_reserve=500, bat_power_reserve_active=True,
-                      min_bat_soc=100), 0, 100, 0, False),
+           ChargemodeConfigBat(mode="min_soc_bat_mode", power_reserve=500, power_reserve_active=True,
+                               min_soc=100), 0, 100, 0, False),
     Params(("Mindest-SoC, SoC erreicht, Entladung in Auto, Speicher lädt mit weniger als Entladeleistung, "
            "Speicher-Sperre aktiv"),
-           PvCharging(bat_mode="min_soc_bat_mode", bat_power_discharge=500, bat_power_discharge_active=True),
+           ChargemodeConfigBat(mode="min_soc_bat_mode", power_discharge=500, power_discharge_active=True),
            400, 90, 0, False, 600),
-    Params(("Mindest-SoC, Hysterese, EV-Vorrang, keine Speichernutzung"),
-           PvCharging(bat_mode="min_soc_bat_mode"), 400, 60, 400, False, hysteresis_discharge=False),
+    Params(("Mindest-SoC, Hysterese, Erholung nach Unterschreiten, Speicher-Vorrang bis Maximal-SoC"),
+           ChargemodeConfigBat(mode="min_soc_bat_mode"), 400, 60, -100, True, hysteresis_discharge=False),
+    Params(("Mindest-SoC, Hysterese, Erholung nach Unterschreiten, Speicher-Reserve aktiv"),
+           ChargemodeConfigBat(mode="min_soc_bat_mode", power_reserve=2000, power_reserve_active=True),
+           2200, 60, 200, False, hysteresis_discharge=False),
+    Params(("Mindest-SoC, Hysterese, Erholung nach Unterschreiten, Speicher entlädt noch"),
+           ChargemodeConfigBat(mode="min_soc_bat_mode"), -300, 60, -400, True, hysteresis_discharge=False),
     Params(("Mindest-SoC, Hysterese, Speicherentladung, Speichernutzung erlaubt"),
-           PvCharging(bat_mode="min_soc_bat_mode", bat_power_discharge=500, bat_power_discharge_active=True),
+           ChargemodeConfigBat(mode="min_soc_bat_mode", power_discharge=500, power_discharge_active=True),
            400, 60, 900, False, hysteresis_discharge=True),
     Params(("Mindest-SoC, Hysterese, Speicherentladung, Speichernutzung erlaubt, Speicher-Sperre aktiv"),
-           PvCharging(bat_mode="min_soc_bat_mode", bat_power_discharge=500, bat_power_discharge_active=True),
+           ChargemodeConfigBat(mode="min_soc_bat_mode", power_discharge=500, power_discharge_active=True),
            400, 60, 0, False, 600, hysteresis_discharge=True),
+    Params(("Mindest-SoC, Hysterese, Entladung nicht erlaubt, Speicher entlädt trotzdem"),
+           ChargemodeConfigBat(mode="min_soc_bat_mode"), -500, 60, 0, False, hysteresis_discharge=True),
+    Params(("Mindest-SoC, Hysterese, Entladung nicht erlaubt, Speicher lädt"),
+           ChargemodeConfigBat(mode="min_soc_bat_mode"), 500, 60, 0, False, hysteresis_discharge=True),
 ]
 
 
@@ -176,7 +187,7 @@ def test_get_charging_power_left(params: Params, caplog, data_, monkeypatch):
     b = Bat(0)
     b.data.get.power = params.power
     data.data.bat_data["bat0"] = b
-    data.data.general_data.data.chargemode_config.pv_charging = params.config
+    data.data.general_data.data.chargemode_config.bat = params.config
     mock_absolute_bat_discharge_power = MagicMock(return_value=10000)
     monkeypatch.setattr(BatAll, "_absolute_bat_discharge_power", mock_absolute_bat_discharge_power)
 
@@ -196,12 +207,12 @@ def test_get_charging_power_left_uses_limited_bat_discharge_in_hysteresis(
     b_all.data.get.soc = 60
     b_all.data.set.hysteresis_discharge = True
     b_all.data.set.power_limit = None
-    data.data.general_data.data.chargemode_config.pv_charging = PvCharging(
-        bat_mode="min_soc_bat_mode",
-        min_bat_soc=40,
-        max_bat_soc=80,
-        bat_power_discharge=8000,
-        bat_power_discharge_active=True,
+    data.data.general_data.data.chargemode_config.bat = ChargemodeConfigBat(
+        mode="min_soc_bat_mode",
+        min_soc=40,
+        max_soc=80,
+        power_discharge=8000,
+        power_discharge_active=True,
     )
 
     # Hybrid-Setup fuer reale Berechnung in _limit_bat_power_discharge
@@ -235,7 +246,6 @@ class BatControlParams:
     power_limit_mode: str = BatPowerLimitMode.MODE_NO_DISCHARGE.value
     power_limit_condition: str = BatPowerLimitCondition.VEHICLE_CHARGING.value
     bat_manual_mode: str = ManualMode.MANUAL_DISABLE.value
-    cps: List[Chargepoint] = field(default_factory=default_chargepoint_factory)
     power_limit_controllable: bool = True
     bat_power: float = -10
     bat_soc: float = 50.0
@@ -277,8 +287,6 @@ cases = [
                      power_limit_condition=BatPowerLimitCondition.MANUAL.value,
                      bat_manual_mode=ManualMode.MANUAL_CHARGE.value),
     # Wenn Fahrzeuge Laden
-    BatControlParams("Fahrzeuge laden, Begrenzung immer, keine LP im Sofortladen", None, cps=[],
-                     power_limit_mode=BatPowerLimitMode.MODE_NO_DISCHARGE.value),
     BatControlParams("Fahrzeuge laden, Begrenzung immer, Speicher lädt", None, bat_power=100,
                      power_limit_mode=BatPowerLimitMode.MODE_NO_DISCHARGE.value),
     BatControlParams("Fahrzeuge laden, Begrenzung immer,Einspeisung", None, evu_power=-110,
@@ -319,9 +327,6 @@ def test_active_bat_control(params: BatControlParams, data_, monkeypatch):
     data.data.counter_data["counter0"].data.get.power = params.evu_power
     data.data.bat_all_data = b_all
 
-    get_chargepoints_with_required_current_by_chargemode_mock = Mock(return_value=params.cps)
-    monkeypatch.setattr(bat_all, "get_chargepoints_with_required_current_by_chargemode",
-                        get_chargepoints_with_required_current_by_chargemode_mock)
     get_evu_counter_mock = Mock(return_value=data.data.counter_data["counter0"])
     monkeypatch.setattr(data.data.counter_all_data, "get_evu_counter", get_evu_counter_mock)
     get_bat_components_by_controllability_mock = Mock(return_value=([MqttBat(MqttBatSetup(id=2), device_id=0)], []))
@@ -401,9 +406,6 @@ def test_control_price_limit(params: BatControlParams, data_, monkeypatch):
     data.data.counter_data["counter0"].data.get.power = params.evu_power
     data.data.bat_all_data = b_all
 
-    get_chargepoints_with_required_current_by_chargemode_mock = Mock(return_value=params.cps)
-    monkeypatch.setattr(bat_all, "get_chargepoints_with_required_current_by_chargemode",
-                        get_chargepoints_with_required_current_by_chargemode_mock)
     get_evu_counter_mock = Mock(return_value=data.data.counter_data["counter0"])
     monkeypatch.setattr(data.data.counter_all_data, "get_evu_counter", get_evu_counter_mock)
     get_bat_components_by_controllability_mock = Mock(return_value=([MqttBat(MqttBatSetup(id=2), device_id=0)], []))

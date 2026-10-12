@@ -23,6 +23,7 @@ import {
 	processVehicleTemplateMessages,
 } from '@/components/chargePointList/processMessages'
 import { processSmarthomeMessages } from '@/components/smartHome/processMessages'
+import { processConsumerMessages } from '@/components/consumerList/processMessages'
 import {
 	addCounter,
 	counters,
@@ -31,6 +32,7 @@ import {
 import { mqttClientId } from './mqttClient'
 import { add } from '@/components/mqttViewer/model'
 import { globalConfig } from './themeConfig'
+import { addConsumer } from '@/components/consumerList/model'
 
 const topicsToSubscribe = [
 	'openWB/counter/#',
@@ -38,11 +40,12 @@ const topicsToSubscribe = [
 	'openWB/pv/#',
 	'openWB/chargepoint/#',
 	'openWB/vehicle/#',
-	'openWB/general/chargemode_config/pv_charging/#',
+	'openWB/general/chargemode_config/bat/#',
 	'openWB/general/web_theme',
 	'openWB/optional/ep/#',
 	'openWB/system/#',
 	'openWB/LegacySmartHome/#',
+	'openWB/consumer/#',
 	'openWB/command/' + mqttClientId() + '/#',
 ]
 export function msgInit() {
@@ -74,9 +77,7 @@ function processMqttMessage(topic: string, payload: Buffer) {
 		processVehicleTemplateMessages(topic, message)
 	} else if (topic.match(/^openwb\/vehicle\//i)) {
 		processVehicleMessages(topic, message)
-	} else if (
-		topic.match(/^openwb\/general\/chargemode_config\/pv_charging\//i)
-	) {
+	} else if (topic.match(/^openwb\/general\/chargemode_config\/bat\//i)) {
 		processPvConfigMessages(topic, message)
 	} else if (topic.match(/^openwb\/general\/web_theme/i)) {
 		processThemeConfigMessages(topic, message)
@@ -94,6 +95,8 @@ function processMqttMessage(topic: string, payload: Buffer) {
 		processSystemMessages(topic, message)
 	} else if (topic.match(/^openwb\/LegacySmartHome\//i)) {
 		processSmarthomeMessages(topic, message)
+	} else if (topic.match(/^openwb\/consumer\//i)) {
+		processConsumerMessages(topic, message)
 	} else if (topic.match(/^openwb\/command\//i)) {
 		processCommandMessages(topic, message)
 	}
@@ -157,6 +160,9 @@ function processHierarchy(hierarchy: Hierarchy) {
 		case 'inverter':
 			addPvSystem(hierarchy.id)
 			break
+		case 'consumer':
+			addConsumer(hierarchy.id)
+			break
 		default:
 		// console.warn('Ignored Hierarchy type: ' + hierarchy.type)
 	}
@@ -195,7 +201,7 @@ function processPvConfigMessages(topic: string, message: string) {
 	const elements = topic.split('/')
 	if (elements.length > 0) {
 		switch (elements[4]) {
-			case 'bat_mode':
+			case 'mode':
 				globalData.updatePvBatteryPriority(JSON.parse(message))
 				break
 			default:

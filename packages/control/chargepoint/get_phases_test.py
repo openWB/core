@@ -153,8 +153,15 @@ cases_set_phases = [
                     imported_since_plugged=1, phase_switch_supported=True, expected_phases=3),
     SetPhasesParams(name="Switch phases", phases=1, phases_in_use=3, prevent_phase_switch=False,
                     imported_since_plugged=1, phase_switch_supported=True, expected_phases=1),
-    SetPhasesParams(name="Phase switch not supported by cp", phases=1, phases_in_use=3, prevent_phase_switch=False,
-                    imported_since_plugged=1, phase_switch_supported=False, expected_phases=3)
+    SetPhasesParams(name="Phase switch not supported by cp, use phases in use after charge start",
+                    # aktuelle Phasenzahl verwenden, sonst passt die Phasenzahl nicht bei Autos,
+                    # die eine Phase weg schalten.
+                    phases=1, phases_in_use=3, prevent_phase_switch=False,
+                    imported_since_plugged=1, phase_switch_supported=False, expected_phases=3),
+    SetPhasesParams(name="Phase switch not supported by cp, use passed phases before start",
+                    # vor dem Ladestart die konfigurierte Phasenzahl verwenden
+                    phases=1, phases_in_use=3, prevent_phase_switch=False,
+                    imported_since_plugged=0, phase_switch_supported=False, expected_phases=1)
 ]
 
 
@@ -219,7 +226,7 @@ def test_failed_phase_switches_reached(cp: Chargepoint,
                                        failed_phase_switches: int,
                                        expected: bool):
     # setup
-    data.data.general_data.data.chargemode_config.pv_charging.retry_failed_phase_switches = (
+    data.data.general_data.data.chargemode_config.surplus.vehicle.retry_failed_phase_switches = (
         retry_failed_phase_switches
     )
     cp.data.control_parameter.failed_phase_switches = failed_phase_switches

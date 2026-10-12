@@ -6,16 +6,20 @@ class ComponentType(Enum):
     BACKUP_CLOUD = "backup_cloud"
     BAT = "bat"
     CHARGEPOINT = "cp"
+    CONSUMER = "consumer"
     COUNTER = "counter"
     FLEXIBLE_TARIFF = "dynamic_tariff"
     GRID_FEE = "grid_tariff"
     INVERTER = "inverter"
     IO = "io"
+    VEHICLE = "vehicle"
 
 
 def special_to_general_type_mapping(component_type: str) -> ComponentType:
     if "bat" in component_type:
         return ComponentType.BAT
+    elif "consumer" in component_type:
+        return ComponentType.CONSUMER
     elif "counter" in component_type:
         return ComponentType.COUNTER
     elif "inverter" in component_type:
@@ -29,6 +33,8 @@ def special_to_general_type_mapping(component_type: str) -> ComponentType:
 def type_to_topic_mapping(component_type: str) -> str:
     if "bat" in component_type:
         return "bat"
+    elif "consumer" in component_type:
+        return "consumer"
     elif "counter" in component_type:
         return "counter"
     elif "inverter" in component_type:
@@ -57,14 +63,28 @@ def type_topic_mapping_comp(component_type: str) -> str:
 
 
 def component_type_to_readable_text(component_type: ComponentType):
-    if component_type == ComponentType.BAT:
+    if component_type == ComponentType.BACKUP_CLOUD:
+        return "Backup Cloud"
+    elif component_type == ComponentType.BAT:
         return "Speicher"
-    elif component_type == ComponentType.COUNTER:
-        return "Zähler"
     elif component_type == ComponentType.CHARGEPOINT:
         return "Ladepunkt"
+    elif component_type == ComponentType.CONSUMER:
+        return "Verbraucher"
+    elif component_type == ComponentType.COUNTER:
+        return "Zähler"
+    elif component_type == ComponentType.FLEXIBLE_TARIFF:
+        return "Dynamischer Tarif"
+    elif component_type == ComponentType.GRID_FEE:
+        return "Netzentgelt"
     elif component_type == ComponentType.INVERTER:
         return "Wechselrichter"
+    elif component_type == ComponentType.IO:
+        return "IO-Geräte"
+    elif component_type == ComponentType.VEHICLE:
+        return "Fahrzeug"
+    else:
+        return "Unbekannter Komponenten-Typ"
 
 
 class ComponentDescriptor:

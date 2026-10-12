@@ -6,12 +6,18 @@ from control.chargepoint import chargepoint
 from control.chargepoint.chargepoint_all import AllChargepoints
 from control import bat_all, counter, pv_all, pv
 from control import data
+from control.consumer.consumer import Consumer
+from control.consumer.consumer_all import AllConsumers
+from modules.consumers.generic.mqtt.config import Mqtt
 
 
 @pytest.fixture(autouse=True)
 def data_module() -> None:
     data.data_init(Event())
     data.data.bat_data.update({"all": bat_all.BatAll(), "bat2": Bat(2)})
+    data.data.consumer_all_data = AllConsumers()
+    data.data.consumer_data.update({"consumer6": Consumer(6)})
+    data.data.consumer_data["consumer6"].data.module = Mqtt()
     data.data.counter_data.update({"counter0": counter.Counter(0)})
     data.data.cp_all_data = AllChargepoints()
     data.data.cp_data.update({"cp4": chargepoint.Chargepoint(
@@ -33,7 +39,9 @@ def daily_log_sample():
              "pv": {"pv1": {"exported": 804}, "all": {"exported": 804}},
              "bat": {"bat2": {"imported": 2.42, "exported": 1742.135, "soc": 15},
                      "all": {"imported": 2.42, "exported": 1742.135, "soc": 15}},
-             "sh": {"sh1": {"temp0": 300, "temp1": 300, "temp2": 300, "imported": 0.1, "exported": 0}},
+             "sh": {},
+             "consumer": {"all": {"imported": 0.1, "exported": 0},
+                          "consumer6": {"imported": 0.1, "exported": 0}},
              "hc": {"all": {"imported": 100}}},
             {"timestamp": 1690530060,
              "date": "09:40",
@@ -47,7 +55,9 @@ def daily_log_sample():
              "pv": {"pv1": {"exported": 930}, "all": {"exported": 930}},
              "bat": {"bat2": {"imported": 2.42, "exported": 2017.569, "soc": 10},
                      "all": {"imported": 2.42, "exported": 2017.569, "soc": 10}},
-             "sh": {"sh1": {"temp0": 300, "temp1": 300, "temp2": 300, "imported": 0.2, "exported": 0}},
+             "sh": {},
+             "consumer": {"all": {"imported": 0.2, "exported": 0},
+                          "consumer6": {"imported": 0.2, "exported": 0}},
              "hc": {"all": {"imported": 110}}},
             {"timestamp": 1690530360,
              "date": "09:45",
@@ -61,7 +71,9 @@ def daily_log_sample():
              "pv": {"pv1": {"exported": 1055}, "all": {"exported": 1055}},
              "bat": {"bat2": {"imported": 2.42, "exported": 2292.992, "soc": 4},
                      "all": {"imported": 2.42, "exported": 2292.992, "soc": 4}},
-             "sh": {"sh1": {"temp0": 300, "temp1": 300, "temp2": 300, "imported": 0.4, "exported": 0}},
+             "sh": {},
+             "consumer": {"all": {"imported": 0.4, "exported": 0},
+                          "consumer6": {"imported": 0.4, "exported": 0}},
              "hc": {"all": {"imported": 120}}}
             ]
 
@@ -77,7 +89,9 @@ def daily_log_totals():
                    'cp5': {'energy_exported': 0.0, 'energy_imported': 191.928},
                    'cp6': {'energy_exported': 0.0, 'energy_imported': 0}},
             'pv': {'all': {'energy_exported': 251.0}, 'pv1': {'energy_exported': 251.0}},
-            "sh": {"sh1": {"energy_imported": 0.3, "energy_exported": 0.0}},
+            "sh": {},
+            "consumer": {"all": {"energy_exported": 0.0, "energy_imported": 0.3},
+                         "consumer6": {"energy_imported": 0.3, "energy_exported": 0.0}},
             "hc": {"all": {"energy_imported": 20.0}}}
 
 
@@ -155,16 +169,21 @@ def daily_log_entry_processed():
                            'power_average': -1517.057,
                            'power_exported': 1517.057,
                            'power_imported': 0}},
-            'sh': {'sh1': {'energy_exported': 0.0,
-                           'energy_imported': 0.1,
-                           'exported': 0,
-                           'imported': 0.1,
-                           'power_average': 1.204,
-                           'power_exported': 0,
-                           'power_imported': 1.204,
-                           'temp0': 300,
-                           'temp1': 300,
-                           'temp2': 300}},
+            'sh': {},
+            'consumer': {'all': {'energy_exported': 0.0,
+                                 'energy_imported': 0.1,
+                                 'exported': 0,
+                                 'imported': 0.1,
+                                 'power_average': 1.204,
+                                 'power_exported': 0,
+                                 'power_imported': 1.204},
+                         'consumer6': {'energy_exported': 0.0,
+                                       'energy_imported': 0.1,
+                                       'exported': 0,
+                                       'imported': 0.1,
+                                       'power_average': 1.204,
+                                       'power_exported': 0,
+                                       'power_imported': 1.204}},
             'timestamp': 1690529761}
 
 
@@ -205,8 +224,13 @@ def daily_log_entry_percentage():
                'pv1': {'energy_exported': 0.126,
                        'energy_imported': 0.0,
                        'fault_state': 0}},
-        'sh': {'sh1': {'energy_exported': 0.0,
-                       'energy_imported': 0.0}},
+        'sh': {},
+        'consumer': {'all': {'energy_exported': 0.0,
+                             'energy_imported': 0.0,
+                             'fault_state': 0},
+                     'consumer6': {'energy_exported': 0.0,
+                                   'energy_imported': 0.0,
+                                   'fault_state': 0}},
         'timestamp': 1690529761,
     }
 

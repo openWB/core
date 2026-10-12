@@ -10,7 +10,7 @@ from control.chargepoint.chargepoint_state import CHARGING_STATES
 from control.chargepoint.charging_type import ChargingType
 from control.chargepoint.control_parameter import ControlParameter
 from control.ev.ev_template import EvTemplate
-from control.text import BidiState
+from control.text import BidiState, format_next_time_charging_start
 from dataclass_utils import asdict
 from dataclass_utils.factories import empty_list_factory
 from helpermodules.abstract_plans import Limit, limit_factory, ScheduledChargingPlan, TimeChargingPlan
@@ -66,7 +66,6 @@ class InstantCharging:
 class PvCharging:
     dc_min_current: float = 145
     dc_min_soc_current: float = 145
-    feed_in_limit: bool = False
     limit: Limit = field(default_factory=limit_factory)
     min_current: int = 0
     min_soc_current: int = 10
@@ -112,7 +111,7 @@ def chargemode_factory() -> Chargemode:
 class ChargeTemplateData:
     id: int = 0
     name: str = "Lade-Profil"
-    prio: bool = False
+    prio: bool = False  # OBSOLET seit 2.3.0
     load_default: bool = False
     time_charging: TimeCharging = field(default_factory=time_charging_factory)
     chargemode: Chargemode = field(default_factory=chargemode_factory)
@@ -188,7 +187,11 @@ class ChargeTemplate:
                         current = plan.current if charging_type == ChargingType.AC.value else plan.dc_current
                         sub_mode = ChargemodeEnum.TIME_CHARGING
                 else:
-                    message = self.TIME_CHARGING_NO_PLAN_ACTIVE
+                    next_start = timecheck.get_next_timeframe_plan_start(self.data.time_charging.plans)
+                    if next_start is not None:
+                        message = format_next_time_charging_start(next_start)
+                    else:
+                        message = self.TIME_CHARGING_NO_PLAN_ACTIVE
             else:
                 message = self.TIME_CHARGING_NO_PLAN_CONFIGURED
             return current, sub_mode, message, id, phases
@@ -202,11 +205,13 @@ class ChargeTemplate:
 
     SOC_REACHED = "Keine Ladung, da das Ladeziel bereits erreicht wurde."
     AMOUNT_REACHED = "Keine Ladung, da die Energiemenge bereits geladen wurde."
+    INSTANT_CHARGING_BIDI = "Fahrzeug entlädt."
 
     def instant_charging(self,
                          soc: Optional[float],
                          used_amount: float,
-                         charging_type: str) -> Tuple[int, ChargemodeEnum, Optional[str], int]:
+                         charging_type: str,
+                         bidi_state: BidiState) -> Tuple[int, ChargemodeEnum, Optional[str], int]:
         """ prüft, ob die Lademengenbegrenzung erreicht wurde und setzt entsprechend den Ladestrom.
         """
         message = None
@@ -228,6 +233,15 @@ class ChargeTemplate:
                     current = 0
                     sub_mode = ChargemodeEnum.STOP
                     message = self.AMOUNT_REACHED
+            elif current < 0:
+                if bidi_state == BidiState.BIDI_CAPABLE:
+                    sub_mode = ChargemodeEnum.BIDI_CHARGING
+                    message = self.INSTANT_CHARGING_BIDI
+                else:
+                    message = bidi_state.value
+                    current = 0
+                    sub_mode = ChargemodeEnum.STOP
+
             return current, sub_mode, message, phases
         except Exception:
             log.exception("Fehler im ev-Modul "+str(self.data.id))

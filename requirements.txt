@@ -26,3 +26,4 @@ pycarwings3==0.7.14
 asyncio==3.4.3
 passlib==1.7.4
 pysolarmanv5==3.0.6
+packaging==24.2

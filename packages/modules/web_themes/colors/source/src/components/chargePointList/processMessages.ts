@@ -59,6 +59,7 @@ export function processChargepointMessages(topic: string, message: string) {
 			topic.match(/^openWB\/chargepoint\/[0-9]+\/get\/daily_imported$/i)
 		) {
 			chargePoints[index].dailyYield = +message
+			chargePoints[index].now.energy = +message
 		} else if (topic.match(/^openwb\/chargepoint\/[0-9]+\/get\/plug_state$/i)) {
 			chargePoints[index].isPluggedIn = message == 'true'
 		} else if (

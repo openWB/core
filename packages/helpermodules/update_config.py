@@ -1,4 +1,4 @@
-from concurrent.futures import ProcessPoolExecutor
+from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
 import copy
 import datetime
 import glob
@@ -8,9 +8,14 @@ import logging
 from pathlib import Path
 import re
 import time
+import sys
+import subprocess
 from typing import List, Optional
 from paho.mqtt.client import Client as MqttClient, MQTTMessage
 
+from control.chargemode import Chargemode
+from control.consumer.consumer_data import ResetChargemode
+from control.consumer.usage import NOT_CONTROLLED
 from control.limiting_value import LoadmanagementLimit
 
 from control.chargepoint.chargepoint_template import get_chargepoint_template_default
@@ -18,7 +23,7 @@ from helpermodules import timecheck
 from helpermodules import hardware_configuration
 from helpermodules import pub
 from helpermodules.broker import BrokerClient
-from helpermodules.abstract_plans import Limit
+from helpermodules.abstract_plans import FrequencyDate, Limit
 from helpermodules.constants import DEFAULT_COLORS, NO_ERROR
 from helpermodules.hardware_configuration import (
     get_hardware_configuration_setting,
@@ -28,18 +33,19 @@ from helpermodules.hardware_configuration import (
 from helpermodules.measurement_logging.process_log import get_default_charge_log_columns, get_totals
 from helpermodules.measurement_logging.write_log import get_names
 from helpermodules.messaging import MessageType, pub_system_message
+from helpermodules.mosquitto_dynsec.role_handler import add_acl_role, remove_acl_role
 from helpermodules.pub import Pub
 from helpermodules.utils.json_file_handler import write_and_check
 from helpermodules.utils.run_command import run_command
 from helpermodules.utils.topic_parser import decode_payload, get_index, get_second_index
-from control import counter_all
+from control.counter_all import counter_all, counter_all_data
 from control.bat_all import BatConsiderationMode
 from control.chargepoint.charging_type import ChargingType
-from control.counter import get_counter_default_config
+from control.counter import get_counter_default_config, CounterMode
 from control.ev.charge_template import EcoCharging, get_charge_template_default
 from control.ev import ev
 from control.ev.ev_template import EvTemplateData
-from control.general import Prices, PvCharging
+from control.general import ChargemodeConfigSurplusVehicle, Prices
 from control.optional_data import OcppConfig
 from dataclass_utils import asdict
 from modules.common.abstract_vehicle import GeneralVehicleConfig
@@ -57,7 +63,9 @@ NO_MODULE = {"type": None, "configuration": {}}
 
 class UpdateConfig:
 
-    DATASTORE_VERSION = 140
+    DATASTORE_VERSION = 154
+
+    FILE_OPERATION_VERSION = 0
 
     valid_topic = [
         "^openWB/bat/config/bat_control_activated$",
@@ -174,6 +182,8 @@ class UpdateConfig:
         "^openWB/command/max_id/charge_template$",
         "^openWB/command/max_id/charge_template_scheduled_plan$",
         "^openWB/command/max_id/charge_template_time_charging_plan$",
+        "^openWB/command/max_id/consumer_scheduled_plan$",
+        "^openWB/command/max_id/consumer_time_plan$",
         "^openWB/command/max_id/chargepoint_template$",
         "^openWB/command/max_id/device$",
         "^openWB/command/max_id/ev_template$",
@@ -185,13 +195,41 @@ class UpdateConfig:
         "^openWB/command/[A-Za-z0-9_]+/error$",
         "^openWB/command/todo$",
 
+        "^openWB/consumer/get/power$",
+        "^openWB/consumer/get/exported$",
+        "^openWB/consumer/get/imported$",
+        "^openWB/consumer/get/daily_exported$",
+        "^openWB/consumer/get/daily_imported$",
+        "^openWB/consumer/[0-9]+/module$",
+        "^openWB/consumer/[0-9]+/config$",
+        "^openWB/consumer/[0-9]+/config/is_home_consumption_consumer$",
+        "^openWB/consumer/[0-9]+/extra_meter$",
+        "^openWB/consumer/[0-9]+/usage$",
+        "^openWB/consumer/[0-9]+/get/currents$",
+        "^openWB/consumer/[0-9]+/get/fault_state$",
+        "^openWB/consumer/[0-9]+/get/fault_str$",
+        "^openWB/consumer/[0-9]+/get/powers$",
+        "^openWB/consumer/[0-9]+/get/power$",
+        "^openWB/consumer/[0-9]+/get/state$",
+        "^openWB/consumer/[0-9]+/get/state_str$",
+        "^openWB/consumer/[0-9]+/get/voltages$",
+        "^openWB/consumer/[0-9]+/set/current$",
+        "^openWB/consumer/[0-9]+/set/on_time$",
+        "^openWB/consumer/[0-9]+/set/phases_to_use$",
+        "^openWB/consumer/[0-9]+/set/plug_time$",
+        "^openWB/consumer/[0-9]+/set/timestamp_last_current_set$",
+        "^openWB/consumer/[0-9]+/set/timestamp_wrote_last_on_time$",
+        "^openWB/consumer/[0-9]+/set/wait_for_start_state$",
+
         "^openWB/counter/config/consider_less_charging$",
-        "^openWB/counter/config/home_consumption_source_id$",
         "^openWB/counter/get/hierarchy$",
+        "^openWB/counter/get/loadmanagement_prios$",
         "^openWB/counter/set/disengageable_smarthome_power$",
         "^openWB/counter/set/imported_home_consumption$",
         "^openWB/counter/set/invalid_home_consumption$",
         "^openWB/counter/set/home_consumption$",
+        "^openWB/counter/set/not_in_home_consumption$",
+        "^openWB/counter/set/unmeasured_home_consumption$",
         "^openWB/counter/set/daily_yield_home_consumption$",
         "^openWB/counter/set/simulation$",
         "^openWB/counter/[0-9]+/get/voltages$",
@@ -213,6 +251,7 @@ class UpdateConfig:
         "^openWB/counter/[0-9]+/config/max_power_errorcase$",
         "^openWB/counter/[0-9]+/config/max_currents$",
         "^openWB/counter/[0-9]+/config/max_total_power$",
+        "^openWB/counter/[0-9]+/config/is_home_consumption_counter$",
 
         "^openWB/general/allow_unencrypted_access$",
         "^openWB/general/extern$",
@@ -230,21 +269,25 @@ class UpdateConfig:
         "^openWB/general/temporary_charge_templates_active$",
         "^openWB/general/chargemode_config/unbalanced_load_limit$",
         "^openWB/general/chargemode_config/unbalanced_load$",
-        "^openWB/general/chargemode_config/pv_charging/bat_mode$",
-        "^openWB/general/chargemode_config/pv_charging/feed_in_yield$",
-        "^openWB/general/chargemode_config/pv_charging/switch_on_threshold$",
-        "^openWB/general/chargemode_config/pv_charging/switch_on_delay$",
-        "^openWB/general/chargemode_config/pv_charging/switch_off_threshold$",
-        "^openWB/general/chargemode_config/pv_charging/switch_off_delay$",
-        "^openWB/general/chargemode_config/pv_charging/phase_switch_delay$",
-        "^openWB/general/chargemode_config/pv_charging/control_range$",
-        "^openWB/general/chargemode_config/pv_charging/min_bat_soc$",
-        "^openWB/general/chargemode_config/pv_charging/max_bat_soc$",
-        "^openWB/general/chargemode_config/pv_charging/bat_power_discharge$",
-        "^openWB/general/chargemode_config/pv_charging/bat_power_discharge_active$",
-        "^openWB/general/chargemode_config/pv_charging/bat_power_reserve$",
-        "^openWB/general/chargemode_config/pv_charging/bat_power_reserve_active$",
-        "^openWB/general/chargemode_config/pv_charging/retry_failed_phase_switches$",
+        "^openWB/general/chargemode_config/surplus/feed_in_limit$",
+        "^openWB/general/chargemode_config/bat/mode$",
+        "^openWB/general/chargemode_config/surplus/feed_in_yield$",
+        "^openWB/general/chargemode_config/surplus/vehicle/switch_on_threshold$",
+        "^openWB/general/chargemode_config/surplus/vehicle/switch_on_delay$",
+        "^openWB/general/chargemode_config/surplus/vehicle/switch_off_threshold$",
+        "^openWB/general/chargemode_config/surplus/vehicle/switch_off_delay$",
+        "^openWB/general/chargemode_config/surplus/vehicle/phase_switch_delay$",
+        "^openWB/general/chargemode_config/surplus/control_range$",
+        "^openWB/general/chargemode_config/bat/min_soc$",
+        "^openWB/general/chargemode_config/bat/max_soc$",
+        "^openWB/general/chargemode_config/bat/power_discharge$",
+        "^openWB/general/chargemode_config/bat/power_discharge_active$",
+        "^openWB/general/chargemode_config/bat/power_reserve$",
+        "^openWB/general/chargemode_config/bat/power_reserve_active$",
+        "^openWB/general/chargemode_config/surplus/vehicle/retry_failed_phase_switches$",
+        "^openWB/general/chargemode_config/surplus/consumer/switch_on_delay$",
+        "^openWB/general/chargemode_config/surplus/consumer/switch_off_delay$",
+        "^openWB/general/chargemode_config/surplus/consumer/switch_off_threshold$",
         # obsolet, Daten hieraus müssen nach prices/ überführt werden
         "^openWB/general/price_kwh$",
         "^openWB/general/prices/bat$",
@@ -317,6 +360,14 @@ class UpdateConfig:
         "^openWB/mqtt/chargepoint/[0-9]+/get/voltages$",
         "^openWB/mqtt/chargepoint/[0-9]+/get/power_factors$",
         "^openWB/mqtt/chargepoint/[0-9]+/get/rfid$",
+        "^openWB/mqtt/consumer/[0-9]+/get/currents$",
+        "^openWB/mqtt/consumer/[0-9]+/get/imported$",
+        "^openWB/mqtt/consumer/[0-9]+/get/exported$",
+        "^openWB/mqtt/consumer/[0-9]+/get/power$",
+        "^openWB/mqtt/consumer/[0-9]+/get/powers$",
+        "^openWB/mqtt/consumer/[0-9]+/get/voltages$",
+        "^openWB/mqtt/consumer/[0-9]+/set/power$",
+        "^openWB/mqtt/consumer/[0-9]+/set/switch$",
         "^openWB/mqtt/counter/[0-9]+/get/currents$",
         "^openWB/mqtt/counter/[0-9]+/get/imported$",
         "^openWB/mqtt/counter/[0-9]+/get/exported$",
@@ -502,6 +553,7 @@ class UpdateConfig:
         "^openWB/system/backup_password$",
         "^openWB/system/configurable/chargepoints$",
         "^openWB/system/configurable/chargepoints_internal$",
+        "^openWB/system/configurable/consumers$",
         "^openWB/system/configurable/devices_components$",
         "^openWB/system/configurable/flexible_tariffs$",
         "^openWB/system/configurable/grid_fees$",
@@ -527,10 +579,12 @@ class UpdateConfig:
         "^openWB/system/device/[0-9]+/component/[0-9]+/simulation/timestamp_present$",
         "^openWB/system/device/[0-9]+/config$",
         "^openWB/system/device/module_update_completed$",
+        "^openWB/system/file_operation_version$",
         "^openWB/system/hostname$",
         "^openWB/system/io/[0-9]+/config$",
         "^openWB/system/ip_address$",
         "^openWB/system/lastlivevaluesJson$",
+        "^openWB/system/log_data_ready$",
         "^openWB/system/mac_address$",
         "^openWB/system/mqtt/bridge/[0-9]+$",
         "^openWB/system/mqtt/valid_partner_ids$",
@@ -553,6 +607,7 @@ class UpdateConfig:
         "^openWB/system/security/access/LoadManagementConfiguration$",
         "^openWB/system/security/access/ChargePointInstallation$",
         "^openWB/system/security/access/VehicleConfiguration$",
+        "^openWB/system/security/access/ConsumerConfiguration$",
         "^openWB/system/security/access/IoConfiguration$",
         "^openWB/system/security/access/LegacySmartHomeConfiguration$",
         "^openWB/system/security/access/InstallAssistant$",
@@ -588,8 +643,8 @@ class UpdateConfig:
         ("openWB/chargepoint/get/power", 0),
         ("openWB/chargepoint/template/0", get_chargepoint_template_default()),
         ("openWB/counter/get/hierarchy", []),
-        ("openWB/counter/config/consider_less_charging", counter_all.Config().consider_less_charging),
-        ("openWB/counter/config/home_consumption_source_id", counter_all.Config().home_consumption_source_id),
+        ("openWB/counter/get/loadmanagement_prios", [{"type": "vehicle", "id": 0}]),
+        ("openWB/counter/config/consider_less_charging", counter_all_data.Config().consider_less_charging),
         ("openWB/vehicle/0/name", "Standard-Fahrzeug"),
         ("openWB/vehicle/0/color", DEFAULT_COLORS.VEHICLE.value),
         ("openWB/vehicle/0/info", {"manufacturer": None, "model": None}),
@@ -604,22 +659,26 @@ class UpdateConfig:
         ("openWB/vehicle/template/charge_template/0", get_charge_template_default()),
         ("openWB/general/allow_unencrypted_access", True),
         ("openWB/general/charge_log_data_config", get_default_charge_log_columns()),
-        ("openWB/general/chargemode_config/pv_charging/bat_mode", BatConsiderationMode.EV_MODE.value),
-        ("openWB/general/chargemode_config/pv_charging/bat_power_discharge", 1000),
-        ("openWB/general/chargemode_config/pv_charging/bat_power_discharge_active", True),
-        ("openWB/general/chargemode_config/pv_charging/min_bat_soc", 50),
-        ("openWB/general/chargemode_config/pv_charging/max_bat_soc", 70),
-        ("openWB/general/chargemode_config/pv_charging/bat_power_reserve", 200),
-        ("openWB/general/chargemode_config/pv_charging/bat_power_reserve_active", True),
-        ("openWB/general/chargemode_config/pv_charging/control_range", [0, 230]),
-        ("openWB/general/chargemode_config/pv_charging/switch_off_threshold", 0),
-        ("openWB/general/chargemode_config/pv_charging/switch_off_delay", 60),
-        ("openWB/general/chargemode_config/pv_charging/switch_on_delay", 30),
-        ("openWB/general/chargemode_config/pv_charging/switch_on_threshold", 1500),
-        ("openWB/general/chargemode_config/pv_charging/feed_in_yield", 0),
-        ("openWB/general/chargemode_config/pv_charging/phase_switch_delay", 7),
-        ("openWB/general/chargemode_config/pv_charging/retry_failed_phase_switches",
-         PvCharging().retry_failed_phase_switches),
+        ("openWB/general/chargemode_config/bat/mode", BatConsiderationMode.EV_MODE.value),
+        ("openWB/general/chargemode_config/bat/power_discharge", 1000),
+        ("openWB/general/chargemode_config/bat/power_discharge_active", True),
+        ("openWB/general/chargemode_config/bat/min_soc", 50),
+        ("openWB/general/chargemode_config/bat/max_soc", 70),
+        ("openWB/general/chargemode_config/bat/power_reserve", 200),
+        ("openWB/general/chargemode_config/bat/power_reserve_active", True),
+        ("openWB/general/chargemode_config/surplus/control_range", [0, 230]),
+        ("openWB/general/chargemode_config/surplus/feed_in_limit", False),
+        ("openWB/general/chargemode_config/surplus/vehicle/switch_off_threshold", 0),
+        ("openWB/general/chargemode_config/surplus/vehicle/switch_off_delay", 60),
+        ("openWB/general/chargemode_config/surplus/vehicle/switch_on_delay", 30),
+        ("openWB/general/chargemode_config/surplus/vehicle/switch_on_threshold", 1500),
+        ("openWB/general/chargemode_config/surplus/feed_in_yield", 0),
+        ("openWB/general/chargemode_config/surplus/vehicle/phase_switch_delay", 7),
+        ("openWB/general/chargemode_config/surplus/vehicle/retry_failed_phase_switches",
+         ChargemodeConfigSurplusVehicle().retry_failed_phase_switches),
+        ("openWB/general/chargemode_config/surplus/consumer/switch_on_delay", 60),
+        ("openWB/general/chargemode_config/surplus/consumer/switch_off_delay", 60),
+        ("openWB/general/chargemode_config/surplus/consumer/switch_off_threshold", 0),
         ("openWB/general/chargemode_config/unbalanced_load", False),
         ("openWB/general/chargemode_config/unbalanced_load_limit", 18),
         ("openWB/general/control_interval", 10),
@@ -691,6 +750,7 @@ class UpdateConfig:
         ("openWB/system/security/access/LoadManagementConfiguration", True),
         ("openWB/system/security/access/ChargePointInstallation", True),
         ("openWB/system/security/access/VehicleConfiguration", True),
+        ("openWB/system/security/access/ConsumerConfiguration", True),
         ("openWB/system/security/access/IoConfiguration", True),
         ("openWB/system/security/access/LegacySmartHomeConfiguration", True),
         ("openWB/system/security/access/InstallAssistant", True),
@@ -729,6 +789,7 @@ class UpdateConfig:
         try:
             # erst breaking changes auflösen, sonst sind alte Topics schon gelöscht
             self.__solve_breaking_changes()
+            self.__solve_breaking_changes_filesystem()
             self.__remove_outdated_topics()
             self._remove_invalid_topics()
             self.__pub_missing_defaults()
@@ -829,6 +890,67 @@ class UpdateConfig:
                 pub_system_message(
                     {}, "Fehler bei der Aktualisierung der Konfiguration des Brokers.", MessageType.ERROR)
 
+    def __solve_breaking_changes_filesystem(self) -> None:
+        """Führt dateisystembezogene Migrationen anhand der file_operation_version aus."""
+        file_operation_version = decode_payload(self.all_received_topics.get("openWB/system/file_operation_version"))
+        if file_operation_version is None:
+            # Neues Topic (z.B. bei Upgrade von älteren Versionen): alle File-Operation-Upgrades ausführen.
+            file_operation_version = []
+            self.__update_topic("openWB/system/file_operation_version", file_operation_version)
+        elif isinstance(file_operation_version, int):
+            # Legacy-Format (int): bereits ausgeführte Upgrades als Liste abbilden.
+            file_operation_version = list(range(file_operation_version))
+            self.__update_topic("openWB/system/file_operation_version", file_operation_version)
+
+        log.debug(f"current file operation version: {file_operation_version}")
+        log.debug(f"target file operation version: {self.FILE_OPERATION_VERSION}")
+        for version in list(range(self.FILE_OPERATION_VERSION+1)):
+            try:
+                operation_required = version not in file_operation_version
+                if version == 0:
+                    # Version 0 erneut ausführen, solange die Hintergrund-Generierung der Tages-/Monatssummen
+                    # noch nicht erfolgreich abgeschlossen ist (Flag ist nicht True).
+                    log_totals_generation_finished = decode_payload(
+                        self.all_received_topics.get("openWB/system/log_data_ready"))
+                    operation_required = operation_required or log_totals_generation_finished is not True
+
+                if operation_required:
+                    log.debug(f"upgrading File Operation version '{version}'")
+                    getattr(self, f"upgrade_file_operation_{version}")()
+            except AttributeError:
+                log.error(f"missing upgrade function! '{version}'")
+            except Exception:
+                log.exception("Fehler bei der Aktualisierung des Brokers.")
+                pub_system_message(
+                    {}, "Fehler bei der Aktualisierung der Konfiguration des Brokers.", MessageType.ERROR)
+
+    def upgrade_file_operation_0(self) -> None:
+        """
+        Generiere die Totals-Summen für Tage und Monate
+        """
+
+        self.__update_topic("openWB/system/log_data_ready", False)
+        try:
+            _generate_totals_subprocess = subprocess.Popen(
+                [
+                    sys.executable,
+                    "-m",
+                    "helpermodules.measurement_logging.generate_totals_subprocess"
+                ],
+                cwd="/var/www/html/openWB/packages",
+                start_new_session=True,
+                stdin=subprocess.DEVNULL,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                close_fds=True
+            )
+
+            log.debug("generate_totals_subprocess gestartet, PID: %s", _generate_totals_subprocess.pid)
+            self._append_file_operation_version(0)
+        except Exception:
+            _generate_totals_subprocess = None
+            log.exception("Fehler beim Starten des generate_totals_subprocess.")
+
     def _loop_all_received_topics(self, callback) -> None:
         modified_topics = {}
         for topic, payload in self.all_received_topics.items():
@@ -846,6 +968,12 @@ class UpdateConfig:
         if version not in datastore_versions:
             datastore_versions.append(version)
             self.__update_topic("openWB/system/datastore_version", datastore_versions)
+
+    def _append_file_operation_version(self, version: int) -> None:
+        file_operation_versions = decode_payload(self.all_received_topics.get("openWB/system/file_operation_version"))
+        if version not in file_operation_versions:
+            file_operation_versions.append(version)
+            self.__update_topic("openWB/system/file_operation_version", file_operation_versions)
 
     def upgrade_datastore_0(self) -> None:
         def upgrade(topic: str, payload) -> Optional[dict]:
@@ -2256,6 +2384,8 @@ class UpdateConfig:
         self._append_datastore_version(79)
 
     # moved and corrected to 87
+    def upgrade_datastore_80(self) -> None:
+        self._append_datastore_version(80)
 
     def upgrade_datastore_81(self) -> None:
         def upgrade(topic: str, payload) -> None:
@@ -2668,6 +2798,12 @@ class UpdateConfig:
                     return {topic: payload}
         self._loop_all_received_topics(upgrade)
         self._append_datastore_version(95)
+
+    def upgrade_datastore_96(self) -> None:
+        self._append_datastore_version(96)
+
+    def upgrade_datastore_97(self) -> None:
+        self._append_datastore_version(97)
 
     def upgrade_datastore_98(self) -> None:
         version_str = decode_payload(
@@ -3470,6 +3606,7 @@ class UpdateConfig:
         self._append_datastore_version(136)
 
     def upgrade_datastore_137(self) -> None:
+        # Update all counters with new Parameter and default wert
         def upgrade(topic: str, payload) -> Optional[dict]:
             if re.search("openWB/vehicle/template/ev_template/[0-9]+$", topic) is not None:
                 payload = decode_payload(payload)
@@ -3553,3 +3690,441 @@ class UpdateConfig:
             return None
         self._loop_all_received_topics(upgrade)
         self._append_datastore_version(140)
+
+    def upgrade_datastore_141(self) -> None:
+        feed_in_limit = False
+        for topic, payload in self.all_received_topics.items():
+            if re.search("^openWB/vehicle/template/charge_template/[0-9]+$", topic) is not None:
+                config = decode_payload(payload)
+                pv_config = config.get("chargemode", {}).get("pv_charging", {})
+                if "feed_in_limit" in pv_config:
+                    feed_in_limit = feed_in_limit or pv_config.pop("feed_in_limit") is True
+                    self.__update_topic(topic, config)
+        self.__update_topic("openWB/general/chargemode_config/surplus/feed_in_limit", feed_in_limit)
+
+        def move_topic(new_topic: str, old_topic: str) -> None:
+            if old_topic in self.all_received_topics:
+                payload = decode_payload(self.all_received_topics[old_topic])
+                self.__update_topic(new_topic, payload)
+                self.__update_topic(old_topic, "")
+                log.debug(f"Moved topic '{old_topic}' to '{new_topic}' with value: {payload}")
+
+        chargemode_config_prefix = "openWB/general/chargemode_config"
+        old_prefix = "openWB/general/chargemode_config/pv_charging"
+        move_topic(f"{chargemode_config_prefix}/bat/mode", f"{old_prefix}/bat_mode")
+        move_topic(f"{chargemode_config_prefix}/surplus/feed_in_yield", f"{old_prefix}/feed_in_yield")
+        move_topic(f"{chargemode_config_prefix}/surplus/vehicle/switch_on_threshold",
+                   f"{old_prefix}/switch_on_threshold")
+        move_topic(f"{chargemode_config_prefix}/surplus/vehicle/switch_on_delay", f"{old_prefix}/switch_on_delay")
+        move_topic(f"{chargemode_config_prefix}/surplus/vehicle/switch_off_threshold",
+                   f"{old_prefix}/switch_off_threshold")
+        move_topic(f"{chargemode_config_prefix}/surplus/vehicle/switch_off_delay", f"{old_prefix}/switch_off_delay")
+        move_topic(f"{chargemode_config_prefix}/surplus/vehicle/phase_switch_delay", f"{old_prefix}/phase_switch_delay")
+        move_topic(f"{chargemode_config_prefix}/surplus/control_range", f"{old_prefix}/control_range")
+        move_topic(f"{chargemode_config_prefix}/bat/min_soc", f"{old_prefix}/min_bat_soc")
+        move_topic(f"{chargemode_config_prefix}/bat/max_soc", f"{old_prefix}/max_bat_soc")
+        move_topic(f"{chargemode_config_prefix}/bat/power_discharge", f"{old_prefix}/bat_power_discharge")
+        move_topic(f"{chargemode_config_prefix}/bat/power_discharge_active", f"{old_prefix}/bat_power_discharge_active")
+        move_topic(f"{chargemode_config_prefix}/bat/power_reserve", f"{old_prefix}/bat_power_reserve")
+        move_topic(f"{chargemode_config_prefix}/bat/power_reserve_active", f"{old_prefix}/bat_power_reserve_active")
+        move_topic(f"{chargemode_config_prefix}/surplus/vehicle/retry_failed_phase_switches",
+                   f"{old_prefix}/retry_failed_phase_switches")
+        self._append_datastore_version(141)
+
+    def upgrade_datastore_142(self) -> None:
+        CHARGEMODES = ((Chargemode.SCHEDULED_CHARGING.value, True),
+                       (Chargemode.SCHEDULED_CHARGING.value, False),
+                       (Chargemode.INSTANT_CHARGING.value, True),
+                       (Chargemode.INSTANT_CHARGING.value, False),
+                       (Chargemode.ECO_CHARGING.value, True),
+                       (Chargemode.ECO_CHARGING.value, False),
+                       (Chargemode.PV_CHARGING.value, True),
+                       (Chargemode.PV_CHARGING.value, False),
+                       (Chargemode.STOP.value, True),
+                       (Chargemode.STOP.value, False),)
+
+        def upgrade(topic: str, payload) -> None:
+            if re.search("openWB/vehicle/[0-9]+/charge_template", topic) is not None:
+                charge_template_id = decode_payload(payload)
+                charge_template = decode_payload(
+                    self.all_received_topics[f"openWB/vehicle/template/charge_template/{charge_template_id}"])
+                if charge_template["chargemode"]["selected"] == chargemode and charge_template["prio"] == prio:
+                    grouped_vehicles.append({"type": "vehicle", "id": int(get_index(topic))})
+
+        loadmanagement_prios = []
+        for chargemode, prio in CHARGEMODES:
+            grouped_vehicles = []
+            self._loop_all_received_topics(upgrade)
+            if len(grouped_vehicles) == 1:
+                loadmanagement_prios.append(grouped_vehicles[0])
+            elif len(grouped_vehicles) > 1:
+                loadmanagement_prios.append({"type": "group", "children": grouped_vehicles})
+        self.__update_topic("openWB/counter/get/loadmanagement_prios", loadmanagement_prios)
+        self._append_datastore_version(142)
+
+    def upgrade_datastore_143(self) -> None:
+        def add_consumer_dict(file: str) -> None:
+            try:
+                with open(file, "r+") as jsonFile:
+                    content_raw = jsonFile.read()
+                    try:
+                        content = json.loads(content_raw)
+                    except json.JSONDecodeError:
+                        log.warning(f"Skipping invalid log file (JSON decode failed): {file}")
+                        return
+
+                    entries = content.get("entries")
+                    if not isinstance(entries, list):
+                        log.warning(f"Skipping log file without valid 'entries' list: {file}")
+                        return
+
+                    for entry in entries:
+                        if isinstance(entry, dict) and "consumer" not in entry:
+                            entry.update({"consumer": {}})
+
+                    jsonFile.seek(0)
+                    jsonFile.write(json.dumps(content))
+                    jsonFile.truncate()
+                    log.debug(f"Updated log file with consumer dict: {file}")
+            except OSError:
+                log.warning(f"Skipping log file due to I/O error: {file}")
+            except Exception:
+                log.exception(f"Skipping log file due to unexpected error: {file}")
+
+        files = glob.glob(str(self.base_path / "data" / "daily_log") + "/*")
+        files.extend(glob.glob(str(self.base_path / "data" / "monthly_log") + "/*"))
+        files.sort()
+        with ThreadPoolExecutor() as executor:
+            executor.map(add_consumer_dict, files)
+        self._append_datastore_version(143)
+
+    def upgrade_datastore_144(self) -> None:
+        def upgrade(topic: str, payload) -> Optional[dict]:
+            if re.search("^openWB/system/device/[0-9]+/config$", topic) is not None:
+                payload_device = decode_payload(payload)
+                if payload_device.get("type") == "growatt" and \
+                   payload_device.get("configuration", {}).get("version") == "MAX":
+                    payload_device["configuration"]["version"] = "SPH"
+                    pub_system_message(
+                        payload_device,
+                        "Die Growatt-Geräte-Konfiguration wurde aktualisiert: 'MAX Series' hieß "
+                        "in Wirklichkeit 'SPH/SPA Hybrid mit Speicher' und wurde entsprechend "
+                        "umbenannt. Außerdem wurde ein Vorzeichenfehler bei der Speicherleistung "
+                        "korrigiert - Laden/Entladen wurden bisher vertauscht angezeigt.",
+                        MessageType.WARNING)
+                    return {topic: payload_device}
+        self._loop_all_received_topics(upgrade)
+        self._append_datastore_version(144)
+
+    def upgrade_datastore_145(self) -> None:
+        def get_direct_child_counter_ids(hierarchy, parent_counter_id: int) -> List[int]:
+            def find_counter_entry(elements) -> Optional[dict]:
+                for element in elements:
+                    if element.get("type") == "counter" and element.get("id") == parent_counter_id:
+                        return element
+                    found = find_counter_entry(element.get("children", []))
+                    if found is not None:
+                        return found
+                return None
+
+            parent_entry = find_counter_entry(hierarchy)
+            if parent_entry is None:
+                return []
+            return [
+                child["id"]
+                for child in parent_entry.get("children", [])
+                if child.get("type") == "counter"
+            ]
+
+        def upgrade(topic: str, payload) -> Optional[dict]:
+
+            if re.search("openWB/counter/[0-9]+/config", topic) is not None:
+                index = get_index(topic)
+                new_topics = {}
+                if f"openWB/counter/{index}/config/is_home_consumption_counter" not in self.all_received_topics:
+                    new_topics[f"openWB/counter/{index}/config/is_home_consumption_counter"] = (
+                        get_counter_default_config()["is_home_consumption_counter"]
+                    )
+                return new_topics if new_topics else None
+        self._loop_all_received_topics(upgrade)
+        # Remove old Topic
+        old_topic = "openWB/counter/config/home_consumption_source_id"
+        if old_topic in self.all_received_topics:
+            source_id = decode_payload(self.all_received_topics[old_topic])
+            hierarchy_topic = "openWB/counter/get/hierarchy"
+            hierarchy = decode_payload(self.all_received_topics.get(hierarchy_topic, []))
+
+            if source_id is None:
+                # Altes Default-Verhalten beibehalten: Bei None den EVU-Zähler (hierarchy[0]) verwenden.
+                if (
+                    isinstance(hierarchy, list)
+                    and len(hierarchy) > 0
+                    and hierarchy[0].get("type") == "counter"
+                ):
+                    source_id = hierarchy[0].get("id")
+                else:
+                    log.warning(
+                        "Migration der Hausverbrauchs-Zaehler (upgrade_datastore_138) fehlgeschlagen: "
+                        f"'{old_topic}' ist None und '{hierarchy_topic}' enthaelt keinen gueltigen EVU-Zaehler."
+                    )
+
+            if source_id is not None:
+                try:
+                    source_id = int(source_id)
+                except (TypeError, ValueError):
+                    log.warning(f"Invalid '{old_topic}' value: {source_id!r}; skipping migration")
+                else:
+                    # Bisherigen Source-Counter explizit als Hausverbrauchs-Zähler setzen.
+                    self.__update_topic(
+                        f"openWB/counter/{source_id}/config/is_home_consumption_counter",
+                        CounterMode.HOME_CONSUMPTION.value)
+
+                    # Direkte Kind-Zähler explizit deaktivieren, damit Auto-Vererbung hier endet.
+                    if isinstance(hierarchy, list):
+                        for child_counter_id in get_direct_child_counter_ids(hierarchy, source_id):
+                            self.__update_topic(
+                                f"openWB/counter/{child_counter_id}/config/is_home_consumption_counter",
+                                CounterMode.NOT_HOME_CONSUMPTION.value)
+
+                    else:
+                        log.warning(
+                            "Migration der Hausverbrauchs-Zaehler (upgrade_datastore_138) fehlgeschlagen: "
+                            f"ungueltige Hierarchie in '{hierarchy_topic}'. "
+                            "Direkte Kind-Zaehler des bisherigen Hausverbrauchs-Zaehlers wurden nicht angepasst."
+                        )
+        self._append_datastore_version(145)
+
+    def upgrade_datastore_146(self) -> None:
+        def upgrade(topic: str, payload) -> Optional[dict]:
+            if re.search(r"^openWB/consumer/[0-9]+/config$", topic) is not None:
+                config_payload = decode_payload(payload)
+                if (
+                    isinstance(config_payload, dict)
+                    and "is_home_consumption_consumer" not in config_payload
+                ):
+                    updated_payload = config_payload
+                    updated_payload["is_home_consumption_consumer"] = CounterMode.AUTO_HOME_CONSUMPTION.value
+                    return {topic: updated_payload}
+            return None
+
+        self._loop_all_received_topics(upgrade)
+        self._append_datastore_version(146)
+
+    def upgrade_datastore_147(self) -> None:
+        """Fronius-Modul aufgeräumt: in fronius_http_api umbenannt, sekundären Wechselrichter in den
+        Wechselrichter und S0-/SmartMeter-Zähler in einen gemeinsamen Zähler-Typ zusammengeführt."""
+        def upgrade(topic: str, payload) -> Optional[dict]:
+            if re.search("^openWB/system/device/[0-9]+/config$", topic) is not None:
+                payload_device = decode_payload(payload)
+                if payload_device.get("type") == "fronius":
+                    payload_device["type"] = "fronius_http_api"
+                    return {topic: payload_device}
+            elif re.search("^openWB/system/device/[0-9]+/component/[0-9]+/config$", topic) is not None:
+                payload_component = decode_payload(payload)
+                comp_type = payload_component.get("type")
+                if comp_type == "inverter_secondary":
+                    secondary_id = payload_component.get("configuration", {}).get("id", 1)
+                    payload_component["type"] = "inverter"
+                    payload_component["configuration"] = {"secondary_id": secondary_id}
+                    return {topic: payload_component}
+                elif comp_type == "counter_s0":
+                    # 3 == COUNTER_VARIANT_S0 in modules.devices.fronius.fronius_http_api.config
+                    payload_component["type"] = "counter"
+                    payload_component["configuration"] = {"variant": 3, "meter_id": 0}
+                    return {topic: payload_component}
+                elif comp_type == "counter_sm":
+                    payload_component["type"] = "counter"
+                    return {topic: payload_component}
+        self._loop_all_received_topics(upgrade)
+        self._append_datastore_version(147)
+
+    def upgrade_datastore_148(self) -> None:
+        """PSA-Modul entfernt: Die Schnittstelle wurde von PSA/Stellantis bereits 2024 abgeschaltet,
+        das Modul lieferte seitdem nur noch eine Fehlermeldung statt eines SoC-Werts."""
+        def upgrade(topic: str, payload) -> Optional[dict]:
+            if re.search("^openWB/vehicle/[0-9]+/soc_module/config$", topic) is not None:
+                payload = decode_payload(payload)
+                if payload.get("type") == "psa":
+                    pub_system_message(
+                        {},
+                        "Das PSA-Fahrzeug-Modul wurde entfernt, da PSA/Stellantis die Schnittstelle bereits "
+                        "2024 abgeschaltet hat. Bitte konfiguriere ein anderes Fahrzeug-Modul, z.B. Tronity.",
+                        MessageType.WARNING,
+                    )
+                    return {topic: NO_MODULE}
+        self._loop_all_received_topics(upgrade)
+        self._append_datastore_version(148)
+
+    def upgrade_datastore_149(self) -> None:
+        """Verbraucher ohne Lastmanagement aus der Prioritätensteuerung entfernen."""
+        not_controlled_usage_types = {usage_type.value for usage_type in NOT_CONTROLLED}
+        not_controlled_consumers = {
+            int(get_index(topic))
+            for topic, payload in self.all_received_topics.items()
+            if re.search(r"^openWB/consumer/[0-9]+/usage$", topic) is not None
+            and decode_payload(payload).get("type") in not_controlled_usage_types
+        }
+
+        def remove_not_controlled_consumers(entries: list) -> None:
+            for entry in entries.copy():
+                if entry.get("type") == "consumer" and entry.get("id") in not_controlled_consumers:
+                    entries.remove(entry)
+                elif entry.get("type") == "group":
+                    children = entry.get("children", [])
+                    had_children = bool(children)
+                    remove_not_controlled_consumers(children)
+                    if had_children and not children:
+                        entries.remove(entry)
+
+        topic = "openWB/counter/get/loadmanagement_prios"
+        if topic in self.all_received_topics:
+            loadmanagement_prios = decode_payload(self.all_received_topics[topic])
+            migrated_loadmanagement_prios = copy.deepcopy(loadmanagement_prios)
+            remove_not_controlled_consumers(migrated_loadmanagement_prios)
+            if migrated_loadmanagement_prios != loadmanagement_prios:
+                self.__update_topic(topic, migrated_loadmanagement_prios)
+        self._append_datastore_version(149)
+
+    def upgrade_datastore_150(self) -> None:
+        """Fixed-Hours-Wochentage vom alten Schema (So=0..Sa=6) auf Python weekday() (Mo=0..So=6) migrieren."""
+
+        def _shift_weekday(weekday: int) -> int:
+            return (weekday + 6) % 7
+
+        def upgrade(topic: str, payload) -> Optional[dict]:
+            if ("openWB/optional/ep/flexible_tariff/provider" == topic or
+                    "openWB/optional/ep/grid_fee/provider" == topic):
+                provider = decode_payload(payload)
+                if provider.get("type") != "fixed_hours":
+                    return None
+                config = provider.get("configuration", {})
+                tariffs = config.get("tariffs", [])
+                changed = False
+                for tariff in tariffs:
+                    active_times = tariff.get("active_times", {})
+                    weekdays = active_times.get("weekdays")
+                    if isinstance(weekdays, list):
+                        converted = []
+                        for weekday in weekdays:
+                            try:
+                                weekday_int = int(weekday)
+                            except (TypeError, ValueError):
+                                converted.append(weekday)
+                                continue
+                            converted.append(_shift_weekday(weekday_int))
+                        if converted != weekdays:
+                            active_times["weekdays"] = converted
+                            changed = True
+                if changed:
+                    return {topic: provider}
+            return None
+
+        self._loop_all_received_topics(upgrade)
+        self._append_datastore_version(150)
+
+    def upgrade_datastore_151(self):
+        """Bereits verknüpfte Verbraucher-Zähler aus der Hierarchie entfernen."""
+        hierarchy_topic = "openWB/counter/get/hierarchy"
+        hierarchy = decode_payload(self.all_received_topics.get(hierarchy_topic))
+        if not isinstance(hierarchy, list) or not hierarchy:
+            self._append_datastore_version(151)
+            return
+
+        linked_counter_ids = {
+            int(extra_meter_id)
+            for topic, payload in self.all_received_topics.items()
+            if re.search(r"^openWB/consumer/[0-9]+/extra_meter$", topic) is not None
+            for extra_meter_id in [decode_payload(payload)]
+            if extra_meter_id is not None
+        }
+
+        if not linked_counter_ids:
+            self._append_datastore_version(151)
+            return
+
+        migrated_hierarchy = copy.deepcopy(hierarchy)
+        _counter_all = counter_all.CounterAll()
+        _counter_all.data.get.hierarchy = migrated_hierarchy
+        hierarchy_changed = False
+
+        for linked_counter_id in linked_counter_ids:
+            counter_entry = _counter_all.get_entry_of_element(linked_counter_id)
+            if not counter_entry or counter_entry.get("type") != ComponentType.COUNTER.value:
+                continue
+            parent_entry = _counter_all.get_entry_of_parent(linked_counter_id)
+            if not parent_entry or parent_entry.get("type") != ComponentType.COUNTER.value:
+                continue
+            _counter_all.hierarchy_remove_item(linked_counter_id)
+            hierarchy_changed = True
+
+        if hierarchy_changed:
+            self.__update_topic(hierarchy_topic, _counter_all.data.get.hierarchy)
+
+        self._append_datastore_version(151)
+
+    def upgrade_datastore_152(self):
+        user_management_active = decode_payload(
+            self.all_received_topics.get("openWB/system/security/user_management_active")
+        )
+        if user_management_active is True:
+            for topic, payload in self.all_received_topics.items():
+                match = re.search(r"^openWB/consumer/(\d+)/module$", topic)
+                if match is None:
+                    continue
+                consumer_id = int(match.group(1))
+                consumer_module = decode_payload(payload)
+                consumer_type = consumer_module.get("type") if isinstance(consumer_module, dict) else None
+
+                add_acl_role("consumer-<id>-access", consumer_id)
+                if consumer_type == "mqtt":
+                    add_acl_role("consumer-<id>-write-access", consumer_id)
+                else:
+                    remove_acl_role("consumer-<id>-write-access", consumer_id)
+        self._append_datastore_version(152)
+
+    def upgrade_datastore_153(self) -> None:
+        def upgrade(topic: str, payload) -> Optional[dict]:
+            if re.search(r"^openWB/consumer/[0-9]+/usage$", topic) is not None:
+                usage = decode_payload(payload)
+                reset_chargemode = usage["reset_chargemode"]
+                if reset_chargemode.get("mode") is not None:
+                    legacy_target_chargemode = reset_chargemode.get("chargemode", Chargemode.INSTANT_CHARGING)
+                    # altes Schema
+                    if reset_chargemode["mode"] == "never":
+                        reset_chargemode = ResetChargemode(active=False, chargemode=legacy_target_chargemode)
+                    elif reset_chargemode["mode"] == "midnight":
+                        reset_chargemode = ResetChargemode(active=True, time="00:00",
+                                                           frequency=FrequencyDate(selected="daily"),
+                                                           chargemode=legacy_target_chargemode)
+                    elif reset_chargemode["mode"] == "time":
+                        timestamp = reset_chargemode["time"]
+                        if timestamp is not None:
+                            date = datetime.datetime.fromtimestamp(timestamp).strftime("%Y-%m-%d")
+                            time = datetime.datetime.fromtimestamp(timestamp).strftime("%H:%M")
+                        else:
+                            date = datetime.datetime.today().strftime("%Y-%m-%d")
+                            time = "07:00"
+                        reset_chargemode = ResetChargemode(
+                            active=True, time=time, frequency=FrequencyDate(selected="once", once=date),
+                            chargemode=legacy_target_chargemode)
+
+                    usage["reset_chargemode"] = reset_chargemode
+                    return {topic: asdict(usage)}
+            return None
+        self._loop_all_received_topics(upgrade)
+        self._append_datastore_version(153)
+
+    def upgrade_datastore_154(self) -> None:
+        def upgrade(topic: str, payload) -> Optional[dict]:
+            if re.search(r"^openWB/consumer/[0-9]+/config$", topic) is not None:
+                config = decode_payload(payload)
+                if "min_current" in config:
+                    if "min_power" not in config:
+                        phases = config.get("connected_phases") or 1
+                        config["min_power"] = float(config["min_current"]) * phases * 230
+                    del config["min_current"]
+                    return {topic: config}
+            return None
+
+        self._loop_all_received_topics(upgrade)
+        self._append_datastore_version(154)

@@ -17,7 +17,7 @@ class TestTesla:
         self.mock_context_exit = Mock(return_value=True)
         self.mock_validate_token = Mock(name="validate_token", return_value=self.token)
         self.mock_post_wake_up_command = Mock(name="post_wake_up_command", return_value="online")
-        self.mock_request_data = Mock(name="request_data", return_value=(42.5, 438.2, 1652683252, 12345))
+        self.mock_request_data = Mock(name="request_data", return_value=(42.5, 438.2, 1652683252, 12345, None))
         self.mock_value_store = Mock(name="value_store")
         monkeypatch.setattr(api, "validate_token", self.mock_validate_token)
         monkeypatch.setattr(api, "post_wake_up_command", self.mock_post_wake_up_command)
@@ -53,6 +53,17 @@ class TestTesla:
         assert self.mock_value_store.set.call_args[0][0].range == 438.2
         assert self.mock_value_store.set.call_args[0][0].soc_timestamp == 1652683252
         assert self.mock_value_store.set.call_args[0][0].odometer == 12345
+
+    def test_update_updates_value_store_with_charge_limit_warning(self, monkeypatch):
+        # setup
+        self.mock_request_data.return_value = (42.5, 438.2, 1652683252, 12345, "Ladelimit 80%")
+
+        # execution
+        create_vehicle(TeslaSoc(configuration=TeslaSocConfiguration(
+            tesla_ev_num=0, token=self.token)), 0).update(VehicleUpdateData())
+
+        # evaluation
+        assert self.mock_value_store.set.call_args[0][0].warning == "Ladelimit 80%"
 
     def test_update_passes_errors_to_context(self, monkeypatch):
         # setup
