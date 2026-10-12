@@ -184,9 +184,8 @@ def test_calculate_next_query_time_uses_latest_price_timestamp(monkeypatch: pyte
 
 
 def test_no_new_prices_schedules_short_backoff_instead_of_stale_next_query_time(monkeypatch: pytest.MonkeyPatch):
-    # Regression-Test für #3703: Liefert der Anbieter keine neueren Preise (z.B. weil die Preise
-    # für den Folgetag noch nicht veröffentlicht sind), darf next_query_time nicht auf dem alten,
-    # bereits abgelaufenen Wert stehen bleiben - sonst wird jeden Regelzyklus neu abgefragt.
+    # Regression-Test für #3703: ohne neue Preise darf next_query_time nicht auf dem alten,
+    # abgelaufenen Wert stehen bleiben - sonst wird jeden Regelzyklus neu abgefragt.
     fixed_now = datetime(2022, 5, 16, 13, 40, 0)
     _patch_now(monkeypatch, fixed_now)
 
@@ -202,9 +201,7 @@ def test_no_new_prices_schedules_short_backoff_instead_of_stale_next_query_time(
 
 
 def test_exception_schedules_short_backoff(monkeypatch: pytest.MonkeyPatch):
-    # Regression-Test für #3703: SingleComponentUpdateContext ohne reraise=True hat die Exception
-    # bisher verschluckt, bevor der except-Block next_query_time neu setzen konnte - ohne Fix blieb
-    # next_query_time nach einem Fehler dauerhaft auf dem alten, bereits abgelaufenen Wert stehen.
+    # Regression-Test für #3703: next_query_time muss auch nach einer Exception weitergesetzt werden
     fixed_now = datetime(2022, 5, 16, 13, 40, 0)
     _patch_now(monkeypatch, fixed_now)
 
@@ -219,13 +216,34 @@ def test_exception_schedules_short_backoff(monkeypatch: pytest.MonkeyPatch):
     assert "boom" in tariff.fault_state.fault_str
 
 
+def test_constructor_exception_is_not_swallowed(monkeypatch: pytest.MonkeyPatch):
+    # Regression-Test: ein Fehler in component_initializer darf nicht verschluckt werden
+    with pytest.raises(Exception, match="init failed"):
+        ConfigurableFlexibleTariff(AwattarTariff(), Mock(side_effect=Exception("init failed")))
+
+
+def test_too_few_price_entries_error_is_not_overwritten_by_no_error(monkeypatch: pytest.MonkeyPatch):
+    # Regression-Test für #3703: ein abschließendes no_error() darf den Fehler nicht überschreiben
+    fixed_now = datetime(2022, 5, 16, 13, 40, 0)
+    _patch_now(monkeypatch, fixed_now)
+
+    known_prices = {"1652700000": 10.72e-05}  # nur ein Eintrag - zu wenig für eine Zeitschrittlänge
+    tariff = ConfigurableFlexibleTariff(
+        AwattarTariff(), Mock(return_value=Mock(return_value=TariffState(prices=known_prices))))
+    tariff.get.next_query_time = int(fixed_now.timestamp()) - 10
+
+    tariff.update()
+
+    assert tariff.fault_state.fault_state == FaultStateLevel.ERROR
+
+
 def test_no_tomorrow_prices_before_late_hour_is_not_a_warning(monkeypatch: pytest.MonkeyPatch):
     # Default tariff_update_hours=[14] + LATE_WARNING_OFFSET_HOURS=2 -> Warnschwelle 16:00.
     # 15:59 ist noch davor - "noch keine Preise für morgen" ist hier der normale, erwartete Fall.
     fixed_now = datetime(2022, 5, 16, 15, 59, 0)
     _patch_now(monkeypatch, fixed_now)
 
-    known_prices = {"1652700000": 10.72e-05}
+    known_prices = {"1652709600": 10.72e-05, "1652713200": 5.467e-05}  # 16:00 und 17:00, noch nicht veraltet
     tariff = ConfigurableFlexibleTariff(
         AwattarTariff(), Mock(return_value=Mock(return_value=TariffState(prices=known_prices))))
     tariff.get.prices = known_prices
@@ -241,7 +259,7 @@ def test_no_tomorrow_prices_after_late_hour_warns(monkeypatch: pytest.MonkeyPatc
     fixed_now = datetime(2022, 5, 16, 16, 5, 0)
     _patch_now(monkeypatch, fixed_now)
 
-    known_prices = {"1652700000": 10.72e-05}  # kein Eintrag für morgen
+    known_prices = {"1652710200": 10.72e-05, "1652713800": 5.467e-05}  # 16:10 und 17:10, kein Eintrag für morgen
     tariff = ConfigurableFlexibleTariff(
         AwattarTariff(), Mock(return_value=Mock(return_value=TariffState(prices=known_prices))))
     tariff.get.prices = known_prices
