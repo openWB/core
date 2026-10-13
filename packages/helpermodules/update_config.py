@@ -696,7 +696,7 @@ class UpdateConfig:
 
     default_topics_with_wildcards = (
         ("openWB/chargepoint/{}/get/ocpp/connected", False),
-        ("openWB/chargepoint/{}/get/ocpp/authorize_only_response", None),
+        ("openWB/chargepoint/{}/get/ocpp/authorization_flow_status", None),
     )
 
     default_topic = (

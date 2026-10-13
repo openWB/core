@@ -225,7 +225,7 @@ def test_authorize_for_rfid_publishes_result_and_deduplicates(monkeypatch, mock_
         num=1,
         data=SimpleNamespace(get=SimpleNamespace(
             rfid="TAG",
-            ocpp=SimpleNamespace(authorize_only_response=None),
+            ocpp=SimpleNamespace(authorization_flow_status=None),
         )),
     )
     monkeypatch.setattr(ocpp_client, "get_cp_from_chargebox_id", lambda _: openwb_cp)
@@ -239,8 +239,8 @@ def test_authorize_for_rfid_publishes_result_and_deduplicates(monkeypatch, mock_
 
     assert client._rfid_authorize_pending == set()
     assert mock_pub.pub.call_args_list == [
-        call("openWB/set/chargepoint/1/get/ocpp/authorize_only_response", "init"),
-        call("openWB/set/chargepoint/1/get/ocpp/authorize_only_response", "accepted"),
+        call("openWB/set/chargepoint/1/get/ocpp/authorization_flow_status", "init"),
+        call("openWB/set/chargepoint/1/get/ocpp/authorization_flow_status", "accepted"),
     ]
 
 
@@ -252,7 +252,7 @@ def test_authorize_for_rfid_publishes_rejected_when_authorize_raises(monkeypatch
         num=1,
         data=SimpleNamespace(get=SimpleNamespace(
             rfid="TAG",
-            ocpp=SimpleNamespace(authorize_only_response=None),
+            ocpp=SimpleNamespace(authorization_flow_status=None),
         )),
     )
     monkeypatch.setattr(ocpp_client, "get_cp_from_chargebox_id", lambda _: openwb_cp)
@@ -260,10 +260,10 @@ def test_authorize_for_rfid_publishes_rejected_when_authorize_raises(monkeypatch
     assert client.authorize_for_rfid("box-1", "TAG") is None
 
     assert client._rfid_authorize_pending == set()
-    assert openwb_cp.data.get.ocpp.authorize_only_response == "rejected"
+    assert openwb_cp.data.get.ocpp.authorization_flow_status == "rejected"
     assert mock_pub.pub.call_args_list == [
-        call("openWB/set/chargepoint/1/get/ocpp/authorize_only_response", "init"),
-        call("openWB/set/chargepoint/1/get/ocpp/authorize_only_response", "rejected"),
+        call("openWB/set/chargepoint/1/get/ocpp/authorization_flow_status", "init"),
+        call("openWB/set/chargepoint/1/get/ocpp/authorization_flow_status", "rejected"),
     ]
 
 
@@ -276,7 +276,7 @@ def test_authorize_for_rfid_ignores_result_after_rfid_changes(monkeypatch, mock_
         num=1,
         data=SimpleNamespace(get=SimpleNamespace(
             rfid="TAG",
-            ocpp=SimpleNamespace(authorize_only_response=None),
+            ocpp=SimpleNamespace(authorization_flow_status=None),
         )),
     )
     monkeypatch.setattr(ocpp_client, "get_cp_from_chargebox_id", lambda _: openwb_cp)
@@ -286,10 +286,10 @@ def test_authorize_for_rfid_ignores_result_after_rfid_changes(monkeypatch, mock_
     authorization_future.set_result(AuthorizationResult(status="Accepted"))
 
     assert client._rfid_authorize_pending == set()
-    assert openwb_cp.data.get.ocpp.authorize_only_response is None
+    assert openwb_cp.data.get.ocpp.authorization_flow_status is None
     assert mock_pub.pub.call_args_list == [
-        call("openWB/set/chargepoint/1/get/ocpp/authorize_only_response", "init"),
-        call("openWB/set/chargepoint/1/get/ocpp/authorize_only_response", None),
+        call("openWB/set/chargepoint/1/get/ocpp/authorization_flow_status", "init"),
+        call("openWB/set/chargepoint/1/get/ocpp/authorization_flow_status", None),
     ]
 
 
@@ -1024,7 +1024,7 @@ def test_persisted_stop_is_sent_once(monkeypatch):
             }],
         ))),
     )
-    stop_transaction = AsyncMock()
+    stop_transaction = AsyncMock(return_value=SimpleNamespace(id_tag_info=None))
     cp = SimpleNamespace(
         openwb_num=1,
         openwb_cp=openwb_cp,
@@ -1224,6 +1224,7 @@ def test_connection_closed_removes_only_matching_status_cache(monkeypatch, mock_
         ("box-2", 1): ("status-c", "error-c", ""),
     }
     client.transactions = SimpleNamespace(on_disconnected=AsyncMock())
+    client.connection_manager = SimpleNamespace(get=lambda _: None)
 
     asyncio.run(client._connection_closed(connection))
 
@@ -1231,6 +1232,42 @@ def test_connection_closed_removes_only_matching_status_cache(monkeypatch, mock_
     assert client._last_update == {("box-2", 1): ("status-c", "error-c", "")}
     assert ocpp_data.connected is False
     mock_pub.pub.assert_called_once_with("openWB/set/chargepoint/1/get/ocpp/connected", False)
+
+
+def test_stale_disconnect_cannot_mark_reconnected_chargepoint_offline(mock_pub):
+    ocpp_data = SimpleNamespace(connected=True)
+    openwb_cp = SimpleNamespace(data=SimpleNamespace(get=SimpleNamespace(ocpp=ocpp_data)))
+    old_cp = SimpleNamespace(openwb_cp=openwb_cp, openwb_num=1)
+    new_cp = SimpleNamespace(openwb_cp=openwb_cp, openwb_num=1)
+    old_connection = SimpleNamespace(chargebox_id="box-1", cp=old_cp)
+    new_connection = SimpleNamespace(chargebox_id="box-1", cp=new_cp)
+    client = object.__new__(OcppClient)
+    client._last_update = {("box-2", 1): ("some", "status", "")}
+    current = [None]
+    client.connection_manager = SimpleNamespace(get=lambda _: current[0])
+
+    async def check():
+        entered = asyncio.Event()
+        resume = asyncio.Event()
+
+        async def delayed_disconnect(chargebox_id, connection):
+            entered.set()
+            await resume.wait()
+
+        client.transactions = SimpleNamespace(on_disconnected=delayed_disconnect)
+        closing = asyncio.create_task(client._connection_closed(old_connection))
+        await entered.wait()
+        current[0] = new_connection
+        client._set_connected(new_cp, True)
+        client._last_update[("box-1", 1)] = ("new", "status", "")
+        resume.set()
+        await closing
+
+    asyncio.run(check())
+
+    assert ocpp_data.connected is True
+    assert client._last_update[("box-1", 1)] == ("new", "status", "")
+    mock_pub.pub.assert_called_once_with("openWB/set/chargepoint/1/get/ocpp/connected", True)
 
 
 def test_connection_closed_publishes_disconnected_when_openwb_cp_is_gone(mock_pub):

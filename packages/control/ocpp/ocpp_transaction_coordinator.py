@@ -80,6 +80,8 @@ class TransactionCoordinator:
         self._transactions: dict[str, OcppTransaction] = {}
         self._start_blocked: set[str] = set()
         self._replay_tasks: dict[str, asyncio.Task] = {}
+        # Retry-Tasks gehören immer zu einer konkreten Transportverbindung.
+        self._replay_task_connections: dict[str, OcppConnection] = {}
 
     async def authorize(
         self,
@@ -616,7 +618,13 @@ class TransactionCoordinator:
         chargebox_id: str,
         connection: OcppConnection,
     ) -> None:
+        # Ein verspäteter Disconnect einer alten Verbindung darf den Replay-Task
+        # der inzwischen aktiven Verbindung nicht abbrechen.
+        if self._replay_task_connections.get(chargebox_id) is not connection:
+            return
+
         task = self._replay_tasks.pop(chargebox_id, None)
+        self._replay_task_connections.pop(chargebox_id, None)
         if task is None or task.done() or task is asyncio.current_task():
             return
         task.cancel()
@@ -725,8 +733,12 @@ class TransactionCoordinator:
 
         existing = self._replay_tasks.get(chargebox_id)
         if existing is not None and not existing.done():
-            return
+            if self._replay_task_connections.get(chargebox_id) is connection:
+                return
+            # Alte Connection darf keine Stops mehr senden; neuer Retry ersetzt sie.
+            existing.cancel()
 
+        self._replay_task_connections[chargebox_id] = connection
         self._replay_tasks[chargebox_id] = asyncio.create_task(
             self._retry_persisted_stop(chargebox_id, connection, attempts),
             name=f"ocpp-stop-replay-{chargebox_id}",
@@ -772,6 +784,7 @@ class TransactionCoordinator:
         finally:
             if self._replay_tasks.get(chargebox_id) is asyncio.current_task():
                 self._replay_tasks.pop(chargebox_id, None)
+                self._replay_task_connections.pop(chargebox_id, None)
 
     def get_transaction_id(self, chargebox_id: str,) -> Optional[int]:
         return self._get_transaction(chargebox_id).transaction_id
@@ -940,12 +953,12 @@ class TransactionCoordinator:
         if (transaction.state == TransactionState.IDLE and
                 transaction.id_tag is not None and transaction.last_error is not None):
             response = "start_error"
-        previous_response = getattr(ocpp_data, "authorize_only_response", None)
+        previous_response = getattr(ocpp_data, "authorization_flow_status", None)
         if response != previous_response and (
             response is not None or previous_response in state_responses.values()
         ):
-            ocpp_data.authorize_only_response = response
-            Pub().pub(f"{prefix}/authorize_only_response", response)
+            ocpp_data.authorization_flow_status = response
+            Pub().pub(f"{prefix}/authorization_flow_status", response)
 
     async def _stop_active(
         self,
@@ -977,12 +990,19 @@ class TransactionCoordinator:
                 )
 
         try:
-            await cp._stop_transaction(
+            response = await cp._stop_transaction(
                 meter_stop=request.meter_stop,
                 transaction_id=transaction_id,
                 reason=request.reason,
                 id_tag=request.id_tag,
             )
+            # Die Response muss vorhanden sein,
+            # bevor die Transaktion freigegeben wird.
+            if response is None:
+                raise ConnectionError(
+                    f"StopTransaction.conf für {chargebox_id} "
+                    f"(Transaction {transaction_id}) nicht erhalten"
+                )
 
         except asyncio.CancelledError:
             raise

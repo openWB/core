@@ -53,7 +53,7 @@ def test_pub_missing_defaults_expands_chargepoint_topics(mock_pub, monkeypatch):
     ))
     monkeypatch.setattr(UpdateConfig, "default_topics_with_wildcards", (
         ("openWB/chargepoint/{}/get/ocpp/connected", False),
-        ("openWB/chargepoint/{}/get/ocpp/authorize_only_response", None),
+        ("openWB/chargepoint/{}/get/ocpp/authorization_flow_status", None),
     ))
 
     update_con._UpdateConfig__pub_missing_defaults()
@@ -65,11 +65,11 @@ def test_pub_missing_defaults_expands_chargepoint_topics(mock_pub, monkeypatch):
     assert published_defaults == {
         "openWB/counter/get/hierarchy": [],
         "openWB/chargepoint/1/get/ocpp/connected": False,
-        "openWB/chargepoint/1/get/ocpp/authorize_only_response": None,
+        "openWB/chargepoint/1/get/ocpp/authorization_flow_status": None,
         "openWB/chargepoint/2/get/ocpp/connected": False,
-        "openWB/chargepoint/2/get/ocpp/authorize_only_response": None,
+        "openWB/chargepoint/2/get/ocpp/authorization_flow_statusus": None,
         "openWB/chargepoint/10/get/ocpp/connected": False,
-        "openWB/chargepoint/10/get/ocpp/authorize_only_response": None,
+        "openWB/chargepoint/10/get/ocpp/authorization_flow_status": None,
     }
 
 
