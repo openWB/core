@@ -67,7 +67,7 @@ def test_pub_missing_defaults_expands_chargepoint_topics(mock_pub, monkeypatch):
         "openWB/chargepoint/1/get/ocpp/connected": False,
         "openWB/chargepoint/1/get/ocpp/authorization_flow_status": None,
         "openWB/chargepoint/2/get/ocpp/connected": False,
-        "openWB/chargepoint/2/get/ocpp/authorization_flow_statusus": None,
+        "openWB/chargepoint/2/get/ocpp/authorization_flow_status": None,
         "openWB/chargepoint/10/get/ocpp/connected": False,
         "openWB/chargepoint/10/get/ocpp/authorization_flow_status": None,
     }
