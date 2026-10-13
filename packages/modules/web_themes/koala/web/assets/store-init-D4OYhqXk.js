@@ -1,0 +1,1 @@
+import{a as e}from"./index-CZZI-PDn.js";import{t}from"./mqtt-store-JDgcx4rl.js";var n=e(()=>{t().initialize()});export{n as default};
