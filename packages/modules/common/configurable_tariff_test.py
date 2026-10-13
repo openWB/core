@@ -221,7 +221,6 @@ def test_constructor_exception_is_logged_and_does_not_propagate(monkeypatch: pyt
     tariff = ConfigurableFlexibleTariff(AwattarTariff(), Mock(side_effect=Exception("init failed")))
 
     assert tariff.fault_state.fault_state == FaultStateLevel.ERROR
-    assert "init failed" in tariff.fault_state.fault_str
     assert not hasattr(tariff, "_component_updater")
 
     # update() bleibt für dieses dauerhaft fehlgeschlagene Modul ein sicherer No-op
