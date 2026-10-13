@@ -119,7 +119,7 @@ const devicesToShow = computed(() => {
 						return b.power - a.power
 					}),
 			)
-		: [registry.getItem('consumers')]
+		: []
 })
 
 const consumersToShow = computed(() => {

@@ -7,14 +7,14 @@ import {
 	updateEnergyValues,
 } from './model'
 
-import { registry, resetHistoricData } from '@/assets/js/model'
+import { createPowerItem, registry, resetHistoricData } from '@/assets/js/model'
 import { globalConfig } from '@/assets/js/themeConfig'
 import { shDevices } from '../smartHome/model'
 import { itemNames } from './model'
 import { addCounter, Counter, counters } from '../counterList/model'
 import { chargePoints } from '../chargePointList/model'
 import { addConsumer, consumers } from '../consumerList/model'
-import type { PowerItem } from '@/assets/js/types'
+import { PowerItemType, type PowerItem } from '@/assets/js/types'
 import { add } from '../mqttViewer/model'
 // methods:
 let gridCounters: string[] = []
@@ -140,7 +140,10 @@ function transformRow(currentRow: RawDayGraphDataItem): GraphDataItem {
 		if (id != 'all') {
 			currentItem[id] = values.power_imported ?? 0
 			if (!registry.keys().includes(id)) {
-				registry.duplicateItem(id, shDevices.get(id)!)
+				const dev =
+					shDevices.get(id) ??
+					createPowerItem(id, PowerItemType.device, 'var(--color-device)')
+				registry.duplicateItem(id, dev)
 			}
 			if (shDevices.get(id)?.countAsHouse) {
 				shEnergyToBeExtractedFromHouse += values.power_imported

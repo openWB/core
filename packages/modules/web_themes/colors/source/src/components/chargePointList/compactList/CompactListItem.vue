@@ -17,7 +17,7 @@
 			<div class="d-flex float-right justify-content-end align-items-center">
 				<span
 					v-if="chargepoint.priority > 0"
-					class="badge rounded-pill priobadge mx-2"
+					class="badge rounded-pill priobadge"
 					bgcolor="var(--color-menu)"
 					>Prio: {{ chargepoint.priority }}
 				</span>
