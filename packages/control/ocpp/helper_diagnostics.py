@@ -9,15 +9,6 @@ from pathlib import Path
 from typing import Awaitable, Callable, Dict, Optional
 from urllib.parse import SplitResult, unquote, urlsplit
 
-"""
-Test Location Homeoffice
-ftp://test:test@192.168.178.36:2121/uploads/test1.py
-
-Test Location Büro
-ftp://test:test@192.168.1.97:2121/uploads/test1.py
-192.168.1.97
-"""
-
 
 def _parse_server_time(value: str) -> datetime:
     normalized = value.strip()

@@ -88,7 +88,7 @@ class TransactionCoordinator:
         chargebox_id: str,
         id_tag: str,
     ) -> AuthorizationResult:
-        """Prueft einen Tag, ohne den Transaktionszustand zu veraendern."""
+        """Prüft einen Tag, ohne den Transaktionszustand zu verändern."""
         if not chargebox_id or not id_tag:
             return AuthorizationResult(error="Chargebox-ID und id_tag sind erforderlich")
 
@@ -191,11 +191,8 @@ class TransactionCoordinator:
         transaction.pending_stop = None
         transaction.last_error = None
 
-        # Wichtig:
-        # vor dem ersten await setzen.
-        #
-        # So kann ein Stop während ensure_connected()
-        # nicht mehr verloren gehen.
+        # Zustand vor dem ersten await setzen, damit ein Stop während
+        # ensure_connected() nicht verloren geht.
         self._transition(
             chargebox_id,
             transaction,
@@ -399,7 +396,7 @@ class TransactionCoordinator:
         reason: str = "EVDisconnected",
         authorize_stop: bool = False,
     ) -> bool:
-        """authorize_stop verlangt eine erfolgreiche Pruefung des expliziten RFID-Tags."""
+        """authorize_stop verlangt eine erfolgreiche Prüfung des expliziten RFID-Tags."""
         if not chargebox_id or (authorize_stop and not id_tag):
             return False
 
@@ -411,7 +408,8 @@ class TransactionCoordinator:
             if transaction_id is None or transaction.state not in stoppable_states:
                 return False
 
-            print(f"!!!!!!!!!!!__Authorize stop for chargebox_id={chargebox_id}, id_tag={id_tag}")
+            print(f"# !!!!!!!!!!!__Authorize stop for chargebox_id={chargebox_id}, id_tag={id_tag}")
+            log.debug(f"Authorize stop for chargebox_id={chargebox_id}, id_tag={id_tag}")
             authorization = await self.authorize(chargebox_id, id_tag)
             if not authorization.accepted:
                 return False
@@ -430,9 +428,8 @@ class TransactionCoordinator:
                 )
                 return False
 
-            # Setzen, damit nicht dirket wieder eine Ladung beginnt
-            # da der Stecker noch nicht gezogen wurde
-            # Der eigentlich Stop wird nachfolgend durchgeführt
+            # Bis zum Abstecken weitere Ladevorgänge blockieren
+            # Der eigentliche Stop wird nachfolgend durchgeführt
             openwb_cp.data.get.ocpp.rfid_stop = True
             Pub().pub(f"openWB/set/chargepoint/{openwb_cp.num}/get/ocpp/rfid_stop", True)
 
