@@ -171,12 +171,12 @@ const openDetails = (event: MouseEvent, component: FlowComponent) => {
 const homeHasDetails = computed(
   () =>
     mqttStore.inHomeConsumption.consumerIds.length > 0 ||
-    mqttStore.inHomeConsumption.counterIds.length > 0,
+    mqttStore.inHomeConsumption.counterIdsWithoutChildren.length > 0,
 );
 const notInHomeHasDetails = computed(
   () =>
     mqttStore.notInHomeConsumption.consumerIds.length > 0 ||
-    mqttStore.notInHomeConsumption.counterIds.length > 0,
+    mqttStore.notInHomeConsumption.counterIdsWithoutChildren.length > 0,
 );
 const showConsumerPower = computed(
   () =>

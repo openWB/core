@@ -4389,7 +4389,8 @@ export const useMqttStore = defineStore('mqtt', () => {
    * Sort the consumers and sub-counters by whether they are counted in the
    * home consumption. The root counter is only listed if it is excluded.
    * @returns object with the keys inHome and notInHome, each holding the ids
-   * of the consumers and counters
+   * of the consumers and counters. counterIdsWithoutChildren holds the
+   * counters that have no components below them.
    */
   const homeConsumptionAssignment = computed(() => {
     const AUTO = 'auto_home_consumption';
@@ -4397,6 +4398,7 @@ export const useMqttStore = defineStore('mqtt', () => {
     const ids = () => ({
       consumerIds: [] as number[],
       counterIds: [] as number[],
+      counterIdsWithoutChildren: [] as number[],
     });
     const result = { inHome: ids(), notInHome: ids() };
     function walk(
@@ -4415,10 +4417,19 @@ export const useMqttStore = defineStore('mqtt', () => {
             AUTO,
           ) as string | undefined;
           const mode = own && own !== AUTO ? own : parentMode;
+          let bucket;
           if (mode === NOT_HOME) {
-            result.notInHome.counterIds.push(node.id);
-          } else if (!isRoot) {
-            result.inHome.counterIds.push(node.id);
+            bucket = result.notInHome;
+          } else if (isRoot) {
+            bucket = undefined;
+          } else {
+            bucket = result.inHome;
+          }
+          if (bucket) {
+            bucket.counterIds.push(node.id);
+            if (!node.children?.length) {
+              bucket.counterIdsWithoutChildren.push(node.id);
+            }
           }
           walk(node.children, mode, false);
         } else if (node.type === 'consumer') {

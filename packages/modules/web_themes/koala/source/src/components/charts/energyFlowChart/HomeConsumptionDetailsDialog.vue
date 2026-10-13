@@ -77,7 +77,7 @@ const visible = computed({
 });
 
 const items = computed((): DetailsItem[] => {
-  const { consumerIds, counterIds } =
+  const { consumerIds, counterIdsWithoutChildren } =
     props.scope === 'inHome'
       ? mqttStore.inHomeConsumption
       : mqttStore.notInHomeConsumption;
@@ -102,7 +102,7 @@ const items = computed((): DetailsItem[] => {
       color: mqttStore.consumerColor(id) || 'var(--q-consumer)',
       power: mqttStore.consumerPower(id, 'textValue') as string,
     })),
-    ...counterIds.map((id) => ({
+    ...counterIdsWithoutChildren.map((id) => ({
       key: `counter-${id}`,
       name: mqttStore.componentName(id) || `Zähler ${id}`,
       icon: CounterIcon,
