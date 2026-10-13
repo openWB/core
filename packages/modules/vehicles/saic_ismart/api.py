@@ -9,7 +9,8 @@ wegen der genutzten Bibliotheken, nicht wegen des Protokolls).
 
 Ablauf pro Zyklus (fetch_soc):
   1. Falls noch keine oder eine abgelaufene Session für diesen Account im Prozess-Cache
-     liegt: Login (Passwort-basiert).
+     liegt: Login (Passwort-basiert). Mehrere Fahrzeuge desselben Accounts teilen sich
+     Session und Login-Lock.
   2. vehicle/charging/mgmtData abfragen. Manche Endpunkte beantwortet die Cloud nicht
      sofort, sondern verweist per Antwort-Header "event-id" auf einen späteren Abruf
      mit genau dieser ID - wird wiederholt, bis Daten vorliegen oder ein Timeout greift.
@@ -18,6 +19,7 @@ Ablauf pro Zyklus (fetch_soc):
 """
 import json
 import logging
+import threading
 import time
 from typing import Any, Dict, Optional, Tuple
 from urllib.parse import urlencode
@@ -33,7 +35,6 @@ BASE_URL = "https://gateway-mg-eu.soimt.com/api.app/v1"
 TENANT_ID = "459771"
 
 LOGIN_ENDPOINT = "/oauth/token"
-VEHICLE_LIST_ENDPOINT = "/vehicle/list"
 VEHICLE_STATUS_ENDPOINT = "/vehicle/status"
 CHARGING_MGMT_ENDPOINT = "/vehicle/charging/mgmtData"
 
@@ -50,6 +51,19 @@ EVENT_ID_POLL_INTERVAL_S = 3
 # Prozess-weiter Session-Cache je Account: {username: {"access_token", "expires_at"}}
 _session_cache: Dict[str, Dict[str, Any]] = {}
 _SESSION_SAFETY_MARGIN_S = 60
+
+# Lock je Account, da update_soc.py jedes Fahrzeug in einem eigenen Thread aktualisiert
+_account_locks: Dict[str, threading.Lock] = {}
+_locks_meta_lock = threading.Lock()
+
+
+def _account_lock(username: str) -> threading.Lock:
+    with _locks_meta_lock:
+        lock = _account_locks.get(username)
+        if lock is None:
+            lock = threading.Lock()
+            _account_locks[username] = lock
+        return lock
 
 
 class SaicApiError(Exception):
@@ -178,26 +192,14 @@ def _login(config: SaicIsmartConfiguration) -> Dict[str, Any]:
 
 def _get_session(config: SaicIsmartConfiguration, force_relogin: bool = False) -> str:
     cache_key = config.username
-    cached = _session_cache.get(cache_key)
-    if not force_relogin and cached is not None and time.monotonic() < cached["expires_at"]:
-        return cached["access_token"]
-    session = _login(config)
-    _session_cache[cache_key] = session
-    return session["access_token"]
-
-
-def _resolve_vin(config: SaicIsmartConfiguration, access_token: str) -> str:
-    if config.vin:
-        return config.vin
-    data = _request("GET", VEHICLE_LIST_ENDPOINT, config, access_token)
-    vehicles = data.get("vinList", [])
-    if not vehicles:
-        raise SaicApiError("SAIC iSMART: Kein Fahrzeug im Account gefunden und keine "
-                           "VIN konfiguriert")
-    for v in vehicles:
-        if v.get("isCurrentVehicle"):
-            return v["vin"]
-    return vehicles[0]["vin"]
+    # Lock verhindert parallelen Login zweier Fahrzeuge desselben Accounts
+    with _account_lock(cache_key):
+        cached = _session_cache.get(cache_key)
+        if not force_relogin and cached is not None and time.monotonic() < cached["expires_at"]:
+            return cached["access_token"]
+        session = _login(config)
+        _session_cache[cache_key] = session
+        return session["access_token"]
 
 
 def _fetch_charging_mgmt_data(config: SaicIsmartConfiguration, access_token: str,
@@ -209,6 +211,14 @@ def _fetch_charging_mgmt_data(config: SaicIsmartConfiguration, access_token: str
 def _wake_vehicle(config: SaicIsmartConfiguration, access_token: str, vin: str) -> None:
     path = f"{VEHICLE_STATUS_ENDPOINT}?{urlencode({'vin': crypto.vin_hash(vin), 'vehStatusReqType': '2'})}"
     _request_with_event_id_poll("GET", path, config, access_token)
+
+
+def _call_with_relogin(config: SaicIsmartConfiguration, access_token: str, action) -> Tuple[Any, str]:
+    try:
+        return action(access_token), access_token
+    except SaicAuthenticationError:
+        access_token = _get_session(config, force_relogin=True)
+        return action(access_token), access_token
 
 
 def extract_soc(data: Dict[str, Any]) -> float:
@@ -231,21 +241,21 @@ def extract_odometer(data: Dict[str, Any]) -> Optional[float]:
 def fetch_soc(config: SaicIsmartConfiguration) -> CarState:
     if not config.username or not config.password:
         raise SaicApiError("SAIC iSMART: Benutzername und Passwort müssen konfiguriert sein")
+    if not config.vin:
+        raise SaicApiError("SAIC iSMART: VIN muss konfiguriert sein")
 
     try:
         access_token = _get_session(config)
-        vin = _resolve_vin(config, access_token)
-        try:
-            data = _fetch_charging_mgmt_data(config, access_token, vin)
-        except SaicAuthenticationError:
-            access_token = _get_session(config, force_relogin=True)
-            data = _fetch_charging_mgmt_data(config, access_token, vin)
+        data, access_token = _call_with_relogin(
+            config, access_token, lambda token: _fetch_charging_mgmt_data(config, token, config.vin))
 
         soc = (data.get("chrgMgmtData") or {}).get("bmsPackSOCDsp")
         if soc is None or soc == SOC_INVALID_SENTINEL:
             log.info("SAIC iSMART: Cloud-Daten veraltet, wecke Fahrzeug...")
-            _wake_vehicle(config, access_token, vin)
-            data = _fetch_charging_mgmt_data(config, access_token, vin)
+            _, access_token = _call_with_relogin(
+                config, access_token, lambda token: _wake_vehicle(config, token, config.vin))
+            data, access_token = _call_with_relogin(
+                config, access_token, lambda token: _fetch_charging_mgmt_data(config, token, config.vin))
     except SaicApiError:
         raise
     except Exception as exc:

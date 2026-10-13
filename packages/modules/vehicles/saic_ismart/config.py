@@ -11,9 +11,7 @@ class SaicIsmartConfiguration:
     # phone_country_code setzen.
     username_is_email: bool = True
     phone_country_code: Optional[str] = None
-    # optional: leer lassen, wenn nur ein Fahrzeug am Account hängt (wird dann automatisch
-    # per Fahrzeugliste ermittelt) - bei mehreren Fahrzeugen muss die VIN gesetzt werden,
-    # um eindeutig zu sein
+    # erforderlich, auch bei nur einem Fahrzeug am Account
     vin: str = ""
     # Cloud-Region, wie in der MG-iSMART-App hinterlegt: eu (Standard), au, tr
     region: str = "eu"
