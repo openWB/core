@@ -63,10 +63,10 @@ def test_login_selection_measurements_and_session_reuse(http, caplog):
     login(http)
     http.get(api.USERS_BASE_URL + "v1/users/current", json={"userId": "synthetic-user"})
     http.get(api.BFF_BASE_URL + "v5/users/synthetic-user/cars", json={"data": [{"vin": VIN}]})
-    http.get(BATTERY_URL, json=battery(rangeHvacOn=123.4))
+    http.get(BATTERY_URL, json=battery(batteryBarLevel=114, rangeHvacOn=123.4))
     http.get(COCKPIT_URL, json={"data": {"attributes": {"totalMileage": 12345.6}}})
     instance = api.NissanClient("synthetic@example.invalid", "synthetic-password")
-    assert instance.fetch_battery() == (47, 123.4, MEASUREMENT_UNIX_SECONDS, 12345.6)
+    assert instance.fetch_battery() == (47.5, 123.4, MEASUREMENT_UNIX_SECONDS, 12345.6)
     calls = list(http.request_history)
     authorize = parse_qs(urlsplit(calls[0].url).query)
     verifier = parse_qs(calls[2].text)["code_verifier"][0]
@@ -87,16 +87,37 @@ def test_valid_zero_and_old_measurement(soc):
     assert api.parse_battery(battery(soc, rangeHvacOn=0)) == (soc, 0, MEASUREMENT_UNIX_SECONDS)
 
 
+@pytest.mark.parametrize("soc,bar_units,expected_percent", [
+    (0, 0, 0), (0, 1, 0.4166667), (61, 148, 61.6666667),
+    (47.5, 114, 47.5), (99, 240, 100), (100, 240, 100),
+])
+def test_consistent_bar_level_preserves_precision_zero_and_measurement_time(soc, bar_units, expected_percent):
+    soc_percent, range_km, timestamp = api.parse_battery(battery(soc, batteryBarLevel=bar_units, rangeHvacOn=0))
+    assert soc_percent == pytest.approx(expected_percent)
+    assert range_km == 0
+    assert timestamp == MEASUREMENT_UNIX_SECONDS
+
+
+@pytest.mark.parametrize("bar_units", [None, False, -1, 241, "148", {}, [], float("nan"), float("inf")])
+def test_invalid_bar_level_retains_valid_battery_level(bar_units):
+    assert api.parse_battery(battery(61.25, batteryBarLevel=bar_units))[0] == 61.25
+
+
+@pytest.mark.parametrize("soc,bar_units", [(1, 0), (80, 12), (0, 240), (50, 122.5)])
+def test_inconsistent_bar_level_retains_battery_level(soc, bar_units):
+    assert api.parse_battery(battery(soc, batteryBarLevel=bar_units))[0] == soc
+
+
 @pytest.mark.parametrize("soc", [None, True, -1, 101, "47", float("nan"), float("inf")])
 def test_invalid_soc_never_becomes_zero(soc):
     with pytest.raises(api.NissanError):
-        api.parse_battery(battery(soc))
+        api.parse_battery(battery(soc, batteryBarLevel=114))
 
 
 @pytest.mark.parametrize("timestamp", [None, "bad", "2022-01-01T00:00:00", "2099-01-01T00:00:00Z"])
 def test_invalid_timestamp_never_becomes_now(timestamp):
     with pytest.raises(api.NissanError):
-        api.parse_battery(battery(timestamp=timestamp))
+        api.parse_battery(battery(timestamp=timestamp, batteryBarLevel=114))
 
 
 @pytest.mark.parametrize("odometer", [None, -1, True, "12345", float("inf")])

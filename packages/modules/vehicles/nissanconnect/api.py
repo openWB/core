@@ -53,6 +53,8 @@ DEFAULT_TOKEN_LIFETIME_SECONDS = 3600
 TOKEN_REFRESH_MARGIN_SECONDS = 30
 MAX_MEASUREMENT_FUTURE_SKEW_SECONDS = 300
 MAX_SOC_PERCENT = 100
+FULL_BATTERY_BAR_UNITS = 240
+MAX_SOC_DIFFERENCE_PERCENT_POINTS = 1
 MAX_LOGIN_REDIRECTS = 10
 PKCE_VERIFIER_RANDOM_BYTES = 64
 OAUTH_STATE_RANDOM_BYTES = 32
@@ -115,11 +117,26 @@ def _number(value, maximum=math.inf):
         raise NissanError("Nissan returned an invalid vehicle measurement.") from None
 
 
+def _soc_percent(attributes):
+    """Prefer the Leaf's finer 0-240 scale when it agrees with the required percent value."""
+    soc_percent = _number(attributes["batteryLevel"], MAX_SOC_PERCENT)
+    try:
+        bar_units = _number(attributes.get("batteryBarLevel"), FULL_BATTERY_BAR_UNITS)
+    except NissanError:
+        return soc_percent
+    bar_soc_percent = bar_units / FULL_BATTERY_BAR_UNITS * MAX_SOC_PERCENT
+    # Allow integer-percent quantization, but reject a zero placeholder for a positive SoC.
+    if ((bar_units > 0 or soc_percent == 0)
+            and abs(bar_soc_percent - soc_percent) <= MAX_SOC_DIFFERENCE_PERCENT_POINTS):
+        return bar_soc_percent
+    return soc_percent
+
+
 def parse_battery(body) -> Tuple[float, Optional[float], float]:
     """Preserve the actual measurement time and valid zero values; never invent a SoC."""
     try:
         attributes = body["data"]["attributes"]
-        soc_percent = _number(attributes["batteryLevel"], MAX_SOC_PERCENT)
+        soc_percent = _soc_percent(attributes)
         measured = datetime.fromisoformat(attributes["lastUpdateTime"].replace("Z", "+00:00"))
         measurement_unix_seconds = measured.timestamp()
         if (measured.tzinfo is None
