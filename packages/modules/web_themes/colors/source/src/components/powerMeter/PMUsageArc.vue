@@ -83,45 +83,12 @@ const chargePointsToShow = computed(() => {
 })
 // devices
 const devicesToShow = computed(() => {
-	let summarizedPower = 0
-	for (const d of shDevices.values()) {
-		if (d.configured && !d.countAsHouse && !d.showInGraph) {
-			summarizedPower += d.power
-		}
-	}
-
-	const deviceSummary: PowerItem = {
-		name: 'Geräte',
-		type: PowerItemType.device,
-		power: summarizedPower,
-		now: {
-			energy: 0,
-			energyPv: 0,
-			energyBat: 0,
-			pvPercentage: 0,
-		},
-		past: {
-			energy: 0,
-			energyPv: 0,
-			energyBat: 0,
-			pvPercentage: 0,
-		},
-		color: 'var(--color-devices)',
-		icon: '',
-		showInGraph: true,
-	}
-	let activeDevices = [...shDevices.values()].filter((row) => row.configured)
-	return activeDevices.length > 1
-		? [deviceSummary].concat(
-				activeDevices
-					.filter((row) => !row.countAsHouse && row.showInGraph)
-					.sort((a, b) => {
-						return b.power - a.power
-					}),
-			)
-		: []
+	return [...shDevices.values()]
+		.filter((dev) => dev.configured && !dev.countAsHouse && dev.showInGraph)
+		.sort((a, b) => {
+			return b.power - a.power
+		})
 })
-
 const consumersToShow = computed(() => {
 	return [...consumers.values()]
 		.filter((c) => c.showInGraph)
