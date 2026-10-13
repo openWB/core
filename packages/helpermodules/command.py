@@ -1181,19 +1181,23 @@ class Command:
     def addConsumer(self, connection_id: str, payload: dict) -> None:
         """ sendet das Topic, zu dem ein neues Device erstellt werden soll.
         """
-        if payload["data"]["type"] == "gpio_sdm120" and any(
-                getattr(consumer.data.module, "type", None) == "gpio_sdm120"
-                for consumer in SubData.consumer_data.values()):
-            pub_user_message(payload, connection_id,
-                             "Die lokale Steckdose kann nur einem Verbraucher zugeordnet werden.",
-                             MessageType.ERROR)
-            return
+        if payload["data"]["type"] == "gpio_sdm120":
+            from modules.consumers.generic.gpio_sdm120.config import GpioSdm120Configuration
+            from modules.consumers.generic.gpio_sdm120.selection import validate_selection
+            try:
+                socket_configuration = GpioSdm120Configuration(**payload["data"].get("configuration", {}))
+                validate_selection(socket_configuration)
+            except (ValueError, TypeError) as error:
+                pub_user_message(payload, connection_id, str(error), MessageType.ERROR)
+                return
         new_id = self.max_id_hierarchy + 1
         dev = importlib.import_module(f'.consumers.{payload["data"]["vendor"]}'
                                       f'.{payload["data"]["type"]}.consumer',
                                       "modules")
         consumer_default = asdict(dev.device_descriptor.configuration_factory())
         consumer_default["id"] = new_id
+        if payload["data"]["type"] == "gpio_sdm120":
+            consumer_default["configuration"] = asdict(socket_configuration)
         try:
             evu_counter = SubData.counter_all_data.get_id_evu_counter()
             SubData.counter_all_data.hierarchy_add_item_below(

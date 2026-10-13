@@ -8,8 +8,8 @@ from ..vendor import vendor_descriptor
 
 @auto_str
 class GpioSdm120Configuration:
-    def __init__(self):
-        pass
+    def __init__(self, chargepoint_id: Optional[int] = None):
+        self.chargepoint_id = chargepoint_id
 
 
 @auto_str

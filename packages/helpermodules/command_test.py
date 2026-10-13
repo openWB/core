@@ -140,17 +140,27 @@ def test_remove_local_socket_switches_off_before_removing_topics(consumer_type, 
     assert order == (["off", "remove"] if consumer_type == "gpio_sdm120" else ["remove"])
 
 
-@pytest.mark.parametrize("existing_type, requested_type, blocked", [
-    ("gpio_sdm120", "gpio_sdm120", True),
-    ("mqtt", "gpio_sdm120", False),
-    (None, "gpio_sdm120", False),
-    ("gpio_sdm120", "mqtt", False),
+@pytest.mark.parametrize("existing_type, requested_type, existing_cp, requested_cp, blocked", [
+    ("gpio_sdm120", "gpio_sdm120", None, None, True),
+    ("mqtt", "gpio_sdm120", None, None, False),
+    (None, "gpio_sdm120", None, None, False),
+    ("gpio_sdm120", "mqtt", None, None, False),
+    ("gpio_sdm120", "gpio_sdm120", None, 4, False),
+    ("gpio_sdm120", "gpio_sdm120", 4, None, False),
+    ("gpio_sdm120", "gpio_sdm120", 4, 5, False),
+    ("gpio_sdm120", "gpio_sdm120", 4, 4, True),
+    ("gpio_sdm120", "gpio_sdm120", 4, 6, True),
 ])
 def test_add_consumer_rejects_second_local_socket_before_side_effects(
-        existing_type, requested_type, blocked, mock_pub, monkeypatch):
-    existing_module = SimpleNamespace(type=existing_type) if existing_type else None
+        existing_type, requested_type, existing_cp, requested_cp, blocked, mock_pub, monkeypatch):
+    existing_module = SimpleNamespace(type=existing_type, configuration=SimpleNamespace(
+        chargepoint_id=existing_cp)) if existing_type else None
     monkeypatch.setattr(SubData, "consumer_data", {
-        "consumer2": SimpleNamespace(data=SimpleNamespace(module=existing_module))})
+        "consumer2": SimpleNamespace(num=2, data=SimpleNamespace(module=existing_module))})
+    monkeypatch.setattr(SubData, "cp_data", {
+        f"cp{num}": SimpleNamespace(chargepoint=SimpleNamespace(chargepoint_module=SimpleNamespace(
+            config=SimpleNamespace(type="external_openwb", configuration=SimpleNamespace(ip_address=host)))))
+        for num, host in [(4, "192.168.1.40"), (5, "192.168.1.50"), (6, "192.168.1.40")]})
     counter = Mock()
     counter.get_id_evu_counter.return_value = 0
     counter.data.get.hierarchy = []
@@ -168,13 +178,14 @@ def test_add_consumer_rejects_second_local_socket_before_side_effects(
     monkeypatch.setattr(command.importlib, "import_module", module_import)
     instance = Command.__new__(Command)
     instance.max_id_hierarchy = 2
-    payload = {"data": {"vendor": "generic", "type": requested_type}}
+    payload = {"data": {"vendor": "generic", "type": requested_type,
+                        "configuration": {"chargepoint_id": requested_cp}}}
 
     instance.addConsumer("test", payload)
 
     if blocked:
         message.assert_called_once_with(
-            payload, "test", "Die lokale Steckdose kann nur einem Verbraucher zugeordnet werden.",
+            payload, "test", "Die Steckdose dieser openWB kann nur einem Verbraucher zugeordnet werden.",
             command.MessageType.ERROR)
         module_import.assert_not_called()
         counter.get_id_evu_counter.assert_not_called()
@@ -186,3 +197,7 @@ def test_add_consumer_rejects_second_local_socket_before_side_effects(
         assert instance.max_id_hierarchy == 3
         counter.hierarchy_add_item_below.assert_called_once()
         assert any(call.args[0] == "openWB/set/consumer/3/module" for call in mock_pub.pub.call_args_list)
+        if requested_type == "gpio_sdm120":
+            module_payload = next(call.args[1] for call in mock_pub.pub.call_args_list
+                                  if call.args[0] == "openWB/set/consumer/3/module")
+            assert module_payload["configuration"] == {"chargepoint_id": requested_cp}

@@ -303,3 +303,9 @@ class ConsumerState:
         self.set_power = set_power
         self.state = state
         self.temperatures = temperatures
+
+
+class InternalSocketState(ConsumerState):
+    def __init__(self, timestamp: float = 0, **kwargs):
+        super().__init__(**kwargs)
+        self.timestamp = timestamp

@@ -1,136 +1,107 @@
-"""Optional Series2 socket: one bus reader, shared measurements and actor output."""
-import copy
 import logging
-import threading
 import time
-from typing import Optional
 
-from modules.common.component_state import ConsumerState, CounterState
+from helpermodules.utils.error_handling import ErrorTimerContext
+from modules.common.component_context import SingleComponentUpdateContext
+from modules.common.component_state import InternalSocketState
 from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.fault_state_level import FaultStateLevel
-from modules.common.modbus import ModbusDataType
-from modules.common.sdm import Sdm120
+from modules.common.store import get_internal_socket_value_store
+from modules.internal_chargepoint_handler.clients import SocketClientHandler
+from modules.internal_chargepoint_handler.internal_socket_config import InternalSocket, MAX_MEASUREMENT_AGE
 
 log = logging.getLogger(__name__)
 
+try:
+    import RPi.GPIO as GPIO
+except ImportError:
+    log.info("failed to import RPi.GPIO! maybe we are not running on a pi")
 
-class LocalSocket:
-    MODBUS_ID = 54
-    DIRECTION_PIN = 23  # BOARD numbering, BCM 11
-    ENABLE_PIN = 26  # BOARD numbering, BCM 7
+
+class SocketModule:
     POLL_INTERVAL = 5
     RETRY_INTERVAL = 60
-    MAX_AGE = 15
 
-    def __init__(self):
-        self._lock = threading.RLock()
-        self._gpio = None
-        self._meter = None
-        self._client = None
-        self._meter_fault = None
-        self._fault_state = FaultState(ComponentInfo(None, "Lokale Steckdosenmessung", "consumer"))
-        self._values: Optional[CounterState] = None
-        self._timestamp = 0.0
+    def __init__(self, client_handler: SocketClientHandler, internal_socket: InternalSocket) -> None:
+        self.fault_state = FaultState(ComponentInfo(None, "Interne Steckdose", "internal_socket"))
+        self.fault_state.error("Steckdosenmessung noch nicht initialisiert.")
+        self.store_internal = get_internal_socket_value_store()
+        self.client_error_context = ErrorTimerContext(
+            "openWB/set/internal_socket/get/error_timestamp", "Steckdose bleibt ausgeschaltet.",
+            hide_exception=True)
+        self.client_error_context.error_timestamp = internal_socket.get.error_timestamp
+        self.old_socket_state = InternalSocketState(state=False)
+        self._client = client_handler
         self._next_poll = 0.0
-        self._present = False
-        self._state = False
-        self._fault_state.error("Steckdosenmessung noch nicht initialisiert.")
+        self._measurement_time = 0.0
+        direction_pin, enable_pin = self._client.get_pins_socket()
+        GPIO.setmode(GPIO.BOARD)
+        GPIO.setup(enable_pin, GPIO.OUT, initial=GPIO.LOW)
+        GPIO.setup(direction_pin, GPIO.OUT, initial=GPIO.LOW)
 
-    def start(self, client, fault_state):
-        import RPi.GPIO as GPIO
-
-        with self._lock:
-            self._gpio = GPIO
-            GPIO.setmode(GPIO.BOARD)
-            GPIO.setup(self.ENABLE_PIN, GPIO.OUT, initial=GPIO.LOW)
-            GPIO.setup(self.DIRECTION_PIN, GPIO.OUT, initial=GPIO.LOW)
-            self._client = client
-            self._meter_fault = fault_state
-            self._meter = None
-            self._values = None
-            self._timestamp = 0.0
-            self._next_poll = 0.0
-            self._present = False
-            self._state = False
-            self._fault_state.error("SDM120 an Adresse 54 noch nicht erkannt.")
-
-    def poll(self):
-        """Called exclusively by the internal chargepoint's bus polling thread."""
-        now = time.monotonic()
-        if self._client is None or now < self._next_poll:
-            return
-        try:
-            self._meter_fault.no_error()
-            if not self._present:
-                voltage = self._client.read_input_registers(
-                    0, ModbusDataType.FLOAT_32, unit=self.MODBUS_ID)
-                if not 100 < voltage < 300:
-                    raise ValueError(f"Unplausible SDM120-Spannung: {voltage}")
-            if self._meter is None:
-                self._meter = Sdm120(self.MODBUS_ID, self._client, self._meter_fault)
-            values = self._meter.get_counter_state()
-            with self._lock:
-                self._values = values
-                self._timestamp = time.monotonic()
-                self._present = True
-                self._fault_state.from_exception(self._meter_fault)
-            self._next_poll = time.monotonic() + self.POLL_INTERVAL
-        except Exception as error:
-            with self._lock:
-                self._fault_state.error(f"SDM120 an Adresse 54 nicht erreichbar: {error}")
-                self._present = False
-                self._set_output(False)
+    def get_values(self) -> InternalSocketState:
+        if time.monotonic() >= self._next_poll:
             self._next_poll = time.monotonic() + self.RETRY_INTERVAL
-            log.warning("Steckdosenmessung: %s", error)
-
-    def _set_output(self, state: bool):
-        if self._gpio is not None:
-            if state:
-                self._gpio.output(self.DIRECTION_PIN, self._gpio.HIGH)
-                self._gpio.output(self.ENABLE_PIN, self._gpio.HIGH)
-            else:
-                self._gpio.output(self.ENABLE_PIN, self._gpio.LOW)
-                self._gpio.output(self.DIRECTION_PIN, self._gpio.LOW)
-        self._state = state
-
-    def switch(self, state: bool):
-        with self._lock:
-            if state:
-                self._check_values()
-            self._set_output(state)
-
-    def get_fault(self):
-        """Transfer the measurement fault to the consumer's regular fault context."""
-        with self._lock:
-            if self._present and time.monotonic() - self._timestamp > self.MAX_AGE:
+            try:
+                with self.client_error_context:
+                    try:
+                        self.fault_state.no_error()
+                        counter_state = self._client.request_and_check_hardware(self.fault_state)
+                    except Exception:
+                        self._set_output(False)
+                        self._store_state()
+                        raise
+                    self.old_socket_state = InternalSocketState(
+                        power=counter_state.power,
+                        currents=counter_state.currents,
+                        imported=counter_state.imported,
+                        exported=counter_state.exported,
+                        powers=counter_state.powers,
+                        voltages=counter_state.voltages,
+                        state=self.old_socket_state.state,
+                        timestamp=time.time())
+                    self._measurement_time = time.monotonic()
+                    self._next_poll = self._measurement_time + self.POLL_INTERVAL
+                    self.client_error_context.reset_error_counter()
+            except Exception:
                 self._set_output(False)
-                self._present = False
-                self._fault_state.error("Steckdosenmesswerte sind veraltet.")
-            return self._fault_state.fault_state, self._fault_state.fault_str
-
-    def _check_values(self):
-        level, message = self.get_fault()
-        if level == FaultStateLevel.ERROR or self._values is None or not self._present:
-            fault = FaultState(self._fault_state.component_info)
-            fault.error(message)
-            raise fault
-
-    def get_state(self) -> ConsumerState:
-        with self._lock:
-            self._check_values()
-            values = copy.deepcopy(self._values)
-            return ConsumerState(power=values.power, imported=values.imported, exported=values.exported,
-                                 voltages=values.voltages, currents=values.currents, powers=values.powers,
-                                 state=self._state)
-
-    def stop(self):
-        with self._lock:
+                self._store_state()
+                raise
+        if self.client_error_context.error_counter_exceeded():
             self._set_output(False)
-            self._meter = None
-            self._client = None
-            self._meter_fault = None
-            self._present = False
-            self._fault_state.error("Interner Ladepunkthandler für die Steckdose nicht aktiv.")
+        elif self.client_error_context.error_timestamp is None:
+            self._check_measurement_age()
+        self._store_state()
+        return self.old_socket_state
 
+    def set_state(self, state: bool) -> None:
+        with SingleComponentUpdateContext(self.fault_state, update_always=False):
+            if state:
+                self._check_measurement_age()
+                if (self.client_error_context.error_timestamp is not None or
+                        self.fault_state.fault_state == FaultStateLevel.ERROR or
+                        self.old_socket_state.timestamp == 0):
+                    raise self.fault_state
+            self._set_output(state)
+            self._store_state()
 
-local_socket = LocalSocket()
+    def _check_measurement_age(self) -> None:
+        if self.fault_state.fault_state == FaultStateLevel.ERROR:
+            self._set_output(False)
+        elif time.monotonic() - self._measurement_time > MAX_MEASUREMENT_AGE:
+            self._set_output(False)
+            self.fault_state.error("Steckdosenmesswerte sind veraltet.")
+
+    def _set_output(self, state: bool) -> None:
+        direction_pin, enable_pin = self._client.get_pins_socket()
+        if state:
+            GPIO.output(direction_pin, GPIO.HIGH)
+            GPIO.output(enable_pin, GPIO.HIGH)
+        else:
+            GPIO.output(enable_pin, GPIO.LOW)
+            GPIO.output(direction_pin, GPIO.LOW)
+        self.old_socket_state.state = state
+
+    def _store_state(self) -> None:
+        self.store_internal.set(self.old_socket_state)
+        self.store_internal.update()

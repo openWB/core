@@ -13,9 +13,11 @@ from modules.chargepoints.internal_openwb.config import InternalChargepointMode
 from modules.common.component_context import SingleComponentUpdateContext
 from modules.common.fault_state import ComponentInfo, FaultState
 from modules.internal_chargepoint_handler import chargepoint_module
-from modules.internal_chargepoint_handler.clients import ClientHandler, client_factory
+from modules.internal_chargepoint_handler.clients import ClientHandler, SocketClientHandler, client_factory
 from modules.internal_chargepoint_handler.pro_plus import ProPlus
 from modules.internal_chargepoint_handler.socket import Socket
+from modules.internal_chargepoint_handler.local_socket import SocketModule
+from modules.internal_chargepoint_handler.internal_socket_config import InternalSocketData
 from modules.internal_chargepoint_handler.internal_chargepoint_handler_config import (
     GlobalHandlerData, InternalChargepoint, InternalChargepointData, RfidData)
 log = logging.getLogger(__name__)
@@ -80,6 +82,21 @@ class UpdateState:
         log.debug("Thread zur CP-Unterbrechung an LP"+str(self.cp_module.local_charge_point_num)+" gestartet.")
         Pub().pub(
             f"openWB/internal_chargepoint/{self.cp_module.local_charge_point_num}/data/cp_interruption_duration", 0)
+
+
+class UpdateSocketState:
+    def __init__(self, socket_module: SocketModule) -> None:
+        self.module = socket_module
+        self.started_at = timecheck.create_timestamp()
+        self.old_heartbeat = 0
+
+    def update_state(self, data: InternalSocketData) -> None:
+        heartbeat = data.heartbeat or 0
+        if not data.set_state or heartbeat < max(self.started_at, timecheck.create_timestamp() - 30):
+            self.module.set_state(False)
+        elif heartbeat > self.old_heartbeat:
+            self.old_heartbeat = heartbeat
+            self.module.set_state(True)
 
 
 class InternalChargepointHandler:
@@ -148,17 +165,14 @@ class InternalChargepointHandler:
         GPIO.setup(19, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
     def loop(self) -> None:
-        from modules.internal_chargepoint_handler.local_socket import local_socket
-
         socket_supported = (self.cp0 is not None and self.cp1 is None and
                             self.cp0.mode in (InternalChargepointMode.SERIES, InternalChargepointMode.SE) and
                             self.cp0_client_handler is not None)
+        self.socket_module = None
         if socket_supported:
-            from modules.common.component_type import ComponentType
-            from modules.common.fault_state import FaultState
-
-            socket_fault = FaultState(ComponentInfo(54, "Lokale Steckdosenmessung", ComponentType.CONSUMER.value))
-            local_socket.start(self.cp0_client_handler.client, socket_fault)
+            self.socket_module = SocketModule(
+                SocketClientHandler(self.cp0_client_handler), SubData.internal_socket_data)
+            socket_update_state = UpdateSocketState(self.socket_module)
 
         def _loop():
             while True:
@@ -175,7 +189,9 @@ class InternalChargepointHandler:
                 if self.cp1:
                     heartbeat_cp1 = self.cp1.update(data["global_data"], data["cp1"].data, data["rfid_data"])
                 if socket_supported:
-                    local_socket.poll()
+                    with SingleComponentUpdateContext(self.socket_module.fault_state, update_always=False):
+                        self.socket_module.get_values()
+                        socket_update_state.update_state(copy.deepcopy(SubData.internal_socket_data.data))
                 self.heartbeat = True if heartbeat_cp0 and heartbeat_cp1 else False
                 time.sleep(1.1)
         with SingleComponentUpdateContext(self.fault_state_info_cp0, update_always=False):
@@ -293,8 +309,10 @@ class GeneralInternalChargepointHandler:
                     try:
                         self.internal_chargepoint_handler.loop()
                     finally:
-                        from modules.internal_chargepoint_handler.local_socket import local_socket
-                        local_socket.stop()
+                        socket_module = getattr(self.internal_chargepoint_handler, "socket_module", None)
+                        if socket_module is not None:
+                            socket_module.fault_state.error("Interner Ladepunkthandler für die Steckdose nicht aktiv.")
+                            socket_module.set_state(False)
                 except UnboundLocalError:
                     log.debug("Kein interner Ladepunkt konfiguriert.")
             except Exception:

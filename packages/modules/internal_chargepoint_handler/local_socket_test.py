@@ -1,200 +1,186 @@
-import sys
+from types import SimpleNamespace
 from unittest.mock import MagicMock, Mock
 
 import pytest
 
-from modules.common.component_state import CounterState
-from modules.common.fault_state import ComponentInfo, FaultState
+from modules.common.component_context import SingleComponentUpdateContext
+from modules.common.component_state import CounterState, InternalSocketState
 from modules.common.fault_state_level import FaultStateLevel
-from modules.internal_chargepoint_handler import local_socket as socket_module
+from modules.internal_chargepoint_handler import clients, local_socket as socket_module
+from modules.internal_chargepoint_handler.internal_socket_config import InternalSocket
 
 
 @pytest.fixture
 def socket(monkeypatch):
-    instance = socket_module.LocalSocket()
-    instance._meter_fault = FaultState(ComponentInfo(None, "Testmessung", "consumer"))
-    instance._gpio = Mock(HIGH=1, LOW=0)
-    instance._meter = Mock()
-    instance._client = instance._meter.client
-    instance._meter.client.read_input_registers.return_value = 230
-    instance._meter.get_counter_state.return_value = CounterState(
+    from modules.common import fault_state
+    from helpermodules.utils import error_handling
+
+    monkeypatch.setattr(socket_module, "GPIO", Mock(BOARD=10, OUT=0, HIGH=1, LOW=0), raising=False)
+    monkeypatch.setattr(socket_module, "get_internal_socket_value_store", Mock(return_value=Mock()))
+    publisher = Mock()
+    monkeypatch.setattr(fault_state, "Pub", Mock(return_value=publisher))
+    monkeypatch.setattr(error_handling, "Pub", Mock(return_value=publisher))
+    chargepoint_client = Mock()
+    chargepoint_client.client = Mock()
+    chargepoint_client.request_and_check_hardware.return_value = (Mock(), CounterState(
+        power=10, imported=1, exported=0, currents=[0, 0, 0], voltages=[230, 230, 230]))
+    client = clients.SocketClientHandler(chargepoint_client)
+    client.meter_client = Mock()
+    client.meter_client.get_counter_state.return_value = CounterState(
         power=500, imported=1234, exported=0, currents=[2.2, 0, 0], voltages=[230, 0, 0])
-    return instance
+    return socket_module.SocketModule(client, InternalSocket())
 
 
-def test_switch_on_requires_successful_measurement(socket):
-    with pytest.raises(FaultState):
-        socket.switch(True)
-    socket._gpio.output.assert_not_called()
+def read_values(socket):
+    with SingleComponentUpdateContext(socket.fault_state, update_always=False):
+        return socket.get_values()
 
 
-def test_poll_and_switch_return_hardware_energy_and_independent_relay_state(socket):
-    socket._meter.get_counter_state.return_value.power = 0
-    socket.poll()
-    socket.switch(True)
-    state = socket.get_state()
-    assert state.state is True
-    assert state.power == 0
+def test_module_uses_client_handler_fault_state_and_internal_value_store(socket):
+    state = read_values(socket)
+    assert isinstance(state, InternalSocketState)
+    assert state.power == 500
     assert state.imported == 1234
-    socket._gpio.output.assert_called_with(26, 1)
-    socket.switch(False)
-    assert socket.get_state().state is False
+    assert socket.fault_state.fault_state == FaultStateLevel.NO_ERROR
+    socket.store_internal.set.assert_called_once_with(state)
+    socket.store_internal.update.assert_called_once()
 
 
-def test_missing_meter_is_retried_slowly_and_does_not_raise_into_chargepoint(socket):
-    socket._meter.client.read_input_registers.side_effect = TimeoutError("no response")
-    socket.poll()
-    socket.poll()
-    assert socket._meter.client.read_input_registers.call_count == 1
-    assert socket._present is False
-    with pytest.raises(FaultState) as error:
-        socket.get_state()
-    assert "nicht erreichbar" in error.value.fault_str
-    assert error.value.fault_state == FaultStateLevel.ERROR
+def test_on_requires_measurement_and_uses_both_gpio_outputs(socket):
+    socket.set_state(True)
+    assert socket.old_socket_state.state is False
+    assert not any(call.args[1] == 1 for call in socket_module.GPIO.output.call_args_list)
+    read_values(socket)
+    socket.set_state(True)
+    assert socket.old_socket_state.state is True
+    socket_module.GPIO.output.assert_any_call(23, 1)
+    socket_module.GPIO.output.assert_called_with(26, 1)
+    socket.set_state(False)
+    assert socket.old_socket_state.state is False
 
 
-def test_measurement_failure_switches_output_off(socket):
-    socket.poll()
-    socket.switch(True)
+def test_failed_measurement_switches_off_and_uses_error_timer_and_slow_retry(socket):
+    read_values(socket)
+    socket.set_state(True)
     socket._next_poll = 0
-    socket._meter.get_counter_state.side_effect = TimeoutError("no response")
-    socket.poll()
-    socket._gpio.output.assert_any_call(26, 0)
-    socket._gpio.output.assert_called_with(23, 0)
-    assert socket._state is False
+    socket._client.meter_client.get_counter_state.side_effect = TimeoutError("no response")
+    read_values(socket)
+    assert socket.old_socket_state.state is False
+    assert socket.fault_state.fault_state == FaultStateLevel.NO_ERROR
+    assert socket.client_error_context.error_timestamp is not None
+    calls = socket._client.meter_client.get_counter_state.call_count
+    read_values(socket)
+    assert socket._client.meter_client.get_counter_state.call_count == calls
+    assert socket.fault_state.fault_state == FaultStateLevel.NO_ERROR
+    socket.set_state(False)
+    assert socket.fault_state.fault_state == FaultStateLevel.NO_ERROR
 
 
-def test_meter_constructor_failure_is_isolated_from_chargepoint(socket, monkeypatch):
-    socket._meter = None
-    monkeypatch.setattr(socket_module, "Sdm120", Mock(side_effect=TimeoutError("serial number unavailable")))
-    socket.poll()
-    assert socket._present is False
-    assert "serial number unavailable" in socket.get_fault()[1]
-    with pytest.raises(FaultState):
-        socket.switch(True)
+def test_missing_meter_constructor_is_deferred_and_isolated(socket, monkeypatch):
+    socket._client.meter_client = None
+    socket._client.client.read_input_registers.return_value = 230
+    constructor = Mock(side_effect=TimeoutError("serial number unavailable"))
+    monkeypatch.setattr(clients.sdm, "Sdm120", constructor)
+    read_values(socket)
+    assert socket.fault_state.fault_state == FaultStateLevel.NO_ERROR
+    assert socket._client.meter_client is None
+    assert socket.old_socket_state.state is False
+    constructor.assert_called_once_with(54, socket._client.client, socket.fault_state)
+
+
+def test_socket_meter_error_is_distinguished_from_usb_adapter_error(socket):
+    read_values(socket)
+    socket._next_poll = 0
+    socket._client.meter_client.get_counter_state.side_effect = TimeoutError("no response")
+    read_values(socket)
+    socket._client.chargepoint_client_handler.request_and_check_hardware.assert_called()
+    assert socket.client_error_context.error_timestamp is not None
+    socket._client.chargepoint_client_handler.request_and_check_hardware.side_effect = Exception(
+        "Erneutes Auslesen des USB-Adapters")
+    socket.client_error_context.error_timestamp = 0
+    socket._next_poll = 0
+    read_values(socket)
+    assert socket.fault_state.fault_state == FaultStateLevel.ERROR
+    assert "USB-Adapters" in socket.fault_state.fault_str
 
 
 def test_stale_measurement_cannot_enable_output(socket, monkeypatch):
-    socket.poll()
-    socket.switch(True)
-    monkeypatch.setattr(socket_module.time, "monotonic", lambda: socket._timestamp + 16)
-    with pytest.raises(FaultState) as error:
-        socket.switch(True)
-    assert "veraltet" in error.value.fault_str
-    socket._gpio.output.assert_any_call(26, 0)
+    read_values(socket)
+    socket.set_state(True)
+    monkeypatch.setattr(socket_module.time, "monotonic", lambda: socket._measurement_time + 16)
+    socket.set_state(True)
+    assert socket.old_socket_state.state is False
+    assert socket.fault_state.fault_state == FaultStateLevel.ERROR
+    assert "veraltet" in socket.fault_state.fault_str
 
 
-def test_recovery_refreshes_values_but_does_not_switch_on(socket):
-    socket.poll()
-    socket.switch(True)
-    socket._next_poll = 0
-    socket._meter.get_counter_state.side_effect = TimeoutError("no response")
-    socket.poll()
-    socket._next_poll = 0
-    socket._meter.get_counter_state.side_effect = None
-    socket.poll()
-    assert socket.get_state().state is False
+def test_warning_and_recovery_do_not_switch_on_without_control(socket):
+    values = socket._client.meter_client.get_counter_state.return_value
 
-
-def test_stop_clears_availability_and_switches_off(socket):
-    socket.poll()
-    socket.switch(True)
-    socket.stop()
-    socket._gpio.output.assert_any_call(26, 0)
-    with pytest.raises(FaultState) as error:
-        socket.get_state()
-    assert "nicht aktiv" in error.value.fault_str
-
-
-def test_handler_restart_resets_output_and_cached_measurements(socket, monkeypatch):
-    socket.poll()
-    socket.switch(True)
-    gpio = socket._gpio
-    monkeypatch.setitem(sys.modules, "RPi", Mock(GPIO=gpio))
-    monkeypatch.setitem(sys.modules, "RPi.GPIO", gpio)
-    socket.start(Mock(), Mock())
-    gpio.setup.assert_any_call(26, gpio.OUT, initial=0)
-    gpio.setup.assert_any_call(23, gpio.OUT, initial=0)
-    assert socket._state is False
-    assert socket._values is None
-    with pytest.raises(FaultState):
-        socket.switch(True)
-
-
-@pytest.fixture
-def consumer(socket, monkeypatch):
-    from helpermodules.subdata import SubData
-    from modules.common import configurable_consumer, fault_state
-    from modules.consumers.generic.gpio_sdm120 import consumer as module
-    from modules.consumers.generic.gpio_sdm120.config import GpioSdm120
-
-    monkeypatch.setattr(SubData, "consumer_data", {})
-    monkeypatch.setattr(module, "local_socket", socket)
-    monkeypatch.setattr(configurable_consumer, "get_component_value_store", Mock())
-    monkeypatch.setattr(configurable_consumer, "SimCounterConsumer", Mock())
-    peak_filter = Mock()
-    peak_filter.check_values.return_value = (1234, 0)
-    monkeypatch.setattr(configurable_consumer, "PeakFilter", Mock(return_value=peak_filter))
-    publisher = Mock()
-    monkeypatch.setattr(fault_state, "Pub", Mock(return_value=publisher))
-    return module.create_consumer(GpioSdm120(id=2)), publisher
-
-
-def test_failed_measurement_is_published_as_regular_consumer_fault(socket, consumer):
-    module, publisher = consumer
-    socket._meter.get_counter_state.side_effect = TimeoutError("no response")
-    socket.poll()
-    publisher.pub.assert_not_called()
-    module.update()
-    assert module.fault_state.fault_state == FaultStateLevel.ERROR
-    assert "no response" in module.fault_state.fault_str
-    publisher.pub.assert_any_call("openWB/set/consumer/2/get/fault_state", 2)
-    assert {call.args[0] for call in publisher.pub.call_args_list} == {
-        "openWB/set/consumer/2/get/fault_state", "openWB/set/consumer/2/get/fault_str"}
-    module.store.set.assert_not_called()
-
-
-def test_switch_off_does_not_clear_measurement_error(socket, consumer):
-    module, publisher = consumer
-    module.switch_off()
-    assert module.fault_state.fault_state == FaultStateLevel.ERROR
-    publisher.pub.assert_any_call("openWB/set/consumer/2/get/fault_state", 2)
-
-
-def test_warning_and_recovery_are_transferred_to_consumer(socket, consumer):
-    module, publisher = consumer
-    values = socket._meter.get_counter_state.return_value
-
-    def read_warning():
-        socket._meter_fault.warning("Warnung der Steckdosenmessung")
+    def warning():
+        socket.fault_state.warning("Messwarnung")
         return values
 
-    socket._meter.get_counter_state.side_effect = read_warning
-    socket.poll()
-    module.update()
-    assert module.fault_state.fault_state == FaultStateLevel.WARNING
-    publisher.pub.assert_any_call("openWB/set/consumer/2/get/fault_state", 1)
-    module.store.set.assert_called_once()
-    socket._meter.get_counter_state.side_effect = None
+    socket._client.meter_client.get_counter_state.side_effect = warning
+    read_values(socket)
+    assert socket.fault_state.fault_state == FaultStateLevel.WARNING
+    socket.set_state(True)
     socket._next_poll = 0
-    socket.poll()
-    module.update()
-    assert module.fault_state.fault_state == FaultStateLevel.NO_ERROR
-    publisher.pub.assert_any_call("openWB/set/consumer/2/get/fault_state", 0)
+    socket._client.meter_client.get_counter_state.side_effect = TimeoutError("no response")
+    read_values(socket)
+    socket._next_poll = 0
+    socket._client.meter_client.get_counter_state.side_effect = None
+    read_values(socket)
+    assert socket.fault_state.fault_state == FaultStateLevel.NO_ERROR
+    assert socket.old_socket_state.state is False
+    assert socket.client_error_context.error_timestamp is None
 
 
-def test_error_recovery_clears_regular_consumer_fault(socket, consumer):
-    module, publisher = consumer
-    socket._meter.get_counter_state.side_effect = TimeoutError("no response")
-    socket.poll()
-    module.update()
-    assert module.fault_state.fault_state == FaultStateLevel.ERROR
-    socket._meter.get_counter_state.side_effect = None
-    socket._next_poll = 0
-    socket.poll()
-    module.update()
-    assert module.fault_state.fault_state == FaultStateLevel.NO_ERROR
-    publisher.pub.assert_any_call("openWB/set/consumer/2/get/fault_state", 0)
+def test_new_module_resets_output_and_does_not_restore_retained_on(socket):
+    read_values(socket)
+    socket.set_state(True)
+    retained = InternalSocket()
+    retained.get.state = True
+    retained.data.set_state = True
+    restarted = socket_module.SocketModule(socket._client, retained)
+    assert restarted.old_socket_state.state is False
+    assert restarted.old_socket_state.timestamp == 0
+    socket_module.GPIO.setup.assert_any_call(26, 0, initial=0)
+    socket_module.GPIO.setup.assert_any_call(23, 0, initial=0)
+
+
+def test_update_state_rejects_old_on_and_turns_off_after_heartbeat_loss(socket, monkeypatch):
+    from modules.internal_chargepoint_handler import internal_chargepoint_handler as handler
+
+    now = 1000.0
+    monkeypatch.setattr(handler.timecheck, "create_timestamp", lambda: now)
+    update = handler.UpdateSocketState(socket)
+    read_values(socket)
+    data = SimpleNamespace(set_state=True, heartbeat=999.0)
+    update.update_state(data)
+    assert socket.old_socket_state.state is False
+    data.heartbeat = 1001.0
+    now = 1001.0
+    update.update_state(data)
+    assert socket.old_socket_state.state is True
+    now = 1032.0
+    update.update_state(data)
+    assert socket.old_socket_state.state is False
+
+
+def test_internal_value_store_publishes_the_regular_state_fields(monkeypatch):
+    from modules.common.store import _socket_internal as store_module
+
+    publish = Mock()
+    monkeypatch.setattr(store_module, "pub_to_broker", publish)
+    store = store_module.get_internal_socket_value_store()
+    store.set(InternalSocketState(power=500, imported=1234, exported=0,
+                                  voltages=[230, 0, 0], currents=[2.2, 0, 0], timestamp=1000, state=False))
+    store.update()
+    publish.assert_any_call("openWB/set/internal_socket/get/power", 500, 2)
+    publish.assert_any_call("openWB/set/internal_socket/get/timestamp", 1000, 2)
+    assert {call.args[0].rsplit("/", 1)[-1] for call in publish.call_args_list} == {
+        "voltages", "currents", "imported", "exported", "power", "powers", "state", "timestamp"}
 
 
 def test_single_se_does_not_create_unconfigured_second_chargepoint(monkeypatch):

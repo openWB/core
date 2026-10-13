@@ -1,3 +1,4 @@
+from __future__ import annotations
 import logging
 from typing import List, NamedTuple, Optional, Tuple, Union
 from helpermodules.logger import ModifyLoglevelContext
@@ -9,6 +10,8 @@ from modules.common.modbus import ModbusSerialClient_, ModbusTcpClient_
 from modules.common import mpm3pm, sdm
 from modules.common import evse
 from modules.common import b23
+from modules.common.component_state import CounterState
+from modules.common.modbus import ModbusDataType
 
 from modules.common.serial_modbus_devices import get_serial_modbus_devices, BUS_SOURCES
 
@@ -29,6 +32,34 @@ EVSE_ID_TWO_BUSSES_CP1 = [1, 2]
 EVSE_ID_ONE_BUS_CP1 = [2]
 EVSE_ID_ONE_BUS_SE_CP1 = [12]
 EVSE_MIN_FIRMWARE = 7
+
+
+class SocketClientHandler:
+    MODBUS_ID = 54
+
+    def __init__(self, chargepoint_client_handler: ClientHandler) -> None:
+        self.chargepoint_client_handler = chargepoint_client_handler
+        self.client = chargepoint_client_handler.client
+        self.meter_client: Optional[sdm.Sdm120] = None
+
+    def request_and_check_hardware(self, fault_state: FaultState) -> CounterState:
+        # The handler owns the chargepoint bus; never open a second connection here.
+        try:
+            if self.meter_client is None:
+                voltage = self.client.read_input_registers(0, ModbusDataType.FLOAT_32, unit=self.MODBUS_ID)
+                if not 100 < voltage < 300:
+                    raise ValueError(f"Unplausible SDM120-Spannung: {voltage}")
+                self.meter_client = sdm.Sdm120(self.MODBUS_ID, self.client, fault_state)
+            return self.meter_client.get_counter_state()
+        except Exception:
+            try:
+                self.chargepoint_client_handler.request_and_check_hardware(fault_state)
+            except Exception:
+                raise
+            raise Exception("Erneutes Auslesen des Steckdosenzählers")
+
+    def get_pins_socket(self) -> Tuple[int, int]:
+        return 23, 26  # BOARD numbering: direction BCM 11, enable BCM 7
 
 
 class ClientHandler(SeriesHardwareCheckMixin):
