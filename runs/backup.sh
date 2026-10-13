@@ -181,18 +181,31 @@ force_mosquitto_write() {
 
 collect_git_info() {
 	echo "collecting git information"
-	if git branch --no-color --show-current >"$TEMPDIR/GIT_BRANCH"; then
+	if git -C "$OPENWBBASEDIR" branch --no-color --show-current >"$TEMPDIR/GIT_BRANCH"; then
 		echo "current branch: $(<"$TEMPDIR/GIT_BRANCH")"
 	else
 		echo "failed to collect git branch info"
 		return 1
 	fi
-	if git log --pretty='format:%H' -n1 >"$TEMPDIR/GIT_HASH"; then
+	if git -C "$OPENWBBASEDIR" log --pretty='format:%H' -n1 >"$TEMPDIR/GIT_HASH"; then
 		echo "current commit hash: $(<"$TEMPDIR/GIT_HASH")"
 	else
 		echo "failed to collect git commit hash"
 		return 1
 	fi
+	local logicalBranch=""
+	if [[ -z $(<"$TEMPDIR/GIT_BRANCH") ]]; then
+		logicalBranch=$(git -C "$OPENWBBASEDIR" config --local --get openwb.updateBranch) || logicalBranch=""
+	fi
+	case "$logicalBranch" in
+	"Release"|"Beta"|"") ;;
+	*)
+		echo "invalid logical update branch '$logicalBranch'"
+		return 1
+		;;
+	esac
+	printf '%s\n' "$logicalBranch" >"$TEMPDIR/GIT_UPDATE_BRANCH"
+	echo "logical update branch: $logicalBranch"
 	return 0
 }
 
@@ -216,6 +229,7 @@ create_archive() {
 				"${DB_FILES[@]}" \
 				"GIT_BRANCH" \
 				"GIT_HASH" \
+				"GIT_UPDATE_BRANCH" \
 			--directory="/etc/mosquitto/" \
 				"conf_local.d/" \
 			--directory="$TARBASEDIR/" \

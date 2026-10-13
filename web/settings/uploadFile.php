@@ -22,20 +22,33 @@ function check_gzip($path)
   }
 }
 
+function pattern_from_files($files)
+{
+  return '^(' . implode('|', array_map('preg_quote', $files)) . ')$';
+}
+
 // Schneller Inhaltscheck für Restore-Archiv
 function check_restore_file_contents($path)
 {
-  $cmd1 = "tar --list --file=" . escapeshellarg($path) . " | egrep -c '^(mosquitto/.+|mosquitto_local/.+|GIT_HASH|GIT_BRANCH|SHA256SUM|backup.log)$'";
+  $expectedFiles = [
+    "mosquitto/mosquitto.db",
+    "mosquitto_local/mosquitto.db",
+    "GIT_HASH",
+    "GIT_BRANCH",
+    "SHA256SUM",
+    "backup.log",
+    "openWB/data/charge_log/",
+    "openWB/data/daily_log/",
+    "openWB/data/monthly_log/",
+    "openWB/data/log/uuid"
+  ];
+  $cmd1 = "tar --list --file=" . escapeshellarg($path)
+    . " | sort -u | egrep -c "
+    . escapeshellarg(pattern_from_files($expectedFiles));
   exec($cmd1, $o1, $rc1);
   $count1 = ($rc1 === 0 && isset($o1[0])) ? (int)$o1[0] : 0;
-  if ($count1 !== 6) {
-    exit_with_error("Prüfung des Archivinhalts fehlgeschlagen! (Basis-Dateien fehlen)");
-  }
-  $cmd2 = "tar --list --file=" . escapeshellarg($path) . " | grep -c '^openWB/'";
-  exec($cmd2, $o2, $rc2);
-  $count2 = ($rc2 === 0 && isset($o2[0])) ? (int)$o2[0] : 0;
-  if ($count2 <= 4) {
-    exit_with_error("Prüfung des Archivinhalts fehlgeschlagen! (openWB Inhalt zu klein)");
+  if ($count1 !== count($expectedFiles)) {
+    exit_with_error("Prüfung des Archivinhalts fehlgeschlagen! (Basis-Dateien fehlen oder openWB-Dateien sind unvollständig)");
   }
 }
 
