@@ -73,6 +73,7 @@ class SubData:
     internal_chargepoint_data: Dict[str, Union[InternalChargepoint, GlobalHandlerData, RfidData]] = {
         "cp0": InternalChargepoint(),
         "cp1": InternalChargepoint(),
+        "socket": InternalSocket(),
         "global_data": GlobalHandlerData(),
         "rfid_data": RfidData()}
     io_actions = io_device.IoActions()

@@ -1,65 +1,18 @@
-from __future__ import annotations
 import logging
-from typing import List, NamedTuple, Optional, Tuple, Union
+from typing import List, Optional, Tuple, Union
 from helpermodules.logger import ModifyLoglevelContext
 from modules.chargepoints.internal_openwb.config import InternalChargepointMode
 from modules.common.fault_state import FaultState
-from modules.common.hardware_check import SeriesHardwareCheckMixin
 
 from modules.common.modbus import ModbusSerialClient_, ModbusTcpClient_
-from modules.common import mpm3pm, sdm
+from modules.common import sdm
 from modules.common import evse
-from modules.common import b23
-from modules.common.component_state import CounterState
-from modules.common.modbus import ModbusDataType
 
 from modules.common.serial_modbus_devices import get_serial_modbus_devices, BUS_SOURCES
+from modules.internal_chargepoint_handler.hardware_definition import CP0_METERS, CP1_METERS, EVSE_ID_CP0, EVSE_ID_ONE_BUS_CP1, EVSE_ID_ONE_BUS_SE_CP1, EVSE_ID_SE_CP0, EVSE_ID_TWO_BUSSES_CP1, EVSE_MIN_FIRMWARE, SOCKET_METERS, MeterClient, meter_config
+from modules.internal_chargepoint_handler.internal_hardware_check import SeriesHardwareCheckMixin
 
 log = logging.getLogger(__name__)
-
-MeterClient = Union[mpm3pm.Mpm3pm, sdm.Sdm630_72, b23.B23]
-MeterType = Union[type[mpm3pm.Mpm3pm], type[sdm.Sdm630_72], type[b23.B23]]
-meter_config = NamedTuple("meter_config", [('type', MeterType), ('modbus_id', int)])
-CP0_METERS = [meter_config(mpm3pm.Mpm3pm, modbus_id=5),
-              meter_config(sdm.Sdm630_72, modbus_id=105),
-              meter_config(b23.B23, modbus_id=201)]
-
-CP1_METERS = [meter_config(mpm3pm.Mpm3pm, modbus_id=6), meter_config(sdm.Sdm630_72, modbus_id=106)]
-
-EVSE_ID_CP0 = [1]
-EVSE_ID_SE_CP0 = [11]
-EVSE_ID_TWO_BUSSES_CP1 = [1, 2]
-EVSE_ID_ONE_BUS_CP1 = [2]
-EVSE_ID_ONE_BUS_SE_CP1 = [12]
-EVSE_MIN_FIRMWARE = 7
-
-
-class SocketClientHandler:
-    MODBUS_ID = 54
-
-    def __init__(self, chargepoint_client_handler: ClientHandler) -> None:
-        self.chargepoint_client_handler = chargepoint_client_handler
-        self.client = chargepoint_client_handler.client
-        self.meter_client: Optional[sdm.Sdm120] = None
-
-    def request_and_check_hardware(self, fault_state: FaultState) -> CounterState:
-        # The handler owns the chargepoint bus; never open a second connection here.
-        try:
-            if self.meter_client is None:
-                voltage = self.client.read_input_registers(0, ModbusDataType.FLOAT_32, unit=self.MODBUS_ID)
-                if not 100 < voltage < 300:
-                    raise ValueError(f"Unplausible SDM120-Spannung: {voltage}")
-                self.meter_client = sdm.Sdm120(self.MODBUS_ID, self.client, fault_state)
-            return self.meter_client.get_counter_state()
-        except Exception:
-            try:
-                self.chargepoint_client_handler.request_and_check_hardware(fault_state)
-            except Exception:
-                raise
-            raise Exception("Erneutes Auslesen des Steckdosenzählers")
-
-    def get_pins_socket(self) -> Tuple[int, int]:
-        return 23, 26  # BOARD numbering: direction BCM 11, enable BCM 7
 
 
 class ClientHandler(SeriesHardwareCheckMixin):
@@ -73,6 +26,7 @@ class ClientHandler(SeriesHardwareCheckMixin):
         self.evse_client = self._evse_factory(client, evse_ids)
         self.meter_client = self.find_meter_client(CP0_METERS if self.local_charge_point_num == 0 else CP1_METERS,
                                                    client, fault_state)
+        self.socket_meter_client: Optional[sdm.Sdm120] = self.find_meter_client(SOCKET_METERS, client, fault_state)
         self.request_and_check_hardware(fault_state)
         self.read_error = 0
 
@@ -128,6 +82,9 @@ class ClientHandler(SeriesHardwareCheckMixin):
             return 22
         else:
             return 15
+
+    def get_pins_socket(self) -> Tuple[int, int]:
+        return 23, 26  # BOARD numbering: direction BCM 11, enable BCM 7
 
 
 def client_factory(mode: InternalChargepointMode,
