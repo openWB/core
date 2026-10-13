@@ -87,19 +87,19 @@ class OcppClient:
 
         self._initialized = True
 
-    # Chargepoint Factory für Connection Manager
+    # Chargepoint Factory für den Connection Manager
     def _created_charge_point(self, charge_point_id: str, ws) -> OcppChargePoint:
         return OcppChargePoint(charge_point_id,
                                ws,
                                reset_callback=self._handle_reset,
                                trigger_msg_callback=self.handler_trigger_msg)
 
-    # startet den Event-Loop des OCPP-Clients
+    # Startet den Event-Loop des OCPP-Clients
     def _run_loop(self):
         asyncio.set_event_loop(self.loop)
         self.loop.run_forever()
 
-    # startet asynchron Funktionen (Coroutinen) innerhalb des OCPP-Threads
+    # Startet asynchron Funktionen (Coroutinen) innerhalb des OCPP-Threads
     def _submit(self, coroutine, description: str, chargebox_id: Optional[str] = None):
         """
         Coroutine im OCPP-Thread starten.
@@ -138,7 +138,7 @@ class OcppClient:
         )
 
     def disconnect(self, chargebox_id: str) -> None:
-        print(f"Client___Disconnecting chargebox {chargebox_id}")
+        print(f"# Client___Disconnecting chargebox {chargebox_id}")
         self._submit(
             self.connection_manager.disconnect(chargebox_id),
             f"disconnect {chargebox_id}",
@@ -644,9 +644,9 @@ class OcppClient:
             fault_state_str,
         )
 
-        # Prüfung im Client und nicht im CP, da sonst ständig Verbindung überprüft wird
-        # im _call aufruf auch wenn sich der Status nicht geändert hat
-        # und wir dementsprechend keine Nachricht raussenden
+        # Prüfung im Client und nicht im CP
+        # Unveränderte Statuswerte vor dem Verbindungsaufbau herausfiltern,
+        # damit dafür keine unnötigen Verbindungsprüfungen erfolgen
         if not force and self._last_update.get(key) == current_status:
             return
 
@@ -813,7 +813,7 @@ class OcppClient:
         reason: str = "EVDisconnected",
         authorize_stop: bool = False,
     ) -> Optional[concurrent.futures.Future]:
-        """Fuer benutzerinitiierte RFID-Stops authorize_stop=True setzen."""
+        """Für benutzerinitiierte RFID-Stops authorize_stop=True setzen."""
         if not chargebox_id:
             return
 
@@ -895,8 +895,7 @@ class OcppClient:
             )
 
         if reset_type == ResetType.soft:
-            # Soft reset: nur temporäre Zustände zurücksetzen
-            # -> beendet Transaktion und stellt Verbindung neu her
+            # Soft reset: Transaktion beenden und OCPP-Verbindung neu aufbauen
             try:
 
                 connection = await self.connection_manager.reconnect_now(chargebox_id)
@@ -924,9 +923,7 @@ class OcppClient:
                 )
 
         else:
-            # Hard reset:
-            # -> beendet Transaktion und startet die Box neu
-            # -> aus command.py Zeile 884
+            # Hard reset: Transaktion beenden und Ladepunkt neu starten
             pub_single(
                 "openWB/set/command/primary/todo",
                 {"command": "systemReboot", "data": {}},
@@ -953,7 +950,7 @@ class OcppClient:
                 or connection.registration_state != RegistrationState.PENDING
             ):
                 return
-        # func
+
         if trigger_type == MessageTrigger.boot_notification:
             response = await cp._boot_notification()
             if response is not None:
@@ -967,11 +964,10 @@ class OcppClient:
                     await self._handle_boot_response(connection, response)
             return
 
-        # func
         if trigger_type == MessageTrigger.heartbeat:
             await cp._heartbeat()
             return
-        # func
+
         if trigger_type == MessageTrigger.status_notification:
             openwb_cp = cp.openwb_cp
             if openwb_cp is None:
@@ -1002,7 +998,6 @@ class OcppClient:
                 )
             return
 
-        # func
         if trigger_type == MessageTrigger.meter_values:
             snapshot = self._meter_snapshots.get(cp.chargebox_id)
             transaction_id = self.transactions.get_transaction_id(cp.chargebox_id)
@@ -1038,15 +1033,9 @@ class OcppClient:
             )
             return
 
-        # func
         if trigger_type == MessageTrigger.diagnostics_status_notification:
             await cp._diagnostics_status(None)
             return
-
-
-"""
-Static Methoden
-"""
 
 
 def get_ocpp_client() -> OcppClient:

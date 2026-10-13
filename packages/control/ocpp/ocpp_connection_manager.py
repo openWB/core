@@ -40,6 +40,7 @@ class OcppConnectionManager:
         self._wanted_connections: set[str] = set()
         self._reconnect_tasks: dict[str, asyncio.Task] = {}
         self._connect_locks: dict[str, asyncio.Lock] = {}
+        self._connection_lost_task: set[asyncio.Task] = set()
 
     async def connect(self, chargebox_id: str) -> Optional[OcppConnection]:
         """
@@ -76,8 +77,8 @@ class OcppConnectionManager:
 
         if not chargebox_id:
             return
-
-        # Zu erst die Verbindung als nicht mehr gewollt markieren
+        log.debug("Disconnecting chargebox_id: %s", chargebox_id)
+        # Zuerst die Verbindung als nicht mehr gewollt markieren
         # damit kein neuer Reconnect versuch gestartet wird
         self._wanted_connections.discard(chargebox_id)
 
@@ -349,7 +350,24 @@ class OcppConnectionManager:
                 chargebox_id,
             )
         finally:
-            await self._on_connection_lost(connection)
+            # Den Handler als eigene Task starten: Das Cleanup wartet auf die
+            # Receiver-Task. Würde der Receiver den Handler direkt abwarten,
+            # warteten beide Tasks gegenseitig aufeinander (Deadlock).
+            task = asyncio.create_task(
+                self._on_connection_lost(connection),
+                name=f"ocpp-{chargebox_id}-connection-lost",
+            )
+            self._connection_lost_task.add(task)
+            task.add_done_callback(self._connection_lost_done)
+
+    def _connection_lost_done(self, task: asyncio.Task) -> None:
+        self._connection_lost_task.discard(task)
+        try:
+            task.result()
+        except asyncio.CancelledError:
+            pass
+        except Exception:
+            log.exception("Fehler beim Bereinigen einer verlorenen OCPP-Verbindung")
 
     async def _on_connection_lost(
         self,
@@ -357,22 +375,23 @@ class OcppConnectionManager:
     ) -> None:
         chargebox_id = connection.chargebox_id
 
-        # Die Verbindung wurde möglicherweise bereits durch eine erzwungene
-        # Wiederverbindung ersetzt.
-        if self._connections.get(chargebox_id) is not connection:
-            return
+        # Mit connect/disconnect serialiseren. Ohne Lock könnte das Cleanup
+        # einer alten Verbindung nach dem Aufbau ihrer Nachfolgerin laufen
+        lock = self._get_connect_lock(chargebox_id)
+        async with lock:
+            if self._connections.get(chargebox_id) is not connection:
+                return
+            await self._cleanup_connection(connection)
 
-        await self._cleanup_connection(connection)
+            openwb_cp = get_cp_from_chargebox_id(chargebox_id)
+            if (
+                openwb_cp is not None
+                and openwb_cp.data.get.ocpp.test_reconnect
+            ):
+                return
 
-        openwb_cp = get_cp_from_chargebox_id(chargebox_id)
-        if (
-            openwb_cp is not None
-            and openwb_cp.data.get.ocpp.test_reconnect
-        ):
-            return
-
-        if self.is_wanted(chargebox_id):
-            self._schedule_reconnect(chargebox_id)
+            if self.is_wanted(chargebox_id):
+                self._schedule_reconnect(chargebox_id)
 
     async def _reconnect_loop(
         self,
