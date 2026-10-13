@@ -28,21 +28,6 @@ validateTag() {
 	return 0
 }
 
-checkoutTag() {
-	local tag=$1
-	if [[ -n $tag ]]; then
-		validateTag "$tag" || return 1
-		echo "#### checking out tag '$tag' ####"
-		if [[ $DRY_RUN -eq 0 ]]; then
-			git -C "$OPENWB_BASE_DIR" checkout --detach --force "refs/tags/$tag" || return 1
-			setLogicalUpdateBranch "$OPENWB_BASE_DIR" "$SELECTED_BRANCH" || return 1
-			echo "#### done"
-		else
-			echo "DRY RUN: would checkout tag '$tag'"
-		fi
-	fi
-}
-
 validateBranch() {
 	local branch=$1
 	if ! remoteBranchExists "$OPENWB_BASE_DIR" "$GIT_REMOTE" "$branch"; then
@@ -50,20 +35,6 @@ validateBranch() {
 		return 1
 	fi
 	return 0
-}
-
-checkoutBranch() {
-	local branch=$1
-	if [[ -n $branch ]]; then
-		echo "#### checking out branch '$branch' ####"
-		if [[ $DRY_RUN -eq 0 ]]; then
-			git -C "$OPENWB_BASE_DIR" checkout --force -B "$branch" --track "refs/remotes/$GIT_REMOTE/$branch" || return 1
-			setLogicalUpdateBranch "$OPENWB_BASE_DIR" "" || return $?
-			echo "#### done"
-		else
-			echo "DRY RUN: would checkout branch '$branch' from '$GIT_REMOTE/$branch'"
-		fi
-	fi
 }
 
 clearUpdateFlagOnFailure() {
@@ -103,49 +74,49 @@ echo "#### running update ####" >"$LOG_FILE"
 		fi
 	fi
 
-	# checkout tag if selected and branch is "Release" or "Beta", as tags are not part of any branch
+	versionBranch=""
+	versionRef=""
+	logicalTrain=""
 	if [[ $SELECTED_BRANCH == "Release" || $SELECTED_BRANCH == "Beta" ]]; then
 		if [[ -n $SELECTED_TAG ]] && [[ $SELECTED_TAG != "$DEFAULT_TAG" ]]; then
 			echo "#### 2. checkout selected tag '$SELECTED_TAG' for virtual branch '$SELECTED_BRANCH' ####"
-			checkoutTag "$SELECTED_TAG" || exit 1
+			versionRef="refs/tags/$SELECTED_TAG"
+			logicalTrain="$SELECTED_BRANCH"
 		else
 			echo "#### ERROR: no tag available for virtual branch '$SELECTED_BRANCH', aborting update ####"
 			exit 1
 		fi
 	else
-		# checkout selected branch
 		echo "#### 2. checkout selected branch ####"
 		if ! validateBranch "$SELECTED_BRANCH"; then
 			echo "#### ERROR: selected remote branch '$GIT_REMOTE/$SELECTED_BRANCH' does not exist, aborting update ####"
 			exit 1
 		fi
-		checkoutBranch "$SELECTED_BRANCH" || exit 1
+		versionBranch="$SELECTED_BRANCH"
 		# set Selected_Tag to default if branch is not "master"
 		if [[ $SELECTED_BRANCH != "master" ]]; then
 			echo "#### branch '$SELECTED_BRANCH' is not 'master', ignoring selected tag and using default tag '$DEFAULT_TAG' ####"
 			SELECTED_TAG="$DEFAULT_TAG"
 		fi
-		# reset to latest revision or selected tag
-		echo "#### 3. reset working dir ###"
-		resetTarget="refs/remotes/$GIT_REMOTE/$SELECTED_BRANCH"
+		versionRef="refs/remotes/$GIT_REMOTE/$SELECTED_BRANCH"
 		echo "#### SELECTED_TAG: $SELECTED_TAG ####"
 		if [[ -n $SELECTED_TAG ]] && [[ $SELECTED_TAG != "$DEFAULT_TAG" ]]; then
 			echo "#### resetting working dir to selected tag '$SELECTED_TAG' ####"
-			resetTarget="refs/tags/$SELECTED_TAG"
+			versionRef="refs/tags/$SELECTED_TAG"
 		else
 			echo "#### no tag or default selected, resetting to latest remote revision"
 		fi
+	fi
 
-		if [[ $DRY_RUN -eq 0 ]]; then
-			echo "#### resetting working dir to '$resetTarget' ####"
-			if ! git -C "$OPENWB_BASE_DIR" reset --hard "$resetTarget"; then
-				echo "#### ERROR: reset to '$resetTarget' failed, aborting update ####"
-				exit 1
-			fi
-			echo "#### done"
-		else
-			echo "DRY RUN: would reset working dir to '$resetTarget'"
-		fi
+	echo "#### 3. apply selected version '$versionRef' ####"
+	if ! applyVersion "$OPENWB_BASE_DIR" "$GIT_REMOTE" "$versionBranch" "$versionRef" "$logicalTrain" "$DRY_RUN"; then
+		echo "#### ERROR: applying version '$versionRef' failed, aborting update ####"
+		exit 1
+	fi
+	if [[ $DRY_RUN -eq 0 ]]; then
+		echo "#### done"
+	else
+		echo "DRY RUN: would apply version '$versionRef' with branch '$versionBranch' and train '$logicalTrain'"
 	fi
 
 	# clean mosquitto configuration directory to remove possibly outdated files

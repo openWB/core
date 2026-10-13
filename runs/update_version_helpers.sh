@@ -47,6 +47,35 @@ validateRestoreGitMetadata() {
 	return 0
 }
 
+applyVersion() {
+	local baseDir=$1
+	local remote=$2
+	local branch=$3
+	local targetRef=$4
+	local train=$5
+	local dryRun=${6:-0}
+	local targetCommit
+
+	validateRestoreGitMetadata "$branch" "$train" || return $?
+	if [[ -n $branch ]]; then
+		remoteBranchExists "$baseDir" "$remote" "$branch" || return 1
+	fi
+	targetCommit=$(git -C "$baseDir" rev-parse --verify --quiet "$targetRef^{commit}") || return 1
+	if [[ $dryRun == "1" ]]; then
+		return 0
+	elif [[ $dryRun != "0" ]]; then
+		return 1
+	fi
+
+	if [[ -z $branch ]]; then
+		git -C "$baseDir" checkout --detach --force "$targetCommit" || return 1
+	else
+		git -C "$baseDir" checkout --force -B "$branch" --track "refs/remotes/$remote/$branch" || return 1
+	fi
+	git -C "$baseDir" reset --hard "$targetCommit" || return 1
+	setLogicalUpdateBranch "$baseDir" "$train"
+}
+
 getTrainTagPattern() {
 	local branch=$1
 	case "$branch" in

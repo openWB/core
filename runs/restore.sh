@@ -28,7 +28,6 @@ source "$OPENWB_BASE_DIR/runs/update_version_helpers.sh" || exit 1
 	echo "Step 6: checkout matching git branch and hash"
 	BRANCH=$(<"$WORKING_DIR/GIT_BRANCH")
 	HASH=$(<"$WORKING_DIR/GIT_HASH")
-	echo "Step 6.1: checkout"
 	UPDATE_BRANCH=""
 	if [[ -f "$WORKING_DIR/GIT_UPDATE_BRANCH" ]]; then
 		UPDATE_BRANCH=$(<"$WORKING_DIR/GIT_UPDATE_BRANCH")
@@ -43,36 +42,22 @@ source "$OPENWB_BASE_DIR/runs/update_version_helpers.sh" || exit 1
 		exit 1
 	fi
 	if [[ -z $BRANCH ]]; then
-		echo "Step 6.1a: checkout detached commit: $HASH"
-		if ! git -C "$OPENWB_BASE_DIR" checkout --detach --force "$HASH"; then
-			echo "checkout of commit [$HASH] failed! aborting restore"
-			exit 1
-		fi
+		echo "checkout detached commit: $HASH"
 	else
-		echo "Step 6.1b: checkout branch from remote: $GIT_REMOTE/$BRANCH"
-		if ! git -C "$OPENWB_BASE_DIR" checkout --force -B "$BRANCH" --track "refs/remotes/$GIT_REMOTE/$BRANCH"; then
-			echo "checkout of remote branch \"$GIT_REMOTE/$BRANCH\" failed! aborting restore"
-			exit 1
-		fi
+		echo "checkout branch from remote: $GIT_REMOTE/$BRANCH"
 	fi
-	echo "Step 6.2: reset to matching version: [$HASH]"
-	if ! git -C "$OPENWB_BASE_DIR" reset --hard "$HASH"; then
-		echo "reset to version [$HASH] failed! aborting restore"
+	echo "apply saved version: [$HASH]"
+	if ! applyVersion "$OPENWB_BASE_DIR" "$GIT_REMOTE" "$BRANCH" "$HASH" "$UPDATE_BRANCH"; then
+		echo "applying version [$HASH] failed! aborting restore"
 		exit 1
-	fi
-	echo "Step 6.3: set logical update branch"
-	if [[ -n $UPDATE_BRANCH ]]; then
-		setLogicalUpdateBranch "$OPENWB_BASE_DIR" "$UPDATE_BRANCH" || exit 1
-	else
-		if ! setLogicalUpdateBranch "$OPENWB_BASE_DIR" ""; then
-			echo "failed to clear logical update branch! aborting restore"
-			exit 1
-		fi
 	fi
 	echo "****************************************"
 	echo "Step 7: restore contents of backup"
 	# we use cp not mv because of not empty directories in destination
-	sudo cp -v -p -r "${WORKING_DIR}/openWB/." "${OPENWB_BASE_DIR}/"
+	if ! sudo cp -v -p -r "${WORKING_DIR}/openWB/." "${OPENWB_BASE_DIR}/"; then
+		echo "restoring openWB files failed! aborting restore"
+		exit 1
+	fi
 	if [[ -f "$WORKING_DIR/configuration.json" ]]; then
 		sudo mv -v -f "${WORKING_DIR}/configuration.json" "/home/openwb/"
 	else
