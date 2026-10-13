@@ -6,7 +6,7 @@ from typing import List, Optional
 log = logging.getLogger(__name__)
 
 
-def joined_thread_handler(threads: List[Thread], timeout: Optional[int]) -> List[str]:
+def joined_thread_handler(threads: List[Thread], timeout: Optional[float]) -> List[str]:
     def split_chunks(to_split, n):
         for i in range(0, len(to_split), n):
             yield to_split[i:i + n]

@@ -14,7 +14,7 @@
 						text: modenames[i],
 						value: v,
 						color: 'var(--color-menu)',
-						active: v == graphData.graphMode,
+						active: v == graphMode,
 					}
 				})
 			"
@@ -114,6 +114,7 @@ const props = defineProps<{
 }>()
 defineEmits(['shiftLeft', 'shiftRight', 'shiftUp', 'shiftDown'])
 const editmode = ref(0)
+const graphMode = computed(() => graphData.graphMode)
 const displayDate = computed(() => {
 	if (graphData.waitForData) {
 		return 'Lädt'

@@ -17,6 +17,7 @@ import { counters } from '../counterList/model'
 import { computed } from 'vue'
 import { chargePoints } from '../chargePointList/model'
 import PMArc from './PMArc.vue'
+import { globalConfig } from '@/assets/js/themeConfig.ts'
 // props
 const props = defineProps<{
 	radius: number
@@ -54,8 +55,14 @@ const emptyPowerItem = computed(() => {
 		showInGraph: true,
 	}
 })
-const plotdata = computed(() =>
-	[registry.getItem('evuOut')].concat(
+const plotdata = computed(() => {
+	if (globalConfig.debug) {
+		console.debug('CONSUMER VALUES FOR ENERGY METER')
+		console.debug(['configured consumers:', consumers])
+		console.debug(['consumers in graph:', consumersToShow.value])
+	}
+
+	return [registry.getItem('evuOut')].concat(
 		chargePointsToShow.value,
 		devicesToShow.value,
 		consumersToShow.value,
@@ -64,8 +71,8 @@ const plotdata = computed(() =>
 		invertersToShow.value,
 		registry.getItem('house'),
 		emptyPowerItem.value,
-	),
-)
+	)
+})
 
 const chargePointsToShow = computed(() => {
 	return Object.values(chargePoints).length > 1
@@ -74,6 +81,7 @@ const chargePointsToShow = computed(() => {
 			})
 		: [registry.getItem('charging')]
 })
+// devices
 const devicesToShow = computed(() => {
 	let summarizedPower = 0
 	for (const d of shDevices.values()) {
@@ -115,11 +123,12 @@ const devicesToShow = computed(() => {
 })
 
 const consumersToShow = computed(() => {
-	return [...consumers.values()].sort((a, b) => {
-		return b.power - a.power
-	})
+	return [...consumers.values()]
+		.filter((c) => c.showInGraph)
+		.sort((a, b) => {
+			return b.power - a.power
+		})
 })
-
 const batteriesToShow = computed(() =>
 	batteries.value.size > 1
 		? [...batteries.value.values()]

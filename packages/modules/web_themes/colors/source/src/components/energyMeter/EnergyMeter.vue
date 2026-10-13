@@ -168,7 +168,8 @@ const yScale = computed(() => {
 const graphScope = computed(() => (graphData.usePastData ? 'past' : 'now'))
 const heading = 'Energie'
 function printDebugOutput() {
-	console.debug(['all items:', registry])
+	console.debug('--- Energy Meter Input:')
+	console.debug(registry)
 }
 function zoomGraph() {
 	globalConfig.zoomedWidget = 2

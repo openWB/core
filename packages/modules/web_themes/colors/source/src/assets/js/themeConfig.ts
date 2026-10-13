@@ -48,6 +48,7 @@ export class Config {
 	zoomGraph = false
 	zoomedWidget = 1
 	countersToShow: number[] = []
+	priorities: Map<number, number> = new Map()
 	constructor() {}
 	get showRelativeArcs() {
 		return this._showRelativeArcs

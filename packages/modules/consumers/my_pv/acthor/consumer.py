@@ -30,10 +30,10 @@ FACTORS = {"9s45": 45000,
            "E2M3": 6500,
            "M1": 3000}
 REG_MAPPING = (
-    (Register.POWER, [ModbusDataType.INT_16]),
-    (Register.TEMP0, [ModbusDataType.INT_16]),
-    (Register.TEMP1, [ModbusDataType.INT_16]),
-    (Register.TEMP2, [ModbusDataType.INT_16]),
+    (Register.POWER, ModbusDataType.INT_16),
+    (Register.TEMP0, ModbusDataType.INT_16),
+    (Register.TEMP1, ModbusDataType.INT_16),
+    (Register.TEMP2, ModbusDataType.INT_16),
     (Register.STATUS, ModbusDataType.INT_16),
 )
 
@@ -64,7 +64,8 @@ def create_consumer(config: Acthor):
 
     def set_power_limit(power_limit: float, data: SetLimitData) -> None:
         power_limit = power_limit * FACTORS.get(config.configuration.model, 9000)/config.configuration.max_power
-        client.write_registers(1000, power_limit, unit=config.configuration.modbus_id)
+        client.write_register(1000, int(power_limit), data_type=ModbusDataType.INT_16,
+                              unit=config.configuration.modbus_id)
     return ConfigurableConsumer(consumer_config=config,
                                 initializer=initializer,
                                 error_handler=error_handler,

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """SunEnergyXT 500 Series – openWB Batteriespeicher-Modul."""
 import logging
-from typing import Any, Optional
+from typing import Any
 
 from modules.common import req
 from modules.common.abstract_device import AbstractBat
@@ -12,6 +12,7 @@ from modules.common.simcount import SimCounter
 from modules.common.store import get_component_value_store
 from modules.common.utils.peak_filter import PeakFilter
 from modules.devices.sunenergyxt.sunenergyxt.config import SunEnergyXT, SunEnergyXTBatSetup
+from control.bat import Set as SetPoint
 
 log = logging.getLogger(__name__)
 
@@ -73,19 +74,19 @@ class SunEnergyXTBat(AbstractBat):
         self.store.set(bat_state)
         log.debug("SunEnergyXT: SoC=%d%%,BP=%.0fW, IS=%dW (gs_max)", soc, power, self._gs_max)
 
-    def set_power_limit(self, power_limit: Optional[int]) -> None:
-        if power_limit is None:
+    def set_power_limit(self, setpoint: SetPoint) -> None:
+        if setpoint.power_limit is None:
             log.debug("SunEnergyXT: Automatik (MM=1, GS=0)")
             self._write(MM=1, GS=0)
-        elif power_limit == 0:
+        elif setpoint.power_limit == 0:
             log.debug("SunEnergyXT: Entladung gesperrt (MM=0, GS=0)")
             self._write(MM=0, GS=0)
-        elif power_limit < 0:
-            p = int(min(abs(power_limit), self._gs_max))
+        elif setpoint.power_limit < 0:
+            p = int(min(abs(setpoint.power_limit), self._gs_max))
             log.debug("SunEnergyXT: Entladen mit %dW (gs_max=%dW)", p, self._gs_max)
             self._write(MM=0, GS=p)
         else:
-            p = int(min(power_limit, self._gs_max))
+            p = int(min(setpoint.power_limit, self._gs_max))
             log.debug("SunEnergyXT: Laden mit %dW (gs_max=%dW)", p, self._gs_max)
             self._write(MM=0, GS=-p)
 

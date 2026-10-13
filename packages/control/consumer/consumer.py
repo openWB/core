@@ -7,7 +7,7 @@ from control.consumer.usage import NOT_CONTROLLED, ON_OFF
 from control.algorithm.utils import get_medium_charging_current
 from control.chargemode import Chargemode
 from control.chargepoint.chargepoint_state import CHARGING_STATES, ChargepointState
-from control.consumer.consumer_data import ConsumerData, ConsumerUsage, ResetModes, WaitForStartStates
+from control.consumer.consumer_data import ConsumerData, ConsumerUsage, WaitForStartStates
 from control.load_protocol import Load
 from control.text import format_next_time_charging_start
 from helpermodules import timecheck
@@ -45,20 +45,24 @@ class Consumer(Load):
     def update(self):
         try:
             self.setup_values_at_start()
+            if self.data.get.voltages == [230.0]*3:
+                self.data.get.voltages = [230 if i < self.data.config.connected_phases else 0
+                                          for i in range(0, 3)]
+            if self.data.get.currents == [0.0]*3:
+                for i in range(0, self.data.config.connected_phases):
+                    voltage = self.data.get.voltages[i]
+                    if voltage != 0:
+                        self.data.get.currents[i] = (self.data.get.power /
+                                                     self.data.config.connected_phases /
+                                                     voltage)
+            self.data.get.phases_in_use = self.data.config.connected_phases
+            self.data.set.phases_to_use = self.data.config.connected_phases
+            self.data.get.charge_state = max(self.data.get.currents) > self.STANDBY_THRESHOLD
+            self.process_on_time()
+
             if self.data.usage.type in NOT_CONTROLLED:
                 return
             else:
-                if self.data.get.voltages is None:
-                    self.data.get.voltages = [230 for i in range(0, self.data.config.connected_phases)]
-                if self.data.get.currents is None:
-                    self.data.get.currents = [0]*3
-                    for i in range(0, self.data.config.connected_phases):
-                        self.data.get.currents[i] = (self.data.get.power /
-                                                     self.data.config.connected_phases /
-                                                     self.data.get.voltages[i])
-                self.data.get.phases_in_use = self.data.config.connected_phases
-                self.data.set.phases_to_use = self.data.config.connected_phases
-                self.data.get.charge_state = max(self.data.get.currents) > self.STANDBY_THRESHOLD
                 self.reset_chargemode_at_time()
                 self.is_switch_interval_elapsed()
                 required_current, message, mode, submode = self.get_parameter()
@@ -68,7 +72,6 @@ class Consumer(Load):
                 self.set_control_parameter(required_current,
                                            self.data.config.connected_phases, submode, mode)
                 self.set_state_and_log(message)
-                self.process_on_time()
                 log.debug(f"Verbraucher {self.num}: Sollstrom {required_current}, "
                           f"min. Ist-Strom {max(self.data.get.currents)},"
                           f" Modus {mode}, Submodus {submode}, {message}")
@@ -77,7 +80,7 @@ class Consumer(Load):
 
     def _get_min_current(self) -> float:
         if self.data.usage.type == ConsumerUsage.SUSPENDABLE_TUNABLE:
-            return self.data.config.min_current
+            return self._convert_power_to_current(self.data.config.min_power)
         else:
             if self.data.get.charge_state:
                 return get_medium_charging_current(self.data.get.currents)
@@ -91,6 +94,8 @@ class Consumer(Load):
                 self.data.set.timestamp_wrote_last_on_time = now
             self.data.set.on_time += now - self.data.set.timestamp_wrote_last_on_time
             self.data.set.timestamp_wrote_last_on_time = now
+        else:
+            self.data.set.timestamp_wrote_last_on_time = None
 
     def reset_on_time(self):
         self.data.set.on_time = 0
@@ -416,7 +421,8 @@ class Consumer(Load):
             self, func: Callable[[], Tuple[float, Optional[str], Chargemode]]
     ) -> Tuple[float, Optional[str], Chargemode, bool]:
         chargemode_defined_by_wait_for_start_handler = False
-        standby_threshold = self.STANDBY_THRESHOLD if self.data.usage.type in ON_OFF else self.data.config.min_current
+        standby_threshold = (self.STANDBY_THRESHOLD if self.data.usage.type in ON_OFF
+                             else self._convert_power_to_current(self.data.config.min_power))
         if self.data.usage.wait_for_start_active:
             if self.data.set.wait_for_start_state == WaitForStartStates.WAIT_FOR_DEVICE_START:
                 # mit Minimalstrom prüfen, damit Standby-Geräte nicht als laufend erkannt werden
@@ -465,26 +471,23 @@ class Consumer(Load):
         self.data.set.wait_for_start_state = WaitForStartStates.WAIT_FOR_DEVICE_START
 
     def midnight_handler(self):
-        self.reset_chargemode_at_midnight()
         self.reset_wait_for_start()
         self.reset_on_time()
 
-    def reset_chargemode_at_midnight(self):
-        if self.data.usage.reset_chargemode.mode == ResetModes.MIDNIGHT:
-            if self.data.usage.chargemode != self.data.usage.reset_chargemode.chargemode:
-                log.info(f"Zurücksetzen des Lademodus auf {self.data.usage.reset_chargemode.chargemode} "
-                         f"für Verbraucher {self.num} um Mitternacht.")
-                self.data.usage.chargemode = self.data.usage.reset_chargemode.chargemode
-
     def reset_chargemode_at_time(self):
-        if (self.data.usage.reset_chargemode.mode == ResetModes.TIME and
-                self.data.usage.reset_chargemode.time is not None):
-            if (self.data.usage.reset_chargemode.time < timecheck.create_timestamp() <
-                    self.data.usage.reset_chargemode.time + data.data.general_data.data.control_interval):
-                if self.data.usage.chargemode != self.data.usage.reset_chargemode.chargemode:
-                    log.info(f"Zurücksetzen des Lademodus auf {self.data.usage.reset_chargemode.chargemode} "
-                             f"für Verbraucher {self.num} um definierte Zeit.")
-                    self.data.usage.chargemode = self.data.usage.reset_chargemode.chargemode
+        if self.data.usage.reset_chargemode.active is False:
+            return
+
+        control_interval = data.data.general_data.data.control_interval
+        reset_window_start = -control_interval
+        remaining_time = timecheck.check_end_time_current_occurrence(self.data.usage.reset_chargemode)
+        is_within_reset_window = reset_window_start < remaining_time <= 0
+
+        if (is_within_reset_window and
+                self.data.usage.chargemode != self.data.usage.reset_chargemode.chargemode):
+            log.info(f"Zurücksetzen des Lademodus auf {self.data.usage.reset_chargemode.chargemode} "
+                     f"für Verbraucher {self.num} um definierte Zeit.")
+            self.data.usage.chargemode = self.data.usage.reset_chargemode.chargemode
 
     def set_control_parameter(self,
                               required_current: float,
@@ -524,3 +527,12 @@ class Consumer(Load):
             self.reset_wait_for_start()
         else:
             self.chargemode_changed = False
+
+    def set_plug_state(self):
+        if self.data.usage.type in NOT_CONTROLLED:
+            if self.data.get.power == 0:
+                self.data.get.plug_state = False
+            else:
+                self.data.get.plug_state = True
+        else:
+            self.data.get.plug_state = self.data.set.current > 0

@@ -17,14 +17,6 @@ import { addConsumer, consumers } from '../consumerList/model'
 import type { PowerItem } from '@/assets/js/types'
 import { add } from '../mqttViewer/model'
 // methods:
-/* const noAutarchyCalculation = [
-	'evuIn',
-	'pv',
-	'batOut',
-	'evuOut',
-	'charging',
-	'house',
-] */
 let gridCounters: string[] = []
 // Process incoming day graph data
 export function processDayGraphMessages(topic: string, message: string) {
@@ -37,7 +29,6 @@ export function processDayGraphMessages(topic: string, message: string) {
 	resetHistoricData()
 	gridCounters = []
 	registry.keys().forEach((cat) => {
-		//consumerCategories.forEach((cat) => {
 		registry.setEnergyPv(cat, 0)
 		registry.setEnergyBat(cat, 0)
 	})

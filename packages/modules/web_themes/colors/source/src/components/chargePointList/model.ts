@@ -366,6 +366,9 @@ export class ChargePoint implements PowerItem {
 				return 0
 		}
 	}
+	get priority() {
+		return vehicles[this.connectedVehicle]?.priority ?? 0
+	}
 }
 export class Vehicle {
 	id: number
@@ -374,6 +377,7 @@ export class Vehicle {
 	config = {}
 	soc = 0
 	range = 0
+	priority = 0
 	constructor(index: number) {
 		this.id = index
 	}

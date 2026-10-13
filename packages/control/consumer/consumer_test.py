@@ -28,12 +28,66 @@ def mock_data() -> None:
 def consumer() -> Consumer:
     load = Consumer(1)
     load.data.usage.type = ConsumerUsage.CONTINUOUS
-    load.data.config.min_current = 6
+    load.data.config.min_power = 1380
     load.data.config.max_power = 2300
     load.data.config.connected_phases = 1
     load.data.get.voltages = [230]
     load.data.get.currents = [10]
     return load
+
+
+@pytest.mark.parametrize(
+    "usage_type, power, expected_plug_state",
+    [
+        pytest.param(ConsumerUsage.METER_ONLY, 0, False, id="meter-only-zero-power"),
+        pytest.param(ConsumerUsage.METER_ONLY, 1, True, id="meter-only-nonzero-power"),
+        pytest.param(ConsumerUsage.SELF_CONTROLLED, 0, False, id="self-controlled-zero-power"),
+        pytest.param(ConsumerUsage.SELF_CONTROLLED, 1, True, id="self-controlled-nonzero-power"),
+    ],
+)
+def test_set_plug_state_for_not_controlled_consumers(
+        consumer: Consumer,
+        usage_type: ConsumerUsage,
+        power: float,
+        expected_plug_state: bool):
+    # setup
+    consumer.data.usage.type = usage_type
+    consumer.data.get.power = power
+    consumer.data.set.current = 0
+
+    # execution
+    consumer.set_plug_state()
+
+    # evaluation
+    assert consumer.data.get.plug_state is expected_plug_state
+
+
+@pytest.mark.parametrize(
+    "usage_type, current, expected_plug_state",
+    [
+        pytest.param(ConsumerUsage.CONTINUOUS, 0, False, id="continuous-zero-current"),
+        pytest.param(ConsumerUsage.CONTINUOUS, 1, True, id="continuous-positive-current"),
+        pytest.param(ConsumerUsage.SUSPENDABLE_ONOFF, 0, False, id="onoff-zero-current"),
+        pytest.param(ConsumerUsage.SUSPENDABLE_ONOFF, 1, True, id="onoff-positive-current"),
+        pytest.param(ConsumerUsage.SUSPENDABLE_TUNABLE, 0, False, id="tunable-zero-current"),
+        pytest.param(ConsumerUsage.SUSPENDABLE_TUNABLE, 1, True, id="tunable-positive-current"),
+    ],
+)
+def test_set_plug_state_for_controlled_consumers(
+        consumer: Consumer,
+        usage_type: ConsumerUsage,
+        current: float,
+        expected_plug_state: bool):
+    # setup
+    consumer.data.usage.type = usage_type
+    consumer.data.get.power = 0
+    consumer.data.set.current = current
+
+    # execution
+    consumer.set_plug_state()
+
+    # evaluation
+    assert consumer.data.get.plug_state is expected_plug_state
 
 
 def test_get_parameter_clears_previous_state_string_when_switch_interval_is_active(consumer: Consumer):
@@ -169,7 +223,7 @@ def test_wait_for_start_handler_standby_threshold_depends_on_usage_type(
     consumer.data.usage.wait_for_start_active = True
     consumer.data.usage.type = usage_type
     consumer.data.set.wait_for_start_state = WaitForStartStates.WAIT_FOR_DEVICE_START
-    # 0.2 A liegt über STANDBY_THRESHOLD (0.15), aber unter min_current (6 A)
+    # 0.2 A liegt über STANDBY_THRESHOLD (0.15), aber unter der aus min_power abgeleiteten Schwelle (~6 A)
     consumer.data.get.currents = [0.2, 0.2, 0.2]
     charging_func = Mock(return_value=(11, "ok", Chargemode.PV_CHARGING))
 
@@ -180,6 +234,26 @@ def test_wait_for_start_handler_standby_threshold_depends_on_usage_type(
     assert result == expected_result
     assert consumer.data.set.wait_for_start_state == expected_state
     assert charging_func.call_count == 0
+
+
+def test_process_on_time_pauses_when_charge_state_is_false(
+        consumer: Consumer,
+        monkeypatch: pytest.MonkeyPatch):
+    # setup
+    monkeypatch.setattr(timecheck, "create_timestamp", Mock(side_effect=[100, 130, 160]))
+
+    # execution
+    consumer.data.get.charge_state = True
+    consumer.process_on_time()  # Start bei t=100
+    consumer.data.get.charge_state = False
+    consumer.process_on_time()  # Pause: Zeitstempel wird verworfen
+    consumer.data.get.charge_state = True
+    consumer.process_on_time()  # Neustart bei t=130 ohne Nachlauf aus Pause
+    consumer.process_on_time()  # Laufzeit von 30s wird gezaehlt
+
+    # evaluation
+    assert consumer.data.set.on_time == 30
+    assert consumer.data.set.timestamp_wrote_last_on_time == 160
 
 
 @pytest.mark.parametrize(
@@ -300,29 +374,34 @@ def test_pv_charging(consumer: Consumer):
 
 
 @pytest.mark.parametrize(
-    "usage_type, charge_state, currents, expected_min_current",
+    "usage_type, charge_state, connected_phases, currents, expected_min_current",
     [
-        pytest.param(ConsumerUsage.CONTINUOUS, True, [13, 13, 13], 13, id="continuous-while-running"),
-        pytest.param(ConsumerUsage.CONTINUOUS, False, [13, 13, 13], 10, id="continuous-while-stopped"),
-        pytest.param(ConsumerUsage.SUSPENDABLE_TUNABLE, True, [13, 13, 13], 6, id="tunable-while-running"),
-        pytest.param(ConsumerUsage.SUSPENDABLE_TUNABLE, False, [13, 13, 13], 6, id="tunable-while-stopped"),
+        pytest.param(ConsumerUsage.CONTINUOUS, True, 1, [13, 13, 13], 13, id="continuous-while-running"),
+        pytest.param(ConsumerUsage.CONTINUOUS, False, 1, [13, 13, 13], 10, id="continuous-while-stopped"),
+        pytest.param(ConsumerUsage.SUSPENDABLE_TUNABLE, True, 1, [13, 13, 13], 6,
+                     id="tunable-single-phase"),
+        pytest.param(ConsumerUsage.SUSPENDABLE_TUNABLE, False, 2, [13, 13, 13], 3,
+                     id="tunable-two-phases-min-power-conversion"),
     ],
 )
 def test_set_control_parameter_sets_min_current_by_usage_and_charge_state(
         consumer: Consumer,
         usage_type: ConsumerUsage,
         charge_state: bool,
+        connected_phases: int,
         currents: List[float],
         expected_min_current: float):
     # setup
     consumer.data.usage.type = usage_type
     consumer.data.get.charge_state = charge_state
+    consumer.data.config.connected_phases = connected_phases
+    consumer.data.get.voltages = [230]*3
     consumer.data.get.currents = currents
 
     # execution
     consumer.set_control_parameter(
         required_current=11,
-        phases=1,
+        phases=connected_phases,
         submode=Chargemode.PV_CHARGING,
         mode=Chargemode.PV_CHARGING,
     )
@@ -497,3 +576,113 @@ def test_scheduled_charging_calc_current_electricity_tariff(
 
     # evaluation
     assert ret == expected
+
+
+@pytest.mark.parametrize(
+    "is_active,current_mode,target_mode,remaining_time,expected_mode,expected_check_end_time_calls",
+    [
+        pytest.param(
+            False,
+            Chargemode.STOP,
+            Chargemode.PV_CHARGING,
+            0,
+            Chargemode.STOP,
+            0,
+            id="inactive-noop",
+        ),
+        pytest.param(
+            True,
+            Chargemode.STOP,
+            Chargemode.PV_CHARGING,
+            5,
+            Chargemode.STOP,
+            1,
+            id="active-not-due-noop",
+        ),
+        pytest.param(
+            True,
+            Chargemode.STOP,
+            Chargemode.PV_CHARGING,
+            0,
+            Chargemode.PV_CHARGING,
+            1,
+            id="active-due-switch",
+        ),
+        pytest.param(
+            True,
+            Chargemode.PV_CHARGING,
+            Chargemode.PV_CHARGING,
+            0,
+            Chargemode.PV_CHARGING,
+            1,
+            id="active-due-already-target",
+        ),
+    ],
+)
+def test_reset_chargemode_at_time(
+    consumer: Consumer,
+    monkeypatch: pytest.MonkeyPatch,
+    is_active: bool,
+    current_mode: Chargemode,
+    target_mode: Chargemode,
+    remaining_time: int,
+    expected_mode: Chargemode,
+    expected_check_end_time_calls: int,
+):
+    # setup
+    consumer.data.usage.chargemode = current_mode
+    consumer.data.usage.reset_chargemode.active = is_active
+    consumer.data.usage.reset_chargemode.chargemode = target_mode
+    check_end_time_mock = Mock(return_value=remaining_time)
+    monkeypatch.setattr(timecheck, "check_end_time_current_occurrence", check_end_time_mock)
+
+    # execution
+    consumer.reset_chargemode_at_time()
+
+    # evaluation
+    assert consumer.data.usage.chargemode == expected_mode
+    assert check_end_time_mock.call_count == expected_check_end_time_calls
+    if expected_check_end_time_calls:
+        check_end_time_mock.assert_called_once_with(consumer.data.usage.reset_chargemode)
+
+
+@pytest.mark.parametrize(
+    "connected_phases, previous_voltages, previous_currents, power, expected_voltages, expected_currents",
+    [
+        pytest.param(1, [230.0]*3, [0.0]*3, 0, [230, 0, 0], [0.0, 0.0, 0.0],
+                     id="noch beim Default (3 Phasen): Spannung wird auf 1 Phase neu berechnet"),
+        pytest.param(1, [230.0]*3, [0.0]*3, 230, [230, 0, 0], [1.0, 0.0, 0.0],
+                     id="Neuberechnung respektiert die tatsächliche Leistung"),
+        pytest.param(1, [230, 0, 0], [0.0, 1.0, 0.0], 0, [230, 0, 0], [0.0, 1.0, 0.0],
+                     id="bereits korrekt (nicht beim Default): keine Neuberechnung nötig, bleibt stabil"),
+    ],
+)
+def test_update_recalculates_voltages_and_currents_when_still_at_default(
+        consumer: Consumer,
+        connected_phases: int,
+        previous_voltages: List[float],
+        previous_currents: List[float],
+        power: float,
+        expected_voltages: List[float],
+        expected_currents: List[float],
+        monkeypatch):
+    """ Neuberechnung muss gegen den Default-Wert prüfen, nicht gegen None - sonst bleibt ein Array mit der alten
+    Phasenzahl stehen, wenn connected_phases nachträglich geändert wird (zB 3 auf 1 Phase). """
+    # setup
+    consumer.data.config.connected_phases = connected_phases
+    consumer.data.get.voltages = previous_voltages
+    consumer.data.get.currents = previous_currents
+    consumer.data.get.power = power
+    monkeypatch.setattr(consumer, "reset_chargemode_at_time", Mock())
+    monkeypatch.setattr(consumer, "is_switch_interval_elapsed", Mock())
+    monkeypatch.setattr(consumer, "get_parameter", Mock(return_value=(0, None, None, None)))
+    monkeypatch.setattr(consumer, "set_mode_changed", Mock())
+    monkeypatch.setattr(consumer, "set_control_parameter", Mock())
+    data.data.counter_all_data = Mock()
+
+    # execution
+    consumer.update()
+
+    # evaluation
+    assert consumer.data.get.voltages == expected_voltages
+    assert consumer.data.get.currents == expected_currents

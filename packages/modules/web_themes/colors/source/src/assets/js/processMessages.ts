@@ -1,5 +1,5 @@
 import { mqttRegister, mqttSubscribe, mqttUnsubscribe } from './mqttClient'
-import { PvSystem, type Hierarchy } from './types'
+import { PvSystem, type Hierarchy, type Priority } from './types'
 import { addPvSystem, registry, globalData, pvSystems } from './model'
 import { processLiveGraphMessages } from '../../components/powerGraph/processLiveGraphData'
 import { processDayGraphMessages } from '../../components/powerGraph/processDayGraphData'
@@ -11,6 +11,7 @@ import { processEtProviderMessages } from '@/components/priceChart/processMessag
 import {
 	addChargePoint,
 	resetChargePoints,
+	vehicles,
 } from '@/components/chargePointList/model'
 import {
 	addBattery,
@@ -32,6 +33,7 @@ import {
 import { mqttClientId } from './mqttClient'
 import { add } from '@/components/mqttViewer/model'
 import { globalConfig } from './themeConfig'
+import { addConsumer, consumers } from '@/components/consumerList/model'
 
 const topicsToSubscribe = [
 	'openWB/counter/#',
@@ -121,6 +123,20 @@ function processCounterMessages(topic: string, message: string) {
 		}
 	}
 }
+const sample_loadmanagement_prios = [
+	{ type: 'vehicle', id: 2 },
+	{ type: 'vehicle', id: 3 },
+	{
+		type: 'group',
+		children: [
+			{ type: 'vehicle', id: 0 },
+			{ type: 'vehicle', id: 1 },
+		],
+	},
+	{ type: 'consumer', id: 11 },
+	{ type: 'consumer', id: 12 },
+]
+
 function processGlobalCounterMessages(topic: string, message: string) {
 	if (topic.match(/^openwb\/counter\/get\/hierarchy$/i)) {
 		const hierarchy = JSON.parse(message)
@@ -129,6 +145,13 @@ function processGlobalCounterMessages(topic: string, message: string) {
 			resetBatteries()
 			globalData.evuId = hierarchy[0].id
 			processHierarchy(hierarchy[0])
+		}
+	} else if (topic.match(/^openwb\/counter\/get\/loadmanagement_prios$/i)) {
+		const prios = JSON.parse(message)
+		if (prios.length) {
+			for (const prio of prios) {
+				assignPriority(prio, prios.indexOf(prio) + 1)
+			}
 		}
 	} else if (topic.match(/^openwb\/counter\/set\/home_consumption$/i)) {
 		registry.setPower('house', +message)
@@ -159,6 +182,9 @@ function processHierarchy(hierarchy: Hierarchy) {
 		case 'inverter':
 			addPvSystem(hierarchy.id)
 			break
+		case 'consumer':
+			addConsumer(hierarchy.id)
+			break
 		default:
 		// console.warn('Ignored Hierarchy type: ' + hierarchy.type)
 	}
@@ -166,7 +192,29 @@ function processHierarchy(hierarchy: Hierarchy) {
 	// recursively process the hierarchy
 	hierarchy.children.forEach((element) => processHierarchy(element))
 }
-
+function assignPriority(target: Priority, priority: number) {
+	switch (target.type) {
+		case 'vehicle':
+			globalConfig.priorities.set(target.id, priority)
+			if (vehicles[target.id]) {
+				vehicles[target.id].priority = priority
+			}
+			break
+		case 'consumer':
+			globalConfig.priorities.set(target.id, priority)
+			if (consumers.has(target.id)) {
+				consumers.get(target.id)!.priority = priority
+			}
+			break
+		case 'group':
+			if (target.children) {
+				target.children.forEach((child) => assignPriority(child, priority))
+			}
+			break
+		default:
+			console.warn('Ignored Priority type: ' + target.type)
+	}
+}
 function processPvMessages(topic: string, message: string) {
 	const index = getIndex(topic)
 	if (index && !pvSystems.value.has(index)) {

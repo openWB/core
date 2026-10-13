@@ -149,7 +149,7 @@ export type ConsumerUsageType =
   | 'suspendable_tunable'
   | 'suspendable_onoff'
   | 'continuous';
-export type ConsumerResetTrigger = 'never' | 'midnight' | 'time';
+export type ConsumerResetTrigger = 'once' | 'daily' | 'weekly';
 export interface ScheduledChargingPlan {
   id: number;
   name: string;

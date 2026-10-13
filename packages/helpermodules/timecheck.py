@@ -10,7 +10,7 @@ with ImportErrorContext():
     from dateutil.relativedelta import relativedelta
 
 from helpermodules.abstract_plans import (AutolockPlan, ScheduledChargingPlan, ScheduledPlanConsumer,
-                                          TimeChargingPlan, TimeChargingPlanConsumer)
+                                          TimeChargingPlan, TimeChargingPlanConsumer, TimepointPlan)
 
 log = logging.getLogger(__name__)
 
@@ -201,8 +201,8 @@ def _get_next_start_for_timeframe_plan(plan: T, now: datetime.datetime) -> Optio
     return None
 
 
-def check_end_time(plan: Union[ScheduledPlanConsumer, ScheduledChargingPlan, TimeChargingPlanConsumer],
-                   buffer: Optional[float]) -> float:
+def check_end_time(plan: Union[ScheduledPlanConsumer, ScheduledChargingPlan, TimeChargingPlanConsumer, TimepointPlan],
+                   buffer: float = 0) -> float:
     """ gibt die verbleibende Zeit in Sekunden zurück.
 
     Return
@@ -236,6 +236,33 @@ def check_end_time(plan: Union[ScheduledPlanConsumer, ScheduledChargingPlan, Tim
     else:
         raise TypeError(f'Unbekannte Häufigkeit {plan.frequency.selected}')
     return remaining_time.total_seconds()
+
+
+def check_end_time_current_occurrence(plan: TimepointPlan) -> float:
+    now = datetime.datetime.today()
+    end = datetime.datetime.strptime(plan.time, '%H:%M')
+
+    if plan.frequency.selected == "once":
+        end_date = datetime.datetime.strptime(plan.frequency.once, "%Y-%m-%d")
+        end = end.replace(end_date.year, end_date.month, end_date.day)
+    elif plan.frequency.selected == "daily":
+        end = end.replace(now.year, now.month, now.day)
+    elif plan.frequency.selected == "weekly":
+        if not any(plan.frequency.weekly):
+            raise ValueError("Es muss mindestens ein Tag ausgewählt werden.")
+        end = end.replace(now.year, now.month, now.day)
+        today_weekday = now.weekday()
+        if not plan.frequency.weekly[today_weekday]:
+            days_to_previous_selected = next(
+                day_offset
+                for day_offset in range(1, 7)
+                if plan.frequency.weekly[(today_weekday - day_offset) % 7]
+            )
+            end = end - datetime.timedelta(days=days_to_previous_selected)
+    else:
+        raise TypeError(f'Unbekannte Häufigkeit {plan.frequency.selected}')
+
+    return (end - now).total_seconds()
 
 
 def _get_next_charging_day(weekly: List[bool], weekday: int) -> int:
