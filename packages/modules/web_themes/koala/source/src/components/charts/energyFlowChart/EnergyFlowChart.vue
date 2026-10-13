@@ -145,12 +145,17 @@ const notInHomeVariants = {
   },
 };
 const notInHomeVariant = computed(() => {
-  if (!countersNotInHome.value) {
-    return notInHomeVariants.consumer;
+  const { consumerIds, counterIdsWithoutChildren } =
+    mqttStore.notInHomeConsumption;
+  if (consumerIds.length > 0) {
+    // counters with children are not listed in the details
+    return counterIdsWithoutChildren.length > 0
+      ? notInHomeVariants.mixed
+      : notInHomeVariants.consumer;
   }
-  return mqttStore.notInHomeConsumption.consumerIds.length > 0
-    ? notInHomeVariants.mixed
-    : notInHomeVariants.counter;
+  return countersNotInHome.value
+    ? notInHomeVariants.counter
+    : notInHomeVariants.consumer;
 });
 const detailsVisible = ref(false);
 const detailsScope = ref<'inHome' | 'notInHome'>('inHome');
