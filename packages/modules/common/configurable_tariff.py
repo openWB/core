@@ -145,7 +145,7 @@ class ConfigurableTariff(Generic[T_TARIFF_CONFIG]):
         if now.hour < warning_hour:
             return False
         tomorrow_start = int(now.replace(hour=0, minute=0, second=0, microsecond=0).timestamp()) + 24*ONE_HOUR_SECONDS
-        return int(max(tariff_state.prices.keys())) < tomorrow_start
+        return max(int(ts) for ts in tariff_state.prices.keys()) < tomorrow_start
 
     def __store_and_publish_updated_data(self, tariff_state: TariffState) -> None:
         self.store.set(tariff_state)
