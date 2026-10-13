@@ -1,4 +1,5 @@
 from datetime import datetime, tzinfo
+import time
 from typing import Optional
 from unittest.mock import Mock
 from helpermodules import timecheck
@@ -215,10 +216,16 @@ def test_exception_schedules_short_backoff(monkeypatch: pytest.MonkeyPatch):
     assert tariff.fault_state.fault_state == FaultStateLevel.ERROR
 
 
-def test_constructor_exception_is_not_swallowed(monkeypatch: pytest.MonkeyPatch):
-    # Regression-Test: ein Fehler in component_initializer darf nicht verschluckt werden
-    with pytest.raises(Exception, match="init failed"):
-        ConfigurableFlexibleTariff(AwattarTariff(), Mock(side_effect=Exception("init failed")))
+def test_constructor_exception_is_logged_and_does_not_propagate(monkeypatch: pytest.MonkeyPatch):
+    # Regression-Test: darf nicht reraisen, sonst bliebe bei subdata.py's Zuweisung das alte Modul aktiv
+    tariff = ConfigurableFlexibleTariff(AwattarTariff(), Mock(side_effect=Exception("init failed")))
+
+    assert tariff.fault_state.fault_state == FaultStateLevel.ERROR
+    assert "init failed" in tariff.fault_state.fault_str
+    assert not hasattr(tariff, "_component_updater")
+
+    # update() bleibt für dieses dauerhaft fehlgeschlagene Modul ein sicherer No-op
+    tariff.update()
 
 
 def test_too_few_price_entries_error_is_not_overwritten_by_no_error(monkeypatch: pytest.MonkeyPatch):
@@ -270,6 +277,29 @@ def test_no_tomorrow_prices_after_late_hour_warns(monkeypatch: pytest.MonkeyPatc
 
     assert tariff.fault_state.fault_state == FaultStateLevel.WARNING
     assert "Folgetag" in tariff.fault_state.fault_str
+
+
+def test_dst_transition_does_not_shift_tomorrow_start(monkeypatch: pytest.MonkeyPatch):
+    # Regression-Test: +24h in Sekunden trifft an Zeitumstellungstagen nicht auf Mitternacht (DE: 2026-10-25,
+    # Umstellungstag hat 25 Stunden) - 23:30 wäre mit dem alten Bug fälschlich schon "morgen".
+    monkeypatch.setenv("TZ", "Europe/Berlin")
+    time.tzset()
+    try:
+        fixed_now = datetime(2026, 10, 25, 20, 0, 0)
+        _patch_now(monkeypatch, fixed_now)
+
+        now_ts = int(fixed_now.timestamp())
+        known_prices = {str(now_ts + 3600): 10.72e-05, str(now_ts + 3*3600 + 1800): 5.467e-05}  # 21:00, 23:30
+        tariff = ConfigurableFlexibleTariff(
+            AwattarTariff(), Mock(return_value=Mock(return_value=TariffState(prices=known_prices))))
+        tariff.get.prices = known_prices
+        tariff.get.next_query_time = now_ts - 10
+
+        tariff.update()
+
+        assert tariff.fault_state.fault_state == FaultStateLevel.WARNING
+    finally:
+        time.tzset()
 
 
 def test_tomorrow_prices_present_after_late_hour_does_not_warn(monkeypatch: pytest.MonkeyPatch):

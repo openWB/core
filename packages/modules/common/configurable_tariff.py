@@ -46,9 +46,13 @@ class ConfigurableTariff(Generic[T_TARIFF_CONFIG]):
         # nach Init auf NO_ERROR setzen, damit der Fehlerstatus beim Modulwechsel gelöscht wird
         self.fault_state.no_error()
         self.fault_state.store_error()
-        # reraise=True, sonst bleibt _component_updater bei einer Exception dauerhaft ungesetzt
-        with SingleComponentUpdateContext(self.fault_state, reraise=True):
+        try:
             self._component_updater = component_initializer(config)
+        except Exception as e:
+            # nicht reraisen, sonst bliebe bei subdata.py's Zuweisung das alte Modul aktiv
+            log.exception(f"Fehler beim Initialisieren von {tariff_type}: {e}")
+            self.fault_state.from_exception(e)
+            self.fault_state.store_error()
 
     def update(self) -> None:
         if hasattr(self, "_component_updater"):
@@ -144,7 +148,10 @@ class ConfigurableTariff(Generic[T_TARIFF_CONFIG]):
         warning_hour = min(self.tariff_update_hours) + LATE_WARNING_OFFSET_HOURS
         if now.hour < warning_hour:
             return False
-        tomorrow_start = int(now.replace(hour=0, minute=0, second=0, microsecond=0).timestamp()) + 24*ONE_HOUR_SECONDS
+        # Datum vor dem Nullsetzen der Uhrzeit erhöhen - +24h in Sekunden träfe an Tagen mit Zeitumstellung
+        # nicht auf Mitternacht
+        tomorrow_midnight = (now + timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
+        tomorrow_start = int(tomorrow_midnight.timestamp())
         return max(int(ts) for ts in tariff_state.prices.keys()) < tomorrow_start
 
     def __store_and_publish_updated_data(self, tariff_state: TariffState) -> None:
