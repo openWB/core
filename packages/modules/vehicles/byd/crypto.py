@@ -7,7 +7,8 @@ bereits vorhanden ist) nach Python 3.9 portiert. Der Bangcle-Whitebox-AES-Teil
 als App-Hardening nutzt) sowie die Ableitung der Login-/Sitzungs-Keys stammen
 aus dem MIT-lizenzierten Projekt https://github.com/jkaberg/pyBYD, das dieses
 Schema aus der BYD-App reverse-engineered hat. Die Tabellen-Binärdatei
-(bangcle_tables.bin) wurde von dort unverändert übernommen.
+(bangcle_tables.bin) wurde von dort unverändert übernommen. Lizenztext siehe
+THIRD_PARTY_NOTICES.md.
 
 Zwei unabhängige Verschlüsselungs-Layer:
   1. Bangcle (Whitebox-AES-CBC, Zero-IV): verschlüsselt das komplette äußere

@@ -8,22 +8,23 @@ dem in openWB verwendeten Python 3.9 läuft (pyBYD selbst braucht Python 3.11+,
 technisch aber nur wegen der genutzten Bibliotheken, nicht wegen des Protokolls).
 
 Ablauf pro Zyklus (fetch_soc):
-  1. Falls noch keine oder eine abgelaufene Session für dieses Fahrzeug im
+  1. Falls noch keine oder eine abgelaufene Session für diesen Account im
      Prozess-Cache liegt: Login (Passwort-basiert, AES-verschlüsseltes Payload).
   2. vehicleRealTimeRequest (Trigger) -> vehicleRealTimeResult (Poll, mit Sleep-
      Intervall), bis SoC-Daten vorliegen oder die Versuche aufgebraucht sind.
   3. Bei Session-Fehlercode: einmalig neu einloggen und den Request wiederholen.
 
-Die Session (userId/signToken/encryToken) wird pro (username, vin) im Prozess
-zwischengespeichert, damit nicht bei jedem openWB-Zyklus neu eingeloggt wird
-(das würde unnötig Bangcle-Berechnungen kosten und die BYD-Cloud unnötig
-belasten).
+Die Session (userId/signToken/encryToken) wird pro Account (username) im Prozess
+zwischengespeichert, damit nicht bei jedem openWB-Zyklus neu eingeloggt wird. Mehrere
+Fahrzeuge desselben Accounts teilen sich Session, Login-Lock und Geräte-Fingerprint,
+da BYD pro Account nur eine aktive Session erlaubt.
 """
 import json
 import logging
 import secrets
+import threading
 import time
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 
 from modules.common import req
 from modules.common.component_state import CarState
@@ -35,7 +36,6 @@ log = logging.getLogger(__name__)
 BASE_URL = "https://dilinkappoversea-eu.byd.auto"
 
 LOGIN_ENDPOINT = "/app/account/login"
-VEHICLE_LIST_ENDPOINT = "/app/account/getAllListByUserId"
 REALTIME_TRIGGER_ENDPOINT = "/vehicleInfo/vehicle/vehicleRealTimeRequest"
 REALTIME_POLL_ENDPOINT = "/vehicleInfo/vehicle/vehicleRealTimeResult"
 
@@ -48,9 +48,8 @@ POLL_INTERVAL_S = 1.5
 
 _ENERGY_TYPE_CODES = {"ev": "0", "hybrid": "2"}
 
-# Prozess-weiter Session-Cache je Account (Session ist account-, nicht fahrzeugbezogen,
-# daher username als Key statt (username, vin) - relevant ua wenn die VIN erst per
-# Fahrzeugliste ermittelt wird): {username: {"user_id", "sign_token", "encry_token", "created_at"}}
+# Prozess-weiter Session-Cache je Account: {username: {"user_id", "sign_token",
+# "encry_token", "created_at"}}
 _session_cache: Dict[str, Dict[str, Any]] = {}
 _SESSION_TTL_S = 12 * 3600
 
@@ -58,6 +57,34 @@ _SESSION_TTL_S = 12 * 3600
 # gesperrt wird - Cooldown verhindert, dass jeder Zyklus (alle 5min) den Account weiter verbrennt.
 _login_failure_cache: Dict[str, Dict[str, Any]] = {}
 _LOGIN_FAILURE_COOLDOWN_S = 3600
+
+# Fingerprint-Cache je Account, analog zu _session_cache
+_fingerprint_cache: Dict[str, str] = {}
+
+# Lock je Account, da update_soc.py jedes Fahrzeug in einem eigenen Thread aktualisiert
+_account_locks: Dict[str, threading.Lock] = {}
+_locks_meta_lock = threading.Lock()
+
+
+def _account_lock(username: str) -> threading.Lock:
+    with _locks_meta_lock:
+        lock = _account_locks.get(username)
+        if lock is None:
+            lock = threading.Lock()
+            _account_locks[username] = lock
+        return lock
+
+
+def resolve_account_fingerprint(username: str, persisted: str) -> str:
+    """JSON-serialisierter Fingerprint für diesen Account, konsistent über alle Fahrzeuge
+    desselben Accounts hinweg. soc.fetch() persistiert das Ergebnis in der Fahrzeug-Config."""
+    with _locks_meta_lock:
+        cached = _fingerprint_cache.get(username)
+        if cached:
+            return cached
+        fingerprint = persisted or json.dumps(device_fingerprint.generate())
+        _fingerprint_cache[username] = fingerprint
+        return fingerprint
 
 
 class BydApiError(Exception):
@@ -193,29 +220,31 @@ def _login(config: BydConfiguration) -> Dict[str, Any]:
 
 def _get_session(config: BydConfiguration, force_relogin: bool = False) -> Dict[str, Any]:
     cache_key = config.username
-    cached = _session_cache.get(cache_key)
-    if (not force_relogin and cached is not None
-            and (time.monotonic() - cached["created_at"]) < _SESSION_TTL_S):
-        return cached
+    # Lock verhindert parallelen Login zweier Fahrzeuge desselben Accounts
+    with _account_lock(cache_key):
+        cached = _session_cache.get(cache_key)
+        if (not force_relogin and cached is not None
+                and (time.monotonic() - cached["created_at"]) < _SESSION_TTL_S):
+            return cached
 
-    failure = _login_failure_cache.get(cache_key)
-    if failure is not None:
-        age_s = time.monotonic() - failure["timestamp"]
-        if age_s < _LOGIN_FAILURE_COOLDOWN_S:
-            raise BydAuthenticationError(
-                f"BYD-Login für {config.username} wird für weitere "
-                f"{int(_LOGIN_FAILURE_COOLDOWN_S - age_s)}s nicht erneut versucht (letzter "
-                f"Versuch vor {int(age_s)}s fehlgeschlagen mit: {failure['message']}). Account/"
-                "Zugangsdaten prüfen, um keine Login-Fehlversuche zu verbrauchen.")
+        failure = _login_failure_cache.get(cache_key)
+        if failure is not None:
+            age_s = time.monotonic() - failure["timestamp"]
+            if age_s < _LOGIN_FAILURE_COOLDOWN_S:
+                raise BydAuthenticationError(
+                    f"BYD-Login für {config.username} wird für weitere "
+                    f"{int(_LOGIN_FAILURE_COOLDOWN_S - age_s)}s nicht erneut versucht (letzter "
+                    f"Versuch vor {int(age_s)}s fehlgeschlagen mit: {failure['message']}). Account/"
+                    "Zugangsdaten prüfen, um keine Login-Fehlversuche zu verbrauchen.")
 
-    try:
-        session = _login(config)
-    except BydAuthenticationError as exc:
-        _login_failure_cache[cache_key] = {"timestamp": time.monotonic(), "message": str(exc)}
-        raise
-    _session_cache[cache_key] = session
-    _login_failure_cache.pop(cache_key, None)
-    return session
+        try:
+            session = _login(config)
+        except BydAuthenticationError as exc:
+            _login_failure_cache[cache_key] = {"timestamp": time.monotonic(), "message": str(exc)}
+            raise
+        _session_cache[cache_key] = session
+        _login_failure_cache.pop(cache_key, None)
+        return session
 
 
 def _post_token_json(endpoint: str, config: BydConfiguration, session: Dict[str, Any],
@@ -284,33 +313,10 @@ def _inner_base(config: BydConfiguration, request_serial: Optional[str] = None) 
         "timeStamp": str(int(time.time() * 1000)),
         "version": "351",
     }
-    # vin fehlt zB bei der Fahrzeugliste, dort ist sie ja erst das Ergebnis
-    if config.vin:
-        inner["vin"] = config.vin
+    inner["vin"] = config.vin
     if request_serial:
         inner["requestSerial"] = request_serial
     return inner
-
-
-def _fetch_vehicle_list(config: BydConfiguration, session: Dict[str, Any]) -> List[Dict[str, Any]]:
-    result = _post_token_json(VEHICLE_LIST_ENDPOINT, config, session, _inner_base(config))
-    return result if isinstance(result, list) else []
-
-
-def _resolve_vin(config: BydConfiguration, session: Dict[str, Any]) -> str:
-    """Nutzt die konfigurierte VIN, falls vorhanden - sonst das erste Fahrzeug im Account
-    (ausreichend, solange nur ein BYD am Account hängt; bei mehreren muss die VIN wie in
-    config.py beschrieben explizit gesetzt werden, um eindeutig zu sein)."""
-    if config.vin:
-        return config.vin
-    vehicles = _fetch_vehicle_list(config, session)
-    if not vehicles:
-        raise BydApiError("Kein Fahrzeug im BYD-Account gefunden und keine VIN konfiguriert")
-    vin = vehicles[0].get("vin")
-    if not vin:
-        raise BydApiError("Fahrzeugliste enthält keine VIN")
-    log.debug("BYD: keine VIN konfiguriert, verwende erstes Fahrzeug im Account: %s", vin)
-    return vin
 
 
 def _is_realtime_ready(data: Dict[str, Any]) -> bool:
@@ -347,6 +353,9 @@ def _fetch_realtime(config: BydConfiguration, session: Dict[str, Any]) -> Dict[s
         poll_inner["tboxVersion"] = "3"
         try:
             result = _post_token_json(REALTIME_POLL_ENDPOINT, config, session, poll_inner)
+        except BydAuthenticationError:
+            # durchreichen, damit fetch_soc()s Relogin-Pfad greift statt den Poll-Loop zu verbrauchen
+            raise
         except BydApiError as exc:
             log.debug("BYD: Poll-Versuch %d/%d fehlgeschlagen: %s", attempt, POLL_ATTEMPTS, exc)
             continue
@@ -382,12 +391,11 @@ def extract_odometer(data: Dict[str, Any]) -> Optional[float]:
 def fetch_soc(config: BydConfiguration, vehicle: int) -> CarState:
     if not config.username or not config.password:
         raise BydApiError("Benutzername und Passwort müssen konfiguriert sein")
+    if not config.vin:
+        raise BydApiError("VIN muss konfiguriert sein")
 
     try:
         session = _get_session(config)
-        # falls keine VIN konfiguriert ist: per Fahrzeugliste ermittelt und nur im
-        # Speicher gecacht (anders als der Fingerprint nicht dauerhaft gespeichert)
-        config.vin = _resolve_vin(config, session)
         try:
             data = _fetch_realtime(config, session)
         except BydAuthenticationError:

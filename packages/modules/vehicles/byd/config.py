@@ -5,9 +5,7 @@ from dataclasses import dataclass
 class BydConfiguration:
     username: str = ""
     password: str = ""
-    # optional: leer lassen, wenn nur ein Fahrzeug am Account hängt (wird dann automatisch
-    # per Fahrzeugliste ermittelt) - bei mehreren Fahrzeugen muss die VIN gesetzt werden,
-    # um eindeutig zu sein
+    # erforderlich, auch bei nur einem Fahrzeug am Account
     vin: str = ""
     # ISO-Ländercode, wie in der BYD-App unter "Land/Region" hinterlegt (z.B. "DE", "NL").
     # Bestimmt u.a. den Login-Endpunkt/die Sprache der API-Antworten.

@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """Zufälliger, aber plausibler Android-Geräte-Fingerprint fürs BYD-Login.
 
-Vorher nutzte jeder openWB-Account denselben hart codierten (und ungültigen) Fingerprint -
-aus BYDs Sicht sehen dadurch alle Nutzer wie ein Gerät aus, das sich bei vielen Accounts
-einloggt (Bot-Signal, plausibler Mitverursacher der Login-Sperren). Pool/Logik (gültige
-IMEI per Luhn, zufällige MAC) von https://github.com/TA2k/ioBroker.byd (MIT) übernommen.
+Jeder Account braucht eine eigene, stabile Geräte-Identität - sonst sehen viele
+openWB-Nutzer aus BYDs Sicht wie dasselbe Gerät aus, das sich bei vielen Accounts
+einloggt (Bot-Signal). Pool/Logik (gültige IMEI per Luhn, zufällige MAC) von
+https://github.com/TA2k/ioBroker.byd (MIT), Lizenztext siehe THIRD_PARTY_NOTICES.md.
 """
 import hashlib
 import secrets
