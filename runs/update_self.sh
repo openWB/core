@@ -5,7 +5,7 @@ GIT_REMOTE="origin"
 SELECTED_BRANCH="$1"
 DEFAULT_TAG="*HEAD*"
 SELECTED_TAG="${2:-$DEFAULT_TAG}"
-DRY_RUN=1 # set to 1 for testing without writing to files or publishing to MQTT
+DRY_RUN=0 # set to 1 for testing without writing to files or publishing to MQTT
 
 source "$OPENWB_BASE_DIR/runs/update_version_helpers.sh"
 
