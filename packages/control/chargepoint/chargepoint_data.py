@@ -141,8 +141,8 @@ class Ocpp:
     pending_availability: List[bool] = field(default_factory=lambda: [False, False])
     reset: bool = False
 
-    # Nur für only Authorize
-    authorize_only_response: Optional[str] = None
+    # Status der Autorisierung und des Transaktionsstarts.
+    authorization_flow_status: Optional[str] = None
 
     rfid_stop: bool = False
 

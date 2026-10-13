@@ -216,7 +216,7 @@ class Chargepoint(ChargepointRfidMixin, Load):
                 "start_starting": "RFID akzeptiert. OCPP-Transaktion wird gestartet.",
                 "start_rejected": "Keine Ladung: OCPP Authorisierung abgelehnt.",
                 "start_error": "Keine Ladung: Fehler beim OCPP-Transaktionstart.",
-            }.get(self.data.get.ocpp.authorize_only_response,
+            }.get(self.data.get.ocpp.authorization_flow_status,
                   "Keine Ladung: RFID fehlt oder wurde vom OCPP-Server nicht akzeptiert.")
             # message = "Keine Ladung: RFID fehlt oder wurde vom OCPP-Server nicht akzeptiert."
             state = False
@@ -717,7 +717,7 @@ class Chargepoint(ChargepointRfidMixin, Load):
                        self.data.config.ocpp_chargebox_id)
         if ocpp_active and self.data.get.rfid is not None:
             rfid = self.data.get.rfid
-            response = self.data.get.ocpp.authorize_only_response
+            response = self.data.get.ocpp.authorization_flow_status
             valid_tag = (data.data.optional_data.data.rfid.active and
                          (rfid in self.template.data.valid_tags or
                           any(rfid in v.data.tag_id for v in data.data.ev_data.values())))
@@ -754,7 +754,7 @@ class Chargepoint(ChargepointRfidMixin, Load):
                         chargebox_id=self.data.config.ocpp_chargebox_id,
                         id_tag=rfid,
                     )
-                    response = self.data.get.ocpp.authorize_only_response
+                    response = self.data.get.ocpp.authorization_flow_status
 
                 if response == "init":
                     self.set_state_and_log("RFID-Autorisierung am OCPP-Server läuft.")
@@ -767,9 +767,9 @@ class Chargepoint(ChargepointRfidMixin, Load):
                         # Kein Austausch des aktuellen Transaktions-Tags!
                         self._clear_scanned_rfid()
                     else:
-                        self.data.get.ocpp.authorize_only_response = None
+                        self.data.get.ocpp.authorization_flow_status = None
                         Pub().pub(
-                            f"openWB/set/chargepoint/{self.num}/get/ocpp/authorize_only_response", None)
+                            f"openWB/set/chargepoint/{self.num}/get/ocpp/authorization_flow_status", None)
 
     def update(self, ev_list: Dict[str, Ev]) -> None:
         try:
@@ -805,7 +805,7 @@ class Chargepoint(ChargepointRfidMixin, Load):
             charging_possible, message = self.is_charging_possible()
             if (self.data.get.rfid is not None and self.data.get.plug_state and
                     (not ocpp_active or
-                     (self.data.get.ocpp.authorize_only_response != "init" and
+                     (self.data.get.ocpp.authorization_flow_status != "init" and
                       self.data.get.ocpp.transaction_id is None))):
                 self._link_rfid_to_cp()
             vehicle, message_ev = self.template.get_ev(self.data.set.rfid or self.data.get.rfid,
@@ -930,8 +930,8 @@ class Chargepoint(ChargepointRfidMixin, Load):
                     data.data.ocpp_client.clear_start_block(chargebox_id)
                 elif (self.data.get.ocpp.connected  # <- mit OCPP-Server verbunden
                         and self.data.get.plug_state and id_tag
-                        # and self.data.get.ocpp.authorize_only_response != "init"):
-                        and self.data.get.ocpp.authorize_only_response not in (
+                        # and self.data.get.ocpp.authorization_flow_status != "init"):
+                        and self.data.get.ocpp.authorization_flow_status not in (
                             "init", "start_pending", "start_starting", "start_authorizing"
                         )):
                     data.data.ocpp_client.request_start(
@@ -941,8 +941,8 @@ class Chargepoint(ChargepointRfidMixin, Load):
                         imported=self.data.get.imported,
                     )
                 elif (self.data.get.plug_state and id_tag and
-                      # self.data.get.ocpp.authorize_only_response == "init"):
-                      self.data.get.ocpp.authorize_only_response in (
+                      # self.data.get.ocpp.authorization_flow_status == "init"):
+                      self.data.get.ocpp.authorization_flow_status in (
                           "init", "start_pending", "start_starting", "start_authorizing"
                       )):
                     log.debug("OCPP %s: Start wartet auf RFID-Autorisierung/StartTransaktion", chargebox_id)

@@ -409,8 +409,18 @@ class OcppClient:
         if transactions is not None:
             await transactions.on_disconnected(chargebox_id, connection)
 
-        # Letztes Status zurücksetzen, damit beim neuen connect
-        # wieder direkt der aktuelle Status gesendet wird
+        # Nach dem await kann bereits eine NEUE Connection registriert sein.
+        # In diesem Fall gehört weder deren Status-Cache noch der öffentliche
+        # connected-Status mehr zu der gerade geschlossenen Verbindung.
+        current = self.connection_manager.get(chargebox_id)
+        if current is not None and current is not connection:
+            log.debug(
+                f"OCPP {chargebox_id}: veralteten Disconnect ignoriert (neue Verbindung aktiv)",
+            )
+            return
+
+        # Letzten Status zurücksetzen, damit beim nächsten Connect
+        # wieder direkt der aktuelle Status gesendet wird.
         self._last_update = {
             key: value
             for key, value in self._last_update.items()
@@ -724,20 +734,20 @@ class OcppClient:
 
         ocpp_data = openwb_cp.data.get.ocpp
         if (chargebox_id in self._rfid_authorize_pending
-                or ocpp_data.authorize_only_response is not None):
+                or ocpp_data.authorization_flow_status is not None):
             return None
 
         self._rfid_authorize_pending.add(chargebox_id)
-        topic = f"openWB/set/chargepoint/{openwb_cp.num}/get/ocpp/authorize_only_response"
+        topic = f"openWB/set/chargepoint/{openwb_cp.num}/get/ocpp/authorization_flow_status"
         # Lokal und auf MQTT setzen: Der Ladepunkt muss 'init' sofort sehen,
         # auch wenn die MQTT-Rückmeldung erst im nächsten Update eintrifft.
-        ocpp_data.authorize_only_response = "init"
+        ocpp_data.authorization_flow_status = "init"
         Pub().pub(topic, "init")
         try:
             future = self.authorize(chargebox_id, id_tag)
         except Exception:
             self._rfid_authorize_pending.discard(chargebox_id)
-            ocpp_data.authorize_only_response = "rejected"
+            ocpp_data.authorization_flow_status = "rejected"
             Pub().pub(topic, "rejected")
             log.exception("OCPP Authorize für %s konnte nicht gestartet werden", chargebox_id)
             return None
@@ -757,11 +767,11 @@ class OcppClient:
             # Der Scan kann während der asynchronen Antwort bereits verworfen
             # worden sein. Dann darf eine verspätete Antwort nichts freigeben.
             if openwb_cp.data.get.rfid != id_tag:
-                if ocpp_data.authorize_only_response == "init":
-                    ocpp_data.authorize_only_response = None
+                if ocpp_data.authorization_flow_status == "init":
+                    ocpp_data.authorization_flow_status = None
                     Pub().pub(topic, None)
                 return
-            ocpp_data.authorize_only_response = response
+            ocpp_data.authorization_flow_status = response
             Pub().pub(topic, response)
 
         future.add_done_callback(publish_result)

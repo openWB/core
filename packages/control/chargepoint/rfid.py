@@ -41,12 +41,12 @@ class ChargepointRfidMixin:
         Pub().pub(f"openWB/set/chargepoint/{self.num}/get/rfid", None)
         self.data.get.rfid_timestamp = None
         Pub().pub(f"openWB/set/chargepoint/{self.num}/get/rfid_timestamp", None)
-        # self.data.get.ocpp.authorize_only_response = None
-        # Pub().pub(f"openWB/set/chargepoint/{self.num}/get/ocpp/authorize_only_response", None)
+        # self.data.get.ocpp.authorization_flow_status = None
+        # Pub().pub(f"openWB/set/chargepoint/{self.num}/get/ocpp/authorization_flow_status", None)
         if (not data.data.optional_data.data.rfid.active or
-                self.data.get.ocpp.authorize_only_response not in (
+                self.data.get.ocpp.authorization_flow_status not in (
                     "start_pending", "start_starting", "start_authorizing", "start_rejected", "start_error")):
-            Pub().pub(f"openWB/set/chargepoint/{self.num}/get/ocpp/authorize_only_response", None)
+            Pub().pub(f"openWB/set/chargepoint/{self.num}/get/ocpp/authorization_flow_status", None)
         self.chargepoint_module.clear_rfid()
 
     def _validate_rfid(self) -> None:
@@ -69,7 +69,7 @@ class ChargepointRfidMixin:
                         if ocpp_active and self.data.get.ocpp.transaction_id is not None:
                             # Scan während einer Transaktion wird in chargepoint.py behandelt.
                             return
-                        if ocpp_active and self.data.get.ocpp.authorize_only_response == "init":
+                        if ocpp_active and self.data.get.ocpp.authorization_flow_status == "init":
                             # Die noch laufende OCPP-Autorisierung darf den Tag nicht löschen.
                             if self.data.get.rfid_timestamp is None:
                                 self.data.get.rfid_timestamp = timecheck.create_timestamp()
@@ -80,8 +80,8 @@ class ChargepointRfidMixin:
                                 self.set_state_and_log("OCPP-RFID-Autorisierung nach 5 Minuten abgebrochen.")
                             return
 
-                        if (ocpp_active and self.data.get.ocpp.authorize_only_response is not None and
-                                self.data.get.ocpp.authorize_only_response != "accepted"):
+                        if (ocpp_active and self.data.get.ocpp.authorization_flow_status is not None and
+                                self.data.get.ocpp.authorization_flow_status != "accepted"):
                             pass
                             # OCPP-Ablehnung wird in chargepoint.py ausgewertet und bereinigt.
 
@@ -116,8 +116,8 @@ class ChargepointRfidMixin:
             Pub().pub(f"openWB/set/chargepoint/{self.num}/get/rfid", None)
             self.data.get.rfid_timestamp = None
             Pub().pub(f"openWB/set/chargepoint/{self.num}/get/rfid_timestamp", None)
-            self.data.get.ocpp.authorize_only_response = None
-            Pub().pub(f"openWB/set/chargepoint/{self.num}/get/ocpp/authorize_only_response", None)
+            self.data.get.ocpp.authorization_flow_status = None
+            Pub().pub(f"openWB/set/chargepoint/{self.num}/get/ocpp/authorization_flow_status", None)
             self.chargepoint_module.clear_rfid()
             self.set_state_and_log(msg)
 
