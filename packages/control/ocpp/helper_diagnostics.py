@@ -2,6 +2,7 @@
 import asyncio
 import ftplib
 import posixpath
+import ssl
 import tempfile
 from datetime import datetime
 from pathlib import Path
@@ -70,7 +71,7 @@ def filter_ocpp_log(chargebox_id: str, start: Optional[str], stop: Optional[str]
 
 
 # Erstellt eine Diagnosedatei basierend auf den gefilterten OCPP-Logeinträgen.
-# diese Datei wird dann per FTP übertragen
+# diese Datei wird dann per FTP oder FTPS übertragen
 def _create_diagnostics_sync(
     chargebox_id: str,
     start_time: Optional[str] = None,
@@ -100,7 +101,7 @@ async def create_diagnostics(
 
 def _parse_ftp_location(location: str) -> SplitResult:
     parsed = urlsplit(location)
-    if parsed.scheme.lower() != "ftp":
+    if parsed.scheme.lower() not in ("ftp", "ftps"):
         raise ValueError(f"Nicht unterstütztes Upload-Protokoll: {parsed.scheme or '(kein Schema)'}")
     if not parsed.hostname:
         raise ValueError("FTP-Ziel enthält keinen Hostnamen")
@@ -123,7 +124,11 @@ def _parse_ftp_location(location: str) -> SplitResult:
 
 
 def _upload_ftp_sync(file_path: str, location: SplitResult) -> None:
-    ftp = ftplib.FTP()
+    use_tls = location.scheme.lower() == "ftps"
+    # Zum testen
+    # ftp = (ftplib.FTP_TLS(context=ssl.create_default_context(cafile="/var/www/html/openWB/server.crt"))
+    ftp = (ftplib.FTP_TLS(context=ssl.create_default_context())
+           if use_tls else ftplib.FTP())
     try:
         ftp.connect(location.hostname, location.port or 21, timeout=30)
         username = unquote(location.username) if location.username else "anonymous"
@@ -132,6 +137,8 @@ def _upload_ftp_sync(file_path: str, location: SplitResult) -> None:
         else:
             password = "" if location.username else "anonymous@"
         ftp.login(username, password)
+        if use_tls:
+            ftp.prot_p()
         ftp.set_pasv(True)
         remote_directory = unquote(location.path)
         remote_path = posixpath.join(
@@ -151,6 +158,7 @@ async def _upload_ftp(file_path: str, location: str) -> None:
 
 _UPLOADERS: Dict[str, Callable[[str, str], Awaitable[None]]] = {
     "ftp": _upload_ftp,
+    "ftps": _upload_ftp,
 }
 
 
