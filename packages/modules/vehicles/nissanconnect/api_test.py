@@ -2,8 +2,11 @@
 import base64
 from concurrent.futures import ThreadPoolExecutor
 import hashlib
+from http.client import RemoteDisconnected
 import logging
 import re
+from socket import gaierror
+import traceback
 from unittest.mock import Mock
 from urllib.parse import parse_qs, urlsplit
 
@@ -11,6 +14,7 @@ import pytest
 import requests
 import requests_mock
 from urllib3.connectionpool import HTTPSConnectionPool
+from urllib3.exceptions import MaxRetryError, NewConnectionError, ProtocolError
 from urllib3.response import HTTPResponse
 from urllib3.util.retry import Retry
 
@@ -220,6 +224,51 @@ def test_transport_errors_omit_private_data(http, caplog, exception_type, messag
     assert str(failure.value) == message
     assert failure.value.__suppress_context__
     assert "synthetic-private-url" not in caplog.text
+    assert http.call_count == 1
+
+
+@pytest.mark.parametrize("cause_type,wrapper,message", [
+    (gaierror, "explicit", "Nissan name resolution failed."),
+    (gaierror, "implicit", "Nissan name resolution failed."),
+    (ConnectionRefusedError, "explicit", "Nissan connection was refused."),
+    (RemoteDisconnected, "protocol", "Nissan connection closed without a response."),
+    (ConnectionResetError, "protocol", "Nissan connection was interrupted."),
+    (ConnectionAbortedError, "protocol", "Nissan connection was interrupted."),
+    (BrokenPipeError, "protocol", "Nissan connection was interrupted."),
+])
+def test_wrapped_connection_causes_are_classified_without_private_text(http, caplog, cause_type, wrapper, message):
+    caplog.set_level(logging.DEBUG)
+    cause = cause_type("synthetic-private-url")
+    if wrapper == "protocol":
+        wrapped = ProtocolError("synthetic-private-url", cause)
+    else:
+        connection_error = NewConnectionError(None, "synthetic-private-url")
+        if wrapper == "explicit":
+            connection_error.__cause__ = cause
+        else:
+            connection_error.__context__ = cause  # Older urllib3 may use implicit chaining.
+        wrapped = MaxRetryError(None, "synthetic-private-url", reason=connection_error)
+    http.get(BATTERY_URL, exc=requests.ConnectionError(wrapped))
+    with pytest.raises(api.NissanError) as failure:
+        client().fetch_battery()
+    assert str(failure.value) == message
+    rendered = "".join(traceback.format_exception(type(failure.value), failure.value, failure.value.__traceback__))
+    assert "synthetic-private-url" not in rendered + caplog.text
+    assert not api._PRIVATE_HTTP_REQUEST.get()
+    assert http.call_count == 1
+
+
+@pytest.mark.parametrize("chain", ["cycle", "suppressed", "explicit"])
+def test_unknown_connection_cause_does_not_guess_from_text_or_unrelated_context(http, chain):
+    error = requests.ConnectionError("NameResolutionError: synthetic-private-url")
+    error.__context__ = gaierror("synthetic-private-url")
+    if chain == "suppressed":
+        error.__suppress_context__ = True
+    else:
+        error.__cause__ = error if chain == "cycle" else OSError("ConnectionRefusedError")
+    http.get(BATTERY_URL, exc=error)
+    with pytest.raises(api.NissanError, match="^Nissan connection failed[.]$"):
+        client().fetch_battery()
     assert http.call_count == 1
 
 

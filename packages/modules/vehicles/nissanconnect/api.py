@@ -27,10 +27,12 @@ from datetime import datetime
 import hashlib
 from html.parser import HTMLParser
 from http import HTTPStatus
+from http.client import RemoteDisconnected
 import logging
 import math
 import re
 import secrets
+from socket import gaierror
 import time
 from typing import Optional, Tuple
 from urllib.parse import parse_qs, quote, urlencode, urljoin, urlsplit
@@ -59,6 +61,12 @@ MAX_LOGIN_REDIRECTS = 10
 PKCE_VERIFIER_RANDOM_BYTES = 64
 OAUTH_STATE_RANDOM_BYTES = 32
 VIN_PATTERN = r"[A-HJ-NPR-Z0-9]{17}"
+CONNECTION_ERROR_MESSAGES = (
+    (gaierror, "Nissan name resolution failed."),
+    (ConnectionRefusedError, "Nissan connection was refused."),
+    (RemoteDisconnected, "Nissan connection closed without a response."),
+    ((ConnectionResetError, ConnectionAbortedError, BrokenPipeError), "Nissan connection was interrupted."),
+)
 _PRIVATE_HTTP_REQUEST = ContextVar("nissan_private_http_request", default=False)
 
 
@@ -79,6 +87,26 @@ class NissanError(Exception):
 
 class AuthenticationError(NissanError):
     pass
+
+
+def _connection_error_message(error):
+    """Classify wrapped transport causes without exposing exception text or request data."""
+    pending = [error]
+    seen = set()
+    while pending:
+        cause = pending.pop()
+        if not isinstance(cause, Exception) or id(cause) in seen:
+            continue
+        seen.add(id(cause))
+        for error_types, message in CONNECTION_ERROR_MESSAGES:
+            if isinstance(cause, error_types):
+                return message
+        # Requests/urllib3 wrap causes in args, MaxRetryError.reason and Python chains.
+        chained = cause.__cause__
+        if chained is None and not cause.__suppress_context__:
+            chained = cause.__context__
+        pending.extend((*cause.args, getattr(cause, "reason", None), chained))
+    return "Nissan connection failed."
 
 
 class _LoginForm(HTMLParser):
@@ -176,8 +204,8 @@ class NissanClient:
             raise NissanError("Nissan request timed out.") from None
         except SSLError:
             raise NissanError("Nissan TLS connection failed.") from None
-        except ConnectionError:
-            raise NissanError("Nissan connection failed.") from None
+        except ConnectionError as error:
+            raise NissanError(_connection_error_message(error)) from None
         except RequestException:
             raise NissanError("Nissan could not be reached.") from None
         finally:
