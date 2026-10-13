@@ -47,23 +47,27 @@ class Consumer(Load):
     def update(self):
         try:
             self.setup_values_at_start()
+            if self.data.get.voltages == [230.0]*3:
+                self.data.get.voltages = [230 if i < self.data.config.connected_phases else 0
+                                          for i in range(0, 3)]
+            if self.data.get.currents == [0.0]*3:
+                for i in range(0, self.data.config.connected_phases):
+                    voltage = self.data.get.voltages[i]
+                    if voltage != 0:
+                        self.data.get.currents[i] = (self.data.get.power /
+                                                     self.data.config.connected_phases /
+                                                     voltage)
+            self.data.get.phases_in_use = self.data.config.connected_phases
+            self.data.set.phases_to_use = self.data.config.connected_phases
+            self.data.get.charge_state = max(self.data.get.currents) > self.STANDBY_THRESHOLD
+            self.process_on_time()
+
             # power ist bei andauerndem Fehler bereits vom Modul auf 0 gesetzt; error_timer wird hier
             # nur noch für das Schaltbefehl-Gate in get_parameter() getickt.
             self.data.set.error_timer = tick_error_timer(self.data.get.fault_state, self.data.set.error_timer)
             if self.data.usage.type in NOT_CONTROLLED:
                 return
             else:
-                if self.data.get.voltages is None:
-                    self.data.get.voltages = [230 for i in range(0, self.data.config.connected_phases)]
-                if self.data.get.currents is None:
-                    self.data.get.currents = [0]*3
-                    for i in range(0, self.data.config.connected_phases):
-                        self.data.get.currents[i] = (self.data.get.power /
-                                                     self.data.config.connected_phases /
-                                                     self.data.get.voltages[i])
-                self.data.get.phases_in_use = self.data.config.connected_phases
-                self.data.set.phases_to_use = self.data.config.connected_phases
-                self.data.get.charge_state = max(self.data.get.currents) > self.STANDBY_THRESHOLD
                 self.reset_chargemode_at_time()
                 self.is_switch_interval_elapsed()
                 required_current, message, mode, submode = self.get_parameter()
@@ -73,7 +77,6 @@ class Consumer(Load):
                 self.set_control_parameter(required_current,
                                            self.data.config.connected_phases, submode, mode)
                 self.set_state_and_log(message)
-                self.process_on_time()
                 log.debug(f"Verbraucher {self.num}: Sollstrom {required_current}, "
                           f"min. Ist-Strom {max(self.data.get.currents)},"
                           f" Modus {mode}, Submodus {submode}, {message}")
@@ -533,3 +536,12 @@ class Consumer(Load):
             self.reset_wait_for_start()
         else:
             self.chargemode_changed = False
+
+    def set_plug_state(self):
+        if self.data.usage.type in NOT_CONTROLLED:
+            if self.data.get.power == 0:
+                self.data.get.plug_state = False
+            else:
+                self.data.get.plug_state = True
+        else:
+            self.data.get.plug_state = self.data.set.current > 0

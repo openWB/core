@@ -150,6 +150,8 @@ def test_set_bat_power_active_control_excludes_faulted_battery_from_capacity_tot
     monkeypatch.setattr(bat_all, "get_bat_components_by_controllability",
                         get_bat_components_by_controllability_mock)
     monkeypatch.setattr(bat_all, "get_component_name_by_id", Mock(return_value="Speicher 2"))
+    get_evu_counter_mock = Mock(return_value=Mock(data=Mock(get=Mock(power=0))))
+    monkeypatch.setattr(data.data.counter_all_data, "get_evu_counter", get_evu_counter_mock)
 
     # execution - 1000W laden anfordern
     b_all._set_bat_power_active_control(1000)

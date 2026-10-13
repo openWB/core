@@ -747,6 +747,8 @@ class SetData:
                     self._validate_value(msg, bool)
                 elif "/set/power_limit" in msg.topic:
                     self._validate_value(msg, float)
+                elif "/set/evu_power" in msg.topic:
+                    self._validate_value(msg, float)
                 else:
                     self.__unknown_topic(msg)
             else:
@@ -957,6 +959,7 @@ class SetData:
                 self._validate_value(msg, int, [(0, 3)])
             elif ("openWB/set/counter/set/home_consumption" in msg.topic or
                   "openWB/set/counter/set/not_in_home_consumption" in msg.topic or
+                  "openWB/set/counter/set/unmeasured_home_consumption" in msg.topic or
                   "openWB/set/counter/set/imported_home_consumption" in msg.topic or
                   "openWB/set/counter/set/daily_yield_home_consumption" in msg.topic or
                   "openWB/set/counter/set/disengageable_smarthome_power" in msg.topic):
@@ -1292,7 +1295,9 @@ class SetData:
                   re.search("consumer/[0-9]+/get/state_str$", msg.topic) is not None or
                   re.search("consumer/[0-9]+/set/wait_for_start_state$", msg.topic) is not None):
                 self._validate_value(msg, str)
-            elif re.search("consumer/[0-9]+/get/state$", msg.topic) is not None:
+            elif (re.search("consumer/[0-9]+/get/charge_state$", msg.topic) is not None or
+                  re.search("consumer/[0-9]+/get/plug_state$", msg.topic) is not None or
+                  re.search("consumer/[0-9]+/get/state$", msg.topic) is not None):
                 self._validate_value(msg, bool)
             elif re.search("consumer/[0-9]+/set/phases_to_use$", msg.topic) is not None:
                 self._validate_value(msg, int, [(0, 3)])

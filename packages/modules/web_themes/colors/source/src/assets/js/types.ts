@@ -38,6 +38,11 @@ export interface Hierarchy {
 	type: string
 	children: [Hierarchy]
 }
+export interface Priority {
+	type: string
+	id: number
+	children?: [Priority]
+}
 export enum ChargeMode {
 	instant_charging = 'instant_charging',
 	pv_charging = 'pv_charging',

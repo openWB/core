@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 import logging
-from typing import TypedDict, Any, Optional
+from typing import TypedDict, Any
 
 from modules.common import modbus
 from modules.common.abstract_device import AbstractBat
@@ -13,6 +13,7 @@ from modules.common.store import get_component_value_store
 from modules.devices.saxpower.saxpower.config import SaxpowerBatSetup
 from modules.common.utils.peak_filter import PeakFilter
 from modules.common.component_type import ComponentType
+from control.bat import Set as SetPoint
 
 log = logging.getLogger(__name__)
 
@@ -52,28 +53,28 @@ class SaxpowerBat(AbstractBat):
         )
         self.store.set(bat_state)
 
-    def set_power_limit(self, power_limit: Optional[int]) -> None:
+    def set_power_limit(self, setpoint: SetPoint) -> None:
         unit = self.__modbus_id
 
-        if power_limit is None:
+        if setpoint.power_limit is None:
             # Kein Powerlimit gefordert, erlaubte Entladeleistung auf Maximalwert setzen
             max_power = 4600
             log.debug("Saxpower: Keine Batteriesteuerung gefordert, deaktiviere externe Steuerung.")
             if self.last_mode is not None:
                 self.__tcp_client.write_register(43, max_power, data_type=ModbusDataType.UINT_16, unit=unit)
                 self.last_mode = None
-        elif power_limit == 0:
+        elif setpoint.power_limit == 0:
             # Erlaubte Entladeleistung auf 0 setzen
             log.debug("Saxpower: Aktive Batteriesteuerung angestoßen. Setze Entladesperre.")
             if self.last_mode != 'stop':
                 self.__tcp_client.write_register(43, 0, data_type=ModbusDataType.UINT_16, unit=unit)
                 self.last_mode = 'stop'
-        elif power_limit < 0:
+        elif setpoint.power_limit < 0:
             # Erlaubte Entladeleistung auf power_limit setzen
             log.debug("Saxpower: Aktive Batteriesteuerung angestoßen. Erlaubte Entladeleistung "
-                      f"auf {power_limit}W setzen.")
+                      f"auf {setpoint.power_limit}W setzen.")
             if self.last_mode != 'stop':
-                self.__tcp_client.write_register(43, power_limit, data_type=ModbusDataType.UINT_16, unit=unit)
+                self.__tcp_client.write_register(43, setpoint.power_limit, data_type=ModbusDataType.UINT_16, unit=unit)
                 self.last_mode = 'stop'
         else:
             # Aktive Ladung

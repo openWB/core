@@ -20,8 +20,8 @@ class Register(IntEnum):
 
 
 REG_MAPPING = (
-    (Register.POWER, [ModbusDataType.INT_16]),
-    (Register.TEMP0, [ModbusDataType.INT_16]),
+    (Register.POWER, ModbusDataType.INT_16),
+    (Register.TEMP0, ModbusDataType.INT_16),
     (Register.STATE, ModbusDataType.INT_16),
 )
 

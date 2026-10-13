@@ -11,6 +11,10 @@ import HouseIcon from 'src/assets/icons/owbHouse.svg?component';
 import VehicleIcon from 'src/assets/icons/owbVehicle.svg?component';
 import ChargePointIcon from 'src/assets/icons/owbChargePoint_2.svg?component';
 import ConsumerIcon from 'src/assets/icons/owbConsumer.svg?component';
+import CounterIcon from 'src/assets/icons/owbCounter.svg?component';
+import InfoIcon from 'src/assets/icons/owbInformation.svg?component';
+import MiscDevicesIcon from 'src/assets/icons/owbMiscDevices.svg?component';
+import HomeConsumptionDetailsDialog from './HomeConsumptionDetailsDialog.vue';
 
 const mqttStore = useMqttStore();
 const $q = useQuasar();
@@ -50,6 +54,12 @@ const svgViewBox = computed(
 // The icon circle sits inside the label pill (pill radius = circleRadius);
 // the inset leaves a visible gap between circle and pill edge.
 const iconCircleRadius = computed(() => svgSize.value.circleRadius - 2);
+
+const infoBadgeRadius = 3.2;
+const infoIconSize = 6;
+const infoBadgeOffset = computed(
+  () => (iconCircleRadius.value + 1) * Math.SQRT1_2,
+);
 
 const svgIconWidth = computed(() => svgSize.value.circleRadius);
 
@@ -103,9 +113,79 @@ const homeConsumption = computed(() => Number(homePower.value.value) > 0);
 const homeProduction = computed(() => Number(homePower.value.value) < 0);
 
 const consumerPower = computed(
-  () => mqttStore.consumerSumPower('object') as ValueObject,
+  () => mqttStore.notInHomeConsumptionPower('object') as ValueObject,
 );
-const showConsumerPower = computed(() => mqttStore.consumerIds.length > 0);
+const consumerConsumption = computed(
+  () => Number(consumerPower.value.value) > 0,
+);
+const consumerProduction = computed(
+  () => Number(consumerPower.value.value) < 0,
+);
+const countersNotInHome = computed(
+  () => mqttStore.notInHomeConsumption.counterIds.length > 0,
+);
+const notInHomeVariants = {
+  consumer: {
+    label: 'Verbraucher',
+    class: 'consumer',
+    iconComponent: ConsumerIcon,
+    iconColor: 'var(--q-consumer)',
+  },
+  counter: {
+    label: 'Zähler',
+    class: 'not-in-home',
+    iconComponent: CounterIcon,
+    iconColor: 'var(--q-secondary-counter-stroke)',
+  },
+  mixed: {
+    label: 'Sonstiges',
+    class: 'not-in-home',
+    iconComponent: MiscDevicesIcon,
+    iconColor: 'var(--q-secondary-counter-stroke)',
+  },
+};
+const notInHomeVariant = computed(() => {
+  if (!countersNotInHome.value) {
+    return notInHomeVariants.consumer;
+  }
+  return mqttStore.notInHomeConsumption.consumerIds.length > 0
+    ? notInHomeVariants.mixed
+    : notInHomeVariants.counter;
+});
+const detailsVisible = ref(false);
+const detailsScope = ref<'inHome' | 'notInHome'>('inHome');
+const detailsTitle = computed(() =>
+  detailsScope.value === 'inHome'
+    ? 'Im Hausverbrauch enthalten:'
+    : notInHomeVariant.value.label,
+);
+
+const openDetails = (event: MouseEvent, component: FlowComponent) => {
+  if (!component.showInfo) {
+    return;
+  }
+  event.stopPropagation();
+  detailsScope.value = component.id === 'home' ? 'inHome' : 'notInHome';
+  detailsVisible.value = true;
+};
+const homeHasDetails = computed(
+  () =>
+    mqttStore.inHomeConsumption.consumerIds.length > 0 ||
+    mqttStore.inHomeConsumption.counterIds.length > 0,
+);
+const notInHomeHasDetails = computed(
+  () =>
+    mqttStore.notInHomeConsumption.consumerIds.length > 0 ||
+    mqttStore.notInHomeConsumption.counterIds.length > 0,
+);
+const showConsumerPower = computed(
+  () =>
+    mqttStore.notInHomeConsumption.consumerIds.length > 0 ||
+    countersNotInHome.value ||
+    // e.g. SmartHome devices excluded from the home consumption
+    consumerConsumption.value ||
+    consumerProduction.value,
+);
 
 const pvPower = computed(() => mqttStore.pvPowerTotal('object') as ValueObject);
 const pvProduction = computed(() => {
@@ -380,6 +460,7 @@ const svgComponents = computed((): FlowComponent[] => {
       powerValue: Number(homePower.value.value),
       iconComponent: HouseIcon,
       iconColor: 'var(--q-home-stroke)',
+      showInfo: homeHasDetails.value,
     });
   }
 
@@ -387,18 +468,19 @@ const svgComponents = computed((): FlowComponent[] => {
     components.push({
       id: 'consumer',
       class: {
-        base: 'consumer',
-        valueLabelColor: 'var(--q-consumer)',
-        animatedReverse: Number(consumerPower.value.value) > 0,
+        base: notInHomeVariant.value.class,
+        animated: consumerProduction.value,
+        animatedReverse: consumerConsumption.value,
       },
       position: { row: 0, column: 1 },
       label: [
-        'Verbraucher',
+        notInHomeVariant.value.label,
         absoluteValueObject(consumerPower.value).textValue,
       ],
       powerValue: Number(consumerPower.value.value),
-      iconComponent: ConsumerIcon,
-      iconColor: 'var(--q-consumer)',
+      iconComponent: notInHomeVariant.value.iconComponent,
+      iconColor: notInHomeVariant.value.iconColor,
+      showInfo: notInHomeHasDetails.value,
     });
   }
 
@@ -873,6 +955,8 @@ const labelClipPath = computed(() => {
           </text>
           <g
             :transform="`translate(${svgSize.circleRadius - svgRectWidth / 2}, 0)`"
+            :class="{ 'cursor-pointer': component.showInfo }"
+            @click="openDetails($event, component)"
           >
             <circle
               cx="0"
@@ -902,10 +986,37 @@ const labelClipPath = computed(() => {
                 :style="{ color: component.iconColor }"
               />
             </g>
+            <!-- info badge: sits on the top left edge of the icon circle -->
+            <g
+              v-if="component.showInfo"
+              class="info-badge"
+              :transform="`translate(${-infoBadgeOffset}, ${-infoBadgeOffset})`"
+            >
+              <circle
+                cx="0"
+                cy="0"
+                :r="infoBadgeRadius"
+                filter="url(#flow-box-shadow)"
+              />
+              <g
+                :transform="`translate(${-infoIconSize / 2}, ${-infoIconSize / 2})`"
+              >
+                <InfoIcon
+                  class="info-icon"
+                  :width="infoIconSize"
+                  :height="infoIconSize"
+                />
+              </g>
+            </g>
           </g>
         </g>
       </g>
     </svg>
+    <HomeConsumptionDetailsDialog
+      v-model="detailsVisible"
+      :scope="detailsScope"
+      :title="detailsTitle"
+    />
   </div>
 </template>
 
@@ -980,8 +1091,15 @@ path.animatedReverse.home {
   animation-duration: v-bind('animationDurations.home');
 }
 
+path.animated.consumer,
 path.animatedReverse.consumer {
   color: var(--q-consumer);
+  animation-duration: v-bind('animationDurations.consumer');
+}
+
+path.animated.not-in-home,
+path.animatedReverse.not-in-home {
+  color: var(--q-secondary-counter-stroke);
   animation-duration: v-bind('animationDurations.consumer');
 }
 
@@ -1057,6 +1175,10 @@ circle {
 
 circle:not(.soc) {
   fill: var(--q-card-background);
+}
+
+.info-badge .info-icon {
+  color: var(--q-primary);
 }
 
 rect {

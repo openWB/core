@@ -38,6 +38,14 @@ def get_io_name_by_id(id: int):
         raise ValueError(f"Element {id} konnte keinem Gerät zugeordnet werden.")
 
 
+def get_consumer_name_by_id(id: int):
+    for consumer in data.data.consumer_data.values():
+        if consumer.module.config.id == id:
+            return consumer.module.config.name
+    else:
+        raise ValueError(f"Element {id} konnte keinem Verbraucher zugeordnet werden.")
+
+
 def get_finished_component_obj_by_id(id: int, not_finished_threads: List[str]) -> Optional[Any]:
     for item in data.data.system_data.values():
         if isinstance(item, AbstractDevice):
@@ -73,7 +81,7 @@ def get_hierarchy_obj_by_id(id: int, element_type: str) -> Any:
                 for comp in item.components.values():
                     if comp.component_config.id == id:
                         obj = comp
-    else:
+    if obj is None:
         raise ValueError(f"Element {id} vom Typ {element_type} konnte nicht aufgelöst werden.")
-    if obj is not None:
+    else:
         return obj

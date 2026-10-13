@@ -105,6 +105,7 @@ class UpdateConfig:
         "^openWB/bat/[0-9]+/get/fault_str$",
         "^openWB/bat/[0-9]+/get/power_limit_controllable$",
         "^openWB/bat/[0-9]+/set/power_limit$",
+        "^openWB/bat/[0-9]+/set/evu_power$",
 
         "^openWB/chargepoint/get/power$",
         "^openWB/chargepoint/get/exported$",
@@ -204,9 +205,11 @@ class UpdateConfig:
         "^openWB/consumer/[0-9]+/config/is_home_consumption_consumer$",
         "^openWB/consumer/[0-9]+/extra_meter$",
         "^openWB/consumer/[0-9]+/usage$",
+        "^openWB/consumer/[0-9]+/get/charge_state$",
         "^openWB/consumer/[0-9]+/get/currents$",
         "^openWB/consumer/[0-9]+/get/fault_state$",
         "^openWB/consumer/[0-9]+/get/fault_str$",
+        "^openWB/consumer/[0-9]+/get/plug_state$",
         "^openWB/consumer/[0-9]+/get/powers$",
         "^openWB/consumer/[0-9]+/get/power$",
         "^openWB/consumer/[0-9]+/get/state$",
@@ -228,6 +231,7 @@ class UpdateConfig:
         "^openWB/counter/set/invalid_home_consumption$",
         "^openWB/counter/set/home_consumption$",
         "^openWB/counter/set/not_in_home_consumption$",
+        "^openWB/counter/set/unmeasured_home_consumption$",
         "^openWB/counter/set/daily_yield_home_consumption$",
         "^openWB/counter/set/simulation$",
         "^openWB/counter/[0-9]+/get/voltages$",
@@ -2382,6 +2386,8 @@ class UpdateConfig:
         self._append_datastore_version(79)
 
     # moved and corrected to 87
+    def upgrade_datastore_80(self) -> None:
+        self._append_datastore_version(80)
 
     def upgrade_datastore_81(self) -> None:
         def upgrade(topic: str, payload) -> None:
@@ -2794,6 +2800,12 @@ class UpdateConfig:
                     return {topic: payload}
         self._loop_all_received_topics(upgrade)
         self._append_datastore_version(95)
+
+    def upgrade_datastore_96(self) -> None:
+        self._append_datastore_version(96)
+
+    def upgrade_datastore_97(self) -> None:
+        self._append_datastore_version(97)
 
     def upgrade_datastore_98(self) -> None:
         version_str = decode_payload(

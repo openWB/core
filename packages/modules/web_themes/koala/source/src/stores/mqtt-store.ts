@@ -1409,7 +1409,7 @@ export const useMqttStore = defineStore('mqtt', () => {
       return dcMaxCurrent === undefined
         ? undefined
         : convertDcCurrentToPower(dcMaxCurrent);
-  });
+    });
 
   /**
    * Get or set the charge point connected vehicle instant charging DC power identified by the charge point id
@@ -3706,18 +3706,31 @@ export const useMqttStore = defineStore('mqtt', () => {
   ////////////////////////////// consumer data ////////////////////////////////
 
   /**
-   * Get a list of all consumers.
+   * Get a list of all consumers in the order of the hierarchy.
    * @returns Consumer[]
    */
   const consumerList = computed<Consumer[]>(() => {
     const modules = getWildcardValues.value('openWB/consumer/+/module');
-    return Object.keys(modules)
-      .map((key) => {
-        const id = parseInt(key.split('/')[2]);
-        const module = modules[key] as ConsumerModule | undefined;
+    return getObjectIds
+      .value('consumer')
+      .filter((id) => accessConsumerAllowed.value(id))
+      .map((id) => {
+        const module = modules[`openWB/consumer/${id}/module`] as
+          ConsumerModule | undefined;
         return { id, name: module?.name ?? `Verbraucher ${id}` };
-      })
-      .sort((a, b) => a.id - b.id);
+      });
+  });
+
+  /**
+   * Check if access to a specific consumer is allowed
+   * @param consumerId
+   * @returns boolean
+   */
+  const accessConsumerAllowed = computed(() => {
+    return (consumerId: number) => {
+      const modules = getWildcardValues.value('openWB/consumer/+/module');
+      return `openWB/consumer/${consumerId}/module` in modules;
+    };
   });
 
   /**
@@ -3789,8 +3802,7 @@ export const useMqttStore = defineStore('mqtt', () => {
   const consumerSumPower = computed(() => {
     return (returnType: string = 'textValue') => {
       const power = getValue.value('openWB/consumer/get/power') as
-        | number
-        | undefined;
+        number | undefined;
       const valueObject = getValueObject.value(power);
       if (Object.hasOwn(valueObject, returnType)) {
         return valueObject[returnType as keyof ValueObject];
@@ -3840,8 +3852,7 @@ export const useMqttStore = defineStore('mqtt', () => {
   const consumerOnTime = computed(() => {
     return (consumerId: number): number | undefined => {
       return getValue.value(`openWB/consumer/${consumerId}/set/on_time`) as
-        | number
-        | undefined;
+        number | undefined;
     };
   });
 
@@ -3890,8 +3901,7 @@ export const useMqttStore = defineStore('mqtt', () => {
   const consumerStateStr = computed(() => {
     return (consumerId: number): string | undefined => {
       return getValue.value(`openWB/consumer/${consumerId}/get/state_str`) as
-        | string
-        | undefined;
+        string | undefined;
     };
   });
 
@@ -3920,8 +3930,7 @@ export const useMqttStore = defineStore('mqtt', () => {
   const consumerFaultStr = computed(() => {
     return (consumerId: number): string | undefined => {
       return getValue.value(`openWB/consumer/${consumerId}/get/fault_str`) as
-        | string
-        | undefined;
+        string | undefined;
     };
   });
 
@@ -3933,8 +3942,7 @@ export const useMqttStore = defineStore('mqtt', () => {
   const consumerUsageType = computed(() => {
     return (consumerId: number): ConsumerUsageType | undefined => {
       return getValue.value(`openWB/consumer/${consumerId}/usage`, 'type') as
-        | ConsumerUsageType
-        | undefined;
+        ConsumerUsageType | undefined;
     };
   });
 
@@ -4349,7 +4357,7 @@ export const useMqttStore = defineStore('mqtt', () => {
     );
   });
 
-   /**
+  /**
    * Get the hybrid inverter/battery pairs. A battery is treated as "hybrid"
    * when it is a direct child of an inverter in the component hierarchy
    * The pairing is needed for the flow calculation - (Sankey Chart).
@@ -4375,6 +4383,128 @@ export const useMqttStore = defineStore('mqtt', () => {
     }
     walk(getValue.value('openWB/counter/get/hierarchy') as Hierarchy[]);
     return result;
+  });
+
+  /**
+   * Sort the consumers and sub-counters by whether they are counted in the
+   * home consumption. The root counter is only listed if it is excluded.
+   * @returns object with the keys inHome and notInHome, each holding the ids
+   * of the consumers and counters
+   */
+  const homeConsumptionAssignment = computed(() => {
+    const AUTO = 'auto_home_consumption';
+    const NOT_HOME = 'no_home_consumption';
+    const ids = () => ({
+      consumerIds: [] as number[],
+      counterIds: [] as number[],
+    });
+    const result = { inHome: ids(), notInHome: ids() };
+    function walk(
+      nodes: Hierarchy[] | undefined,
+      parentMode: string,
+      isRoot: boolean,
+    ) {
+      if (nodes === undefined) {
+        return;
+      }
+      nodes.forEach((node) => {
+        if (node.type === 'counter') {
+          const own = getValue.value(
+            `openWB/counter/${node.id}/config/is_home_consumption_counter`,
+            undefined,
+            AUTO,
+          ) as string | undefined;
+          const mode = own && own !== AUTO ? own : parentMode;
+          if (mode === NOT_HOME) {
+            result.notInHome.counterIds.push(node.id);
+          } else if (!isRoot) {
+            result.inHome.counterIds.push(node.id);
+          }
+          walk(node.children, mode, false);
+        } else if (node.type === 'consumer') {
+          const own = getValue.value(
+            `openWB/consumer/${node.id}/config`,
+            'is_home_consumption_consumer',
+            AUTO,
+          ) as string | undefined;
+          if ((own && own !== AUTO ? own : parentMode) === NOT_HOME) {
+            result.notInHome.consumerIds.push(node.id);
+          } else {
+            result.inHome.consumerIds.push(node.id);
+          }
+        } else {
+          walk(node.children, parentMode, false);
+        }
+      });
+    }
+    walk(
+      getValue.value('openWB/counter/get/hierarchy') as Hierarchy[],
+      'home_consumption',
+      true,
+    );
+    return result;
+  });
+
+  /**
+   * Get the consumers and sub-counters that are counted in the home
+   * consumption.
+   * @returns object with the ids of the consumers and counters
+   */
+  const inHomeConsumption = computed(
+    () => homeConsumptionAssignment.value.inHome,
+  );
+
+  /**
+   * Get the consumers and counters that are not counted in the home
+   * consumption.
+   * @returns object with the ids of the consumers and counters
+   */
+  const notInHomeConsumption = computed(
+    () => homeConsumptionAssignment.value.notInHome,
+  );
+
+  /**
+   * Get the summed power of all consumers and counters that are not counted
+   * in the home consumption.
+   * @param returnType type of return value, 'textValue', 'value', 'scaledValue', 'scaledUnit' or 'object'
+   * @returns string | number | ValueObject
+   */
+  const notInHomeConsumptionPower = computed(() => {
+    return (returnType: string = 'textValue') => {
+      const power = getValue.value(
+        'openWB/counter/set/not_in_home_consumption',
+      ) as number | undefined;
+      const valueObject = getValueObject.value(power);
+      if (Object.hasOwn(valueObject, returnType)) {
+        return valueObject[returnType as keyof ValueObject];
+      }
+      if (returnType == 'object') {
+        return valueObject;
+      }
+      console.error('returnType not found!', returnType, power);
+    };
+  });
+
+  /**
+   * Get the part of the home consumption that is not measured by a
+   * component.
+   * @param returnType type of return value, 'textValue', 'value', 'scaledValue', 'scaledUnit' or 'object'
+   * @returns string | number | ValueObject
+   */
+  const unmeasuredHomeConsumptionPower = computed(() => {
+    return (returnType: string = 'textValue') => {
+      const power = getValue.value(
+        'openWB/counter/set/unmeasured_home_consumption',
+      ) as number | undefined;
+      const valueObject = getValueObject.value(power);
+      if (Object.hasOwn(valueObject, returnType)) {
+        return valueObject[returnType as keyof ValueObject];
+      }
+      if (returnType == 'object') {
+        return valueObject;
+      }
+      console.error('returnType not found!', returnType, power);
+    };
   });
 
   /**
@@ -4713,6 +4843,7 @@ export const useMqttStore = defineStore('mqtt', () => {
     batteryColor,
     // Consumer data
     consumerList,
+    accessConsumerAllowed,
     consumerIds,
     consumerName,
     consumerColor,
@@ -4744,6 +4875,10 @@ export const useMqttStore = defineStore('mqtt', () => {
     // Home data
     homePower,
     homeDailyYield,
+    inHomeConsumption,
+    notInHomeConsumption,
+    notInHomeConsumptionPower,
+    unmeasuredHomeConsumptionPower,
     // PV data
     pvConfigured,
     hybridInverters,
