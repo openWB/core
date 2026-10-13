@@ -56,7 +56,7 @@ def transaction_setup(monkeypatch):
         _start_transaction=AsyncMock(return_value=SimpleNamespace(
             id_tag_info={"status": "Accepted"}, transaction_id=42,
         )),
-        _stop_transaction=AsyncMock(),
+        _stop_transaction=AsyncMock(return_value=SimpleNamespace(id_tag_info=None)),
     )
     connection = SimpleNamespace(cp=charge_point, boot_accepted=True)
     ensure_connected = AsyncMock(return_value=connection)
@@ -403,6 +403,7 @@ def test_parallel_rfid_stops_send_one_stop_transaction(transaction_setup):
         async def delayed_stop(**kwargs):
             entered.set()
             await release.wait()
+            return SimpleNamespace(id_tag_info=None)
 
         connection.cp._stop_transaction.side_effect = delayed_stop
         first = asyncio.create_task(coordinator.stop("box-1", 150, "TAG", "Local", authorize_stop=True))
@@ -446,6 +447,7 @@ def test_active_stop_clears_transaction_only_after_response(transaction_setup):
         async def delayed_stop(**kwargs):
             entered.set()
             await release.wait()
+            return SimpleNamespace(id_tag_info=None)
 
         connection.cp._stop_transaction.side_effect = delayed_stop
         await coordinator.start("box-1", 1, "TAG", 100)
@@ -463,6 +465,24 @@ def test_active_stop_clears_transaction_only_after_response(transaction_setup):
     assert coordinator.get_state("box-1") == TransactionState.IDLE
     assert openwb_cp.data.get.ocpp.transaction_id is None
     assert openwb_cp.data.get.ocpp.tag_accepted is False
+
+
+def test_missing_stop_confirmation_preserves_pending_stop(transaction_setup):
+    coordinator, connection, openwb_cp = transaction_setup
+    connection.cp._stop_transaction.return_value = None
+
+    async def check():
+        assert await coordinator.start("box-1", 1, "TAG", 100)
+        assert await coordinator.stop("box-1", 150, "", "EVDisconnected") is False
+
+    asyncio.run(check())
+
+    assert coordinator.get_state("box-1") == TransactionState.ERROR
+    assert coordinator.get_transaction_id("box-1") == 42
+    assert openwb_cp.data.get.ocpp.pending_transactions == [{
+        "action": "stop", "transaction_id": 42, "id_tag": "TAG",
+        "imported": 150, "reason": "EVDisconnected",
+    }]
 
 
 def test_failed_stop_keeps_internal_transaction_id_and_releases_local_state(transaction_setup):
@@ -522,6 +542,24 @@ def test_offline_stop_is_replayed_once_after_reconnect(transaction_setup, mock_p
     ) == transaction_id_publications_before_replay
 
 
+def test_missing_stop_confirmation_does_not_delete_persisted_stop(transaction_setup):
+    coordinator, connection, openwb_cp = transaction_setup
+
+    async def check():
+        assert await coordinator.start("box-1", 1, "TAG", 100)
+        coordinator._ensure_connected.return_value = None
+        assert await coordinator.stop("box-1", 150, "", "EVDisconnected") is False
+        coordinator._ensure_connected.return_value = connection
+        connection.cp._stop_transaction.return_value = None
+        await coordinator.on_connected("box-1", connection)
+
+    asyncio.run(check())
+
+    assert coordinator.get_state("box-1") == TransactionState.ERROR
+    assert coordinator.get_transaction_id("box-1") == 42
+    assert len(openwb_cp.data.get.ocpp.pending_transactions) == 1
+
+
 def test_failed_offline_stop_replay_keeps_transaction_id_cleared(transaction_setup, mock_pub):
     coordinator, connection, openwb_cp = transaction_setup
 
@@ -545,6 +583,52 @@ def test_failed_offline_stop_replay_keeps_transaction_id_cleared(transaction_set
         assert mock_pub.pub.call_args_list.count(
             call("openWB/set/chargepoint/1/get/ocpp/transaction_id", 42)
         ) == transaction_id_publications_before_replay
+
+    asyncio.run(check())
+
+
+def test_stale_disconnect_does_not_cancel_new_connection_replay_task(transaction_setup):
+    coordinator, connection, _ = transaction_setup
+
+    async def check():
+        old_connection = SimpleNamespace()
+        retry_task = asyncio.create_task(asyncio.sleep(3600))
+        coordinator._replay_tasks["box-1"] = retry_task
+        coordinator._replay_task_connections["box-1"] = connection
+
+        await coordinator.on_disconnected("box-1", old_connection)
+        assert not retry_task.cancelled()
+        assert coordinator._replay_tasks["box-1"] is retry_task
+
+        await coordinator.on_disconnected("box-1", connection)
+        assert retry_task.cancelled()
+        assert "box-1" not in coordinator._replay_tasks
+
+    asyncio.run(check())
+
+
+def test_reconnect_replaces_old_replay_retry_task(transaction_setup, monkeypatch):
+    coordinator, new_connection, _ = transaction_setup
+    old_connection = SimpleNamespace()
+    monkeypatch.setattr(ocpp_transaction_coordinator, "_get_config", lambda *args, **kwargs: 2)
+
+    async def check():
+        coordinator._schedule_replay_retry("box-1", old_connection)
+        old_task = coordinator._replay_tasks["box-1"]
+
+        coordinator._schedule_replay_retry("box-1", new_connection)
+        new_task = coordinator._replay_tasks["box-1"]
+        assert new_task is not old_task
+        assert coordinator._replay_task_connections["box-1"] is new_connection
+
+        await asyncio.sleep(0)
+        assert old_task.cancelled()
+        await coordinator.on_disconnected("box-1", old_connection)
+        assert coordinator._replay_tasks["box-1"] is new_task
+        assert not new_task.cancelled()
+
+        await coordinator.on_disconnected("box-1", new_connection)
+        assert new_task.cancelled()
 
     asyncio.run(check())
 
