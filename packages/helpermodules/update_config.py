@@ -335,7 +335,7 @@ class UpdateConfig:
         "^openWB/internal_chargepoint/[0-1]/get/rfid_timestamp$",
 
         "^openWB/internal_socket/data/set_state$",
-        "^openWB/internal_socket/data/heartbeat$",
+        "^openWB/internal_socket/data/detected$",
         "^openWB/internal_socket/get/state$",
         "^openWB/internal_socket/get/power$",
         "^openWB/internal_socket/get/imported$",
@@ -345,7 +345,6 @@ class UpdateConfig:
         "^openWB/internal_socket/get/powers$",
         "^openWB/internal_socket/get/fault_state$",
         "^openWB/internal_socket/get/fault_str$",
-        "^openWB/internal_socket/get/timestamp$",
         "^openWB/internal_socket/get/error_timestamp$",
 
         "^openWB/io/action/[0-9]+/config$",

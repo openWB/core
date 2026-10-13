@@ -7,8 +7,8 @@ from modules.devices.vendors import VendorGroup
 class Vendor:
     def __init__(self):
         self.type = Path(__file__).parent.name
-        self.vendor = "openWB"
-        self.group = VendorGroup.OPENWB.value
+        self.vendor = "Universell"
+        self.group = VendorGroup.GENERIC.value
 
 
 vendor_descriptor = DeviceDescriptor(configuration_factory=Vendor)
