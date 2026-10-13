@@ -192,7 +192,6 @@ class OcppChargePoint(cp):
                   f"New Status: {(status, get_ocpp_error_code(fault_state))} "
                   f"for connector: {connector_id}")
 
-        # Key rausschicken
         request = call.StatusNotification(
             connector_id=connector_id,
             error_code=get_ocpp_error_code(fault_state),
@@ -279,7 +278,7 @@ class OcppChargePoint(cp):
     @on(Action.data_transfer)
     async def data_transfer(self, vendor_id: str, message_id: Optional[str] = None,
                             data: Optional[str] = None, **kwargs):
-        # auch wenn wir das nicht unterstützen, müssen wir die Anfrage beantworten.
+        # Auch nicht unterstützte DataTransfer-Anfragen müssen beantwortet werden.
         log.debug(
             "DataTransfer nicht unterstützt für OCPP %s: vendor_id=%s message_id=%s",
             self.chargebox_id,
@@ -454,8 +453,8 @@ class OcppChargePoint(cp):
                 status=RemoteStartStopStatus.rejected
             )
 
-        # Ich sag einfach hier ist das RFID-Tag
-        # Wenn der CP das akzeptiert, wird die Transaktion gestartet
+        # RFID-Tag an den lokalen Ladepunkt übergeben.
+        # Bei erfolgreicher Autorisierung kann dieser den Start auslösen.
         Pub().pub(f"openWB/set/chargepoint/{self.openwb_num}/get/rfid", id_tag)
 
         return call_result.RemoteStartTransaction(
@@ -483,8 +482,7 @@ class OcppChargePoint(cp):
             transaction_id,
         )
 
-        # Nur akzeptiren, wenn auch eine aktive Transaktion vorhanden ist
-        # und die transaction_id übereinstimmt
+        # Nur akzeptieren, wenn die Transaktion-ID mit der aktiven Transaktion übereinstimmt
         if (self.openwb_cp is not None and self.openwb_cp.data.get.ocpp.transaction_id is not None and
                 self.openwb_cp.data.get.ocpp.transaction_id == transaction_id):
             self.openwb_cp.data.get.ocpp.remote_stop = True
@@ -510,8 +508,8 @@ class OcppChargePoint(cp):
 
     @on(Action.clear_cache)
     async def clear_cache(self, **kwargs):
-        # Wir führen aktuell keine Authorization Cache
-        # An den Server muss aber trotzdem eine Antwort gesendet werden!
+        # Es gibt keinen lokalen Autorisierungscache.
+        # Die Anfrage wird deshalb mit rejected beantwortet.
         return call_result.ClearCache(
             status=ClearCacheStatus.rejected
         )
@@ -537,8 +535,8 @@ class OcppChargePoint(cp):
             )
             return call_result.Reset(status=ResetStatus.rejected)
 
-        # Erst Reset bestätigen und dann die eigentliche Reset-Logik ausführen
-        # -> im after_reset-Handler
+        # Reset erst bestätigen.
+        # Die Ausführung erfolgt im after_reset-Handler.
         self._accepted_resets.add(call_unique_id)
         return call_result.Reset(status=ResetStatus.accepted)
 
@@ -551,7 +549,7 @@ class OcppChargePoint(cp):
     ) -> None:
         if call_unique_id not in self._accepted_resets:
             return
-        # damit der Reset nicht mehrfach ausgeführt wird
+        # Bereits bearbeitete Reset-Anfragen nicht erneut ausführen.
         self._accepted_resets.discard(call_unique_id)
 
         try:
@@ -688,9 +686,9 @@ class OcppChargePoint(cp):
     async def _diagnostics_status(self, status: DiagnosticsStatus = None):
 
         if status is None:
-            # sende den gespeicherten Diagnosestatus an die Zentrale
+            # Ohne neuen Status den zuletzt gespeicherten Status verwenden
             if self._diagnostics_status_stored is None:
-                # Wenn kein gespeicherter Status vorhanden ist, setze den Status auf 'idle'
+                # Ohne gespeicherten Status den Status auf 'idle' setzen
                 status = DiagnosticsStatus.idle
             else:
                 # Wenn kein Status übergeben wurde, verwende den gespeicherten Status
@@ -700,7 +698,8 @@ class OcppChargePoint(cp):
             # speichere den neuen Status
             self._diagnostics_status_stored = status
 
-        print(f"Setting diagnostics status: {status}")
+        print(f"# Setting diagnostics status: {status}")
+        log.debug("Sending DiagnosticsStatusNotification with status: %s", status)
         request = call.DiagnosticsStatusNotification(
             status=status
         )
