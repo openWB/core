@@ -36,20 +36,20 @@ def read_meter(session: Session,
         data = _fetch_device_scope(session, ip_address, meter_id, variant)
         location_key = "Meter_Location_Current"
         power_sum_key = "PowerReal_P_Sum"
-        powers = [data["PowerReal_P_Phase_"+str(num)] for num in range(1, 4)]
-        voltages = [data["Voltage_AC_Phase_"+str(num)] for num in range(1, 4)]
-        power_factors = [data["PowerFactor_Phase_"+str(num)] for num in range(1, 4)]
-        frequency = data["Frequency_Phase_Average"]
+        powers = [data.get(f"PowerReal_P_Phase_{num}", 0) for num in range(1, 4)]
+        voltages = [data.get(f"Voltage_AC_Phase_{num}", 0) for num in range(1, 4)]
+        power_factors = [data.get(f"PowerFactor_Phase_{num}", 0) for num in range(1, 4)]
+        frequency = data.get("Frequency_Phase_Average", 50)
     elif variant == 2:
         if meter_system_response is None:
             raise ValueError("meter_system_response wird für Variante 2 benötigt")
         data = dict(meter_system_response["Body"]["Data"]).get(str(meter_id))
         location_key = "SMARTMETER_VALUE_LOCATION_U16"
         power_sum_key = "SMARTMETER_POWERACTIVE_MEAN_SUM_F64"
-        powers = [data["SMARTMETER_POWERACTIVE_MEAN_0"+str(num)+"_F64"] for num in range(1, 4)]
-        voltages = [data["SMARTMETER_VOLTAGE_0"+str(num)+"_F64"] for num in range(1, 4)]
-        power_factors = [data["SMARTMETER_FACTOR_POWER_0"+str(num)+"_F64"] for num in range(1, 4)]
-        frequency = data["GRID_FREQUENCY_MEAN_F32"]
+        powers = [data.get(f"SMARTMETER_POWERACTIVE_MEAN_0{num}_F64", 0) for num in range(1, 4)]
+        voltages = [data.get(f"SMARTMETER_VOLTAGE_0{num}_F64", 0) for num in range(1, 4)]
+        power_factors = [data.get(f"SMARTMETER_FACTOR_POWER_0{num}_F64", 0) for num in range(1, 4)]
+        frequency = data.get("GRID_FREQUENCY_MEAN_F32", 50)
     else:
         raise ValueError("Unbekannte Variante: "+str(variant))
 
