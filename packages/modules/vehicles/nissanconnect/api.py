@@ -51,6 +51,7 @@ OAUTH_CLIENT_ID = "ZM3WK7ax1OtQKYQ8Qqzcv5VgiA8a"  # Public application identifie
 OAUTH_LOGIN_SCOPE = "openid name profile email offline_access"
 JSON_API_CONTENT_TYPE = "application/vnd.api+json"
 REQUEST_TIMEOUT_SECONDS = 10
+MAX_VEHICLE_CONNECTION_RETRIES = 1
 DEFAULT_TOKEN_LIFETIME_SECONDS = 3600
 TOKEN_REFRESH_MARGIN_SECONDS = 30
 MAX_MEASUREMENT_FUTURE_SKEW_SECONDS = 300
@@ -198,8 +199,18 @@ class NissanClient:
     def _request(self, method, url, auth_request=False, **kwargs):
         log_context = _PRIVATE_HTTP_REQUEST.set(True)
         try:
-            response = self._session.request(method, url, timeout=REQUEST_TIMEOUT_SECONDS,
-                                             allow_redirects=False, **kwargs)
+            for retry_count in range(MAX_VEHICLE_CONNECTION_RETRIES + 1):
+                try:
+                    response = self._session.request(method, url, timeout=REQUEST_TIMEOUT_SECONDS,
+                                                     allow_redirects=False, **kwargs)
+                    break
+                except ConnectionError as error:
+                    if (retry_count == MAX_VEHICLE_CONNECTION_RETRIES or isinstance(error, (Timeout, SSLError))
+                            or method != "GET" or not url.startswith(CARS_BASE_URL)):
+                        raise
+                    # Discard pooled connections, retaining cookies, tokens and privacy settings.
+                    self._session.close()
+                    log.debug("Nissan vehicle connection failed; retrying once.")
         except Timeout:
             raise NissanError("Nissan request timed out.") from None
         except SSLError:

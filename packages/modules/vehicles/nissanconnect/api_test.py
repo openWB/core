@@ -224,7 +224,7 @@ def test_transport_errors_omit_private_data(http, caplog, exception_type, messag
     assert str(failure.value) == message
     assert failure.value.__suppress_context__
     assert "synthetic-private-url" not in caplog.text
-    assert http.call_count == 1
+    assert http.call_count == (2 if exception_type is requests.ConnectionError else 1)
 
 
 @pytest.mark.parametrize("cause_type,wrapper,message", [
@@ -255,7 +255,7 @@ def test_wrapped_connection_causes_are_classified_without_private_text(http, cap
     rendered = "".join(traceback.format_exception(type(failure.value), failure.value, failure.value.__traceback__))
     assert "synthetic-private-url" not in rendered + caplog.text
     assert not api._PRIVATE_HTTP_REQUEST.get()
-    assert http.call_count == 1
+    assert http.call_count == 2
 
 
 @pytest.mark.parametrize("chain", ["cycle", "suppressed", "explicit"])
@@ -269,7 +269,67 @@ def test_unknown_connection_cause_does_not_guess_from_text_or_unrelated_context(
     http.get(BATTERY_URL, exc=error)
     with pytest.raises(api.NissanError, match="^Nissan connection failed[.]$"):
         client().fetch_battery()
+    assert http.call_count == 2
+
+
+@pytest.mark.parametrize("target", [BATTERY_URL, COCKPIT_URL])
+def test_vehicle_connection_retry_preserves_session_and_measurements(http, caplog, target):
+    caplog.set_level(logging.DEBUG)
+    payloads = {BATTERY_URL: battery(batteryBarLevel=114),
+                COCKPIT_URL: {"data": {"attributes": {"totalMileage": 0}}}}
+    for url, payload in payloads.items():
+        http.get(url, json=payload)
+    error = requests.ConnectionError(ProtocolError("synthetic-private-url", ConnectionResetError()))
+    http.get(target, [{"exc": error}, {"json": payloads[target]}])
+    instance = client()
+    instance._session.cookies.set("synthetic", "retained")
+    manager = instance._session.get_adapter(target).poolmanager
+    previous_pool = manager.connection_from_url(target)
+    assert instance.fetch_battery() == (47.5, None, MEASUREMENT_UNIX_SECONDS, 0)
+    assert http.call_count == 3
+    assert manager.connection_from_url(target) is not previous_pool
+    assert instance._session.cookies.get("synthetic") == "retained"
+    assert instance._access_token == "synthetic-access"
+    assert instance._refresh_token == "synthetic-refresh"
+    assert instance._session.hooks["response"] == [] and not instance._session.trust_env
+    assert caplog.text.count("Nissan vehicle connection failed; retrying once.") == 1
+    assert "synthetic-private-url" not in caplog.text
+    assert not api._PRIVATE_HTTP_REQUEST.get()
+
+
+@pytest.mark.parametrize("method,url", [
+    ("POST", BATTERY_URL), ("GET", api.AUTH_BASE_URL + "oauth2/authorize"),
+    ("POST", REFRESH_URL), ("GET", api.USERS_BASE_URL + "v1/users/current"),
+])
+def test_connection_retry_is_limited_to_vehicle_gets(http, method, url):
+    http.register_uri(method, url, exc=requests.ConnectionError("synthetic-private-url"))
+    with pytest.raises(api.NissanError, match="^Nissan connection failed[.]$"):
+        client()._request(method, url)
     assert http.call_count == 1
+
+
+@pytest.mark.parametrize("failure,message", [
+    (requests.Timeout, "Nissan request timed out."),
+    (requests.exceptions.SSLError, "Nissan TLS connection failed."),
+])
+def test_second_attempt_preserves_failure_diagnostic(http, failure, message):
+    http.get(BATTERY_URL, [{"exc": requests.ConnectionError("synthetic-private-url")},
+                           {"exc": failure("synthetic-private-url")}])
+    with pytest.raises(api.NissanError) as error:
+        client().fetch_battery()
+    assert str(error.value) == message
+    assert error.value.__suppress_context__
+    assert http.call_count == 2
+
+
+def test_connection_retry_does_not_repeat_authentication(http):
+    battery_request = http.get(BATTERY_URL, [{"exc": requests.ConnectionError("synthetic-private-url")},
+                                             {"status_code": 401}, {"json": battery()}])
+    refresh = http.post(REFRESH_URL, json={"access_token": "synthetic-new"})
+    http.get(COCKPIT_URL, json={})
+    assert client().fetch_battery()[0] == 47
+    assert battery_request.call_count == 3
+    assert refresh.call_count == 1
 
 
 def test_json_errors_omit_private_data(http):
