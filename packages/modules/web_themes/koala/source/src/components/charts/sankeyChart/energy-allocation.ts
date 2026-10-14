@@ -141,7 +141,7 @@ function classifyNodes(input: EnergyFlowInput): {
 
   const notInHomeOther = input.notInHomeOther ?? 0;
   if (notInHomeOther > 0) {
-    sink(NODE_NOT_IN_HOME, 'Sonstige', notInHomeOther);
+    sink(NODE_NOT_IN_HOME, 'Zähler', notInHomeOther);
   } else if (notInHomeOther < 0) {
     source(NODE_NOT_IN_HOME, 'Sonstige', -notInHomeOther);
   }
