@@ -371,7 +371,7 @@ def fix_values(new_entry: Dict, previous_entry: Optional[Dict]) -> Dict:
                     log.exception("Es konnte kein vorheriger Wert gefunden werden.")
     if previous_entry is not None:
         for group, value in new_entry.items():
-            if group not in ("bat", "counter", "cp", "pv", "hc"):
+            if group not in ("bat", "consumer", "counter", "cp", "pv", "hc"):
                 continue
             for component, value in value.items():
                 find_and_fix_value("exported")
