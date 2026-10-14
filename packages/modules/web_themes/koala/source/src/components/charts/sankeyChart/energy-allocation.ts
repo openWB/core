@@ -143,7 +143,7 @@ function classifyNodes(input: EnergyFlowInput): {
   if (notInHomeOther > 0) {
     sink(NODE_NOT_IN_HOME, 'Zähler', notInHomeOther);
   } else if (notInHomeOther < 0) {
-    source(NODE_NOT_IN_HOME, 'Sonstige', -notInHomeOther);
+    source(NODE_NOT_IN_HOME, 'Zähler', -notInHomeOther);
   }
 
   // Household consumption = balancing residual. It includes the consumers
