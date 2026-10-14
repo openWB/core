@@ -2,6 +2,8 @@
 import logging
 import math
 
+from requests import HTTPError
+
 from modules.common.abstract_device import AbstractCounter
 from modules.common.component_state import CounterState
 from modules.common.component_type import ComponentDescriptor
@@ -16,6 +18,9 @@ log = logging.getLogger(__name__)
 class TeslaCounter(AbstractCounter):
     def __init__(self, component_config: TeslaCounterSetup) -> None:
         self.component_config = component_config
+        # Powerwall 3 / newer gateway firmware no longer provide /api/meters/site (HTTP 404).
+        # Remember that, so we do not request the endpoint again in every cycle.
+        self._meters_site_available = True
 
     def initialize(self) -> None:
         self.store = get_component_value_store(
@@ -71,9 +76,27 @@ class TeslaCounter(AbstractCounter):
 
         return currents, pfs
 
+    def _get_meters_site(self, client: PowerwallHttpClient):
+        if not self._meters_site_available:
+            return None
+        try:
+            return client.get_json("/api/meters/site")
+        except HTTPError as e:
+            status = getattr(getattr(e, "response", None), "status_code", None)
+            if status != 404:
+                raise
+            self._meters_site_available = False
+            log.info(
+                "Tesla gateway does not provide /api/meters/site (HTTP 404, e.g. Powerwall 3). "
+                "Using total values from /api/meters/aggregates only."
+            )
+            return None
+
     def update(self, client: PowerwallHttpClient, aggregate):
         try:
-            meters_site = client.get_json("/api/meters/site")
+            meters_site = self._get_meters_site(client)
+            if meters_site is None:
+                raise KeyError("/api/meters/site not available")
             cached = meters_site[0]["Cached_readings"]
 
             voltages = [
