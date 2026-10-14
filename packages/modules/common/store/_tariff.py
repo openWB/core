@@ -118,8 +118,10 @@ class PriceValueStore(ValueStore[TariffState]):
         electricity_pricing = optional_data.data.electricity_pricing
         flexible_tariff_prices = {int(float(k)): v for k, v
                                   in electricity_pricing.flexible_tariff.get.prices.items()}
-        grid_fee_prices = {int(float(k)): v for k, v
-                           in electricity_pricing.grid_fee.get.prices.items()}
+        grid_fee_prices = (
+            {int(float(k)): v for k, v in electricity_pricing.grid_fee.get.prices.items()}
+            if optional_data.grid_fee_module is not None else {}
+        )
 
         flexible_tariff_prices = __reduce_prices(flexible_tariff_prices)
         if len(flexible_tariff_prices) == 0 and len(grid_fee_prices) == 0:
