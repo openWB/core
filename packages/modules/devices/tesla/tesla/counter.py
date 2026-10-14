@@ -6,9 +6,10 @@ from requests import HTTPError
 
 from modules.common.abstract_device import AbstractCounter
 from modules.common.component_state import CounterState
-from modules.common.component_type import ComponentDescriptor
+from modules.common.component_type import ComponentDescriptor, ComponentType
 from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.store import get_component_value_store
+from modules.common.utils.peak_filter import PeakFilter
 from modules.devices.tesla.tesla.config import TeslaCounterSetup
 from modules.devices.tesla.tesla.http_client import PowerwallHttpClient
 
@@ -30,6 +31,7 @@ class TeslaCounter(AbstractCounter):
         self.fault_state = FaultState(
             ComponentInfo.from_component_config(self.component_config)
         )
+        self.peak_filter = PeakFilter(ComponentType.COUNTER, self.component_config.id, self.fault_state)
 
     @staticmethod
     def _nearly_zero(x: float, eps: float = 1e-9) -> bool:
@@ -121,6 +123,8 @@ class TeslaCounter(AbstractCounter):
 
             imported = aggregate["site"]["energy_imported"]
             exported = aggregate["site"]["energy_exported"]
+            imported, exported = self.peak_filter.check_values(
+                aggregate["site"]["instant_power"], imported, exported)
 
             calculated_currents, power_factors = (
                 self._calc_currents_and_pf_from_pqu(
@@ -167,8 +171,8 @@ class TeslaCounter(AbstractCounter):
             )
 
             powerwall_state = CounterState(
-                imported=aggregate["site"]["energy_imported"],
-                exported=aggregate["site"]["energy_exported"],
+                imported=imported,
+                exported=exported,
                 power=aggregate["site"]["instant_power"],
             )
 
