@@ -771,6 +771,9 @@ class Chargepoint(ChargepointRfidMixin, Load):
             self.update_charge_template(charging_ev.charge_template)
         if self.data.config.ev != vehicle:
             Pub().pub(f"openWB/set/vehicle/{charging_ev.num}/get/force_soc_update", True)
+            # verhindert doppeltes Pub in der "SoC nach Anstecken"-Prüfung im selben update()-Zyklus
+            self.data.set.soc_timestamp_force_update_prev = self.data.get.soc_timestamp
+            self.data.set.soc_timestamp_force_update_prev_ev = vehicle
             log.debug("SoC nach EV-Wechsel")
             self.data.config.ev = vehicle
         self.data.set.charging_ev_data = charging_ev
