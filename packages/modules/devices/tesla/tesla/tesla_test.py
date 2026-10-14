@@ -2,6 +2,7 @@ from unittest.mock import Mock
 
 import requests
 import requests_mock
+from control import data
 
 from modules.common.configurable_device import ConfigurableDevice
 from modules.devices.tesla.tesla import bat
@@ -145,8 +146,9 @@ def assert_battery_state_correct(state: BatState):
     assert state.exported == 1169030
 
 
-def test_powerwall_update_if_cookie_cached(monkeypatch, requests_mock: requests_mock.Mocker):
+def test_powerwall_update_if_cookie_cached(monkeypatch, requests_mock: requests_mock.Mocker, data_):
     # setup
+    data.data.bat_data["bat0"] = Mock(data=Mock(config=Mock(max_power=10000)))
     mock_bat_value_store = Mock()
     monkeypatch.setattr(bat, "get_component_value_store", Mock(return_value=mock_bat_value_store))
     requests_mock.get("https://sample-address/api/meters/aggregates", text=sample_aggregates_json,
