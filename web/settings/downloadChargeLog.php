@@ -163,13 +163,36 @@ function formatEnergy($value)
   return number_format($value / 1000, 2, ",", "");
 }
 
+# Tarifzeiträume (Feste Tarifstunden) in der Reihenfolge ihres ersten Auftretens
+function getTariffNames($charge_log_data)
+{
+  $tariff_names = [];
+  foreach ($charge_log_data as $log_entry) {
+    if (isset($log_entry["data"]["tariff_split"]) && is_array($log_entry["data"]["tariff_split"])) {
+      foreach (array_keys($log_entry["data"]["tariff_split"]) as $tariff_name) {
+        if (!in_array($tariff_name, $tariff_names, true)) {
+          $tariff_names[] = $tariff_name;
+        }
+      }
+    }
+  }
+  return $tariff_names;
+}
+
 if (is_array($charge_log_data)) {
   header("Content-Type: text/csv");
   header("Content-Disposition: attachment; filename=ChargeLog-" . $output_file_name . ".csv");
 
+  # Tarifaufteilung: je Tarifzeitraum zwei Spalten am Ende, nur wenn Einträge sie enthalten
+  $tariff_names = getTariffNames($charge_log_data);
+
   # Output CSV header
   $csv_header = newRow();
   $translated_header = array_map("translateHeading", array_keys($csv_header));
+  foreach ($tariff_names as $tariff_name) {
+    $translated_header[] = "Netzbezug " . str_replace('"', '""', $tariff_name);
+    $translated_header[] = "Kosten Netzbezug " . str_replace('"', '""', $tariff_name);
+  }
   print('"' . implode('";"', $translated_header) . "\"\n");
 
   # Output CSV data
@@ -222,6 +245,11 @@ if (is_array($charge_log_data)) {
           $csv_row[$column_key] = formatEnergy($csv_row[$column_key]);
           break;
       }
+    }
+    foreach ($tariff_names as $tariff_name) {
+      $tariff = $log_entry["data"]["tariff_split"][$tariff_name] ?? null;
+      $csv_row[] = isset($tariff["energy"]) ? formatEnergy($tariff["energy"]) : "";
+      $csv_row[] = isset($tariff["costs"]) ? formatMoney($tariff["costs"]) : "";
     }
     print(implode(";", $csv_row) . "\n");
   }

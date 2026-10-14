@@ -54,7 +54,9 @@ from helpermodules.measurement_logging.process_log_calculation import (
 #                 "grid": 0.25,
 #                 "pv": 0.25,
 #                 "bat": 0.5,
-#                 "cp": 0}
+#                 "cp": 0},
+#         "tariff_split": {  # optional, nur bei Festen Tarifstunden: Netzanteil je Tarifzeitraum
+#                 "NT": {"energy": 1000, "costs": 0.25}}
 #     }
 # }
 log = logging.getLogger("chargelog")
@@ -298,6 +300,9 @@ def _create_entry(chargepoint, charging_ev):
             "power_source": energy_source
         }
     }
+    tariff_split = get_value_or_default(lambda: _get_tariff_split(log_data), {})
+    if tariff_split:
+        new_entry["data"]["tariff_split"] = tariff_split
     return new_entry
 
 
@@ -341,8 +346,27 @@ def calc_energy_costs(cp, create_log_entry: bool = False):
             else:
                 costs = _calc_costs(charged_energy_by_source, reference_entries[-1]["prices"])
                 cp.data.set.log.costs += costs
+                _add_tariff_split(cp.data.set.log, charged_energy_by_source, reference_entries[-1]["prices"])
     except Exception:
         log.exception(f"Fehler beim Berechnen der Ladekosten für Ladepunkt {cp.num}")
+
+
+def _add_tariff_split(log_data, charged_energy_by_source: Dict[str, float], prices: Dict) -> None:
+    """ Netzanteil des Intervalls dem Tarifzeitraum (Feste Tarifstunden) zuordnen, mit demselben Preis wie
+    _calc_costs. Ohne Tarifname (dynamische Tarife, kein Preismodul) bleibt es bei der Summe in costs.
+    """
+    tariff_name = prices.get("tariff_name")
+    grid_energy = charged_energy_by_source["grid"]
+    if tariff_name is None or grid_energy <= 0:
+        return
+    tariff = log_data.tariff_split.setdefault(tariff_name, {"energy": 0, "costs": 0})
+    tariff["energy"] += grid_energy
+    tariff["costs"] += grid_energy * prices["grid"]
+
+
+def _get_tariff_split(log_data) -> Dict[str, Dict[str, float]]:
+    return {name: {"energy": round(tariff["energy"], 2), "costs": round(tariff["costs"], 2)}
+            for name, tariff in log_data.tariff_split.items()}
 
 
 def calculate_charged_energy_by_source(cp, processed_entries, reference_entries, create_log_entry: bool = False):

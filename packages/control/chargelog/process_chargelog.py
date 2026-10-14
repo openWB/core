@@ -1,7 +1,7 @@
 import json
 import logging
 import pathlib
-from typing import Dict
+from typing import Dict, List
 
 from helpermodules import timecheck
 
@@ -112,13 +112,33 @@ def get_totals_of_filtered_log_data(log_data: Dict) -> Dict:
         power_sum = get_sum("power")
         costs_sum = get_sum("costs")
         power_sum = power_sum / len(log_data["entries"])
-        return {
+        totals = {
             "time_charged": duration_sum,
             "range_charged": range_charged_sum,
             "imported_since_mode_switch": mode_sum,
             "power": power_sum,
             "costs": costs_sum,
         }
+        tariff_split_sum = get_tariff_split_sum(log_data["entries"])
+        if tariff_split_sum:
+            totals["tariff_split"] = tariff_split_sum
+        return totals
+
+
+def get_tariff_split_sum(entries: List[Dict]) -> Dict[str, Dict[str, float]]:
+    """ Netzanteil je Tarifzeitraum summieren. Einträge ohne Aufteilung (ältere Einträge, dynamische Tarife) werden
+    übersprungen, data.costs bleibt die maßgebliche Summe.
+    """
+    tariff_split_sum = {}
+    for entry in entries:
+        try:
+            for name, tariff in (entry["data"].get("tariff_split") or {}).items():
+                tariff_sum = tariff_split_sum.setdefault(name, {"energy": 0, "costs": 0})
+                tariff_sum["energy"] = round(tariff_sum["energy"] + tariff.get("energy", 0), 2)
+                tariff_sum["costs"] = round(tariff_sum["costs"] + tariff.get("costs", 0), 2)
+        except Exception:
+            log.exception("Fehler beim Summieren der Tarifaufteilung")
+    return tariff_split_sum
 
 
 def _get_parent_file() -> pathlib.Path:

@@ -1,7 +1,10 @@
+import datetime
 from unittest.mock import Mock
 import pytest
 from helpermodules import timecheck
 from control.optional import Optional
+from modules.electricity_pricing.flexible_tariffs.fixed_hours.config import (FixedHoursTariff,
+                                                                             FixedHoursTariffConfiguration)
 
 
 ONE_HOUR_SECONDS = 3600
@@ -487,3 +490,65 @@ def test_et_price_update_required(monkeypatch, flexible_tariff, grid_fee, curren
 
     # evaluation
     assert result == expected
+
+
+def _fixed_hours_module(name: str, times: list) -> Mock:
+    return Mock(config=FixedHoursTariff(configuration=FixedHoursTariffConfiguration(
+        default_price=0.0003,
+        tariffs=[{"name": name, "price": 0.0002,
+                  "active_times": {"dates": [("01-01", "31-12")], "times": times, "weekdays": [0, 1, 2, 3, 4]}}])))
+
+
+NT = _fixed_hours_module("NT", [("00:00", "07:00"), ("23:00", "24:00")])
+MODULE_3 = _fixed_hours_module("Modul 3 NT", [("22:00", "24:00")])
+DYNAMIC = Mock(config=Mock(type="tibber"))
+# Montag 16.05.2022 23:15 und 23:30: der erste Preis-Eintrag bestimmt den Zeitslot, nicht now()
+SLOT_NT = int(datetime.datetime(2022, 5, 16, 23, 15).timestamp())
+SLOT_DAY = int(datetime.datetime(2022, 5, 16, 12, 0).timestamp())
+
+
+@pytest.mark.parametrize(
+    "flexible_tariff, grid_fee, first_slot, expected",
+    [
+        pytest.param(NT, None, SLOT_NT, "NT", id="feste Tarifstunden, Tarifzeitraum"),
+        pytest.param(NT, None, SLOT_DAY, "Standardpreis", id="feste Tarifstunden, Standardpreis"),
+        pytest.param(None, MODULE_3, SLOT_NT, "Modul 3 NT", id="nur Netzentgelt mit festen Tarifstunden"),
+        pytest.param(NT, MODULE_3, SLOT_NT, "NT / Modul 3 NT", id="Tarif und Netzentgelt mit festen Tarifstunden"),
+        pytest.param(DYNAMIC, None, SLOT_NT, None, id="dynamischer Tarif"),
+        pytest.param(DYNAMIC, MODULE_3, SLOT_NT, None, id="dynamischer Tarif mit festem Netzentgelt"),
+    ]
+)
+def test_ep_get_current_tariff_name(flexible_tariff, grid_fee, first_slot, expected):
+    # setup
+    opt = Optional()
+    opt._flexible_tariff_module = flexible_tariff
+    opt._grid_fee_module = grid_fee
+    opt.data.electricity_pricing.configured = True
+    opt.data.electricity_pricing.get.prices = {str(first_slot): 0.0002, str(first_slot + 900): 0.0003}
+
+    # execution
+    result = opt.ep_get_current_tariff_name()
+
+    # evaluation
+    assert result == expected
+
+
+@pytest.mark.parametrize(
+    "configured, prices",
+    [
+        pytest.param(False, {str(SLOT_NT): 0.0002}, id="nicht konfiguriert"),
+        pytest.param(True, {}, id="keine Preise"),
+    ]
+)
+def test_ep_get_current_tariff_name_none(configured, prices):
+    # setup
+    opt = Optional()
+    opt._flexible_tariff_module = NT
+    opt.data.electricity_pricing.configured = configured
+    opt.data.electricity_pricing.get.prices = prices
+
+    # execution
+    result = opt.ep_get_current_tariff_name()
+
+    # evaluation
+    assert result is None

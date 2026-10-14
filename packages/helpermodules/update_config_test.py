@@ -601,3 +601,21 @@ def test_file_operation_0_start_behavior(file_operation_version, finished, expec
     with patch.object(update_config, "upgrade_file_operation_0") as upgrade_mock:
         update_config._UpdateConfig__solve_breaking_changes_filesystem()
     assert upgrade_mock.call_count == expected_calls
+
+
+@pytest.mark.parametrize("config, expected",
+                         [pytest.param({"data_costs": True}, False, id="neue Spalte standardmäßig ausgeblendet"),
+                          pytest.param({"data_costs": True, "data_tariff_split": True}, True,
+                                       id="vorhandene Einstellung bleibt")])
+def test_upgrade_datastore_155_adds_tariff_split_column(config, expected, mock_pub):
+    uc = UpdateConfig()
+    uc.all_received_topics = {
+        "openWB/system/datastore_version": list(range(155)),
+        "openWB/general/charge_log_data_config": config,
+    }
+
+    uc.upgrade_datastore_155()
+
+    assert uc.all_received_topics["openWB/general/charge_log_data_config"]["data_tariff_split"] is expected
+    assert uc.all_received_topics["openWB/general/charge_log_data_config"]["data_costs"] is True
+    assert 155 in uc.all_received_topics["openWB/system/datastore_version"]

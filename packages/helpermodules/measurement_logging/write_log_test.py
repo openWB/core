@@ -1,6 +1,9 @@
 from unittest.mock import Mock
 import json
 
+import pytest
+
+from control import data
 from helpermodules.measurement_logging import write_log
 from helpermodules.measurement_logging.write_log import get_names
 
@@ -161,3 +164,23 @@ def test_save_log_keeps_existing_names_and_colors_when_writing_new_entry(monkeyp
         "cp1": "#111111",
         "cp2": "#222222",
     }
+
+
+@pytest.mark.parametrize("price_available, expected_grid, expected_tariff_name",
+                         [pytest.param(True, 0.00025, "NT", id="Preis und Tarifzeitraum aus dem Preismodul"),
+                          pytest.param(False, 0.0003, None, id="Rückfall auf den Netzpreis ohne Tarifzeitraum")])
+def test_create_entry_prices_tariff_name(price_available, expected_grid, expected_tariff_name, monkeypatch):
+    # setup
+    data.data_init(Mock())
+    data.data.general_data.data.prices.grid = 0.0003
+    optional_data = data.data.optional_data
+    monkeypatch.setattr(optional_data, "ep_get_current_price",
+                        Mock(return_value=0.00025) if price_available else Mock(side_effect=Exception("keine Preise")))
+    monkeypatch.setattr(optional_data, "ep_get_current_tariff_name", Mock(return_value="NT"))
+
+    # execution
+    entry = write_log.create_entry(Mock(sh_dict={}), None)
+
+    # evaluation
+    assert entry["prices"]["grid"] == expected_grid
+    assert entry["prices"]["tariff_name"] == expected_tariff_name

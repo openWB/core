@@ -170,3 +170,71 @@ def test_calc_charge_cost_reference_middle_day_change(mock_data, monkeypatch):
     assert cp.data.set.log.charged_energy_by_source == {
         'grid': 1242.8, 'pv': 385.8, 'bat': 671.4, 'cp': 0.0}
     assert round(cp.data.set.log.costs, 5) == 0.5
+
+
+def test_calc_charge_cost_tariff_split(mock_data, monkeypatch):
+    cp = Chargepoint(4, None)
+    cp.data.set.log.imported_since_plugged = cp.data.set.log.imported_since_mode_switch = 3950
+    cp.data.set.log.timestamp_mode_switch = 1652682600  # 8:30
+    cp.data.get.imported = 4050
+    cp.data.set.log.charged_energy_by_source = {'bat': 100, 'cp': 0, 'grid': 100, 'pv': 100}
+    cp.data.set.log.tariff_split = {"NT": {"energy": 1000, "costs": 0.25},
+                                    "Standardpreis": {"energy": 100, "costs": 0.03}}
+    daily_log = mock_daily_log(monkeypatch)
+    daily_log["entries"][-1]["prices"]["tariff_name"] = "NT"
+
+    with patch("builtins.open", mock_open(read_data=json.dumps(daily_log))):
+        calc_energy_costs(cp)
+
+    # nur der Netzanteil dieses Intervalls (1242.8 - 100 Wh) mit dem Netzpreis dieses Intervalls
+    assert round(cp.data.set.log.tariff_split["NT"]["energy"], 2) == 2142.8
+    assert round(cp.data.set.log.tariff_split["NT"]["costs"], 5) == round(0.25 + 1142.8 * 0.0003, 5)
+    assert cp.data.set.log.tariff_split["Standardpreis"] == {"energy": 100, "costs": 0.03}
+    assert round(cp.data.set.log.costs, 5) == 0.5
+
+
+@pytest.mark.parametrize("tariff_name", [pytest.param(None, id="dynamischer Tarif"),
+                                         pytest.param("missing", id="alter Tageslog-Eintrag")])
+def test_calc_charge_cost_without_tariff_name(tariff_name, mock_data, monkeypatch):
+    cp = Chargepoint(4, None)
+    cp.data.set.log.imported_since_plugged = cp.data.set.log.imported_since_mode_switch = 3950
+    cp.data.set.log.timestamp_mode_switch = 1652682600  # 8:30
+    cp.data.get.imported = 4050
+    cp.data.set.log.charged_energy_by_source = {'bat': 100, 'cp': 0, 'grid': 100, 'pv': 100}
+    daily_log = mock_daily_log(monkeypatch)
+    if tariff_name != "missing":
+        daily_log["entries"][-1]["prices"]["tariff_name"] = tariff_name
+
+    with patch("builtins.open", mock_open(read_data=json.dumps(daily_log))):
+        calc_energy_costs(cp)
+
+    assert cp.data.set.log.tariff_split == {}
+    assert round(cp.data.set.log.costs, 5) == 0.5
+
+
+@pytest.mark.parametrize("tariff_split, expected",
+                         [pytest.param({}, None, id="ohne Aufteilung kein Schlüssel"),
+                          pytest.param({"NT": {"energy": 18400.123, "costs": 4.73456}},
+                                       {"NT": {"energy": 18400.12, "costs": 4.73}}, id="mit Aufteilung")])
+def test_create_entry_tariff_split(tariff_split, expected, mock_data, monkeypatch):
+    monkeypatch.setattr(chargelog, "calc_energy_costs", Mock())
+    cp = Chargepoint(4, None)
+    cp.data.get.imported = 4050
+    cp.data.set.log.imported_at_mode_switch = 100
+    cp.data.set.log.timestamp_mode_switch = 1652682600
+    cp.data.set.log.costs = 4.9
+    cp.data.set.log.tariff_split = tariff_split
+
+    entry = chargelog._create_entry(cp, Mock())
+
+    assert entry["data"]["costs"] == 4.9
+    assert entry["data"].get("tariff_split") == expected
+
+
+def test_reset_log_data_chargemode_switch_resets_tariff_split(mock_data):
+    cp = Chargepoint(4, None)
+    cp.data.set.log.tariff_split = {"NT": {"energy": 1000, "costs": 0.25}}
+
+    cp.reset_log_data_chargemode_switch()
+
+    assert cp.data.set.log.tariff_split == {}
