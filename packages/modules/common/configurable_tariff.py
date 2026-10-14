@@ -16,6 +16,12 @@ from control.optional_data import OptionalData, PricingGet
 # Stunden für tägliche Tarifaktualisierung, manche Anbieter aktualisieren mehrfach täglich
 T_TARIFF_CONFIG = TypeVar("T_TARIFF_CONFIG")
 ONE_HOUR_SECONDS: int = 3600
+# Wartezeit vor dem nächsten Versuch nach einem Abruf ohne neue Preise oder einer Exception (siehe #3703)
+RETRY_BACKOFF_SECONDS: int = 5 * 60
+# So viele Stunden nach der ersten konfigurierten Tarifaktualisierungsstunde löst ein immer noch
+# fehlender Preis für den Folgetag eine Warnung aus statt stillschweigend weiter zu versuchen -
+# vorher ist das noch der normale, erwartete Fall
+LATE_WARNING_OFFSET_HOURS: int = 2
 
 log = logging.getLogger(__name__)
 
@@ -40,21 +46,27 @@ class ConfigurableTariff(Generic[T_TARIFF_CONFIG]):
         # nach Init auf NO_ERROR setzen, damit der Fehlerstatus beim Modulwechsel gelöscht wird
         self.fault_state.no_error()
         self.fault_state.store_error()
-        with SingleComponentUpdateContext(self.fault_state):
+        try:
             self._component_updater = component_initializer(config)
+        except Exception as e:
+            # nicht reraisen, sonst bliebe bei subdata.py's Zuweisung das alte Modul aktiv
+            log.exception(f"Fehler beim Initialisieren von {tariff_type}: {e}")
+            self.fault_state.from_exception(e)
+            self.fault_state.store_error()
 
     def update(self) -> None:
         if hasattr(self, "_component_updater"):
             if self.get.next_query_time is None or self.get.next_query_time <= timecheck.create_timestamp():
                 log.debug(f"Tarifaktualisierung für {self.tariff_type}")
                 try:
-                    with SingleComponentUpdateContext(self.fault_state):
+                    # reraise=True, sonst verschluckt __exit__ die Exception vor dem except-Block (siehe #3703)
+                    with SingleComponentUpdateContext(self.fault_state, reraise=True):
                         tariff_state, timeslot_length_seconds = self.__update_et_provider_data()
                         self.__store_and_publish_updated_data(tariff_state)
-                        self.__log_and_publish_progress(timeslot_length_seconds, tariff_state)
+                        self.__finalize_update_status(timeslot_length_seconds, tariff_state)
                 except Exception as e:
                     log.exception(f"Fehler beim Aktualisieren der Tarifdaten {e}")
-                    self.fault_state.warning("Error updating tariff data, retry in 5 minutes")
+                    self._delay_next_query()
             else:
                 log.info(f"nächste Tarifaktualisierung für {self.tariff_type}" +
                          f" um {datetime.fromtimestamp(self.get.next_query_time)}")
@@ -102,36 +114,63 @@ class ConfigurableTariff(Generic[T_TARIFF_CONFIG]):
         latest_price_timestamp = datetime.fromtimestamp(max((int(ts) for ts in tariff_state.prices.keys()), default=0))
         if last_known_timestamp < latest_price_timestamp:
             self._calculate_next_query_time(latest_price_timestamp)
+        else:
+            # Anbieter hat (noch) keine neueren Preise geliefert, z.B. weil die Preise für den
+            # Folgetag noch nicht veröffentlicht sind - ohne Backoff würde sonst jeden Regelzyklus
+            # neu abgefragt, bis es welche gibt (siehe #3703)
+            self._delay_next_query()
         return tariff_state
 
-    def __log_and_publish_progress(self, timeslot_length_seconds, tariff_state):
-        def publish_info(message_extension: str) -> None:
-            self.fault_state.no_error(
-                f'Die {self.tariff_type} Preisliste hat {message_extension}{len(tariff_state.prices)} Einträge. ')
+    def _delay_next_query(self) -> None:
+        self.get.next_query_time = int(timecheck.create_timestamp()) + RETRY_BACKOFF_SECONDS
+        Pub().pub(f"openWB/set/optional/ep/{self.tariff_type}/get/next_query_time", self.get.next_query_time)
+
+    def __finalize_update_status(self, timeslot_length_seconds: int, tariff_state: TariffState) -> None:
+        # einziger Ort, der den fault_state setzt - sonst überschreibt ein abschließendes no_error()
+        # jede zuvor gesetzte Warnung/Fehler sofort wieder (siehe #3703)
+        if tariff_state.prices is None or len(tariff_state.prices) < 2:
+            self.fault_state.error(
+                f"Nicht genug Preiseinträge für {self.tariff_type}, um die Zeitschrittlänge zu berechnen.")
+            return
+        if self.__is_tomorrow_price_missing_after_late_hour(tariff_state):
+            self.fault_state.warning(
+                f"Noch keine aktuellen Preise für {self.tariff_type} erhalten - "
+                "der Anbieter liefert bisher keine Daten für den Folgetag.")
+            return
         expected_time_slots = int(24 * ONE_HOUR_SECONDS / timeslot_length_seconds)
-        publish_info(f'nicht {expected_time_slots}, sondern '
-                     if len(tariff_state.prices) < expected_time_slots
-                     else ''
-                     )
+        message_extension = (f'nicht {expected_time_slots}, sondern ' if len(tariff_state.prices) < expected_time_slots
+                             else '')
+        self.fault_state.no_error(
+            f'Die {self.tariff_type} Preisliste hat {message_extension}{len(tariff_state.prices)} Einträge. ')
+
+    def __is_tomorrow_price_missing_after_late_hour(self, tariff_state: TariffState) -> bool:
+        now = datetime.now()
+        warning_hour = min(self.tariff_update_hours) + LATE_WARNING_OFFSET_HOURS
+        if now.hour < warning_hour:
+            return False
+        # Datum vor dem Nullsetzen der Uhrzeit erhöhen - +24h in Sekunden träfe an Tagen mit Zeitumstellung
+        # nicht auf Mitternacht
+        tomorrow_midnight = (now + timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
+        tomorrow_start = int(tomorrow_midnight.timestamp())
+        return max(int(ts) for ts in tariff_state.prices.keys()) < tomorrow_start
 
     def __store_and_publish_updated_data(self, tariff_state: TariffState) -> None:
         self.store.set(tariff_state)
         self.store.update()
 
     def __calculate_price_timeslot_length(self, tariff_state: TariffState) -> int:
+        # <2 Einträge werden in __finalize_update_status() gemeldet, hier nur Platzhalter gegen Division durch 0
         if (tariff_state is None or
                 tariff_state.prices is None or
                 len(tariff_state.prices) < 2):
-            self.fault_state.error("not enough price entries to calculate timeslot length")
             return 1
         else:
             first_timestamps = list(tariff_state.prices.keys())[:2]
             return int(first_timestamps[1]) - int(first_timestamps[0])
 
     def _remove_outdated_prices(self, tariff_state: TariffState, timeslot_length_seconds: int) -> TariffState:
-        if tariff_state.prices is None:
-            self.fault_state.error("no prices to show")
-        else:
+        # prices is None wird in __finalize_update_status() gemeldet
+        if tariff_state.prices is not None:
             now = timecheck.create_timestamp()
             first_timestamp = int(max([int(timestamp) for timestamp in tariff_state.prices.keys()
                                       if int(timestamp) <= now], default=0))
