@@ -168,23 +168,6 @@ class CounterAll(HierarchyMixin, LoadmanagementPrioMixin):
 
         return home_consumption, not_home_consumption
 
-    def _calc_unmeasured_home_consumption_from_counter(self, element: Dict) -> float:
-        elements = self.get_elements_for_downstream_calculation(element["id"])
-        element_for_calculation = {"id": element["id"], "type": ComponentType.COUNTER.value, "children": elements}
-        unmeasured_home_consumption = self._get_local_power_from_counter(element_for_calculation)
-
-        for child in elements:
-            comp = self._get_component(child)
-
-            if comp.data.get.fault_state < 2:
-                if child["type"] == ComponentType.COUNTER.value:
-                    unmeasured_home_consumption += self._calc_unmeasured_home_consumption_from_counter(child)
-            else:
-                log.warning(
-                    f"Komponente {element['type']}{comp.num} ist im Fehlerzustand und wird nicht berücksichtigt.")
-
-        return unmeasured_home_consumption
-
     def _calc_home_consumption(self) -> Tuple[float, float, Dict]:
         evu_id = self.get_id_evu_counter()
 
@@ -210,9 +193,11 @@ class CounterAll(HierarchyMixin, LoadmanagementPrioMixin):
 
     def _calc_unmeasured_home_consumption(self) -> float:
         evu_id = self.get_id_evu_counter()
-        evu_element = {"id": evu_id, "type": ComponentType.COUNTER.value}
+        elements = self.get_elements_for_downstream_calculation(evu_id)
+        element_for_calculation = {"id": evu_id, "type": ComponentType.COUNTER.value, "children": elements}
 
-        unmeasured_home_consumption = self._calc_unmeasured_home_consumption_from_counter(evu_element)
+        # wir checken nur den EVU-Zähler, da bei ihm alles zusammenläuft.
+        unmeasured_home_consumption = self._get_local_power_from_counter(element_for_calculation)
         unmeasured_home_consumption -= self.data.set.smarthome_power_excluded_from_home_consumption
 
         return unmeasured_home_consumption
