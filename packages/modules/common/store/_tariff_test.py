@@ -157,6 +157,28 @@ def test_sum_prices(
     assert summed == expected_prices
 
 
+def test_sum_prices_ignores_stale_grid_fee_when_provider_is_not_configured(monkeypatch):
+    monkeypatch.setattr(
+        timecheck, "create_timestamp",
+        Mock(return_value=DEFAULT_START_TIMESTAMP)
+    )
+    optional_data = data.data.optional_data
+    optional_data._grid_fee_module = None
+    flexible_tariff_prices = {
+        str(DEFAULT_START_TIMESTAMP): 0.0002856,
+        str(DEFAULT_START_TIMESTAMP + 900): 0.0002877,
+    }
+    optional_data.data.electricity_pricing.flexible_tariff.get.prices = flexible_tariff_prices
+    optional_data.data.electricity_pricing.grid_fee.get.prices = flexible_tariff_prices.copy()
+
+    summed = PriceValueStore().sum_prices()
+
+    assert summed == {
+        DEFAULT_START_TIMESTAMP: 0.0002856,
+        DEFAULT_START_TIMESTAMP + 900: 0.0002877,
+    }
+
+
 @pytest.mark.parametrize(
     "flexible_tariff, grid_fee",
     [
