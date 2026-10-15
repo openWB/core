@@ -112,7 +112,6 @@ export function setGraphData(d: GraphDataItem[]) {
 	} else {
 		graphData.data = d
 		graphData.waitForData = false
-		console.log('graph data set')
 	}
 }
 // LIVE GRAPH
