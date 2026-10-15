@@ -505,6 +505,8 @@ class SetData:
                     self._validate_value(msg, float)
                 elif "/set/ocpp_transaction_id" in msg.topic:
                     self._validate_value(msg, int)
+                elif "/set/soc_timestamp_force_update_prev" in msg.topic:
+                    self._validate_value(msg, int)
                 elif "/set/log" in msg.topic:
                     self._validate_value(msg, "json")
                 elif "/set/ev_prev" in msg.topic:
