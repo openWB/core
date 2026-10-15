@@ -5,6 +5,7 @@ from typing import Iterator, List, Optional, Tuple
 
 from control import data
 from control.chargemode import Chargemode
+from control.chargepoint.chargepoint import Chargepoint
 from control.consumer.consumer import Consumer
 from control.consumer.usage import ConsumerUsage
 from control.load import get_load_str
@@ -62,7 +63,8 @@ def filter_loads_by_chargemodes(grouped_loads: List[Load],
 def filter_active_loads(grouped_loads: List[Load]) -> List[Load]:
     active_loads: List[Load] = []
     for load in grouped_loads:
-        if load.data.control_parameter.required_current != 0:
+        if ((isinstance(load, Chargepoint) and load.data.control_parameter.required_current != 0) or
+                (isinstance(load, Consumer) and load.data.set.switch_interval_elapsed)):
             active_loads.append(load)
 
     return active_loads

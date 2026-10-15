@@ -123,7 +123,7 @@ class Consumer(Load):
     def get_parameter(self) -> Tuple[float, Optional[str], Optional[Chargemode], Chargemode]:
         if self.data.set.switch_interval_elapsed is False:
             log.debug("Intervall für neuen Schaltbefehl nicht abgelaufen.")
-            return (0,
+            return (self.data.control_parameter.required_current,
                     None,
                     self.data.control_parameter.chargemode,
                     self.data.control_parameter.submode)
