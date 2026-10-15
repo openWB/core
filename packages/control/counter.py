@@ -78,6 +78,7 @@ class Get:
     fault_state: int = field(default=0, metadata={"topic": "get/fault_state"})
     fault_str: str = field(default=NO_ERROR, metadata={"topic": "get/fault_str"})
     power: float = field(default=0, metadata={"topic": "get/power"})
+    local_power: float = field(default=0, metadata={"topic": "get/local_power"})
     serial_number: Optional[str] = field(default=None, metadata={"topic": "get/serial_number"})
 
 

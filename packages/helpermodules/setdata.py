@@ -1002,7 +1002,8 @@ class SetData:
                 elif ("/get/fault_str" in msg.topic or
                       "/get/serial_number" in msg.topic):
                     self._validate_value(msg, str)
-                elif "/get/power" in msg.topic:
+                elif ("/get/power" in msg.topic or
+                      "/get/local_power" in msg.topic):
                     self._validate_value(
                         msg, float, [(float("-inf"), float("inf"))])
                 elif "/get/soc" in msg.topic:

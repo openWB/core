@@ -135,6 +135,7 @@ class CounterAll(HierarchyMixin, LoadmanagementPrioMixin):
         home_consumption = 0.0
         not_home_consumption = 0.0
         local_power = self._get_local_power_from_counter(element)
+        data.data.counter_data[f"counter{element['id']}"].data.get.local_power = local_power
 
         counter = self._get_component(element)
         child_home_consumption = self._get_is_home_consumption(counter, parent_home_consumption)
