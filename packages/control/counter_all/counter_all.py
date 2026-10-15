@@ -164,8 +164,12 @@ class CounterAll(HierarchyMixin, LoadmanagementPrioMixin):
                     elif mode == CounterMode.NOT_HOME_CONSUMPTION.value:
                         not_home_consumption += comp.data.get.power
             else:
+                if child["type"] == ComponentType.COUNTER.value:
+                    # Bei einem fehlerhaften untergeordneten Zähler wird local_power auf 0 gesetzt,
+                    # da der Zähler bei der Hausverbrauchsberechnung nicht berücksichtigt wird.
+                    data.data.counter_data[f"counter{child['id']}"].data.get.local_power = 0
                 log.warning(
-                    f"Komponente {element['type']}{comp.num} ist im Fehlerzustand und wird nicht berücksichtigt.")
+                    f"Komponente {child['type']}{comp.num} ist im Fehlerzustand und wird nicht berücksichtigt.")
 
         return home_consumption, not_home_consumption
 
