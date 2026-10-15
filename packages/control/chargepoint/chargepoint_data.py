@@ -98,7 +98,7 @@ class Log:
     range_at_start: Optional[float] = None
     range_at_end: Optional[float] = None
     odometer: Optional[float] = None
-    # Netzanteil je Tarifzeitraum (Feste Tarifstunden): {Name: {"energy": Wh, "costs": €}}
+    # geladene Energie und Kosten je Tarifzeitraum (Feste Tarifstunden): {Name: {"energy": Wh, "costs": €}}
     tariff_split: Dict[str, Dict[str, float]] = field(default_factory=empty_dict_factory)
 
 

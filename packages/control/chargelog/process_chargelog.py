@@ -126,8 +126,8 @@ def get_totals_of_filtered_log_data(log_data: Dict) -> Dict:
 
 
 def get_tariff_split_sum(entries: List[Dict]) -> Dict[str, Dict[str, float]]:
-    """ Netzanteil je Tarifzeitraum summieren. Einträge ohne Aufteilung (ältere Einträge, dynamische Tarife) werden
-    übersprungen, data.costs bleibt die maßgebliche Summe.
+    """ Geladene Energie und Kosten je Tarifzeitraum summieren. Einträge ohne Aufteilung (ältere Einträge,
+    dynamische Tarife) werden übersprungen, data.costs bleibt die maßgebliche Summe.
     """
     tariff_split_sum = {}
     for entry in entries:

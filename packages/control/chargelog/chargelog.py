@@ -55,7 +55,7 @@ from helpermodules.measurement_logging.process_log_calculation import (
 #                 "pv": 0.25,
 #                 "bat": 0.5,
 #                 "cp": 0},
-#         "tariff_split": {  # optional, nur bei Festen Tarifstunden: Netzanteil je Tarifzeitraum
+#         "tariff_split": {  # optional, nur bei Festen Tarifstunden: geladene Energie und Kosten je Tarifzeitraum
 #                 "NT": {"energy": 1000, "costs": 0.25}}
 #     }
 # }
@@ -346,22 +346,24 @@ def calc_energy_costs(cp, create_log_entry: bool = False):
             else:
                 costs = _calc_costs(charged_energy_by_source, reference_entries[-1]["prices"])
                 cp.data.set.log.costs += costs
-                _add_tariff_split(cp.data.set.log, charged_energy_by_source, reference_entries[-1]["prices"])
+                _add_tariff_split(cp.data.set.log, charged_energy_by_source, costs,
+                                  reference_entries[-1]["prices"].get("tariff_name"))
     except Exception:
         log.exception(f"Fehler beim Berechnen der Ladekosten für Ladepunkt {cp.num}")
 
 
-def _add_tariff_split(log_data, charged_energy_by_source: Dict[str, float], prices: Dict) -> None:
-    """ Netzanteil des Intervalls dem Tarifzeitraum (Feste Tarifstunden) zuordnen, mit demselben Preis wie
-    _calc_costs. Ohne Tarifname (dynamische Tarife, kein Preismodul) bleibt es bei der Summe in costs.
+def _add_tariff_split(log_data, charged_energy_by_source: Dict[str, float], costs: float,
+                      tariff_name: Optional[str]) -> None:
+    """ Geladene Energie des Intervalls (über alle Quellen) und seine Kosten, wie sie in costs eingehen, dem
+    Tarifzeitraum (Feste Tarifstunden) zuordnen. Die Kosten je Tarifzeitraum ergeben so in Summe costs.
+    Ohne Tarifname (dynamische Tarife, kein Preismodul) bleibt es bei der Summe in costs.
     """
-    tariff_name = prices.get("tariff_name")
-    grid_energy = charged_energy_by_source["grid"]
-    if tariff_name is None or grid_energy <= 0:
+    energy = sum(charged_energy_by_source.values())
+    if tariff_name is None or energy <= 0:
         return
     tariff = log_data.tariff_split.setdefault(tariff_name, {"energy": 0, "costs": 0})
-    tariff["energy"] += grid_energy
-    tariff["costs"] += grid_energy * prices["grid"]
+    tariff["energy"] += energy
+    tariff["costs"] += costs
 
 
 def _get_tariff_split(log_data) -> Dict[str, Dict[str, float]]:

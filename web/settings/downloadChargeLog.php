@@ -190,8 +190,8 @@ if (is_array($charge_log_data)) {
   $csv_header = newRow();
   $translated_header = array_map("translateHeading", array_keys($csv_header));
   foreach ($tariff_names as $tariff_name) {
-    $translated_header[] = "Netzbezug " . str_replace('"', '""', $tariff_name);
-    $translated_header[] = "Kosten Netzbezug " . str_replace('"', '""', $tariff_name);
+    $translated_header[] = "Energie " . str_replace('"', '""', $tariff_name);
+    $translated_header[] = "Kosten " . str_replace('"', '""', $tariff_name);
   }
   print('"' . implode('";"', $translated_header) . "\"\n");
 

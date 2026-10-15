@@ -8,6 +8,7 @@ from control import data
 from control.chargelog import chargelog
 from control.chargelog.chargelog import calc_energy_costs
 from control.chargepoint.chargepoint import Chargepoint
+from control.chargepoint.chargepoint_data import Log
 from control.general import Prices
 
 
@@ -186,11 +187,25 @@ def test_calc_charge_cost_tariff_split(mock_data, monkeypatch):
     with patch("builtins.open", mock_open(read_data=json.dumps(daily_log))):
         calc_energy_costs(cp)
 
-    # nur der Netzanteil dieses Intervalls (1242.8 - 100 Wh) mit dem Netzpreis dieses Intervalls
-    assert round(cp.data.set.log.tariff_split["NT"]["energy"], 2) == 2142.8
-    assert round(cp.data.set.log.tariff_split["NT"]["costs"], 5) == round(0.25 + 1142.8 * 0.0003, 5)
+    # die gesamte geladene Energie dieses Intervalls (4000 - 2000 Wh, über alle Quellen) und seine Kosten
+    assert round(cp.data.set.log.tariff_split["NT"]["energy"], 2) == 3000
+    assert round(cp.data.set.log.tariff_split["NT"]["costs"], 5) == 0.75
     assert cp.data.set.log.tariff_split["Standardpreis"] == {"energy": 100, "costs": 0.03}
     assert round(cp.data.set.log.costs, 5) == 0.5
+
+
+def test_add_tariff_split_counts_all_sources():
+    log_data = Log()
+    prices = {'grid': 0.0003, 'pv': 0.0001, 'bat': 0.0002, 'cp': 0, 'tariff_name': "NT"}
+    charged_energy_by_source = {'grid': 600, 'pv': 400, 'bat': 0, 'cp': 0}
+    costs = chargelog._calc_costs(charged_energy_by_source, prices)
+
+    chargelog._add_tariff_split(log_data, charged_energy_by_source, costs, prices["tariff_name"])
+    chargelog._add_tariff_split(log_data, {'grid': 0, 'pv': 0, 'bat': 0, 'cp': 0}, 0, "HT")
+
+    # Energie = Zähler des Ladepunkts (PV + Netz), Kosten = Ergebnis von _calc_costs; leere Intervalle zählen nicht
+    assert log_data.tariff_split == {"NT": {"energy": 1000, "costs": costs}}
+    assert costs == round(600 * 0.0003 + 400 * 0.0001, 4)
 
 
 @pytest.mark.parametrize("tariff_name", [pytest.param(None, id="dynamischer Tarif"),
