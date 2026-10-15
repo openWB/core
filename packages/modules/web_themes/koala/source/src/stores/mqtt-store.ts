@@ -3962,6 +3962,38 @@ export const useMqttStore = defineStore('mqtt', () => {
   });
 
   /**
+   * Get the plug state of a consumer identified by the consumer id.
+   * True if openWB has released power (relay on / target power > 0 W).
+   * @param consumerId consumer id
+   * @returns boolean
+   */
+  const consumerPlugState = computed(() => {
+    return (consumerId: number): boolean => {
+      return (
+        (getValue.value(
+          `openWB/consumer/${consumerId}/get/plug_state`,
+        ) as boolean) || false
+      );
+    };
+  });
+
+  /**
+   * Get the charge state of a consumer identified by the consumer id.
+   * True if the consumer draws more than the standby threshold.
+   * @param consumerId consumer id
+   * @returns boolean
+   */
+  const consumerChargeState = computed(() => {
+    return (consumerId: number): boolean => {
+      return (
+        (getValue.value(
+          `openWB/consumer/${consumerId}/get/charge_state`,
+        ) as boolean) || false
+      );
+    };
+  });
+
+  /**
    * Get the usage type of a consumer identified by the consumer id.
    * @param consumerId consumer id
    * @returns ConsumerUsageType | undefined
@@ -4884,6 +4916,8 @@ export const useMqttStore = defineStore('mqtt', () => {
     consumerStateStr,
     consumerFaultState,
     consumerFaultStr,
+    consumerPlugState,
+    consumerChargeState,
     consumerUsageType,
     consumerMode,
     consumerResetEnabled,

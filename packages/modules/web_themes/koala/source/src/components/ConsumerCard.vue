@@ -2,13 +2,7 @@
   <q-card class="consumer-card" :class="{ 'full-height': props.fullHeight }">
     <q-card-section class="row no-wrap items-center justify-between">
       <div class="row no-wrap items-center ellipsis">
-        <q-icon
-          name="circle"
-          :color="statusColor"
-          size="12px"
-          class="q-mr-sm"
-          :title="statusText"
-        />
+        <ConsumerStateIcon :consumer-id="props.consumerId" class="q-mr-sm" />
         <div class="text-h6 text-bold ellipsis" :title="name">
           {{ name }}
         </div>
@@ -92,6 +86,7 @@ import { useMqttStore } from 'src/stores/mqtt-store';
 import ConsumerSettings from './ConsumerSettings.vue';
 import ConsumerMessage from './ConsumerMessage.vue';
 import ConsumerModeButtons from './ConsumerModeButtons.vue';
+import ConsumerStateIcon from './ConsumerStateIcon.vue';
 
 const props = defineProps<{
   consumerId: number;
@@ -107,11 +102,6 @@ const name = computed(() => mqttStore.consumerName(props.consumerId));
 const power = computed(
   () => mqttStore.consumerPower(props.consumerId, 'textValue') as string,
 );
-
-const powerValue = computed(
-  () => (mqttStore.consumerPower(props.consumerId, 'value') as number) || 0,
-);
-const isRunning = computed(() => powerValue.value > 0);
 
 const temperatures = computed(() =>
   mqttStore.consumerTemperatures(props.consumerId),
@@ -132,30 +122,6 @@ const dailyImported = computed(
   () =>
     mqttStore.consumerDailyImported('textValue', props.consumerId) as string,
 );
-
-const faultState = computed(() =>
-  mqttStore.consumerFaultState(props.consumerId),
-);
-
-const statusText = computed(() => {
-  if (faultState.value > 0) {
-    return (
-      mqttStore.consumerFaultStr(props.consumerId) ??
-      mqttStore.consumerStateStr(props.consumerId)
-    );
-  }
-  return mqttStore.consumerStateStr(props.consumerId);
-});
-
-const statusColor = computed(() => {
-  if (faultState.value >= 2) {
-    return 'negative';
-  }
-  if (faultState.value === 1) {
-    return 'warning';
-  }
-  return isRunning.value ? 'positive' : 'grey-6';
-});
 
 const meterOnly = computed(() => {
   const usageType = mqttStore.consumerUsageType(props.consumerId);
