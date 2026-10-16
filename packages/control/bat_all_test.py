@@ -131,7 +131,7 @@ cases = [
     Params("Mindest-SoC, SoC erreicht, Entladung nicht erlaubt, Speicher entlädt trotzdem",
            ChargemodeConfigBat(mode="min_soc_bat_mode"), -500, 90, 0, False),
     Params("Mindest-SoC, SoC erreicht, Entladung nicht erlaubt, Speicher lädt",
-           ChargemodeConfigBat(mode="min_soc_bat_mode"), 500, 90, 0, False),
+           ChargemodeConfigBat(mode="min_soc_bat_mode"), 500, 90, 500, False),
     Params("Mindest-SoC, SoC erreicht, Speicher ist voll",
            ChargemodeConfigBat(mode="min_soc_bat_mode"), 0, 100, 0, False),
     Params("Mindest-SoC, SoC erreicht, Entladung in Auto, Speicher entlädt, Entladeleistung nicht erreicht",
@@ -172,7 +172,7 @@ cases = [
     Params(("Mindest-SoC, Hysterese, Entladung nicht erlaubt, Speicher entlädt trotzdem"),
            ChargemodeConfigBat(mode="min_soc_bat_mode"), -500, 60, 0, False, hysteresis_discharge=True),
     Params(("Mindest-SoC, Hysterese, Entladung nicht erlaubt, Speicher lädt"),
-           ChargemodeConfigBat(mode="min_soc_bat_mode"), 500, 60, 0, False, hysteresis_discharge=True),
+           ChargemodeConfigBat(mode="min_soc_bat_mode"), 500, 60, 500, False, hysteresis_discharge=True),
 ]
 
 
