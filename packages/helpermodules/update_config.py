@@ -709,6 +709,8 @@ class UpdateConfig:
         ("openWB/internal_chargepoint/1/data/parent_cp", None),
         ("openWB/optional/ep/flexible_tariff/provider", NO_MODULE),
         ("openWB/optional/ep/grid_fee/provider", NO_MODULE),
+        ("openWB/optional/forecast/configured", False),
+        ("openWB/optional/forecast/provider", NO_MODULE),
         ("openWB/optional/int_display/active", True),
         ("openWB/optional/int_display/detected", True),
         ("openWB/optional/int_display/on_if_plugged_in", True),
