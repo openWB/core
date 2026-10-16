@@ -22,7 +22,7 @@ export class ChargePoint {
 	evTemplate = 0
 	currentPlan = ''
 	averageConsumption = 0
-	vehicleName = ''
+	// vehicleName = ''
 	rangeCharged = 0
 	rangeUnit = ''
 	counter = 0
@@ -40,8 +40,8 @@ export class ChargePoint {
 	currents = [0, 0, 0]
 	phasesToUse = 0
 	// soc = 0
-	isSocConfigured = true
-	isSocManual = false
+	// isSocConfigured = true
+	// isSocManual = false
 	waitingForSoc = false
 	color = 'white'
 
@@ -68,6 +68,18 @@ export class ChargePoint {
 	updateConnectedVehicle(id: number) {
 		this._connectedVehicle = id
 	}
+	get vehicleName() {
+		if (vehicles[this.connectedVehicle]) {
+			return vehicles[this.connectedVehicle].name
+		} else {
+			return 'Fahrzeug'
+		}
+	}
+	set vehicleName(name: string) {
+		if (vehicles[this.connectedVehicle]) {
+			vehicles[this.connectedVehicle].name = name
+		}
+	}
 	get soc() {
 		if (vehicles[this.connectedVehicle]) {
 			return vehicles[this.connectedVehicle].soc
@@ -78,6 +90,20 @@ export class ChargePoint {
 	set soc(newSoc: number) {
 		if (vehicles[this.connectedVehicle]) {
 			vehicles[this.connectedVehicle].soc = newSoc
+		}
+	}
+	get isSocConfigured() {
+		if (vehicles[this.connectedVehicle]) {
+			return vehicles[this.connectedVehicle].isSocConfigured
+		} else {
+			return false
+		}
+	}
+	get isSocManual() {
+		if (vehicles[this.connectedVehicle]) {
+			return vehicles[this.connectedVehicle].isSocManual
+		} else {
+			return false
 		}
 	}
 	get chargeMode() {
@@ -331,6 +357,9 @@ export class Vehicle {
 	range = 0
 	private _etActive = false
 	private _etMaxPrice = 20
+	isSocConfigured = false
+	isSocManual = false
+	
 	constructor(index: number) {
 		this.id = index
 	}

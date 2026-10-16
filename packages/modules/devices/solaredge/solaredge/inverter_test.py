@@ -18,6 +18,7 @@ def test_read_state():
     inverter = SolaredgeInverter(SolaredgeInverterSetup(), client=Mock(
         spec=ModbusTcpClient_, read_holding_registers_bulk=mock_read_holding_registers_bulk), device_id=1)
     inverter.initialize()
+    inverter.peak_filter.check_values = Mock(return_value=(None, 8980404))
 
     # execution
     inverter_state = inverter.read_state()
@@ -31,3 +32,4 @@ def test_read_state():
         imported=100,
     )
     )
+    inverter.peak_filter.check_values.assert_called_once_with(-1415.2, None, 8980404)

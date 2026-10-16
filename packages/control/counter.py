@@ -78,6 +78,7 @@ class Get:
     fault_state: int = field(default=0, metadata={"topic": "get/fault_state"})
     fault_str: str = field(default=NO_ERROR, metadata={"topic": "get/fault_str"})
     power: float = field(default=0, metadata={"topic": "get/power"})
+    local_power: float = field(default=0, metadata={"topic": "get/local_power"})
     serial_number: Optional[str] = field(default=None, metadata={"topic": "get/serial_number"})
 
 
@@ -307,6 +308,10 @@ class Counter:
         self.data.set.raw_currents_left = list(map(operator.sub, self.data.set.raw_currents_left, diffs))
         self.data.set.raw_exported_currents_left = list(
             map(operator.add, self.data.set.raw_exported_currents_left, diffs))
+        if self.data.set.raw_power_left is not None:
+            self.data.set.raw_power_left -= sum([c * cp_voltage for c in diffs])
+        if self.data.set.raw_exported_power_left is not None:
+            self.data.set.raw_exported_power_left += sum([c * cp_voltage for c in diffs])
 
         if surplus:
             if self.data.set.surplus_power_left is not None:
@@ -314,10 +319,6 @@ class Counter:
             log.debug(f'Zähler {self.num}: {self.data.set.raw_currents_left}A verbleibende Ströme, '
                       f'{self.data.set.surplus_power_left}W verbleibender Überschuss')
         else:
-            if self.data.set.raw_power_left is not None:
-                self.data.set.raw_power_left -= sum([c * cp_voltage for c in diffs])
-            if self.data.set.raw_exported_power_left is not None:
-                self.data.set.raw_exported_power_left += sum([c * cp_voltage for c in diffs])
             log.debug(f'Zähler {self.num}: {self.data.set.raw_currents_left}A verbleibende Ströme, '
                       f'{self.data.set.raw_exported_currents_left}A verbleibende exportierte Ströme, '
                       f'{self.data.set.raw_power_left}W verbleibende Leistung, '

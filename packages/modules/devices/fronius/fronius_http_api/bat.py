@@ -2,7 +2,7 @@
 import logging
 from typing import Any, Dict, Optional, TypedDict
 
-from modules.common.abstract_device import AbstractBat
+from modules.common.abstract_device import AbstractBat, SetPoint
 from modules.common.component_state import BatState
 from modules.common.component_type import ComponentDescriptor
 from modules.common.fault_state import ComponentInfo, FaultState
@@ -72,7 +72,8 @@ class FroniusBat(AbstractBat):
         )
         self.store.set(bat_state)
 
-    def set_power_limit(self, power_limit: Optional[int]) -> None:
+    def set_power_limit(self, setpoint: SetPoint) -> None:
+        power_limit = setpoint.power_limit
         username = self.component_config.configuration.username
         password = self.component_config.configuration.password
         if username is None or password is None:

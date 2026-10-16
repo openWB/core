@@ -62,7 +62,7 @@ class FroniusSunspecInverter(AbstractInverter):
 
         exported = self.__tcp_client.read_holding_registers(40102, ModbusDataType.FLOAT_32, unit=unit)  # WH
 
-        self.peak_filter.check_values(power)
+        _, exported = self.peak_filter.check_values(power, None, exported)
         imported, _ = self.sim_counter.sim_count(power)
 
         self.store.set(InverterState(power=power, exported=exported, imported=imported))

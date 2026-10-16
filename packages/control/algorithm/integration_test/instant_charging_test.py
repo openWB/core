@@ -23,12 +23,13 @@ def all_cp_instant_charging_1p():
         control_parameter.required_current = 16
         control_parameter.chargemode = Chargemode.INSTANT_CHARGING
         control_parameter.submode = Chargemode.INSTANT_CHARGING
-    control_parameter = data.data.consumer_data["consumer7"].data.control_parameter
-    control_parameter.min_current = 0.5
-    control_parameter.required_current = 0.5
-    control_parameter.required_currents = [0.5, 0, 0]
-    control_parameter.chargemode = Chargemode.INSTANT_CHARGING
-    control_parameter.submode = Chargemode.INSTANT_CHARGING
+    consumer = data.data.consumer_data["consumer7"]
+    consumer.data.control_parameter.min_current = 0.5
+    consumer.data.control_parameter.required_current = 0.5
+    consumer.data.control_parameter.required_currents = [0.5, 0, 0]
+    consumer.data.control_parameter.chargemode = Chargemode.INSTANT_CHARGING
+    consumer.data.control_parameter.submode = Chargemode.INSTANT_CHARGING
+    consumer.data.set.switch_interval_elapsed = True
 
 
 @pytest.fixture()
@@ -187,19 +188,19 @@ cases_control_parameter = [
                                    {"type": "vehicle", "id": 3}, {"type": "vehicle", "id": 5}
                                ]
                            }, {"type": "vehicle", "id": 4}],
-                           expected_current_cp3=15,
-                           expected_current_cp4=6,
-                           expected_current_cp5=10,
-                           expected_raw_power_left=690,
-                           expected_raw_currents_left_counter0=[1.0]*3,
+                           expected_current_cp3=16,
+                           expected_current_cp4=0,
+                           expected_current_cp5=16,
+                           expected_raw_power_left=0,
+                           expected_raw_currents_left_counter0=[0]*3,
                            expected_raw_currents_left_counter6=[0]*3),
     ParamsControlParameter(name="change submode cp4",
                            loadmanagement_prios=[{"type": "vehicle", "id": 3}, {
                                "type": "vehicle", "id": 4}, {"type": "vehicle", "id": 5}],
                            submode_cp4=Chargemode.TIME_CHARGING,
                            expected_current_cp3=16,
-                           expected_current_cp4=10,
-                           expected_current_cp5=6,
+                           expected_current_cp4=16,
+                           expected_current_cp5=0,
                            expected_raw_power_left=0,
                            expected_raw_currents_left_counter0=[0]*3,
                            expected_raw_currents_left_counter6=[0]*3),

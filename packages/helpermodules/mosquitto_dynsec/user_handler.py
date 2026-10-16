@@ -1,11 +1,13 @@
 import logging
 from secrets import token_hex
-from typing import Optional, Tuple
+from typing import Tuple, Optional
 from json import dump as json_dump
 
 from helpermodules.mosquitto_dynsec.role_handler import _get_base_path
 from helpermodules.utils.run_command import run_command
 
+INTERNAL_DISPLAY_IP = "127.0.0.1"
+INTERNAL_DISPLAY_USER = "Display-Intern"
 USER_CREDENTIALS_PATH = _get_base_path() / "data" / "clients"
 log = logging.getLogger(__name__)
 
@@ -27,17 +29,18 @@ def add_user_to_group(username: str, groupname: str) -> None:
     run_command(["mosquitto_ctrl", "dynsec", "addGroupClient", groupname, username])
 
 
-def create_display_user(ip_address: str, user_name: Optional[str] = None) -> Tuple[bool, str]:
-    if user_name is None:
-        user_name = f"Display-{ip_address}"
+def create_display_user(ip_address: Optional[str] = None) -> Tuple[bool, str, str]:
+    if ip_address is None:
+        ip_address = INTERNAL_DISPLAY_IP
+    user_name = INTERNAL_DISPLAY_USER if ip_address == INTERNAL_DISPLAY_IP else f"Display-{ip_address}"
     file_name = f"display-{ip_address}".replace('.', '_')
     if user_exists(user_name):
         log.info(f"User '{user_name}' already exists")
-        return True, user_name
+        return True, user_name, ip_address
     password = token_hex(16)
     if not add_user(user_name, password):
         log.error(f"Failed to create user '{user_name}' for cp display at {ip_address}")
-        return False, user_name
+        return False, user_name, ip_address
     add_user_to_group(user_name, "display")
     store_user_credentials(
         file_name,
@@ -45,10 +48,13 @@ def create_display_user(ip_address: str, user_name: Optional[str] = None) -> Tup
         password
     )
     log.info(f"Created user '{user_name}' for cp display at {ip_address}")
-    return True, user_name
+    return True, user_name, ip_address
 
 
 def remove_display_user(ip_address: str) -> bool:
+    if ip_address == INTERNAL_DISPLAY_IP:
+        log.error("Cannot remove the internal display user")
+        return False
     user_name = f"Display-{ip_address}"
     if remove_user(user_name):
         remove_user_credentials(user_name.lower().replace('.', '_'))
@@ -60,9 +66,7 @@ def remove_display_user(ip_address: str) -> bool:
 
 def user_exists(username: str) -> bool:
     result = run_command(["mosquitto_ctrl", "dynsec", "getClient", username], process_exception=True)
-    if username in result:
-        return True
-    return False
+    return result is not None and username in result
 
 
 def add_user(username: str, password: str) -> bool:

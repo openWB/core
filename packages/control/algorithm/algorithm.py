@@ -5,6 +5,7 @@ from control import data
 from control.algorithm import common
 from control.algorithm.additional_current import AdditionalCurrent
 from control.algorithm.bidi_charging import Bidi
+from control.algorithm.filter_chargepoints import filter_active_loads, filtered_loads_to_str, group_loads_generator
 from control.algorithm.min_current import MinCurrent
 from control.algorithm.no_current import NoCurrent
 from control.algorithm.surplus_controlled import SurplusControlled
@@ -31,19 +32,25 @@ class Algorithm:
             common.reset_current()
             for cp in data.data.cp_data.values():
                 cp.reset_values_before_algorithm()
-            log.info("**Mindestrom setzen**")
-            self.min_current.set_min_current()
-            log.info("**Soll-Strom setzen**")
-            common.reset_current_to_target_current()
-            self.additional_current.set_additional_current()
-            self.surplus_controlled.set_required_current_to_max()
-            log.info("**PV-geführten Strom setzen**")
-            counter.limit_raw_power_left_to_surplus(self.evu_counter.calc_raw_surplus())
-            if self.evu_counter.data.set.surplus_power_left > 0:
-                common.reset_current_to_target_current()
-                self.surplus_controlled.set_surplus_current()
-            else:
-                log.info("Keine Leistung für PV-geführtes Laden übrig.")
+            for grouped_loads in group_loads_generator():
+                grouped_loads = filter_active_loads(grouped_loads)
+                if len(grouped_loads) == 0:
+                    continue
+                log.info(f"Gruppe {filtered_loads_to_str(grouped_loads)}")
+                log.info("**Mindestrom setzen**")
+                self.min_current.set_min_current(grouped_loads)
+                log.info("**Soll-Strom setzen**")
+                common.reset_current_to_target_current(grouped_loads)
+                self.additional_current.set_additional_current(grouped_loads)
+                self.surplus_controlled.set_required_current_to_max(grouped_loads)
+                log.info("**PV-geführten Strom setzen**")
+                counter.limit_raw_power_left_to_surplus(self.evu_counter.calc_raw_surplus())
+                if self.evu_counter.data.set.surplus_power_left > 0:
+                    common.reset_current_to_target_current(grouped_loads)
+                    self.surplus_controlled.set_surplus_current(grouped_loads)
+                else:
+                    log.info("Keine Leistung für PV-geführtes Laden übrig.")
+            # Nullpunktausregelung, nachdem für alle anderen Ladepunkte der Soll-Strom feststeht
             log.info("**Bidi-(Ent-)Lade-Strom setzen**")
             counter.set_raw_surplus_power_left()
             self.bidi.set_bidi()

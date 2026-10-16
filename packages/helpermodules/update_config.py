@@ -14,6 +14,7 @@ from typing import List, Optional
 from paho.mqtt.client import Client as MqttClient, MQTTMessage
 
 from control.chargemode import Chargemode
+from control.consumer.consumer_data import ResetChargemode
 from control.consumer.usage import NOT_CONTROLLED
 from control.limiting_value import LoadmanagementLimit
 
@@ -22,7 +23,7 @@ from helpermodules import timecheck
 from helpermodules import hardware_configuration
 from helpermodules import pub
 from helpermodules.broker import BrokerClient
-from helpermodules.abstract_plans import Limit
+from helpermodules.abstract_plans import FrequencyDate, Limit
 from helpermodules.constants import DEFAULT_COLORS, NO_ERROR
 from helpermodules.hardware_configuration import (
     get_hardware_configuration_setting,
@@ -32,6 +33,7 @@ from helpermodules.hardware_configuration import (
 from helpermodules.measurement_logging.process_log import get_default_charge_log_columns, get_totals
 from helpermodules.measurement_logging.write_log import get_names
 from helpermodules.messaging import MessageType, pub_system_message
+from helpermodules.mosquitto_dynsec.role_handler import add_acl_role, remove_acl_role
 from helpermodules.pub import Pub
 from helpermodules.utils.json_file_handler import write_and_check
 from helpermodules.utils.run_command import run_command
@@ -61,7 +63,7 @@ NO_MODULE = {"type": None, "configuration": {}}
 
 class UpdateConfig:
 
-    DATASTORE_VERSION = 151
+    DATASTORE_VERSION = 154
 
     FILE_OPERATION_VERSION = 0
 
@@ -103,6 +105,7 @@ class UpdateConfig:
         "^openWB/bat/[0-9]+/get/fault_str$",
         "^openWB/bat/[0-9]+/get/power_limit_controllable$",
         "^openWB/bat/[0-9]+/set/power_limit$",
+        "^openWB/bat/[0-9]+/set/evu_power$",
 
         "^openWB/chargepoint/get/power$",
         "^openWB/chargepoint/get/exported$",
@@ -197,18 +200,44 @@ class UpdateConfig:
         "^openWB/consumer/get/imported$",
         "^openWB/consumer/get/daily_exported$",
         "^openWB/consumer/get/daily_imported$",
+        "^openWB/consumer/get/fault_state$",
+        "^openWB/consumer/get/fault_str$",
         "^openWB/consumer/[0-9]+/module$",
         "^openWB/consumer/[0-9]+/config$",
         "^openWB/consumer/[0-9]+/config/is_home_consumption_consumer$",
         "^openWB/consumer/[0-9]+/extra_meter$",
         "^openWB/consumer/[0-9]+/usage$",
+        "^openWB/consumer/[0-9]+/control_parameter/chargemode$",
+        "^openWB/consumer/[0-9]+/control_parameter/current_plan$",
+        "^openWB/consumer/[0-9]+/control_parameter/failed_phase_switches$",
+        "^openWB/consumer/[0-9]+/control_parameter/limit$",
+        "^openWB/consumer/[0-9]+/control_parameter/min_current$",
+        "^openWB/consumer/[0-9]+/control_parameter/phases$",
+        "^openWB/consumer/[0-9]+/control_parameter/required_current$",
+        "^openWB/consumer/[0-9]+/control_parameter/state$",
+        "^openWB/consumer/[0-9]+/control_parameter/submode$",
+        "^openWB/consumer/[0-9]+/control_parameter/template_phases$",
+        "^openWB/consumer/[0-9]+/control_parameter/timestamp_charge_start$",
+        "^openWB/consumer/[0-9]+/control_parameter/timestamp_last_cp_retry$",
+        "^openWB/consumer/[0-9]+/control_parameter/timestamp_chargemode_changed$",
+        "^openWB/consumer/[0-9]+/control_parameter/timestamp_last_phase_switch$",
+        "^openWB/consumer/[0-9]+/control_parameter/timestamp_phase_switch_buffer_start$",
+        "^openWB/consumer/[0-9]+/control_parameter/timestamp_switch_on_off$",
+        "^openWB/consumer/[0-9]+/get/charge_state$",
         "^openWB/consumer/[0-9]+/get/currents$",
+        "^openWB/consumer/[0-9]+/get/exported$",
         "^openWB/consumer/[0-9]+/get/fault_state$",
         "^openWB/consumer/[0-9]+/get/fault_str$",
+        "^openWB/consumer/[0-9]+/get/imported$",
+        "^openWB/consumer/[0-9]+/get/daily_exported$",
+        "^openWB/consumer/[0-9]+/get/daily_imported$",
+        "^openWB/consumer/[0-9]+/get/plug_state$",
         "^openWB/consumer/[0-9]+/get/powers$",
         "^openWB/consumer/[0-9]+/get/power$",
+        "^openWB/consumer/[0-9]+/get/set_power$",
         "^openWB/consumer/[0-9]+/get/state$",
         "^openWB/consumer/[0-9]+/get/state_str$",
+        "^openWB/consumer/[0-9]+/get/temperatures$",
         "^openWB/consumer/[0-9]+/get/voltages$",
         "^openWB/consumer/[0-9]+/set/current$",
         "^openWB/consumer/[0-9]+/set/on_time$",
@@ -225,9 +254,12 @@ class UpdateConfig:
         "^openWB/counter/set/imported_home_consumption$",
         "^openWB/counter/set/invalid_home_consumption$",
         "^openWB/counter/set/home_consumption$",
+        "^openWB/counter/set/not_in_home_consumption$",
+        "^openWB/counter/set/unmeasured_home_consumption$",
         "^openWB/counter/set/daily_yield_home_consumption$",
         "^openWB/counter/set/simulation$",
         "^openWB/counter/[0-9]+/get/voltages$",
+        "^openWB/counter/[0-9]+/get/local_power$",
         "^openWB/counter/[0-9]+/get/power$",
         "^openWB/counter/[0-9]+/get/currents$",
         "^openWB/counter/[0-9]+/get/powers$",
@@ -2379,6 +2411,8 @@ class UpdateConfig:
         self._append_datastore_version(79)
 
     # moved and corrected to 87
+    def upgrade_datastore_80(self) -> None:
+        self._append_datastore_version(80)
 
     def upgrade_datastore_81(self) -> None:
         def upgrade(topic: str, payload) -> None:
@@ -2791,6 +2825,12 @@ class UpdateConfig:
                     return {topic: payload}
         self._loop_all_received_topics(upgrade)
         self._append_datastore_version(95)
+
+    def upgrade_datastore_96(self) -> None:
+        self._append_datastore_version(96)
+
+    def upgrade_datastore_97(self) -> None:
+        self._append_datastore_version(97)
 
     def upgrade_datastore_98(self) -> None:
         version_str = decode_payload(
@@ -4048,3 +4088,70 @@ class UpdateConfig:
             self.__update_topic(hierarchy_topic, _counter_all.data.get.hierarchy)
 
         self._append_datastore_version(151)
+
+    def upgrade_datastore_152(self):
+        user_management_active = decode_payload(
+            self.all_received_topics.get("openWB/system/security/user_management_active")
+        )
+        if user_management_active is True:
+            for topic, payload in self.all_received_topics.items():
+                match = re.search(r"^openWB/consumer/(\d+)/module$", topic)
+                if match is None:
+                    continue
+                consumer_id = int(match.group(1))
+                consumer_module = decode_payload(payload)
+                consumer_type = consumer_module.get("type") if isinstance(consumer_module, dict) else None
+
+                add_acl_role("consumer-<id>-access", consumer_id)
+                if consumer_type == "mqtt":
+                    add_acl_role("consumer-<id>-write-access", consumer_id)
+                else:
+                    remove_acl_role("consumer-<id>-write-access", consumer_id)
+        self._append_datastore_version(152)
+
+    def upgrade_datastore_153(self) -> None:
+        def upgrade(topic: str, payload) -> Optional[dict]:
+            if re.search(r"^openWB/consumer/[0-9]+/usage$", topic) is not None:
+                usage = decode_payload(payload)
+                reset_chargemode = usage["reset_chargemode"]
+                if reset_chargemode.get("mode") is not None:
+                    legacy_target_chargemode = reset_chargemode.get("chargemode", Chargemode.INSTANT_CHARGING)
+                    # altes Schema
+                    if reset_chargemode["mode"] == "never":
+                        reset_chargemode = ResetChargemode(active=False, chargemode=legacy_target_chargemode)
+                    elif reset_chargemode["mode"] == "midnight":
+                        reset_chargemode = ResetChargemode(active=True, time="00:00",
+                                                           frequency=FrequencyDate(selected="daily"),
+                                                           chargemode=legacy_target_chargemode)
+                    elif reset_chargemode["mode"] == "time":
+                        timestamp = reset_chargemode["time"]
+                        if timestamp is not None:
+                            date = datetime.datetime.fromtimestamp(timestamp).strftime("%Y-%m-%d")
+                            time = datetime.datetime.fromtimestamp(timestamp).strftime("%H:%M")
+                        else:
+                            date = datetime.datetime.today().strftime("%Y-%m-%d")
+                            time = "07:00"
+                        reset_chargemode = ResetChargemode(
+                            active=True, time=time, frequency=FrequencyDate(selected="once", once=date),
+                            chargemode=legacy_target_chargemode)
+
+                    usage["reset_chargemode"] = reset_chargemode
+                    return {topic: asdict(usage)}
+            return None
+        self._loop_all_received_topics(upgrade)
+        self._append_datastore_version(153)
+
+    def upgrade_datastore_154(self) -> None:
+        def upgrade(topic: str, payload) -> Optional[dict]:
+            if re.search(r"^openWB/consumer/[0-9]+/config$", topic) is not None:
+                config = decode_payload(payload)
+                if "min_current" in config:
+                    if "min_power" not in config:
+                        phases = config.get("connected_phases") or 1
+                        config["min_power"] = float(config["min_current"]) * phases * 230
+                    del config["min_current"]
+                    return {topic: config}
+            return None
+
+        self._loop_all_received_topics(upgrade)
+        self._append_datastore_version(154)

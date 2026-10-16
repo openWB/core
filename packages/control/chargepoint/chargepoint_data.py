@@ -138,7 +138,7 @@ class Get:
     serial_number: Optional[str] = None
     soc: Optional[float] = None
     soc_timestamp: Optional[int] = None
-    state_str: Optional[str] = None
+    state_str: Optional[str] = field(default=None, metadata={"topic": "get/state_str"})
     vehicle_id: Optional[str] = None
     version: Optional[str] = None
     voltages: List[float] = field(default_factory=voltages_list_factory)
@@ -180,6 +180,13 @@ class Set:
     # (siehe initiate_control_pilot_interruption()).
     state_prev: ChargepointState = field(default=ChargepointState.NO_CHARGING_ALLOWED,
                                          metadata={"topic": "set/state_prev"})
+    # letzter CP-SoC-Timestamp, für den bereits ein force_soc_update ausgelöst wurde, und das zugehörige EV,
+    # um bei dauerhaft veraltetem EV-SoC (zB API-Fehler) nicht jeden Zyklus erneut ein Update anzustoßen,
+    # aber bei einem EV-Wechsel am selben Ladepunkt trotzdem einmal neu auszulösen
+    soc_timestamp_force_update_prev: Optional[int] = field(
+        default=None, metadata={"topic": "set/soc_timestamp_force_update_prev"})
+    soc_timestamp_force_update_prev_ev: Optional[int] = field(
+        default=None, metadata={"topic": "set/soc_timestamp_force_update_prev_ev"})
 
 
 @dataclass

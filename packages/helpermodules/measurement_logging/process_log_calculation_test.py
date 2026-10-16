@@ -4,6 +4,7 @@ import pytest
 
 from helpermodules.measurement_logging.process_log_calculation import (
     analyse_percentage,
+    analyse_percentage_totals,
     _calculate_average_power,
     process_entry,
     calc_energy_imported_by_source,
@@ -38,6 +39,29 @@ def test_analyse_percentage(name: str,
     # evaluation
     assert entry == expected
     assert message == ""
+
+
+def test_analyse_percentage_totals_clears_consumer_source_totals_on_error():
+    totals = {
+        "consumer": {"consumer1": {"energy_imported_grid": 99}},
+        "cp": {},
+        "counter": {"counter1": {}},
+        "hc": {},
+    }
+    entries = [{
+        "consumer": {"consumer1": {"energy_imported_grid": 25}},
+        "cp": {},
+        "counter": {"counter1": {"energy_imported_grid": 25}},
+    }]
+
+    result = analyse_percentage_totals(entries, totals)
+
+    assert result["consumer"]["consumer1"] == {
+        "energy_imported_grid": 0,
+        "energy_imported_pv": 0,
+        "energy_imported_bat": 0,
+        "energy_imported_cp": 0,
+    }
 
 
 @pytest.mark.parametrize("test_case, entry_data, expected_energy_source, should_be_unchanged", [

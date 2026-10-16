@@ -17,23 +17,25 @@
 				class="me-0 fa-solid fa-xs fa-clock ps-1"
 			/>
 		</h3>
-		<WbBadge v-if="chargepoint.isSocConfigured" :bgcolor="batcolor">
-			<BatterySymbol :soc="soc ?? 0" color="var(--color-bg)" class="me-2" />
-			<i
-				v-if="chargepoint.isSocManual"
-				class="fa-solid fa-sm fas fa-edit"
-				:style="{ color: 'var(--color-bg)' }"
-				@click="toggleSocEditor()"
-			/>
+		<div class="d-flex align-items-center">
+			<WbBadge v-if="chargepoint.isSocConfigured" :bgcolor="batcolor">
+				<BatterySymbol :soc="soc ?? 0" color="var(--color-bg)" class="me-2" />
+				<i
+					v-if="chargepoint.isSocManual"
+					class="fa-solid fa-sm fas fa-edit"
+					:style="{ color: 'var(--color-bg)' }"
+					@click="toggleSocEditor()"
+				/>
 
-			<i
-				v-if="!chargepoint.isSocManual"
-				type="button"
-				class="fa-solid fa-sm"
-				:class="chargepoint.waitingForSoc ? 'fa-spinner fa-spin' : 'fa-sync'"
-				@click="loadSoc"
-			/>
-		</WbBadge>
+				<i
+					v-if="!chargepoint.isSocManual"
+					type="button"
+					class="fa-solid fa-sm"
+					:class="chargepoint.waitingForSoc ? 'fa-spinner fa-spin' : 'fa-sync'"
+					@click="loadSoc"
+				/>
+			</WbBadge>
+		</div>
 	</div>
 	<div v-if="changeCar" class="carSelector p-4 m-2">
 		<span class="changeCarTitle mb-2">Fahrzeug wechseln:</span>
@@ -51,13 +53,14 @@
 			v-model="chargeMode"
 			class="chargemodes mt-3 mb-3"
 			:options="
-				Object.keys(chargemodes).map((v) => {
+				Object.entries(chargemodes).map((e) => {
+					const [k, v] = e
 					return {
-						text: chargemodes[v].name,
-						value: v,
-						color: chargemodes[v].color,
-						icon: chargemodes[v].icon,
-						active: chargemodes[v].mode == chargepoint.chargeMode,
+						text: v.name,
+						value: k,
+						color: v.color,
+						icon: v.icon,
+						active: v.mode == chargepoint.chargeMode,
 					}
 				})
 			"
@@ -273,36 +276,45 @@ function toggleSocEditor() {
 .fa-star {
 	color: var(--color-evu);
 }
+
 .fa-clock {
 	color: var(--color-charging);
 }
+
 .fa-car {
 	color: var(--color-menu);
 }
+
 .fa-circle-check {
 	color: var(--color-menu);
 }
+
 .socEditor {
 	border: 1px solid var(--color-menu);
 	justify-self: stretch;
 }
+
 .priceEditor {
 	border: 1px solid var(--color-menu);
 	justify-self: stretch;
 }
+
 .chargemodes {
 	grid-column: 1 / 13;
 	justify-self: center;
 }
+
 .chargeinfo {
 	display: grid;
 	grid-template-columns: repeat(12, auto);
 	justify-content: space-between;
 }
+
 .divider {
 	border-top: 1px solid var(--color-fg);
 	width: 100%;
 }
+
 .carSelector {
 	border: 1px solid var(--color-menu);
 	font-size: var(--font-settings);

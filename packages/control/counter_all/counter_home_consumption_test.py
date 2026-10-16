@@ -39,6 +39,31 @@ def test_calc_home_consumption(counter_all: Callable[[], CounterAll], data_):
 
 
 @pytest.mark.parametrize(
+    "battery_power",
+    [pytest.param(-500, id="discharging"), pytest.param(500, id="charging")],
+)
+def test_calc_home_consumption_with_hybrid_battery_below_nested_counter(battery_power: int, data_):
+    c = hierarchy_nested()
+    root = c.data.get.hierarchy[0]
+    nested_counter = root["children"][1]
+    inverter = root["children"].pop(2)
+    inverter["children"].append(root["children"].pop(2))
+    nested_counter["children"].append(inverter)
+
+    data.data.bat_data["bat2"].data.get.power = battery_power
+    data.data.pv_data["pv1"].data.get.power = -1000
+    for chargepoint in data.data.cp_data.values():
+        chargepoint.data.get.power = 100
+    data.data.counter_data["counter6"].data.get.power = battery_power - 700
+    data.data.counter_data["counter0"].data.get.power = battery_power - 400
+
+    home_consumption, not_in_home_consumption, _ = c._calc_home_consumption()
+
+    assert home_consumption == 200
+    assert not_in_home_consumption == 100
+
+
+@pytest.mark.parametrize(
     ["counter_all", "expected_home_consumption"],
     [
         pytest.param("hierarchy_home_consumption_standard", 0, id="hierarchy_home_consumption_standard"),
@@ -67,16 +92,31 @@ def test_calc_home_consumption_with_configured_home_consumption_counter(
 
 
 @pytest.mark.parametrize(["home_consumption",
+                          "not_in_home_consumption",
+                          "unmeasured_home_consumption",
                           "invalid_home_consumption",
+                          "initial_not_in_home_consumption",
                           "expected_home_consumption",
-                          "expected_invalid_home_consumption"],
-                         [pytest.param(500, 0, 500, 0, id="valid home consumption"),
-                          pytest.param(-100, 0, 200, 1, id="first invalid home consumption"),
-                          pytest.param(-100, 3, 0, 3, id="invalid home consumption, reset home consumption")])
+                          "expected_invalid_home_consumption",
+                          "expected_not_in_home_consumption",
+                          "expected_unmeasured_home_consumption"],
+                         [pytest.param(500, 150, 350, 0, 42, 500, 0, 150, 350, id="valid home consumption"),
+                          pytest.param(-100, 150, 350, 0, 42, 200, 1, 42, 0, id="first invalid home consumption"),
+                          pytest.param(500, 150, -100, 0, 42, 200, 1, 42, 0,
+                                       id="first invalid unmeasured home consumption"),
+                          pytest.param(-100, 150, 350, 3, 42, 0, 3, 150, 0,
+                                       id="invalid home consumption, reset home consumption"),
+                          pytest.param(500, 150, -100, 3, 42, 0, 3, 150, 0,
+                                       id="invalid unmeasured home consumption, reset home consumption")])
 def test_set_home_consumption(home_consumption: int,
+                              not_in_home_consumption: int,
+                              unmeasured_home_consumption: int,
                               invalid_home_consumption: int,
+                              initial_not_in_home_consumption: int,
                               expected_home_consumption: int,
                               expected_invalid_home_consumption: int,
+                              expected_not_in_home_consumption: int,
+                              expected_unmeasured_home_consumption: int,
                               monkeypatch,
                               data_):
     # setup
@@ -84,8 +124,12 @@ def test_set_home_consumption(home_consumption: int,
     data.data.counter_data["counter0"].data.get.fault_state = FaultStateLevel.NO_ERROR
     c.data.set.invalid_home_consumption = invalid_home_consumption
     c.data.set.home_consumption = 200
-    calc_home_consumption_mock = Mock(return_value=[home_consumption, []])
+    c.data.set.not_in_home_consumption = initial_not_in_home_consumption
+    calc_home_consumption_mock = Mock(return_value=[home_consumption, not_in_home_consumption, []])
+    calc_unmeasured_home_consumption_mock = Mock(return_value=unmeasured_home_consumption)
     monkeypatch.setattr(CounterAll, "_calc_home_consumption", calc_home_consumption_mock)
+    monkeypatch.setattr(
+        CounterAll, "_calc_unmeasured_home_consumption", calc_unmeasured_home_consumption_mock)
 
     # execution
     c.set_home_consumption()
@@ -93,16 +137,18 @@ def test_set_home_consumption(home_consumption: int,
     # evaluation
     assert c.data.set.invalid_home_consumption == expected_invalid_home_consumption
     assert c.data.set.home_consumption == expected_home_consumption
+    assert c.data.set.not_in_home_consumption == expected_not_in_home_consumption
+    assert c.data.set.unmeasured_home_consumption == expected_unmeasured_home_consumption
 
 
 @pytest.mark.parametrize(
     ["counter_mode", "consumer_mode", "expected_home_consumption"],
     [
-        pytest.param(CounterMode.HOME_CONSUMPTION.value, "auto_home_consumption", 1000,
+        pytest.param(CounterMode.HOME_CONSUMPTION.value, CounterMode.AUTO_HOME_CONSUMPTION.value, 1000,
                      id="consumer_auto_inherits_home"),
-        pytest.param(CounterMode.HOME_CONSUMPTION.value, "no_home_consumption", 700,
+        pytest.param(CounterMode.HOME_CONSUMPTION.value, CounterMode.NOT_HOME_CONSUMPTION.value, 700,
                      id="consumer_explicit_no_home"),
-        pytest.param(CounterMode.NOT_HOME_CONSUMPTION.value, "home_consumption", 300,
+        pytest.param(CounterMode.NOT_HOME_CONSUMPTION.value, CounterMode.HOME_CONSUMPTION.value, 300,
                      id="consumer_explicit_home_overrides_parent"),
     ],
 )
@@ -140,6 +186,138 @@ def test_calc_home_consumption_with_consumer_modes(counter_mode: str,
 
     home_consumption = c._calc_home_consumption()[0]
     assert home_consumption == expected_home_consumption
+
+
+@pytest.mark.parametrize(
+    ["consumer_mode", "parent_mode", "expected_mode"],
+    [
+        pytest.param(CounterMode.AUTO_HOME_CONSUMPTION.value, CounterMode.HOME_CONSUMPTION.value,
+                     CounterMode.HOME_CONSUMPTION.value, id="auto_inherits_parent"),
+        pytest.param(CounterMode.HOME_CONSUMPTION.value, CounterMode.NOT_HOME_CONSUMPTION.value,
+                     CounterMode.HOME_CONSUMPTION.value, id="explicit_home_overrides_parent"),
+        pytest.param(CounterMode.NOT_HOME_CONSUMPTION.value, CounterMode.HOME_CONSUMPTION.value,
+                     CounterMode.NOT_HOME_CONSUMPTION.value, id="explicit_no_home_overrides_parent"),
+    ],
+)
+def test_get_is_home_consumption_consumer(consumer_mode: str,
+                                          parent_mode: str,
+                                          expected_mode: str):
+    c = CounterAll()
+    consumer = Mock(data=Mock(config=Mock(is_home_consumption_consumer=consumer_mode)))
+
+    mode = c._get_is_home_consumption_consumer(consumer, parent_mode)
+
+    assert mode == expected_mode
+
+
+def test_get_local_power_from_counter_ignores_faulty_child():
+    data.data_init(Mock())
+    c = CounterAll()
+
+    data.data.counter_data = {
+        "counter0": Mock(
+            spec=Counter,
+            num=0,
+            data=Mock(
+                spec=CounterData,
+                get=Mock(spec=CounterGet, power=1000, fault_state=0),
+                config=Mock(spec=CounterConfig, is_home_consumption_counter=CounterMode.HOME_CONSUMPTION.value),
+            ),
+        ),
+        "counter1": Mock(
+            spec=Counter,
+            num=1,
+            data=Mock(
+                spec=CounterData,
+                get=Mock(spec=CounterGet, power=300, fault_state=0),
+                config=Mock(spec=CounterConfig, is_home_consumption_counter=CounterMode.HOME_CONSUMPTION.value),
+            ),
+        ),
+        "counter2": Mock(
+            spec=Counter,
+            num=2,
+            data=Mock(
+                spec=CounterData,
+                get=Mock(spec=CounterGet, power=200, fault_state=2),
+                config=Mock(spec=CounterConfig, is_home_consumption_counter=CounterMode.HOME_CONSUMPTION.value),
+            ),
+        ),
+    }
+
+    element = {
+        "id": 0,
+        "type": "counter",
+        "children": [
+            {"id": 1, "type": "counter", "children": []},
+            {"id": 2, "type": "counter", "children": []},
+        ],
+    }
+
+    local_power = c._get_local_power_from_counter(element)
+
+    assert local_power == 700
+
+
+def test_calc_home_consumption_from_counter_splits_home_and_not_home():
+    data.data_init(Mock())
+    c = CounterAll()
+    c.data.get.hierarchy = [{
+        "id": 0,
+        "type": "counter",
+        "children": [
+            {"id": 7, "type": "consumer", "children": []},
+            {
+                "id": 8,
+                "type": "counter",
+                "children": [{"id": 9, "type": "consumer", "children": []}],
+            },
+        ],
+    }]
+
+    data.data.counter_data = {
+        "counter0": Mock(
+            spec=Counter,
+            num=0,
+            data=Mock(
+                spec=CounterData,
+                get=Mock(spec=CounterGet, power=1000, fault_state=0),
+                config=Mock(spec=CounterConfig,
+                            is_home_consumption_counter=CounterMode.AUTO_HOME_CONSUMPTION.value),
+            ),
+        ),
+        "counter8": Mock(
+            spec=Counter,
+            num=8,
+            data=Mock(
+                spec=CounterData,
+                get=Mock(spec=CounterGet, power=100, fault_state=0),
+                config=Mock(spec=CounterConfig,
+                            is_home_consumption_counter=CounterMode.HOME_CONSUMPTION.value),
+            ),
+        ),
+    }
+    data.data.consumer_data = {
+        "consumer7": Mock(
+            num=7,
+            data=Mock(
+                get=Mock(power=400, fault_state=0),
+                config=Mock(is_home_consumption_consumer=CounterMode.HOME_CONSUMPTION.value),
+            ),
+        ),
+        "consumer9": Mock(
+            num=9,
+            data=Mock(
+                get=Mock(power=50, fault_state=0),
+                config=Mock(is_home_consumption_consumer=CounterMode.NOT_HOME_CONSUMPTION.value),
+            ),
+        ),
+    }
+
+    home_consumption, not_home_consumption = c._calc_home_consumption_from_counter(
+        c.data.get.hierarchy[0], CounterMode.HOME_CONSUMPTION.value)
+
+    assert home_consumption == 950
+    assert not_home_consumption == 50
 
 
 def hierarchy_home_consumption_standard() -> CounterAll:
@@ -513,3 +691,274 @@ def data_home_consumption() -> None:
             spec=CounterGet, power=7150, fault_state=0),
             config=Mock(spec=CounterConfig, is_home_consumption_counter=CounterMode.AUTO_HOME_CONSUMPTION.value))),
     })
+
+
+def test_set_home_consumption_sets_unmeasured_home_consumption_rest_power():
+    data.data_init(Mock())
+    c = CounterAll()
+    c.data.get.hierarchy = [{
+        "id": 0,
+        "type": "counter",
+        "children": [{"id": 7, "type": "consumer", "children": []}],
+    }]
+
+    data.data.counter_data = {
+        "counter0": Mock(
+            spec=Counter,
+            num=0,
+            data=Mock(
+                spec=CounterData,
+                get=Mock(spec=CounterGet, power=1000, fault_state=0),
+                config=Mock(spec=CounterConfig, is_home_consumption_counter=CounterMode.AUTO_HOME_CONSUMPTION.value),
+            ),
+        ),
+    }
+    data.data.consumer_data = {
+        "consumer7": Mock(
+            num=7,
+            data=Mock(
+                get=Mock(power=300, fault_state=0),
+                config=Mock(is_home_consumption_consumer=CounterMode.HOME_CONSUMPTION.value),
+            ),
+        ),
+    }
+
+    c.set_home_consumption()
+
+    assert c.data.set.home_consumption == 1000
+    assert c.data.set.unmeasured_home_consumption == 700
+
+
+def test_set_home_consumption_ignores_child_counter_rest_for_unmeasured_home_consumption():
+    data.data_init(Mock())
+    c = CounterAll()
+    c.data.get.hierarchy = [{
+        "id": 0,
+        "type": "counter",
+        "children": [{
+            "id": 8,
+            "type": "counter",
+            "children": [{"id": 3, "type": "cp", "children": []}],
+        }],
+    }]
+
+    data.data.counter_data = {
+        "counter0": Mock(
+            spec=Counter,
+            num=0,
+            data=Mock(
+                spec=CounterData,
+                get=Mock(spec=CounterGet, power=5000, fault_state=0),
+                config=Mock(spec=CounterConfig, is_home_consumption_counter=CounterMode.AUTO_HOME_CONSUMPTION.value),
+            ),
+        ),
+        "counter8": Mock(
+            spec=Counter,
+            num=8,
+            data=Mock(
+                spec=CounterData,
+                get=Mock(spec=CounterGet, power=5000, fault_state=0),
+                config=Mock(spec=CounterConfig, is_home_consumption_counter=CounterMode.HOME_CONSUMPTION.value),
+            ),
+        ),
+    }
+    data.data.cp_data = {
+        "cp3": Mock(
+            spec=Chargepoint,
+            data=Mock(
+                spec=ChargepointData,
+                get=Mock(spec=Get, power=3000, fault_state=0),
+            ),
+        ),
+    }
+
+    c.set_home_consumption()
+
+    assert c.data.set.home_consumption == 2000
+    assert c.data.set.unmeasured_home_consumption == 0
+
+
+def test_calc_unmeasured_home_consumption_subtracts_smarthome_excluded_power():
+    data.data_init(Mock())
+    c = CounterAll()
+    c.data.get.hierarchy = [{
+        "id": 0,
+        "type": "counter",
+        "children": [{"id": 3, "type": "cp", "children": []}],
+    }]
+    c.data.set.smarthome_power_excluded_from_home_consumption = 300
+
+    data.data.counter_data = {
+        "counter0": Mock(
+            spec=Counter,
+            num=0,
+            data=Mock(
+                spec=CounterData,
+                get=Mock(spec=CounterGet, power=1000, fault_state=0),
+                config=Mock(spec=CounterConfig, is_home_consumption_counter=CounterMode.AUTO_HOME_CONSUMPTION.value),
+            ),
+        ),
+    }
+    data.data.cp_data = {
+        "cp3": Mock(
+            spec=Chargepoint,
+            data=Mock(
+                spec=ChargepointData,
+                get=Mock(spec=Get, power=200, fault_state=0),
+            ),
+        ),
+    }
+
+    assert c._calc_unmeasured_home_consumption() == 500
+
+
+def test_calc_unmeasured_home_consumption_subtracts_inverter_power():
+    data.data_init(Mock())
+    c = CounterAll()
+    c.data.get.hierarchy = [{
+        "id": 0,
+        "type": "counter",
+        "children": [{"id": 1, "type": "inverter", "children": []}],
+    }]
+
+    data.data.counter_data = {
+        "counter0": Mock(
+            spec=Counter,
+            num=0,
+            data=Mock(
+                spec=CounterData,
+                get=Mock(spec=CounterGet, power=5000, fault_state=0),
+                config=Mock(spec=CounterConfig, is_home_consumption_counter=CounterMode.AUTO_HOME_CONSUMPTION.value),
+            ),
+        ),
+    }
+    data.data.pv_data = {
+        "pv1": Mock(
+            spec=Pv,
+            data=Mock(
+                spec=PvData,
+                get=Mock(spec=PvGet, power=3000, fault_state=0),
+                config=Mock(spec=PvConfig, max_ac_out=10000),
+            ),
+        ),
+    }
+
+    assert c._calc_unmeasured_home_consumption() == 2000
+
+
+def test_calc_unmeasured_home_consumption_subtracts_battery_power():
+    data.data_init(Mock())
+    c = CounterAll()
+    c.data.get.hierarchy = [{
+        "id": 0,
+        "type": "counter",
+        "children": [{"id": 2, "type": "bat", "children": []}],
+    }]
+
+    data.data.counter_data = {
+        "counter0": Mock(
+            spec=Counter,
+            num=0,
+            data=Mock(
+                spec=CounterData,
+                get=Mock(spec=CounterGet, power=5000, fault_state=0),
+                config=Mock(spec=CounterConfig, is_home_consumption_counter=CounterMode.AUTO_HOME_CONSUMPTION.value),
+            ),
+        ),
+    }
+    data.data.bat_data = {
+        "bat2": Mock(
+            spec=Bat,
+            num=2,
+            data=Mock(
+                spec=BatData,
+                get=Mock(spec=BatGet, power=3000, fault_state=0),
+                set=Mock(spec=BatSet, power_limit=None),
+            ),
+        ),
+    }
+
+    assert c._calc_unmeasured_home_consumption() == 2000
+
+
+def test_calc_unmeasured_home_consumption_subtracts_hybrid_battery_at_inverter():
+    data.data_init(Mock())
+    c = CounterAll()
+    c.data.get.hierarchy = [{
+        "id": 0,
+        "type": "counter",
+        "children": [{
+            "id": 1,
+            "type": "inverter",
+            "children": [{"id": 2, "type": "bat", "children": []}],
+        }],
+    }]
+
+    data.data.counter_data = {
+        "counter0": Mock(
+            spec=Counter,
+            num=0,
+            data=Mock(
+                spec=CounterData,
+                get=Mock(spec=CounterGet, power=5000, fault_state=0),
+                config=Mock(spec=CounterConfig, is_home_consumption_counter=CounterMode.AUTO_HOME_CONSUMPTION.value),
+            ),
+        ),
+    }
+    data.data.pv_data = {
+        "pv1": Mock(
+            spec=Pv,
+            data=Mock(
+                spec=PvData,
+                get=Mock(spec=PvGet, power=1000, fault_state=0),
+                config=Mock(spec=PvConfig, max_ac_out=10000),
+            ),
+        ),
+    }
+    data.data.bat_data = {
+        "bat2": Mock(
+            spec=Bat,
+            num=2,
+            data=Mock(
+                spec=BatData,
+                get=Mock(spec=BatGet, power=2000, fault_state=0),
+                set=Mock(spec=BatSet, power_limit=None),
+            ),
+        ),
+    }
+
+    assert c._calc_unmeasured_home_consumption() == 2000
+
+
+def test_calc_unmeasured_home_consumption_can_return_negative_value_for_invalid_handling():
+    data.data_init(Mock())
+    c = CounterAll()
+    c.data.get.hierarchy = [{
+        "id": 0,
+        "type": "counter",
+        "children": [{"id": 1, "type": "inverter", "children": []}],
+    }]
+
+    data.data.counter_data = {
+        "counter0": Mock(
+            spec=Counter,
+            num=0,
+            data=Mock(
+                spec=CounterData,
+                get=Mock(spec=CounterGet, power=1000, fault_state=0),
+                config=Mock(spec=CounterConfig, is_home_consumption_counter=CounterMode.AUTO_HOME_CONSUMPTION.value),
+            ),
+        ),
+    }
+    data.data.pv_data = {
+        "pv1": Mock(
+            spec=Pv,
+            data=Mock(
+                spec=PvData,
+                get=Mock(spec=PvGet, power=3000, fault_state=0),
+                config=Mock(spec=PvConfig, max_ac_out=10000),
+            ),
+        ),
+    }
+
+    assert c._calc_unmeasured_home_consumption() == -2000

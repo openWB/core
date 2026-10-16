@@ -76,19 +76,23 @@ class TimeframePlan(PlanBase):
 
 
 @dataclass
-class ScheduledChargingPlan(PlanBase):
+class TimepointPlan(PlanBase):
+    time: str = "07:00"
+    frequency: FrequencyDate = field(default_factory=frequency_date_factory)
+
+
+@dataclass
+class ScheduledChargingPlan(TimepointPlan):
     bidi_charging_enabled: bool = False
     bidi_power: int = 10000
     current: int = 14
     dc_current: float = 145
     et_active: bool = False
-    frequency: FrequencyDate = field(default_factory=frequency_date_factory)
     id: Optional[int] = None
     name: str = "neuer Zielladen-Plan"
     limit: ScheduledLimit = field(default_factory=scheduled_limit_factory)
     phases_to_use: int = 0
     phases_to_use_pv: int = 0
-    time: str = "07:00"  # ToDo: aktuelle Zeit verwenden
 
 
 @dataclass

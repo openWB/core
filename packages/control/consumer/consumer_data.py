@@ -4,8 +4,8 @@ from typing import List, Optional
 from control.chargemode import Chargemode
 from control.chargepoint.control_parameter import ControlParameter, control_parameter_factory
 from control.consumer.usage import ConsumerUsage
-from dataclass_utils.factories import empty_list_factory, voltages_list_factory
-from helpermodules.abstract_plans import ScheduledPlanConsumer, TimeChargingPlanConsumer
+from dataclass_utils.factories import currents_list_factory, empty_list_factory, voltages_list_factory
+from helpermodules.abstract_plans import ScheduledPlanConsumer, TimeChargingPlanConsumer, TimepointPlan
 from helpermodules.constants import NO_ERROR
 from modules.common.consumer_setup import ConsumerSetup
 
@@ -33,16 +33,9 @@ class WaitForStartStates(Enum):
     START_SIGNAL_RECEIVED = "start_signal_received"
 
 
-class ResetModes(Enum):
-    NEVER = "never"
-    MIDNIGHT = "midnight"
-    TIME = "time"
-
-
 @dataclass
-class ResetChargemode:
-    mode: ResetModes = ResetModes.NEVER
-    time: Optional[int] = None
+class ResetChargemode(TimepointPlan):
+    active: bool = False
     chargemode: Chargemode = Chargemode.INSTANT_CHARGING
 
 
@@ -62,15 +55,15 @@ class ConsumerConfig:
     connected_phases: int = 1
     phase_1: int = 1
     max_power: float = 5000
-    min_current: float = 0.5
+    min_power: float = 115
     min_interval: int = 60
     is_home_consumption_consumer: str = "auto_home_consumption"
 
 
 @dataclass
 class Get:
-    charge_state: bool = False
-    currents: Optional[List[Optional[float]]] = None
+    charge_state: bool = field(default=False, metadata={"topic": "get/charge_state"})
+    currents: List[float] = field(default_factory=currents_list_factory)
     daily_imported: float = field(default=0, metadata={"topic": "get/daily_imported"})
     error_timestamp: int = 0
     exported: float = 0
@@ -78,6 +71,7 @@ class Get:
     fault_state: int = 0
     imported: float = 0
     phases_in_use: int = 0
+    plug_state: bool = field(default=False, metadata={"topic": "get/plug_state"})
     power: float = 0
     powers: Optional[List[Optional[float]]] = None
     set_power: Optional[float] = None

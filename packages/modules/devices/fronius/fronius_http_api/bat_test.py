@@ -2,6 +2,7 @@ from unittest.mock import Mock
 
 import pytest
 
+from control.bat import Set
 from dataclass_utils import dataclass_from_dict
 from modules.common.store._api import LoggingValueStore
 from modules.conftest import SAMPLE_IP
@@ -88,7 +89,7 @@ def test_set_power_limit_without_credentials_does_not_connect(monkeypatch):
         FroniusConfiguration, device_config), device_id=0)
     battery.initialize()
 
-    battery.set_power_limit(0)
+    battery.set_power_limit(Set(power_limit=0))
 
     mock_fronius_wr.assert_not_called()
 
@@ -113,7 +114,7 @@ def test_set_power_limit_with_credentials(monkeypatch, power_limit, expected_cal
         FroniusConfiguration, device_config), device_id=0)
     battery.initialize()
 
-    battery.set_power_limit(power_limit)
+    battery.set_power_limit(Set(power_limit=power_limit))
 
     mock_fronius_wr.assert_called_once_with({
         'address': SAMPLE_IP,
@@ -127,7 +128,7 @@ def test_set_power_limit_with_credentials(monkeypatch, power_limit, expected_cal
     # Self-regulation/Stop dürfen dabei nicht erneut angestoßen werden, sobald der Modus schon aktiv
     # ist; Force-Charge/-Discharge werden hingegen bei jedem Aufruf erneut gesetzt, da sich die
     # gewünschte Lade-/Entladeleistung geändert haben könnte.
-    battery.set_power_limit(power_limit)
+    battery.set_power_limit(Set(power_limit=power_limit))
     mock_fronius_wr.assert_called_once()
     expected_count = 2 if repeats_call else 1
     assert getattr(mock_bat_api, expected_call).call_count == expected_count

@@ -430,6 +430,10 @@ def analyse_percentage_totals(entries, totals):
         totals["hc"].setdefault("all", {})
         ensure_zero_source_keys(totals["hc"]["all"])
 
+        totals.setdefault("consumer", {})
+        for module_totals in totals["consumer"].values():
+            ensure_zero_source_keys(module_totals)
+
         totals.setdefault("cp", {})
         for key, module_totals in totals["cp"].items():
             ensure_zero_source_keys(module_totals)

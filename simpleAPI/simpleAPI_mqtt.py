@@ -116,12 +116,14 @@ class SimpleMQTTDaemon:
             client.subscribe("openWB/pv/#", qos=0)
             client.subscribe("openWB/chargepoint/#", qos=0)
             client.subscribe("openWB/counter/#", qos=0)
+            client.subscribe("openWB/consumer/#", qos=0)
 
             # Subscribe to simpleAPI set topics for write operations
             client.subscribe("openWB/simpleAPI/set/#", qos=0)
 
             log.info(
-                "Subscribed to openWB component topics (bat, pv, chargepoint, counter) and simpleAPI set topics")
+                "Subscribed to openWB component topics (bat, pv, chargepoint, counter, consumer) "
+                "and simpleAPI set topics")
         else:
             log.error(f"Failed to connect to MQTT broker. Return code: {rc}")
 
@@ -261,8 +263,11 @@ class SimpleMQTTDaemon:
         """Parse payload as JSON, tuple, or raw value."""
         payload = payload.strip()
 
-        # Try to parse as JSON
-        if payload.startswith('{') or payload.startswith('['):
+        # Try to parse as JSON. openWB JSON-encodes every payload it publishes, including plain
+        # strings (e.g. fault_str arrives on the wire as '"Kein Fehler."', not 'Kein Fehler.') -
+        # without also matching a leading '"' here, those quote characters would be republished
+        # literally as part of the simpleAPI value.
+        if payload.startswith('{') or payload.startswith('[') or payload.startswith('"'):
             try:
                 return json.loads(payload)
             except json.JSONDecodeError as e:
@@ -585,6 +590,38 @@ class SimpleMQTTDaemon:
                     simple_topic = "openWB/simpleAPI/chargepoint/instant_charging_limit_soc"
                     self._publish_if_changed(simple_topic, limit['soc'])
 
+            # Extract pv_charging_limit values
+            pv_limit = pv_charging.get('limit', {})
+
+            if 'selected' in pv_limit:
+                topic = f"openWB/simpleAPI/chargepoint/{chargepoint_id}/pv_charging_limit"
+                self._publish_if_changed(topic, pv_limit['selected'])
+
+                # Also publish for lowest ID if this is it
+                if 'chargepoint' in self.lowest_ids and self.lowest_ids['chargepoint'] == int(chargepoint_id):
+                    simple_topic = "openWB/simpleAPI/chargepoint/pv_charging_limit"
+                    self._publish_if_changed(simple_topic, pv_limit['selected'])
+
+            if 'amount' in pv_limit:
+                # Convert from internal value (Wh) to kWh for display
+                amount_kwh = pv_limit['amount'] / 1000
+                topic = f"openWB/simpleAPI/chargepoint/{chargepoint_id}/pv_charging_limit_amount"
+                self._publish_if_changed(topic, amount_kwh)
+
+                # Also publish for lowest ID if this is it
+                if 'chargepoint' in self.lowest_ids and self.lowest_ids['chargepoint'] == int(chargepoint_id):
+                    simple_topic = "openWB/simpleAPI/chargepoint/pv_charging_limit_amount"
+                    self._publish_if_changed(simple_topic, amount_kwh)
+
+            if 'soc' in pv_limit:
+                topic = f"openWB/simpleAPI/chargepoint/{chargepoint_id}/pv_charging_limit_soc"
+                self._publish_if_changed(topic, pv_limit['soc'])
+
+                # Also publish for lowest ID if this is it
+                if 'chargepoint' in self.lowest_ids and self.lowest_ids['chargepoint'] == int(chargepoint_id):
+                    simple_topic = "openWB/simpleAPI/chargepoint/pv_charging_limit_soc"
+                    self._publish_if_changed(simple_topic, pv_limit['soc'])
+
         except Exception as e:
             log.error(f"Error publishing charge_template read topics: {e}")
 
@@ -614,6 +651,23 @@ class SimpleMQTTDaemon:
                 return
             elif 'instant_charging_limit' in topic_remainder:
                 success = self._handle_instant_charging_limit_operation(payload)
+                if success:
+                    self._clear_set_topic(topic)
+                return
+
+            # Check for pv_charging_limit operations first (can be with or without chargepoint ID)
+            if 'pv_charging_limit_soc' in topic_remainder:
+                success = self._handle_pv_charging_limit_soc_operation(payload)
+                if success:
+                    self._clear_set_topic(topic)
+                return
+            elif 'pv_charging_limit_amount' in topic_remainder:
+                success = self._handle_pv_charging_limit_amount_operation(payload)
+                if success:
+                    self._clear_set_topic(topic)
+                return
+            elif 'pv_charging_limit' in topic_remainder:
+                success = self._handle_pv_charging_limit_operation(payload)
                 if success:
                     self._clear_set_topic(topic)
                 return
@@ -950,6 +1004,105 @@ class SimpleMQTTDaemon:
         self._publish_json(target_topic, charge_template)
         log.info(
             f"Set instant_charging_limit_amount to {amount_value} kWh "
+            f"({internal_amount} Wh) for chargepoint {chargepoint_id}"
+        )
+        return True
+
+    def _handle_pv_charging_limit_operation(self, payload: str) -> bool:
+        """Handle PV charging limit type operation."""
+        valid_limits = ['none', 'soc', 'amount']
+
+        if payload not in valid_limits:
+            log.error(f"Invalid pv_charging_limit: {payload}. Valid values: {valid_limits}")
+            return False
+
+        # Get chargepoint ID (use lowest if not specified)
+        if 'chargepoint' in self.lowest_ids:
+            chargepoint_id = str(self.lowest_ids['chargepoint'])
+        else:
+            log.error("No chargepoint ID found for pv_charging_limit operation")
+            return False
+
+        charge_template = self._get_charge_template(chargepoint_id)
+        if charge_template is None:
+            log.error(f"No charge_template available for chargepoint {chargepoint_id}")
+            return False
+
+        # Modify the pv_charging.limit.selected value
+        charge_template['chargemode']['pv_charging']['limit']['selected'] = payload
+
+        # Publish the modified template
+        target_topic = f"openWB/set/chargepoint/{chargepoint_id}/set/charge_template"
+        self._publish_json(target_topic, charge_template)
+        log.info(f"Set pv_charging_limit to {payload} for chargepoint {chargepoint_id}")
+        return True
+
+    def _handle_pv_charging_limit_soc_operation(self, payload: str) -> bool:
+        """Handle PV charging limit SoC operation."""
+        try:
+            soc_value = int(payload)
+            if soc_value < 0 or soc_value > 100:
+                log.error(f"Invalid SoC value: {soc_value}. Must be between 0 and 100")
+                return False
+        except ValueError:
+            log.error(f"Invalid SoC value: {payload}. Must be an integer")
+            return False
+
+        # Get chargepoint ID (use lowest if not specified)
+        if 'chargepoint' in self.lowest_ids:
+            chargepoint_id = str(self.lowest_ids['chargepoint'])
+        else:
+            log.error("No chargepoint ID found for pv_charging_limit_soc operation")
+            return False
+
+        charge_template = self._get_charge_template(chargepoint_id)
+        if charge_template is None:
+            log.error(f"No charge_template available for chargepoint {chargepoint_id}")
+            return False
+
+        # Modify the pv_charging.limit.soc value
+        charge_template['chargemode']['pv_charging']['limit']['soc'] = soc_value
+
+        # Publish the modified template
+        target_topic = f"openWB/set/chargepoint/{chargepoint_id}/set/charge_template"
+        self._publish_json(target_topic, charge_template)
+        log.info(f"Set pv_charging_limit_soc to {soc_value}% for chargepoint {chargepoint_id}")
+        return True
+
+    def _handle_pv_charging_limit_amount_operation(self, payload: str) -> bool:
+        """Handle PV charging limit amount operation."""
+        try:
+            amount_value = int(payload)
+            if amount_value < 1 or amount_value > 50:
+                log.error(f"Invalid amount value: {amount_value}. Must be between 1 and 50")
+                return False
+
+            # Convert to internal value (multiply by 1000)
+            internal_amount = amount_value * 1000
+        except ValueError:
+            log.error(f"Invalid amount value: {payload}. Must be an integer")
+            return False
+
+        # Get chargepoint ID (use lowest if not specified)
+        if 'chargepoint' in self.lowest_ids:
+            chargepoint_id = str(self.lowest_ids['chargepoint'])
+        else:
+            log.error("No chargepoint ID found for pv_charging_limit_amount operation")
+            return False
+
+        charge_template = self._get_charge_template(chargepoint_id)
+        if charge_template is None:
+            log.error(f"No charge_template available for chargepoint {chargepoint_id}")
+            return False
+
+        # Modify the pv_charging.limit.amount value
+        charge_template['chargemode']['pv_charging']['limit']['amount'] = internal_amount
+
+        # Publish the modified template
+        target_topic = f"openWB/set/chargepoint/{chargepoint_id}/set/charge_template"
+        self._publish_json(target_topic, charge_template)
+        log.info(
+            f"Set pv_charging_limit_amount to {amount_value} kWh "
             f"({internal_amount} Wh) for chargepoint {chargepoint_id}"
         )
         return True

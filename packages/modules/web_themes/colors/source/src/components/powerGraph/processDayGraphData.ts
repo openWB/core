@@ -7,21 +7,16 @@ import {
 	updateEnergyValues,
 } from './model'
 
-import { registry, resetHistoricData } from '@/assets/js/model'
+import { createPowerItem, registry, resetHistoricData } from '@/assets/js/model'
 import { globalConfig } from '@/assets/js/themeConfig'
 import { shDevices } from '../smartHome/model'
 import { itemNames } from './model'
-import { Counter, counters } from '../counterList/model'
+import { addCounter, Counter, counters } from '../counterList/model'
 import { chargePoints } from '../chargePointList/model'
+import { addConsumer, consumers } from '../consumerList/model'
+import { PowerItemType, type PowerItem } from '@/assets/js/types'
+import { add } from '../mqttViewer/model'
 // methods:
-/* const noAutarchyCalculation = [
-	'evuIn',
-	'pv',
-	'batOut',
-	'evuOut',
-	'charging',
-	'house',
-] */
 let gridCounters: string[] = []
 // Process incoming day graph data
 export function processDayGraphMessages(topic: string, message: string) {
@@ -34,7 +29,6 @@ export function processDayGraphMessages(topic: string, message: string) {
 	resetHistoricData()
 	gridCounters = []
 	registry.keys().forEach((cat) => {
-		//consumerCategories.forEach((cat) => {
 		registry.setEnergyPv(cat, 0)
 		registry.setEnergyBat(cat, 0)
 	})
@@ -69,7 +63,6 @@ function transformRow(currentRow: RawDayGraphDataItem): GraphDataItem {
 	currentItem.evuOut = 0
 	currentItem.evuIn = 0
 	currentItem.counters = 0
-
 	Object.entries(currentRow.counter).forEach(([id, values]) => {
 		if (values.grid) {
 			currentItem.evuOut += values.power_exported
@@ -79,6 +72,12 @@ function transformRow(currentRow: RawDayGraphDataItem): GraphDataItem {
 			}
 		} else {
 			if (!registry.keys().includes(id)) {
+				const counter = counters.get(+id.slice(7))
+				if (!counter) {
+					// create counter if it doesn't exist
+					addCounter(+id.slice(7), 'counter', false)
+					//console.log('Added counter with id ' + id + ' to counters map.')
+				}
 				registry.duplicateItem(id, counters.get(+id.slice(7))!)
 				//registry.items.get(id)!.showInGraph = true
 			}
@@ -141,7 +140,10 @@ function transformRow(currentRow: RawDayGraphDataItem): GraphDataItem {
 		if (id != 'all') {
 			currentItem[id] = values.power_imported ?? 0
 			if (!registry.keys().includes(id)) {
-				registry.duplicateItem(id, shDevices.get(id)!)
+				const dev =
+					shDevices.get(id) ??
+					createPowerItem(id, PowerItemType.device, 'var(--color-device)')
+				registry.duplicateItem(id, dev)
 			}
 			if (shDevices.get(id)?.countAsHouse) {
 				shEnergyToBeExtractedFromHouse += values.power_imported
@@ -149,6 +151,7 @@ function transformRow(currentRow: RawDayGraphDataItem): GraphDataItem {
 				currentItem.devices += values.power_imported ?? 0
 			}
 		}
+
 		// Autarchy PV / Battery calculation
 		if (values.power_imported > 0) {
 			registry.items.get(id)![graphData.graphScope].energyPv +=
@@ -160,27 +163,29 @@ function transformRow(currentRow: RawDayGraphDataItem): GraphDataItem {
 					currentItem.evuIn +
 					currentItem.batOut)
 		}
-		// Prices
-		if (currentRow.prices.grid > 0) {
-			currentItem.price = currentRow.prices.grid * 100000
-		}
 	})
 
-	// Counters
-	/* currentItem.counters = 0
-	Object.entries(currentRow.counter).forEach(([id, values]) => {
-		if (!values.grid) {
+	// Consumers
+	currentItem.consumers = 0
+	Object.entries(currentRow.consumer).forEach(([id, values]) => {
+		if (id != 'all') {
 			currentItem[id] = values.power_imported ?? 0
 			if (!registry.keys().includes(id)) {
-				registry.duplicateItem(id, counters.get(+id.slice(7))!)
-	 */ //registry.items.get(id)!.showInGraph = true
-	/* }
-			const item : Counter = registry.items.get(id) as Counter
-			if (item._showInGraph) {
-				currentItem.counters += values.power_imported ?? 0
+				const consumer = consumers.get(+id.slice(8))
+				if (!consumer) {
+					addConsumer(+id.slice(8), false)
+				}
+
+				registry.duplicateItem(id, <PowerItem>consumers.get(+id.slice(8)))
 			}
+			currentItem.consumers += values.power_imported ?? 0
 		}
-	}) */
+	})
+	// Prices
+	if (currentRow.prices.grid > 0) {
+		currentItem.price = currentRow.prices.grid * 100000
+	}
+
 	// Self Usage
 	currentItem.selfUsage = Math.max(0, currentItem.pv - currentItem.evuOut)
 	// House

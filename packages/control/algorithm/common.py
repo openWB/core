@@ -2,7 +2,7 @@ import logging
 from typing import Iterable, List, Optional, Tuple
 
 from control import data
-from control.algorithm.filter_chargepoints import get_loads_by_chargemodes
+from control.algorithm.filter_chargepoints import filter_loads_by_chargemodes
 from control.algorithm.utils import get_medium_charging_current
 from control.chargepoint.chargepoint import Chargepoint
 from control.counter import Counter
@@ -29,8 +29,8 @@ def reset_current():
             log.exception(f"Fehler im Algorithmus-Modul für {get_load_str(load)}")
 
 
-def reset_current_by_chargemode(chargemodes: Tuple[Tuple[Optional[str], str]]) -> None:
-    for load in get_loads_by_chargemodes(chargemodes):
+def reset_current_by_chargemode(grouped_loads: List[Load], chargemodes: Tuple[Tuple[Optional[str], str]]) -> None:
+    for load in filter_loads_by_chargemodes(grouped_loads, chargemodes):
         load.data.set.current = None
 
 
@@ -226,11 +226,11 @@ def get_missing_currents_left(preferenced_loads: List[Load]) -> Tuple[List[float
     return missing_currents, counts
 
 
-def reset_current_to_target_current():
+def reset_current_to_target_current(grouped_loads: List[Load]):
     """target_current enthält die gesetzte Stromstärke der vorherigen Stufe. Notwendig, um zB bei der
     Mindeststromstärke erkennen zu können, ob diese ein vom LM begrenzter Strom aus Stufe 2 oder der Mindeststrom
     aus Stufe 1 ist."""
-    for load in (list(data.data.cp_data.values()) + list(data.data.consumer_data.values())):
+    for load in grouped_loads:
         try:
             load.data.set.target_current = load.data.set.current
         except Exception:

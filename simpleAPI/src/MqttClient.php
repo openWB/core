@@ -230,20 +230,44 @@ class MqttClient
     }
 
     /**
-     * Alle verfügbaren IDs für einen bestimmten Typ finden (MQTT Wildcard Scan)
+     * Scan-Konfiguration je Typ: welches Wildcard-Topic zuverlässig für jedes konfigurierte
+     * Gerät dieses Typs publiziert wird, und wie die ID daraus extrahiert wird.
      */
-    public function findAvailableIds($type)
+    private function getScanConfig()
     {
-        // MQTT Wildcard verwenden um alle Topics zu finden
-        $scanConfig = [
+        return [
             'chargepoint' => ['pattern' => 'openWB/chargepoint/+/get/imported', 'regex' => '/openWB\/chargepoint\/(\d+)\/get\/imported\s+(.+)/'],
             'bat' => ['pattern' => 'openWB/bat/+/get/imported', 'regex' => '/openWB\/bat\/(\d+)\/get\/imported\s+(.+)/'],
             'pv' => ['pattern' => 'openWB/pv/+/get/exported', 'regex' => '/openWB\/pv\/(\d+)\/get\/exported\s+(.+)/'],
             'counter' => ['pattern' => 'openWB/counter/+/get/imported', 'regex' => '/openWB\/counter\/(\d+)\/get\/imported\s+(.+)/'],
+            'consumer' => ['pattern' => 'openWB/consumer/+/module', 'regex' => '/openWB\/consumer\/(\d+)\/module\s+(.+)/'],
             'io' => ['pattern' => 'openWB/io/states/+/get/digital_output', 'regex' => '/openWB\/io\/states\/(\d+)\/get\/digital_output\s+(.+)/']
         ];
+    }
 
-        $config = $scanConfig[$type] ?? null;
+    /**
+     * Alle verfügbaren IDs für einen bestimmten Typ finden (MQTT Wildcard Scan).
+     * Wirft eine Exception, wenn keine Geräte gefunden wurden (genutzt von getLowestId, wo ein
+     * leeres Ergebnis ein echter Fehlerfall ist).
+     */
+    public function findAvailableIds($type)
+    {
+        $ids = $this->scanAvailableIds($type);
+
+        if (empty($ids)) {
+            throw new \Exception("No {$type} devices found via MQTT wildcard scan");
+        }
+
+        return $ids;
+    }
+
+    /**
+     * Wie findAvailableIds(), aber ohne Exception bei leerem Ergebnis - für list_components, wo
+     * ein Typ ohne konfigurierte Geräte kein Fehler, sondern schlicht eine leere Liste ist.
+     */
+    private function scanAvailableIds($type)
+    {
+        $config = $this->getScanConfig()[$type] ?? null;
         if ($config === null) {
             throw new \Exception("Unsupported type for ID scan: {$type}");
         }
@@ -264,21 +288,36 @@ class MqttClient
                     $id = intval($matches[1]);
                     $value = trim($matches[2]);
 
-                    // Nur IDs mit gültigen Werten (bei IO auch JSON erlaubt)
-                    if ($value !== '' && $value !== 'null' && ($type === 'io' || is_numeric($value))) {
+                    // Nur IDs mit gültigen Werten (bei IO/Consumer auch JSON erlaubt)
+                    if ($value !== '' && $value !== 'null' &&
+                        ($type === 'io' || $type === 'consumer' || is_numeric($value))) {
                         $ids[] = $id;
                     }
                 }
             }
         }
 
+        // array_unique() zuerst (behält Original-Keys, ggf. lückenhaft), dann sort() zum
+        // Schluss, da sort() die Keys wieder lückenlos ab 0 durchnummeriert - sonst würde
+        // json_encode() bei entfernten Duplikaten ein Objekt statt ein Array ausgeben.
         $ids = array_unique($ids);
-
-        if (empty($ids)) {
-            throw new \Exception("No {$type} devices found via MQTT wildcard scan");
-        }
-
+        sort($ids, SORT_NUMERIC);
         return $ids;
+    }
+
+    /**
+     * Alle verfügbaren IDs für alle bekannten Typen auf einmal finden (für list_components).
+     * Typen ohne konfigurierte Geräte liefern eine leere Liste statt einer Exception.
+     */
+    public function findAllAvailableIds()
+    {
+        $result = [];
+        foreach (array_keys($this->getScanConfig()) as $type) {
+            // Öffentlicher Name: 'bat' intern, aber 'battery' in Parametern/Antworten üblich.
+            $publicName = $type === 'bat' ? 'battery' : $type;
+            $result[$publicName] = $this->scanAvailableIds($type);
+        }
+        return $result;
     }
 
     /**
