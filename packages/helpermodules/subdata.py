@@ -146,7 +146,14 @@ class SubData:
             ("openWB/internal_io/#", 2),
             ("openWB/optional/#", 2),
             ("openWB/counter/#", 2),
-            ("openWB/consumer/#", 2),
+            ("openWB/consumer/get/#", 2),
+            ("openWB/consumer/+/config", 2),
+            ("openWB/consumer/+/extra_meter", 2),
+            ("openWB/consumer/+/module", 2),
+            ("openWB/consumer/+/usage", 2),
+            ("openWB/consumer/+/get/#", 2),
+            ("openWB/consumer/+/set/#", 2),
+            ("openWB/consumer/+/control_parameter/#", 2),
             ("openWB/command/command_completed", 2),
             ("openWB/internal_chargepoint/#", 2),
             # MQTT Bridge Topics vor "openWB/system/+" abonnieren, damit sie auch vor
@@ -1263,6 +1270,9 @@ class SubData:
                                 con.device_descriptor.configuration_factory, consumer_config)
                             var["consumer"+index].module = con.create_consumer(config)
                             var["consumer"+index].data.module = config
+                            client.subscribe(f"openWB/consumer/{index}/module/simulation", 2)
+                            self.processing_counter.add_task()
+                            Pub().pub("openWB/system/subdata_initialized", True)
                         except Exception:
                             fault_str = (
                                 f"Verbraucher {index}: Modul für "
@@ -1272,6 +1282,9 @@ class SubData:
                             var["consumer"+index].data.get.fault_state = 2
                             var["consumer"+index].data.get.fault_str = fault_str
                             pub_system_message({}, fault_str, MessageType.ERROR)
+                    elif re.search("openWB/consumer/[0-9]+/module/simulation$", msg.topic) is not None:
+                        var["consumer"+index].module.sim_counter.data = dataclass_from_dict(
+                            SimCounterState, decode_payload(msg.payload))
                     elif re.search("openWB/consumer/[0-9]+/config", msg.topic) is not None:
                         self.set_json_payload_class(var["consumer"+index].data.config, msg)
                     elif re.search("openWB/consumer/[0-9]+/get", msg.topic) is not None:

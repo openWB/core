@@ -3,7 +3,7 @@ import logging
 
 from control import data
 from helpermodules import pub
-from helpermodules.utils.topic_parser import get_second_index
+from helpermodules.utils.topic_parser import get_index, get_second_index
 from modules.common.component_type import ComponentType, type_to_topic_mapping
 from modules.common.simcount.simcounter_state import SimCounterState
 
@@ -29,8 +29,11 @@ class SimCounterStoreBroker:
 
 def restore_last_energy(topic: str, value: str, component_type: ComponentType):
     try:
-        module_type = type_to_topic_mapping(component_type.value)
-        module = getattr(data.data, f"{module_type}_data")[f"{module_type}{get_second_index(topic)}"].data.get
+        if component_type == ComponentType.CONSUMER:
+            module = data.data.consumer_data[f"consumer{get_index(topic)}"].data.get
+        else:
+            module_type = type_to_topic_mapping(component_type.value)
+            module = getattr(data.data, f"{module_type}_data")[f"{module_type}{get_second_index(topic)}"].data.get
         return getattr(module, value)
     except AttributeError:
         if (value == "imported" and component_type == ComponentType.INVERTER):

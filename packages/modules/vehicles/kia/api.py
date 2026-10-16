@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import base64
+from datetime import datetime
 import json
 import uuid
 import hashlib
@@ -89,6 +90,20 @@ def getString(param_id: str, brand: str) -> str:
         elif param_id == "redirect_uri":
             paramStr = getString("base_url", brand) + \
                        "/api/v1/user/oauth2/redirect"
+        elif param_id == "oneapp_client_id":
+            paramStr = "01b36c86-79e8-486c-8009-15f2ad88d670"
+        elif param_id == "oneapp_redirect_uri":
+            paramStr = "https://oneapp.kia.com/redirect"
+        elif param_id == "cci_api_url":
+            paramStr = "https://cci-api-eu.kia.com"
+        elif param_id == "cci_package_id":
+            paramStr = "com.kia.oneapp.eu"
+        elif param_id == "cci_client_name":
+            paramStr = "kia"
+        elif param_id == "cci_client_os_version":
+            paramStr = "27"
+        elif param_id == "cci_notification_provider":
+            paramStr = "IOS_APPSTORE"
         else:
             raise RuntimeError
 
@@ -122,6 +137,20 @@ def getString(param_id: str, brand: str) -> str:
         elif param_id == "redirect_uri":
             paramStr = getString("base_url", brand) + \
                        "/api/v1/user/oauth2/token"
+        elif param_id == "oneapp_client_id":
+            paramStr = "4f4953b5-02e1-4dbc-8599-87e983ee1be5"
+        elif param_id == "oneapp_redirect_uri":
+            paramStr = "https://oneapp.hyundai.com/redirect"
+        elif param_id == "cci_api_url":
+            paramStr = "https://cci-api-eu.hyundai.com"
+        elif param_id == "cci_package_id":
+            paramStr = "com.hyundai.oneapp.eu"
+        elif param_id == "cci_client_name":
+            paramStr = "hyundai"
+        elif param_id == "cci_client_os_version":
+            paramStr = "18.7"
+        elif param_id == "cci_notification_provider":
+            paramStr = "APNS"
         else:
             raise RuntimeError
 
@@ -365,7 +394,14 @@ def loadToken(user_id: str, password: str, vehicle: int) -> dict:
                 "gcmVehicleId": "",
                 "refreshToken": "",
                 "gcmClientId": "",
-                "tokenType": ""
+                "tokenType": "",
+                "cciAccessToken": "",
+                "cciRefreshToken": "",
+                "nonCcsToken": "",
+                "nonCcsRefreshToken": "",
+                "exchangeableAccessToken": "",
+                "exchangeableRefreshToken": "",
+                "idToken": "",
             }
     except Exception:
         log.exception("kia.loadToken: token error")
@@ -505,17 +541,18 @@ def getDeviceId(brand: str) -> dict:
 
 def getAuthCode(username: str, password: str, brand: str,
                 cookies: dict) -> str:
-    log.info("Kia/Hyundai: Sending username/password (IDPConnect flow)")
+    log.info("Kia/Hyundai: Sending username/password (OneApp/CCI flow)")
 
-    # The old Keycloak form-login (eu-account.<brand>.com/auth/realms/...)
-    # was decommissioned by Hyundai/Kia. This uses the new IDPConnect
-    # OAuth2 flow with an RSA-encrypted password, mirroring the
-    # hyundai_kia_connect_api (KiaUvoApiEU) library used by Home Assistant.
-    # A dedicated requests.Session keeps the cookies across the redirect
-    # chain; the 'cookies' argument is kept only for call-site compatibility.
+    # Die alte IDPConnect-Anmeldung über den "legacy" client_id wird von
+    # Kia/Hyundais WAF inzwischen serverseitig als "abusing request" blockiert
+    # (betrifft alle Nutzer dieses client_id, kein individuelles Account-
+    # Problem). Der OneApp-client_id umgeht das, siehe hyundai_kia_connect_api
+    # Issue #1273. Der resultierende Auth-Code wird anschließend über
+    # exchangeCciToken()/exchangeCcsToken() in einen auf den bestehenden
+    # ccapi:8080-Endpunkten gültigen Token getauscht.
     host = getString("login_form_host", brand)
-    client_id = getString("client_id", brand)
-    redirect_uri = getString("redirect_uri", brand)
+    client_id = getString("oneapp_client_id", brand)
+    redirect_uri = getString("oneapp_redirect_uri", brand)
 
     # The '_CCS_APP_AOS' suffix is REQUIRED — without it the authorize
     # endpoint answers "400 Bad Request".
@@ -533,7 +570,12 @@ def getAuthCode(username: str, password: str, brand: str,
                     '?response_type=code&client_id=' + client_id +
                     '&redirect_uri=' + urlparse.quote(redirect_uri, safe='') +
                     '&lang=en&state=ccsp&country=de')
-        session.get(auth_url, timeout=30, allow_redirects=True)
+        auth_resp = session.get(auth_url, timeout=30, allow_redirects=True)
+        if ('abusing' in auth_resp.text.lower() or
+                '/error?status=400' in auth_resp.url):
+            log.error("kia.getAuthCode: WAF hat die Anmeldung blockiert "
+                      "('abusing request') - kein Account-Problem")
+            raise RuntimeError
 
         # Step 2: fetch the RSA public key (JWK) for password encryption
         certs = session.get(host + '/auth/api/v1/accounts/certs', timeout=30)
@@ -588,40 +630,129 @@ def getAuthCode(username: str, password: str, brand: str,
 
     return auth_code
 
+# ---------- OneApp/CCI token exchange ----------
 
-def getAuthToken(auth_code: str, token: dict, brand: str) -> dict:
-    log.info("Kia/Hyundai: Requesting access token")
 
-    response = ""
-    try:
-        # New IDPConnect token endpoint; requires client_secret instead
-        # of the old Basic-Auth 'basic_token' header.
-        url = getString("login_form_host", brand) + \
-            '/auth/api/v2/user/oauth2/token'
-        data = urlparse.urlencode({
-            'grant_type': 'authorization_code',
-            'code': auth_code,
-            'redirect_uri': getString("redirect_uri", brand),
-            'client_id': getString("client_id", brand),
-            'client_secret': getString("client_secret", brand),
-        })
-        headers = {
-            'Content-type': 'application/x-www-form-urlencoded',
-            'User-Agent': 'okhttp/3.12.12',
-        }
-        response = postHTTP(url=url, headers=headers, data=data)
+def getCciHeaders(brand: str, device_id: str, cci_access_token: str = "",
+                  non_ccs_token: str = "", exchangeable_token: str = "",
+                  content_type: str = "") -> dict:
+    offset = datetime.now().astimezone().strftime("%z")  # e.g. +0200
+    headers = {
+        'client-id': getString("cci_package_id", brand),
+        'client-name': getString("cci_client_name", brand),
+        'client-version': '1.3.3',
+        'client-os-code': 'ios',
+        'client-os-version': getString("cci_client_os_version", brand),
+        'client-device-id': device_id,
+        'client-device-model': 'iPhone',
+        'client-notification-provider-type': getString("cci_notification_provider", brand),
+        'locale': 'DE',
+        'Accept': 'application/json',
+        'Accept-Language': 'de',
+        'User-Agent': 'okhttp/3.12.12',
+        'timezone': (offset[:3] + ':' + offset[3:]) if offset else '+00:00',
+    }
+    if non_ccs_token:
+        headers['Authentication'] = non_ccs_token
+    if cci_access_token:
+        headers['authorization'] = 'Bearer ' + cci_access_token.removeprefix('Bearer ').strip()
+    if exchangeable_token:
+        headers['exchangeable-token'] = exchangeable_token
+        headers['non-ccs-token'] = non_ccs_token
+    if content_type:
+        headers['Content-Type'] = content_type
+    else:
+        headers['Content-Length'] = '0'
+    return headers
 
-        access_token = json.loads(response)
-        token["tokenType"] = access_token["token_type"]
-        token["accessToken"] = access_token["access_token"]
-        token["refreshToken"] = access_token["refresh_token"]
 
-    except Exception:
-        log.exception("kia.getAuthToken: Login failed: " + response)
-        raise
+def exchangeCciToken(auth_code: str, device_id: str, brand: str) -> dict:
+    log.info("Kia/Hyundai: Exchanging OneApp auth code for CCI token")
 
-    log.debug("Kia/Hyundai: AuthToken = " + token["accessToken"][:8] + "[...]")
+    cci_domain_api_url = getString("cci_api_url", brand) + '/domain/api/'
+    headers = getCciHeaders(brand, device_id)
+    response = requests.post(cci_domain_api_url + 'v1/auth/token',
+                             params={'code': auth_code}, headers=headers,
+                             timeout=30)
+    if response.status_code != 200:
+        log.error("kia.exchangeCciToken: CCI-Token-Austausch fehlgeschlagen, StatusCode: " +
+                  str(response.status_code) + ': ' + response.text[:200])
+        raise RuntimeError
+    cci = response.json()
+    return {
+        'cciAccessToken': cci.get('accessToken', ''),
+        'cciRefreshToken': cci.get('refreshToken', ''),
+        'nonCcsToken': cci.get('nonCcsToken', ''),
+        'exchangeableAccessToken': cci.get('exchangeableAccessToken', ''),
+        'exchangeableRefreshToken': cci.get('exchangeableRefreshToken', ''),
+        'nonCcsRefreshToken': cci.get('nonCcsRefreshToken', ''),
+        'idToken': cci.get('idToken', ''),
+    }
 
+
+def exchangeCcsToken(device_id: str, cci_access_token: str, non_ccs_token: str,
+                     exchangeable_token: str, brand: str) -> str:
+    log.info("Kia/Hyundai: Exchanging CCI token for CCS token")
+
+    cci_domain_api_url = getString("cci_api_url", brand) + '/domain/api/'
+    headers = getCciHeaders(brand, device_id, cci_access_token=cci_access_token,
+                            non_ccs_token=non_ccs_token,
+                            exchangeable_token=exchangeable_token)
+    response = requests.post(cci_domain_api_url + 'v1/auth/token-exchange',
+                             params={'serviceType': 'CCS'}, headers=headers,
+                             timeout=30)
+    if response.status_code != 200:
+        log.error("kia.exchangeCcsToken: CCS-Token-Austausch fehlgeschlagen, StatusCode: " +
+                  str(response.status_code) + ': ' + response.text[:200])
+        raise RuntimeError
+    data = response.json()
+    ccs_token = data.get('accessToken') or data.get('ccsAccessToken') or ''
+    if not ccs_token:
+        log.error("kia.exchangeCcsToken: kein accessToken in Antwort: " + response.text[:200])
+        raise RuntimeError
+    return ccs_token
+
+
+def refreshCciToken(token: dict, brand: str) -> dict:
+    log.info("Kia/Hyundai: CCI token refresh starting")
+
+    device_id = token.get('deviceId', '')
+    cci_domain_api_url = getString("cci_api_url", brand) + '/domain/api/'
+    headers = getCciHeaders(brand, device_id,
+                            cci_access_token=token.get('cciAccessToken', ''),
+                            non_ccs_token=token.get('nonCcsToken', ''),
+                            exchangeable_token=token.get('exchangeableAccessToken', ''),
+                            content_type='application/json')
+    body = {
+        'accessToken': token.get('cciAccessToken', '').removeprefix('Bearer '),
+        'refreshToken': token.get('cciRefreshToken', ''),
+        'exchangeableAccessToken': token.get('exchangeableAccessToken', ''),
+        'exchangeableRefreshToken': token.get('exchangeableRefreshToken', ''),
+        'nonCcsToken': token.get('nonCcsToken', ''),
+        'nonCcsRefreshToken': token.get('nonCcsRefreshToken', ''),
+        'idToken': token.get('idToken', ''),
+    }
+    response = requests.post(cci_domain_api_url + 'v2/auth/token-refresh',
+                             json=body, headers=headers, timeout=30)
+    if response.status_code != 200:
+        log.error("kia.refreshCciToken: CCI-Token-Refresh fehlgeschlagen, StatusCode: " +
+                  str(response.status_code) + ': ' + response.text[:200])
+        raise RuntimeError
+    data = response.json()
+    token['cciAccessToken'] = data.get('accessToken', token.get('cciAccessToken', ''))
+    token['cciRefreshToken'] = data.get('refreshToken', token.get('cciRefreshToken', ''))
+    token['nonCcsToken'] = data.get('nonCcsToken', token.get('nonCcsToken', ''))
+    token['exchangeableAccessToken'] = data.get(
+        'exchangeableAccessToken', token.get('exchangeableAccessToken', ''))
+    token['exchangeableRefreshToken'] = data.get(
+        'exchangeableRefreshToken', token.get('exchangeableRefreshToken', ''))
+    token['nonCcsRefreshToken'] = data.get('nonCcsRefreshToken', token.get('nonCcsRefreshToken', ''))
+    token['idToken'] = data.get('idToken', token.get('idToken', ''))
+
+    ccs_token = exchangeCcsToken(device_id, token['cciAccessToken'], token['nonCcsToken'],
+                                 token['exchangeableAccessToken'], brand)
+    token['tokenType'] = 'Bearer'
+    token['accessToken'] = ccs_token
     return token
 
 
@@ -660,12 +791,19 @@ def requestToken(user_id: str, password: str, brand: str) -> dict:
     log.info("Kia/Hyundai: Token request starting")
 
     try:
-        # getCookies() is no longer needed: the IDPConnect getAuthCode()
-        # creates its own session. Kept the call out to avoid hitting the
-        # decommissioned Keycloak session endpoints.
+        # getCookies() is no longer needed: die OneApp/CCI getAuthCode()
+        # erstellt ihre eigene Session. Legacy IDPConnect-Login (client_id,
+        # getAuthToken) wird von Kia/Hyundais WAF blockiert (siehe #3410) -
+        # stattdessen OneApp-Auth-Code über CCI gegen einen CCS-Token tauschen,
+        # der von den bestehenden ccapi:8080-Endpunkten akzeptiert wird.
         token = getDeviceId(brand)
         auth_code = getAuthCode(user_id, password, brand, {})
-        token = getAuthToken(auth_code, token, brand)
+        token.update(exchangeCciToken(auth_code, token["deviceId"], brand))
+        token["accessToken"] = exchangeCcsToken(
+            token["deviceId"], token["cciAccessToken"], token["nonCcsToken"],
+            token["exchangeableAccessToken"], brand)
+        token["tokenType"] = "Bearer"
+        token["refreshToken"] = token["cciRefreshToken"]
         token["userHash"] = getUserHash(user_id, password)
         registerDevice(token, brand)
     except Exception:
@@ -676,42 +814,9 @@ def requestToken(user_id: str, password: str, brand: str) -> dict:
 
 
 def refreshToken(token: dict, brand: str) -> dict:
-    log.info("Kia/Hyundai: Token refresh starting")
-
-    response = ""
-    try:
-        # New IDPConnect refresh endpoint; requires client_secret.
-        url = getString("login_form_host", brand) + \
-            '/auth/api/v2/user/oauth2/token'
-        data = urlparse.urlencode({
-            'grant_type': 'refresh_token',
-            'refresh_token': token["refreshToken"],
-            'client_id': getString("client_id", brand),
-            'client_secret': getString("client_secret", brand),
-        })
-        headers = {
-            'Content-type': 'application/x-www-form-urlencoded',
-            'User-Agent': 'okhttp/3.12.12',
-        }
-
-        response = postHTTP(url=url, headers=headers, data=data)
-
-        token_new = json.loads(response)
-        token["tokenType"] = token_new["token_type"]
-        token["accessToken"] = token_new["access_token"]
-        # IDPConnect may rotate the refresh token; keep the newest one.
-        if "refresh_token" in token_new:
-            token["refreshToken"] = token_new["refresh_token"]
-
-    except Exception:
-        log.exception("kia.refreshToken: refresh token error: " +
-                      str(response))
-        raise
-
-    log.debug("kia.refreshToken: New access token = " +
-              token["accessToken"][:8] + "...")
-
-    return token
+    # Legacy IDPConnect-Refresh (client_id-basiert) ist vom selben WAF-Block
+    # betroffen wie der Login - CCI-Refresh ist der einzig noch funktionierende Weg
+    return refreshCciToken(token, brand)
 
 
 def getControlToken(pin: str, token: dict, brand: str) -> str:

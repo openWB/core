@@ -321,15 +321,14 @@ class BatAll:
         try:
             if self.data.config.configured is True:
                 self.set_power_limit_controllable_state()
-                if self.data.get.fault_state == 0:
+                if self.data.get.fault_state == 2:
+                    # Speicher-Leistung nur im Fehlerfall nicht in der Regelung berücksichtigen.
+                    self.data.set.charging_power_left = 0
+                else:
                     self.get_power_limit()
                     self._set_bat_power_active_control(self.data.set.power_limit)
                     self.get_charging_power_left_diff()
                     log.info(f"{self.data.set.charging_power_left}W verbleibende Speicher-Leistung")
-                else:
-                    # Bei Warnung oder Fehlerfall, zB durch Kalibrierung, Speicher-Leistung nicht in der
-                    # Regelung berücksichtigen.
-                    self.data.set.charging_power_left = 0
             else:
                 self.data.set.charging_power_left = 0
                 self.data.get.power = 0
@@ -435,10 +434,11 @@ class BatAll:
                                                           absolute_bat_discharge_power)
                                 log.debug(f"Erlaubte Entlade-Leistung nutzen {charging_power_left}W")
                             else:
-                                # Entladung nicht erlaubt: die eigene Speicherleistung darf nicht ans Fahrzeug
-                                # weitergereicht werden, sonst wird der Speicher entladen, obwohl der Nutzer das
-                                # nicht erlaubt hat.
-                                charging_power_left = 0
+                                # Entladung nicht erlaubt: nur eine tatsächliche Entladung darf nicht ans
+                                # Fahrzeug weitergereicht werden, sonst wird der Speicher entladen, obwohl der
+                                # Nutzer das nicht erlaubt hat. Lädt der Speicher dagegen, bleibt diese Leistung
+                                # weiterhin für ihn reserviert.
+                                charging_power_left = max(base_power, 0)
                         else:
                             log.debug("Keine erlaubte Entladeleistung freigeben, da der Speicher mit einer vorgegeben "
                                       "Leistung entladen wird.")
@@ -474,10 +474,11 @@ class BatAll:
                                                       absolute_bat_discharge_power)
                             log.debug(f"Erlaubte Entlade-Leistung nutzen {charging_power_left}W")
                         else:
-                            # Entladung nicht erlaubt: die eigene Speicherleistung darf nicht ans Fahrzeug
+                            # Entladung nicht erlaubt: nur eine tatsächliche Entladung darf nicht ans Fahrzeug
                             # weitergereicht werden, sonst wird der Speicher entladen, obwohl der Nutzer das
-                            # nicht erlaubt hat.
-                            charging_power_left = 0
+                            # nicht erlaubt hat. Lädt der Speicher dagegen, bleibt diese Leistung weiterhin für
+                            # ihn reserviert.
+                            charging_power_left = max(base_power, 0)
                     else:
                         log.debug("Keine erlaubte Entladeleistung freigeben, da der Speicher mit einer vorgegeben "
                                   "Leistung entladen wird.")

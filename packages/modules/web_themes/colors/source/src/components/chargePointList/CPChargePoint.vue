@@ -35,8 +35,11 @@
 					</span>
 				</InfoItem>
 				<!-- Ladung -->
-				<InfoItem heading="Geladen:" class="grid-col-4 grid-left">
+				<InfoItem heading="Geladen:" class="grid-col-4 grid-center">
 					<FormatWattH :watt-h="chargepoint.dailyYield" />
+				</InfoItem>
+				<InfoItem heading="Priorität:" class="grid-col-4 grid-right">
+					{{ chargepoint.priority }}
 				</InfoItem>
 			</div>
 		</div>

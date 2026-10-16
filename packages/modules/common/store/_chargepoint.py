@@ -37,8 +37,10 @@ class ChargepointValueStoreBroker(ValueStore[ChargepointState]):
         if self.state.rfid_timestamp is not None:
             pub_to_broker("openWB/set/chargepoint/" + str(self.num) + "/get/rfid_timestamp", self.state.rfid_timestamp)
         pub_to_broker("openWB/set/chargepoint/" + str(self.num) + "/get/serial_number", self.state.serial_number)
-        pub_to_broker("openWB/set/chargepoint/" + str(self.num) + "/get/soc", self.state.soc)
-        pub_to_broker("openWB/set/chargepoint/" + str(self.num) + "/get/soc_timestamp", self.state.soc_timestamp)
+        if self.state.soc is not None:
+            pub_to_broker("openWB/set/chargepoint/" + str(self.num) + "/get/soc", self.state.soc)
+        if self.state.soc_timestamp is not None:
+            pub_to_broker("openWB/set/chargepoint/" + str(self.num) + "/get/soc_timestamp", self.state.soc_timestamp)
         pub_to_broker("openWB/set/chargepoint/" + str(self.num) + "/get/evse_current", self.state.evse_current)
         pub_to_broker("openWB/set/chargepoint/" + str(self.num) + "/get/vehicle_id", self.state.vehicle_id)
         pub_to_broker("openWB/set/chargepoint/" + str(self.num) + "/get/max_evse_current", self.state.max_evse_current)

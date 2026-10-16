@@ -18,9 +18,6 @@
 			/>
 		</h3>
 		<div class="d-flex align-items-center">
-			<WbBadge v-if="chargepoint.priority > 0" bgcolor="var(--color-menu)"
-				>Prio: {{ chargepoint.priority }}
-			</WbBadge>
 			<WbBadge v-if="chargepoint.isSocConfigured" :bgcolor="batcolor">
 				<BatterySymbol :soc="soc ?? 0" color="var(--color-bg)" class="me-2" />
 				<i

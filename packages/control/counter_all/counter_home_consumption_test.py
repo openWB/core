@@ -729,43 +729,7 @@ def test_set_home_consumption_sets_unmeasured_home_consumption_rest_power():
     assert c.data.set.unmeasured_home_consumption == 700
 
 
-def test_set_home_consumption_adds_child_counter_rest_to_unmeasured_home_consumption():
-    data.data_init(Mock())
-    c = CounterAll()
-    c.data.get.hierarchy = [{
-        "id": 0,
-        "type": "counter",
-        "children": [{"id": 8, "type": "counter", "children": []}],
-    }]
-
-    data.data.counter_data = {
-        "counter0": Mock(
-            spec=Counter,
-            num=0,
-            data=Mock(
-                spec=CounterData,
-                get=Mock(spec=CounterGet, power=1000, fault_state=0),
-                config=Mock(spec=CounterConfig, is_home_consumption_counter=CounterMode.AUTO_HOME_CONSUMPTION.value),
-            ),
-        ),
-        "counter8": Mock(
-            spec=Counter,
-            num=8,
-            data=Mock(
-                spec=CounterData,
-                get=Mock(spec=CounterGet, power=300, fault_state=0),
-                config=Mock(spec=CounterConfig, is_home_consumption_counter=CounterMode.NOT_HOME_CONSUMPTION.value),
-            ),
-        ),
-    }
-
-    c.set_home_consumption()
-
-    assert c.data.set.home_consumption == 700
-    assert c.data.set.unmeasured_home_consumption == 1000
-
-
-def test_set_home_consumption_adds_child_counter_rest_behind_chargepoint_to_unmeasured_home_consumption():
+def test_set_home_consumption_ignores_child_counter_rest_for_unmeasured_home_consumption():
     data.data_init(Mock())
     c = CounterAll()
     c.data.get.hierarchy = [{
@@ -811,17 +775,18 @@ def test_set_home_consumption_adds_child_counter_rest_behind_chargepoint_to_unme
     c.set_home_consumption()
 
     assert c.data.set.home_consumption == 2000
-    assert c.data.set.unmeasured_home_consumption == 2000
+    assert c.data.set.unmeasured_home_consumption == 0
 
 
-def test_calc_unmeasured_home_consumption_uses_downstream_elements_on_each_counter(monkeypatch):
+def test_calc_unmeasured_home_consumption_subtracts_smarthome_excluded_power():
     data.data_init(Mock())
     c = CounterAll()
     c.data.get.hierarchy = [{
         "id": 0,
         "type": "counter",
-        "children": [{"id": 8, "type": "counter", "children": []}],
+        "children": [{"id": 3, "type": "cp", "children": []}],
     }]
+    c.data.set.smarthome_power_excluded_from_home_consumption = 300
 
     data.data.counter_data = {
         "counter0": Mock(
@@ -829,17 +794,8 @@ def test_calc_unmeasured_home_consumption_uses_downstream_elements_on_each_count
             num=0,
             data=Mock(
                 spec=CounterData,
-                get=Mock(spec=CounterGet, power=5000, fault_state=0),
+                get=Mock(spec=CounterGet, power=1000, fault_state=0),
                 config=Mock(spec=CounterConfig, is_home_consumption_counter=CounterMode.AUTO_HOME_CONSUMPTION.value),
-            ),
-        ),
-        "counter8": Mock(
-            spec=Counter,
-            num=8,
-            data=Mock(
-                spec=CounterData,
-                get=Mock(spec=CounterGet, power=5000, fault_state=0),
-                config=Mock(spec=CounterConfig, is_home_consumption_counter=CounterMode.HOME_CONSUMPTION.value),
             ),
         ),
     }
@@ -848,21 +804,12 @@ def test_calc_unmeasured_home_consumption_uses_downstream_elements_on_each_count
             spec=Chargepoint,
             data=Mock(
                 spec=ChargepointData,
-                get=Mock(spec=Get, power=3000, fault_state=0),
+                get=Mock(spec=Get, power=200, fault_state=0),
             ),
         ),
     }
 
-    def get_elements_for_downstream_calculation(counter_id):
-        if counter_id == 0:
-            return [{"id": 8, "type": "counter", "children": []}]
-        if counter_id == 8:
-            return [{"id": 3, "type": "cp", "children": []}]
-        return []
-
-    monkeypatch.setattr(c, "get_elements_for_downstream_calculation", get_elements_for_downstream_calculation)
-
-    assert c._calc_unmeasured_home_consumption() == 2000
+    assert c._calc_unmeasured_home_consumption() == 500
 
 
 def test_calc_unmeasured_home_consumption_subtracts_inverter_power():

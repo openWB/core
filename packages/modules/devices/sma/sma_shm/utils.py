@@ -2,8 +2,11 @@ import logging
 from typing import Any, TypeVar, Generic, Callable, Optional, Union, TypedDict
 
 from modules.common.component_context import SingleComponentUpdateContext
+from modules.common.component_state import CounterState, InverterState
+from modules.common.component_type import special_to_general_type_mapping
 from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.store import ValueStore
+from modules.common.utils.peak_filter import PeakFilter
 from modules.devices.sma.sma_shm.config import SmaHomeManagerCounterSetup, SmaHomeManagerInverterSetup
 
 T = TypeVar("T")
@@ -35,10 +38,18 @@ class SpeedwireComponent(Generic[T]):
         self.__parser = self.kwargs['parser']
         self.__serial_matcher = _create_serial_matcher(self.component_config.configuration.serials)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
+        self.component_type = special_to_general_type_mapping(self.component_config.type)
+        self.peak_filter = PeakFilter(self.component_type, self.component_config.id, self.fault_state)
 
     def read_datagram(self, datagram: dict) -> bool:
         if self.__serial_matcher(datagram):
             with SingleComponentUpdateContext(self.fault_state):
-                self.store.set(self.__parser(datagram))
+                state = self.__parser(datagram)
+                if isinstance(state, CounterState):
+                    state.imported, state.exported = self.peak_filter.check_values(
+                        state.power, state.imported, state.exported)
+                elif isinstance(state, InverterState):
+                    _, state.exported = self.peak_filter.check_values(state.power, None, state.exported)
+                self.store.set(state)
             return True
         return False
