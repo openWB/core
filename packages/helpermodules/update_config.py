@@ -259,6 +259,7 @@ class UpdateConfig:
         "^openWB/counter/set/daily_yield_home_consumption$",
         "^openWB/counter/set/simulation$",
         "^openWB/counter/[0-9]+/get/voltages$",
+        "^openWB/counter/[0-9]+/get/local_power$",
         "^openWB/counter/[0-9]+/get/power$",
         "^openWB/counter/[0-9]+/get/currents$",
         "^openWB/counter/[0-9]+/get/powers$",
