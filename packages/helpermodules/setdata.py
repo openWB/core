@@ -497,6 +497,8 @@ class SetData:
                         "/set/charge_state_prev" in msg.topic or
                         "/set/plug_state_prev" in msg.topic):
                     self._validate_value(msg, bool)
+                elif "/set/state_prev" in msg.topic:
+                    self._validate_value(msg, int, [(0, 7)])
                 elif "/set/autolock_state" in msg.topic:
                     self._validate_value(msg, int, [(0, 4)])
                 elif "/set/rfid" in msg.topic:
