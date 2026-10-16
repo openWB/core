@@ -2,7 +2,8 @@ import logging
 from control import data
 from control.chargemode import Chargemode
 from control.algorithm.chargemodes import CONSIDERED_CHARGE_MODES_BIDI_DISCHARGE
-from control.algorithm.filter_chargepoints import filtered_loads_to_str, get_loads_by_chargemodes
+from control.algorithm.filter_chargepoints import (
+    filter_loads_by_chargemodes, filtered_loads_to_str, group_loads_generator)
 from control.chargepoint.chargepoint import Chargepoint
 from helpermodules.phase_handling import voltages_mean
 
@@ -33,43 +34,44 @@ class Bidi:
 
         # CPs nach Modus filtern, dann verfügbare Ströme gegen alle relevanten Counter-Limits begrenzen.
         # -> Um bei mehreren Bidi-CPs das Entladen bei der Nullpunktanpassung gleichmäßig zu verteilen
-        preferenced_cps = get_loads_by_chargemodes(CONSIDERED_CHARGE_MODES_BIDI_DISCHARGE)
-        if preferenced_cps:
-            log.info(f"Verbraucher {filtered_loads_to_str(preferenced_cps)}")
-            while len(preferenced_cps):
-                cp: Chargepoint = preferenced_cps[0]
+        for grouped_loads in group_loads_generator():
+            preferenced_cps = filter_loads_by_chargemodes(grouped_loads, CONSIDERED_CHARGE_MODES_BIDI_DISCHARGE)
+            if preferenced_cps:
+                log.info(f"Verbraucher {filtered_loads_to_str(preferenced_cps)}")
+                while len(preferenced_cps):
+                    cp: Chargepoint = preferenced_cps[0]
 
-                counts = self.get_counts(cp)
+                    counts = self.get_counts(cp)
 
-                cp.data.set.target_current = 0
+                    cp.data.set.target_current = 0
 
-                missing_currents = self.get_missing_currents(preferenced_cps, grid_counter)
-                log.debug(f"Bidi-LP{cp.num}: missing currents {missing_currents}A")
+                    missing_currents = self.get_missing_currents(preferenced_cps, grid_counter)
+                    log.debug(f"Bidi-LP{cp.num}: missing currents {missing_currents}A")
 
-                counters = data.data.counter_all_data.get_counters_to_check(cp.num)
-                for counter in counters:
-                    available_currents, limit = Loadmanagement().get_available_currents_bidi(
-                        missing_currents, voltages_mean(cp.data.get.voltages), data.data.counter_data[counter])
+                    counters = data.data.counter_all_data.get_counters_to_check(cp.num)
+                    for counter in counters:
+                        available_currents, limit = Loadmanagement().get_available_currents_bidi(
+                            missing_currents, voltages_mean(cp.data.get.voltages), data.data.counter_data[counter])
 
-                    if limit.limiting_value is not None:
-                        cp.data.control_parameter.limit = limit
+                        if limit.limiting_value is not None:
+                            cp.data.control_parameter.limit = limit
 
-                    available_for_cp = common.available_current_for_load(
-                        cp, counts, available_currents, missing_currents, bidi_mode=True)
+                        available_for_cp = common.available_current_for_load(
+                            cp, counts, available_currents, missing_currents, bidi_mode=True)
 
-                    # Der neue Strom darf nicht höher als der bisher gesetzte Strom sein
-                    current = common.get_current_to_set(
-                        cp.data.set.current, available_for_cp, cp.data.set.target_current)
+                        # Der neue Strom darf nicht höher als der bisher gesetzte Strom sein
+                        current = common.get_current_to_set(
+                            cp.data.set.current, available_for_cp, cp.data.set.target_current)
 
-                    cp.data.set.current = current
-                    log.info(f"LP{cp.num}: Stromstärke {current}A")
+                        cp.data.set.current = current
+                        log.info(f"LP{cp.num}: Stromstärke {current}A")
 
-                    # Ausgabe LIMIT-MSG
-                    self._set_loadmangement_message(current, limit, cp)
+                        # Ausgabe LIMIT-MSG
+                        self._set_loadmangement_message(current, limit, cp)
 
-                common.set_current_counterdiff(cp.data.set.target_current, current, cp, surplus=True)
+                    common.set_current_counterdiff(cp.data.set.target_current, current, cp, surplus=True)
 
-                preferenced_cps.pop(0)
+                    preferenced_cps.pop(0)
 
     def _set_loadmangement_message(self,
                                    current: float,

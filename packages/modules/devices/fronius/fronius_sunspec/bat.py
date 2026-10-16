@@ -3,7 +3,7 @@ import logging
 from typing import Any, Optional, TypedDict
 
 from modules.common import modbus
-from modules.common.abstract_device import AbstractBat
+from modules.common.abstract_device import AbstractBat, SetPoint
 from modules.common.component_state import BatState
 from modules.common.component_type import ComponentDescriptor, ComponentType
 from modules.common.fault_state import ComponentInfo, FaultState
@@ -66,7 +66,8 @@ class FroniusSunspecBat(AbstractBat):
         self.peak_filter.check_values(power)
         self.store.set(BatState(power=power, soc=soc))
 
-    def set_power_limit(self, power_limit: Optional[int]) -> None:
+    def set_power_limit(self, setpoint: SetPoint) -> None:
+        power_limit = setpoint.power_limit
         # Nicht an echter Fronius-Hardware verifiziert -- vor Produktiveinsatz an einem realen
         # Gerät testen.
         unit = 1

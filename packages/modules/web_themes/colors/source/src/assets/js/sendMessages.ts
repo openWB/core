@@ -12,8 +12,7 @@ const topics: { [topic: string]: string } = {
 	chargeMode:
 		'openWB/set/vehicle/template/charge_template/%/chargemode/selected',
 	cpPriority: 'openWB/set/vehicle/template/charge_template/%/prio',
-	pvBatteryPriority:
-		'openWB/set/general/chargemode_config/bat/mode',
+	pvBatteryPriority: 'openWB/set/general/chargemode_config/bat/mode',
 	cpVehicle: 'openWB/set/chargepoint/%/config/ev',
 	cpInstantChargeLimitMode:
 		'openWB/set/vehicle/template/charge_template/%/chargemode/instant_charging/limit/selected',
@@ -100,5 +99,12 @@ export function updateChargeTemplate(cp: number) {
 	mqttPublish(
 		topics.chargeTemplate.replace('%', String(cp)),
 		JSON.stringify(chargePoints[cp].chargeTemplate),
+	)
+}
+
+export function updateConsumerUsage(consumerId: number, usage: object) {
+	mqttPublish(
+		'openWB/set/consumer/' + consumerId + '/usage',
+		JSON.stringify(usage),
 	)
 }

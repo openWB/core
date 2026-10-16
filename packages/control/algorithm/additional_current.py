@@ -1,11 +1,12 @@
 import logging
+from typing import List
 
 from control.algorithm import common
 from control.algorithm.chargemodes import CONSIDERED_CHARGE_MODES_ADDITIONAL_CURRENT
 from control.limiting_value import LoadmanagementLimit
 from control.load_protocol import Load
 from control.loadmanagement import Loadmanagement
-from control.algorithm.filter_chargepoints import (filtered_loads_to_str, get_grouped_loads_by_mode_and_counter,
+from control.algorithm.filter_chargepoints import (filter_grouped_loads_by_mode_and_counter, filtered_loads_to_str,
                                                    get_preferenced_load_charging)
 
 log = logging.getLogger(__name__)
@@ -16,33 +17,33 @@ class AdditionalCurrent:
     def __init__(self) -> None:
         pass
 
-    def set_additional_current(self) -> None:
-        common.reset_current_by_chargemode(CONSIDERED_CHARGE_MODES_ADDITIONAL_CURRENT)
+    def set_additional_current(self, grouped_loads: List[Load]) -> None:
+        common.reset_current_by_chargemode(grouped_loads, CONSIDERED_CHARGE_MODES_ADDITIONAL_CURRENT)
         for counter in common.counter_generator():
-            preferenced_loads_groups, preferenced_loads_without_set_current = get_preferenced_load_charging(
-                get_grouped_loads_by_mode_and_counter(CONSIDERED_CHARGE_MODES_ADDITIONAL_CURRENT,
-                                                      f"counter{counter.num}"))
-            for preferenced_loads in preferenced_loads_groups:
-                common.update_raw_data(preferenced_loads)
-                if len(preferenced_loads) > 0:
-                    log.info(f"Zähler {counter.num}, Verbraucher {filtered_loads_to_str(preferenced_loads)}")
-                while len(preferenced_loads):
-                    load = preferenced_loads[0]
-                    missing_currents, counts = common.get_missing_currents_left(preferenced_loads)
-                    available_currents, limit = Loadmanagement().get_available_currents(missing_currents, counter, load)
-                    log.debug(f"load {load.num} available currents {available_currents} missing currents "
-                              f"{missing_currents} limit {limit.message}")
-                    load.data.control_parameter.limit = limit
-                    available_for_cp = common.available_current_for_load(
-                        load, counts, available_currents, missing_currents)
-                    current = common.get_current_to_set(
-                        load.data.set.current, available_for_cp, load.data.set.target_current)
-                    self._set_loadmangement_message(current, limit, load)
-                    common.set_current_counterdiff(
-                        load.data.control_parameter.min_current,
-                        current,
-                        load)
-                    preferenced_loads.pop(0)
+            preferenced_loads, preferenced_loads_without_set_current = get_preferenced_load_charging(
+                filter_grouped_loads_by_mode_and_counter(grouped_loads,
+                                                         CONSIDERED_CHARGE_MODES_ADDITIONAL_CURRENT,
+                                                         f"counter{counter.num}"))
+            common.update_raw_data(preferenced_loads)
+            if len(preferenced_loads) > 0:
+                log.info(f"Zähler {counter.num}, Verbraucher {filtered_loads_to_str(preferenced_loads)}")
+            while len(preferenced_loads):
+                load = preferenced_loads[0]
+                missing_currents, counts = common.get_missing_currents_left(preferenced_loads)
+                available_currents, limit = Loadmanagement().get_available_currents(missing_currents, counter, load)
+                log.debug(f"load {load.num} available currents {available_currents} missing currents "
+                          f"{missing_currents} limit {limit.message}")
+                load.data.control_parameter.limit = limit
+                available_for_cp = common.available_current_for_load(
+                    load, counts, available_currents, missing_currents)
+                current = common.get_current_to_set(
+                    load.data.set.current, available_for_cp, load.data.set.target_current)
+                self._set_loadmangement_message(current, limit, load)
+                common.set_current_counterdiff(
+                    load.data.control_parameter.min_current,
+                    current,
+                    load)
+                preferenced_loads.pop(0)
             for load in preferenced_loads_without_set_current:
                 load.data.set.current = load.data.set.target_current
 

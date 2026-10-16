@@ -87,16 +87,7 @@ class PurgeCounterState:
                 self.exported += element.exported
         self.power += element.power
 
-    def _get_assigned_extra_meter_ids(self) -> set:
-        assigned_extra_meter_ids = set()
-        for consumer in data.data.consumer_data.values():
-            extra_meter_id = consumer.data.extra_meter
-            if extra_meter_id is not None:
-                assigned_extra_meter_ids.add(extra_meter_id)
-        return assigned_extra_meter_ids
-
     def calc_consumers(self, elements: Dict, calc_imported_exported: bool = False) -> CounterState:
-        assigned_extra_meter_ids = self._get_assigned_extra_meter_ids()
         for element in elements:
             try:
                 if element["type"] == ComponentType.CHARGEPOINT.value:
@@ -120,9 +111,6 @@ class PurgeCounterState:
                     consumer = get_hierarchy_obj_by_id(element["id"], element["type"])
                     consumer_state = consumer.module.store.delegate.delegate.state
                     self._add_values(consumer_state, calc_imported_exported)
-                elif element["type"] == ComponentType.COUNTER.value and element["id"] in assigned_extra_meter_ids:
-                    log.debug(f"Zähler counter{element['id']} wird übersprungen, da er als separater Zähler "
-                              "einem Verbraucher zugeordnet ist.")
                 else:
                     component = get_hierarchy_obj_by_id(element["id"], element["type"])
                     self._add_values(component.store.delegate.delegate.state, calc_imported_exported)

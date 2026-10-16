@@ -41,6 +41,8 @@ import {
 	line,
 	type Selection,
 	select,
+	curveStepAfter,
+	curveStepBefore,
 } from 'd3'
 import { graphData, type GraphDataItem, zoomedRange } from './model'
 
@@ -74,6 +76,7 @@ const myline = computed(() => {
 	const path = line<GraphDataItem>()
 		.x((d) => xScale.value(d.date))
 		.y((d) => yScale.value(d.price) ?? yScale.value(0))
+		.curve(curveStepBefore)
 	let p = path(graphData.data)
 	return p ? p : ''
 })
@@ -98,6 +101,7 @@ const autozoom = computed(() => {
 		const path = line<GraphDataItem>()
 			.x((d) => xScale.value(d.date))
 			.y((d) => yScale.value(d.price) ?? yScale.value(0))
+			.curve(curveStepBefore)
 		path1.attr('d', path(graphData.data))
 		path2.attr('d', path(graphData.data))
 	}

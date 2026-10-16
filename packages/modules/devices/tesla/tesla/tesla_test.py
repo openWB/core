@@ -2,9 +2,11 @@ from unittest.mock import Mock
 
 import requests
 import requests_mock
+from control import data
 
 from modules.common.configurable_device import ConfigurableDevice
 from modules.devices.tesla.tesla import bat
+from modules.devices.tesla.tesla import counter
 from modules.devices.tesla.tesla import device
 from modules.devices.tesla.tesla.device import Tesla, create_device
 from modules.common.component_state import BatState
@@ -144,8 +146,9 @@ def assert_battery_state_correct(state: BatState):
     assert state.exported == 1169030
 
 
-def test_powerwall_update_if_cookie_cached(monkeypatch, requests_mock: requests_mock.Mocker):
+def test_powerwall_update_if_cookie_cached(monkeypatch, requests_mock: requests_mock.Mocker, data_):
     # setup
+    data.data.bat_data["bat0"] = Mock(data=Mock(config=Mock(max_power=10000)))
     mock_bat_value_store = Mock()
     monkeypatch.setattr(bat, "get_component_value_store", Mock(return_value=mock_bat_value_store))
     requests_mock.get("https://sample-address/api/meters/aggregates", text=sample_aggregates_json,
@@ -160,3 +163,60 @@ def test_powerwall_update_if_cookie_cached(monkeypatch, requests_mock: requests_
 
     # evaluation
     assert_battery_state_correct(mock_bat_value_store.set.call_args[0][0])
+
+
+def setup_counter_component() -> ConfigurableDevice:
+    device_config = Tesla(configuration=TeslaConfiguration(
+        ip_address="sample-address",
+        email="sample@mail.com",
+        password="some password"))
+    dev = create_device(device_config)
+    dev.add_component(counter.component_descriptor.configuration_factory())
+    return dev
+
+
+def test_powerwall_counter_falls_back_to_aggregates_if_meters_site_404(monkeypatch,
+                                                                       requests_mock: requests_mock.Mocker):
+    # Powerwall 3 with Backup Gateway 2 answers /api/meters/site with HTTP 404
+    # setup
+    mock_counter_value_store = Mock()
+    monkeypatch.setattr(counter, "get_component_value_store", Mock(return_value=mock_counter_value_store))
+    peak_filter = Mock()
+    peak_filter.check_values.side_effect = lambda power, imported, exported: (imported, exported)
+    monkeypatch.setattr(counter, "PeakFilter", Mock(return_value=peak_filter))
+    requests_mock.get("https://sample-address/api/meters/aggregates", text=sample_aggregates_json)
+    meters_site_mock = requests_mock.get("https://sample-address/api/meters/site", status_code=404)
+    monkeypatch.setattr(device, "_authenticate",
+                        Mock(return_value={"AuthCookie": "auth-cookie", "UserRecord": "user-record"}))
+    dev = setup_counter_component()
+
+    # execution
+    dev.update()
+    dev.update()
+
+    # evaluation
+    state = mock_counter_value_store.set.call_args[0][0]
+    assert state.power == -21.449996948242188
+    assert state.imported == 3276432.6625
+    assert state.exported == 1136916.6875
+    assert peak_filter.check_values.call_count == 2
+    peak_filter.check_values.assert_called_with(-21.449996948242188, 3276432.6625, 1136916.6875)
+    assert mock_counter_value_store.set.call_count == 2
+    # endpoint is not requested again once it is known to be missing
+    assert meters_site_mock.call_count == 1
+
+
+def test_powerwall_counter_raises_on_other_http_errors(monkeypatch, requests_mock: requests_mock.Mocker):
+    # setup
+    mock_counter_value_store = Mock()
+    monkeypatch.setattr(counter, "get_component_value_store", Mock(return_value=mock_counter_value_store))
+    requests_mock.get("https://sample-address/api/meters/aggregates", text=sample_aggregates_json)
+    requests_mock.get("https://sample-address/api/meters/site", status_code=500)
+    monkeypatch.setattr(device, "_authenticate",
+                        Mock(return_value={"AuthCookie": "auth-cookie", "UserRecord": "user-record"}))
+
+    # execution
+    setup_counter_component().update()
+
+    # evaluation
+    mock_counter_value_store.set.assert_not_called()

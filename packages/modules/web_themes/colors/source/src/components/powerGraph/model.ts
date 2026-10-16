@@ -50,6 +50,7 @@ export interface RawDayGraphDataItem {
 	cp: object
 	ev: object
 	sh: object
+	consumer: object
 	prices: {
 		grid: number
 		pv: number
@@ -111,6 +112,7 @@ export function setGraphData(d: GraphDataItem[]) {
 	} else {
 		graphData.data = d
 		graphData.waitForData = false
+		console.log('graph data set')
 	}
 }
 // LIVE GRAPH
@@ -374,7 +376,7 @@ export function updateEnergyValues(
 		Object.entries(totals.sh).forEach(([id, values]) => {
 			registry.setEnergy(id, values.energy_imported)
 			registry.calculatePvPercentage(id)
-			if (!shDevices.get(id)!.countAsHouse) {
+			if (shDevices.get(id) && !shDevices.get(id)!.countAsHouse) {
 				registry.setEnergy(
 					'devices',
 					registry.getEnergy('devices') + values.energy_imported,
@@ -388,6 +390,14 @@ export function updateEnergyValues(
 		registry.setEnergyBat('devices', devicesBatEnergy)
 		registry.calculatePvPercentage('devices')
 
+		// Consumers
+		Object.entries(totals.consumer).forEach(([id, values]) => {
+			if (id == 'all') {
+				updatePvValues(values, 'consumers')
+			} else {
+				updatePvValues(values, id)
+			}
+		})
 		// Counters
 		registry.setEnergy('counters', 0)
 		let counterEnergy = 0

@@ -2,11 +2,14 @@
 import logging
 import math
 
+from requests import HTTPError
+
 from modules.common.abstract_device import AbstractCounter
 from modules.common.component_state import CounterState
-from modules.common.component_type import ComponentDescriptor
+from modules.common.component_type import ComponentDescriptor, ComponentType
 from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.store import get_component_value_store
+from modules.common.utils.peak_filter import PeakFilter
 from modules.devices.tesla.tesla.config import TeslaCounterSetup
 from modules.devices.tesla.tesla.http_client import PowerwallHttpClient
 
@@ -16,6 +19,9 @@ log = logging.getLogger(__name__)
 class TeslaCounter(AbstractCounter):
     def __init__(self, component_config: TeslaCounterSetup) -> None:
         self.component_config = component_config
+        # Powerwall 3 / newer gateway firmware no longer provide /api/meters/site (HTTP 404).
+        # Remember that, so we do not request the endpoint again in every cycle.
+        self._meters_site_available = True
 
     def initialize(self) -> None:
         self.store = get_component_value_store(
@@ -25,6 +31,7 @@ class TeslaCounter(AbstractCounter):
         self.fault_state = FaultState(
             ComponentInfo.from_component_config(self.component_config)
         )
+        self.peak_filter = PeakFilter(ComponentType.COUNTER, self.component_config.id, self.fault_state)
 
     @staticmethod
     def _nearly_zero(x: float, eps: float = 1e-9) -> bool:
@@ -71,9 +78,32 @@ class TeslaCounter(AbstractCounter):
 
         return currents, pfs
 
-    def update(self, client: PowerwallHttpClient, aggregate):
+    def _get_meters_site(self, client: PowerwallHttpClient):
+        if not self._meters_site_available:
+            return None
         try:
-            meters_site = client.get_json("/api/meters/site")
+            return client.get_json("/api/meters/site")
+        except HTTPError as e:
+            status = getattr(getattr(e, "response", None), "status_code", None)
+            if status != 404:
+                raise
+            self._meters_site_available = False
+            log.info(
+                "Tesla gateway does not provide /api/meters/site (HTTP 404, e.g. Powerwall 3). "
+                "Using total values from /api/meters/aggregates only."
+            )
+            return None
+
+    def update(self, client: PowerwallHttpClient, aggregate):
+        site = aggregate["site"]
+        power = site["instant_power"]
+        imported, exported = self.peak_filter.check_values(
+            power, site["energy_imported"], site["energy_exported"])
+
+        try:
+            meters_site = self._get_meters_site(client)
+            if meters_site is None:
+                raise KeyError("/api/meters/site not available")
             cached = meters_site[0]["Cached_readings"]
 
             voltages = [
@@ -96,9 +126,6 @@ class TeslaCounter(AbstractCounter):
                 for phase in ["a", "b", "c"]
             ]
 
-            imported = aggregate["site"]["energy_imported"]
-            exported = aggregate["site"]["energy_exported"]
-
             calculated_currents, power_factors = (
                 self._calc_currents_and_pf_from_pqu(
                     voltages=voltages,
@@ -119,7 +146,7 @@ class TeslaCounter(AbstractCounter):
                     "Using phase currents from Tesla/Neurio API."
                 )
 
-            frequency = float(aggregate["site"]["frequency"])
+            frequency = float(site["frequency"])
 
             serial = cached.get("serial_number")
             serial_number = str(serial) if serial else None
@@ -127,7 +154,7 @@ class TeslaCounter(AbstractCounter):
             powerwall_state = CounterState(
                 imported=imported,
                 exported=exported,
-                power=aggregate["site"]["instant_power"],
+                power=power,
                 voltages=voltages,
                 currents=currents,
                 powers=p_list,
@@ -144,9 +171,9 @@ class TeslaCounter(AbstractCounter):
             )
 
             powerwall_state = CounterState(
-                imported=aggregate["site"]["energy_imported"],
-                exported=aggregate["site"]["energy_exported"],
-                power=aggregate["site"]["instant_power"],
+                imported=imported,
+                exported=exported,
+                power=power,
             )
 
         self.store.set(powerwall_state)

@@ -4,10 +4,8 @@ import logging
 from modules.common.abstract_device import DeviceDescriptor
 from typing import Optional
 from modules.common.component_state import ConsumerState
-from modules.common.component_type import ComponentType
 from modules.common.configurable_consumer import ConfigurableConsumer, SetLimitData
 from modules.common.modbus import ModbusDataType, ModbusTcpClient_
-from modules.common.simcount._simcounter import SimCounterConsumer
 from modules.consumers.my_pv.elwa_e.config import Elwa
 
 log = logging.getLogger(__name__)
@@ -20,8 +18,8 @@ class Register(IntEnum):
 
 
 REG_MAPPING = (
-    (Register.POWER, [ModbusDataType.INT_16]),
-    (Register.TEMP0, [ModbusDataType.INT_16]),
+    (Register.POWER, ModbusDataType.INT_16),
+    (Register.TEMP0, ModbusDataType.INT_16),
     (Register.STATE, ModbusDataType.INT_16),
 )
 
@@ -43,14 +41,12 @@ def create_consumer(config: Elwa):
     client: Optional[ModbusTcpClient_] = None
     fuse = 1
     power = 0
-    sim_counter: Optional[SimCounterConsumer] = None
     state = None
 
     def initializer():
-        nonlocal client, fuse, sim_counter
+        nonlocal client, fuse
         client = ModbusTcpClient_(config.configuration.ip_address, config.configuration.port)
         fuse = client.read_input_registers(1014, ModbusDataType.INT_16, unit=config.configuration.modbus_id)
-        sim_counter = SimCounterConsumer(config.id, ComponentType.CONSUMER)
 
     def error_handler() -> None:
         initializer()
@@ -63,11 +59,8 @@ def create_consumer(config: Elwa):
         state = resp[Register.STATE]
         if state > 200:
             raise Exception(f"Elwa-E meldet einen Fehler-Status: {STATE_MAPPING.get(state, 'Unknown fault state')}")
-        imported, exported = sim_counter.sim_count(power)
         return ConsumerState(
             power=power,
-            imported=imported,
-            exported=exported,
             temperatures=[resp[Register.TEMP0]/10]
         )
 
@@ -80,7 +73,8 @@ def create_consumer(config: Elwa):
         power_limit = min(power_limit, 4000)
         power_limit = max(power_limit, 0)
 
-        client.write_registers(1000, power_limit, unit=config.configuration.modbus_id)
+        client.write_register(1000, int(power_limit), data_type=ModbusDataType.INT_16,
+                              unit=config.configuration.modbus_id)
     return ConfigurableConsumer(consumer_config=config,
                                 initializer=initializer,
                                 error_handler=error_handler,

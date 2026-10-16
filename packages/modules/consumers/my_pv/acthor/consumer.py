@@ -4,10 +4,8 @@ import logging
 from typing import Optional
 from modules.common.abstract_device import DeviceDescriptor
 from modules.common.component_state import ConsumerState
-from modules.common.component_type import ComponentType
 from modules.common.configurable_consumer import ConfigurableConsumer, SetLimitData
 from modules.common.modbus import ModbusDataType, ModbusTcpClient_
-from modules.common.simcount._simcounter import SimCounterConsumer
 from modules.consumers.my_pv.acthor.config import Acthor
 
 log = logging.getLogger(__name__)
@@ -30,22 +28,20 @@ FACTORS = {"9s45": 45000,
            "E2M3": 6500,
            "M1": 3000}
 REG_MAPPING = (
-    (Register.POWER, [ModbusDataType.INT_16]),
-    (Register.TEMP0, [ModbusDataType.INT_16]),
-    (Register.TEMP1, [ModbusDataType.INT_16]),
-    (Register.TEMP2, [ModbusDataType.INT_16]),
+    (Register.POWER, ModbusDataType.INT_16),
+    (Register.TEMP0, ModbusDataType.INT_16),
+    (Register.TEMP1, ModbusDataType.INT_16),
+    (Register.TEMP2, ModbusDataType.INT_16),
     (Register.STATUS, ModbusDataType.INT_16),
 )
 
 
 def create_consumer(config: Acthor):
     client: Optional[ModbusTcpClient_] = None
-    sim_counter: Optional[SimCounterConsumer] = None
 
     def initializer():
-        nonlocal client, sim_counter
+        nonlocal client
         client = ModbusTcpClient_(config.configuration.ip_address, config.configuration.port)
-        sim_counter = SimCounterConsumer(config.id, ComponentType.CONSUMER)
 
     def error_handler() -> None:
         initializer()
@@ -54,17 +50,15 @@ def create_consumer(config: Acthor):
         resp = client.read_holding_registers_bulk(
             Register.POWER, 35, mapping=REG_MAPPING, unit=config.configuration.modbus_id)
         power = resp[Register.POWER]
-        imported, exported = sim_counter.sim_count(power)
         return ConsumerState(
             power=power,
-            imported=imported,
-            exported=exported,
             temperatures=[resp[Register.TEMP0]/10, resp[Register.TEMP1]/10, resp[Register.TEMP2]/10]
         )
 
     def set_power_limit(power_limit: float, data: SetLimitData) -> None:
         power_limit = power_limit * FACTORS.get(config.configuration.model, 9000)/config.configuration.max_power
-        client.write_registers(1000, power_limit, unit=config.configuration.modbus_id)
+        client.write_register(1000, int(power_limit), data_type=ModbusDataType.INT_16,
+                              unit=config.configuration.modbus_id)
     return ConfigurableConsumer(consumer_config=config,
                                 initializer=initializer,
                                 error_handler=error_handler,

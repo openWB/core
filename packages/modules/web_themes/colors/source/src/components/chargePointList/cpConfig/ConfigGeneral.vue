@@ -13,11 +13,11 @@
 			v-model="cp.chargeMode"
 			:columns="3"
 			:options="
-				Object.keys(chargemodes).map((v) => [
-					chargemodes[v].name,
-					v,
-					chargemodes[v].color,
-					chargemodes[v].icon,
+				Object.entries(chargemodes).map(([key, value]) => [
+					value.name,
+					key,
+					value.color,
+					value.icon,
 				])
 			"
 		/>

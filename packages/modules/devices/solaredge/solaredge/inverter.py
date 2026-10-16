@@ -65,12 +65,13 @@ class SolaredgeInverter(AbstractInverter):
             Register.CURRENTS, 30, mapping=self.REG_MAPPING, unit=self.component_config.configuration.modbus_id)
 
         power = scale_registers(resp[Register.POWER], resp[Register.POWER_SCALE]) * -1
-        self.peak_filter.check_values(power)
+        exported = scale_registers(resp[Register.EXPORTED], resp[Register.EXPORTED_SCALE])
+        _, exported = self.peak_filter.check_values(power, None, exported)
         imported, _ = self.sim_counter.sim_count(power)
 
         return InverterState(
             power=power,
-            exported=scale_registers(resp[Register.EXPORTED], resp[Register.EXPORTED_SCALE]),
+            exported=exported,
             currents=scale_registers(resp[Register.CURRENTS], resp[Register.CURRENTS_SCALE]),
             dc_power=scale_registers(resp[Register.DC_POWER], resp[Register.DC_POWER_SCALE]) * -1,
             imported=imported,

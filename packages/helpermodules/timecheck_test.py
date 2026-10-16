@@ -49,6 +49,40 @@ def test_check_end_time(time: str,
     assert remaining_time == expected_remaining_time
 
 
+@pytest.mark.parametrize(
+    "time, selected, date,expected_remaining_time",
+    [
+        pytest.param("9:00", "once", "2022-05-16", 1148, id="once-future-not-due"),
+        pytest.param("12:00", "daily", [], 11948, id="daily-future-not-due"),
+        pytest.param("8:05", "daily", [], -2152, id="daily-past-due"),
+        pytest.param("9:00", "weekly", [True, False, False, False, False, False, False], 1148,
+                     id="weekly-selected-today-future"),
+        pytest.param("8:05", "weekly", [True, False, False, False, False, False, False], -2152,
+                     id="weekly-selected-today-past-due"),
+        pytest.param("9:00", "weekly", [False, False, False, False, False, False, True], -85252,
+                     id="weekly-not-selected-today-use-previous-selected"),
+    ],
+)
+def test_check_end_time_current_occurrence(
+    time: str,
+    selected: str,
+    date: Union[List[bool], str, List],
+    expected_remaining_time: float,
+):
+    # setup
+    plan = Mock(spec=ScheduledChargingPlan, time=time, frequency=Mock(spec=FrequencyDate, selected=selected))
+    if selected == "weekly":
+        setattr(plan.frequency, "weekly", date)
+    elif selected == "once":
+        setattr(plan.frequency, "once", date)
+
+    # execution
+    remaining_time = timecheck.check_end_time_current_occurrence(plan)
+
+    # evaluation
+    assert remaining_time == expected_remaining_time
+
+
 @pytest.mark.parametrize("weekday, weekly, expected_days",
                          [pytest.param(0, [True, True, False, False, False, False, False], 0),
                           pytest.param(1, [True, False, False, False, False, False, False], 6),

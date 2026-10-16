@@ -41,6 +41,7 @@ Hagen */
 			<VehicleList v-if="globalConfig.showVehicles"></VehicleList>
 			<BatteryList />
 			<SmartHomeList v-if="showSH"></SmartHomeList>
+			<ConsumerList v-if="showConsumers"></ConsumerList>
 			<CounterList v-if="globalConfig.showCounters"></CounterList>
 			<InverterList v-if="globalConfig.showInverters"></InverterList>
 		</div>
@@ -99,6 +100,15 @@ Hagen */
 				<span class="d-none d-md-inline ms-2">Smart Home</span>
 			</a>
 			<a
+				v-if="showConsumers"
+				class="nav-link"
+				data-bs-toggle="tab"
+				data-bs-target="#ConsumerList"
+			>
+				<i class="fa-solid fa-lg fa-lightbulb" />
+				<span class="d-none d-md-inline ms-2">Verbraucher</span>
+			</a>
+			<a
 				v-if="globalConfig.showCounters"
 				class="nav-link"
 				data-bs-toggle="tab"
@@ -135,6 +145,7 @@ Hagen */
 					<VehicleList v-if="globalConfig.showVehicles" />
 					<BatteryList />
 					<SmartHomeList v-if="showSH" />
+					<ConsumerList v-if="showConsumers"></ConsumerList>
 					<CounterList v-if="globalConfig.showCounters" />
 					<InverterList v-if="globalConfig.showInverters" />
 				</div>
@@ -184,6 +195,20 @@ Hagen */
 			>
 				<div v-if="showSH" class="row py-0 m-0 d-flex justify-content-center">
 					<SmartHomeList />
+				</div>
+			</div>
+			<div
+				v-if="showConsumers"
+				id="ConsumerList"
+				class="tab-pane"
+				role="tabpanel"
+				aria-labelledby="device-tab"
+			>
+				<div
+					v-if="showConsumers"
+					class="row py-0 m-0 d-flex justify-content-center"
+				>
+					<ConsumerList />
 				</div>
 			</div>
 			<div
@@ -252,6 +277,7 @@ import { globalData } from '../assets/js/model'
 import { shDevices } from '@/components/smartHome/model'
 import { initConfig } from '@/assets/js/themeConfig'
 import { batteries } from '@/components/batteryList/model'
+import { consumers } from '@/components/consumerList/model'
 import PowerMeter from '@/components/powerMeter/PowerMeter.vue'
 import PowerGraph from '@/components/powerGraph/PowerGraph.vue'
 import EnergyMeter from '@/components/energyMeter/EnergyMeter.vue'
@@ -260,6 +286,7 @@ import ChargePointList from '@/components/chargePointList/ChargePointList.vue'
 import ButtonBar from '@/components/buttonBar/ButtonBar.vue'
 import BatteryList from '@/components/batteryList/BatteryList.vue'
 import SmartHomeList from '@/components/smartHome/SmartHomeList.vue'
+import ConsumerList from '@/components/consumerList/ConsumerList.vue'
 import CounterList from '@/components/counterList/CounterList.vue'
 import VehicleList from '@/components/vehicleList/VehicleList.vue'
 import GlobalPriceChart from '@/components/priceChart/GlobalPriceChart.vue'
@@ -279,6 +306,9 @@ import { initGraph } from '@/components/powerGraph/model'
 const showMQ = ref(false)
 const showSH = computed(() => {
 	return [...shDevices.values()].filter((dev) => dev.configured).length > 0
+})
+const showConsumers = computed(() => {
+	return [...consumers.values()].length > 0
 })
 // methods
 function init() {
@@ -356,5 +386,8 @@ function haveFocus() {
 }
 .fa-solar-panel {
 	color: var(--color-pv);
+}
+.fa-lightbulb {
+	color: var(--color-consumers);
 }
 </style>

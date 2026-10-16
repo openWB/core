@@ -29,7 +29,12 @@ export const masterData: { [key: string]: ItemProps } = reactive({
 	},
 	charging: { name: 'Laden', color: 'var(--color-charging)', icon: '\uf5e7' },
 	devices: { name: 'Geräte', color: 'var(--color-devices)', icon: '\uf1e6' },
-	counters: { name: 'Zähler', color: 'var(--color-counters)', icon: '\uf0eb' },
+	consumers: {
+		name: 'Verbraucher',
+		color: 'var(--color-consumers)',
+		icon: '\uf0eb',
+	},
+	counters: { name: 'Zähler', color: 'var(--color-counters)', icon: '\ue0b7' },
 	batIn: { name: '> Bat', color: 'var(--color-battery)', icon: '\uf061\uf5df' },
 	house: { name: 'Haus', color: 'var(--color-house)', icon: '\uf015' },
 	price: { name: 'Strompreis', color: 'crimson', icon: '\uf0d6' },
@@ -105,6 +110,16 @@ export const colormap: Map<string, string[]> = new Map([
 			'var(--color-sh9)	',
 		],
 	],
+	[
+		'consumer',
+		[
+			'var(--color-consumer1)',
+			'var(--color-consumer2)',
+			'var(--color-consumer3)',
+			'var(--color-consumer4)',
+			'var(--color-consumer5)',
+		],
+	],
 ])
 
 export function getColor(category: string, index: number): string {
@@ -123,6 +138,7 @@ class ItemList {
 		this.addItem('evuOut')
 		this.addItem('charging')
 		this.addItem('devices')
+		this.addItem('consumers')
 		this.addItem('counters')
 		this.addItem('batIn')
 		this.addItem('house')
@@ -135,6 +151,7 @@ class ItemList {
 			this._items.get('evuOut')!,
 			this._items.get('charging')!,
 			this._items.get('devices')!,
+			this._items.get('consumers')!,
 			this._items.get('counters')!,
 			this._items.get('batIn')!,
 			this._items.get('house')!,
@@ -184,6 +201,9 @@ class ItemList {
 					break
 				case 'devices':
 					itemType = PowerItemType.device
+					break
+				case 'consumers':
+					itemType = PowerItemType.consumer
 					break
 				case 'counters':
 					itemType = PowerItemType.counter

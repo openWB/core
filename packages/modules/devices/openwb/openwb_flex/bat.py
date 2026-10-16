@@ -47,6 +47,7 @@ class BatKitFlex(AbstractBat):
         if isinstance(self.__client, Lovato) or isinstance(self.__client, Sdm120):
             self.peak_filter.check_values(power)
             imported, exported = self.sim_counter.sim_count(power)
+            currents = self.__client.get_currents()
         else:
             imported = counter_state.imported
             exported = counter_state.exported

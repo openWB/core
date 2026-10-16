@@ -364,12 +364,24 @@ class HierarchyMixin:
                 check_and_remove("consumer", ComponentType.CONSUMER, data.data.consumer_data)
 
     def _add_missing_entries(self: HierarchyProtocol):
+        linked_extra_meter_counter_ids = {
+            consumer.data.extra_meter
+            for consumer in data.data.consumer_data.values()
+            if consumer.data.extra_meter is not None
+        }
+
         def check_and_add(type_name: ComponentType, data_structure):
             for entry in data_structure:
                 break_flag = False
                 re_result = re.search("[0-9]+", entry)
                 if re_result is not None:
                     entry_num = int(re_result.group())
+                else:
+                    continue
+
+                if type_name == ComponentType.COUNTER and entry_num in linked_extra_meter_counter_ids:
+                    continue
+
                 for level in self.get_list_of_elements_per_level():
                     for element in level:
                         if entry_num == element["id"] and element["type"] == type_name.value:

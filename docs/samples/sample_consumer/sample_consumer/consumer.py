@@ -57,23 +57,28 @@ def create_consumer(config: SampleConsumer):
     # ConsumerUsage.SUSPENDABLE_TUNABLE
     def set_power_limit(power_limit: float, data: SetLimitData) -> None:
         nonlocal client
-        client.write_registers(1000, power_limit, unit=config.configuration.modbus_id)
+        client.write_register(Register.1000, int(power_limit), data_type=ModbusDataType.INT_16,
+                              unit=config.configuration.modbus_id)
 
     # ODER
     # ConsumerUsage.SUSPENDABLE_ONOFF
     # ConsumerUsage.CONTINUOUS
     def switch_on() -> None:
         nonlocal client
-        client.write_registers(1000, 1, unit=config.configuration.modbus_id)
+        client.write_register(Register.1000, 1, data_type=ModbusDataType.INT_16,
+                              unit=config.configuration.modbus_id)
 
     def switch_off() -> None:
         nonlocal client
-        client.write_registers(1000, 0, unit=config.configuration.modbus_id)
+        client.write_register(Register.1000, 0, data_type=ModbusDataType.INT_16,
+                              unit=config.configuration.modbus_id)
 
     # ODER
     # ConsumerUsage.SELF_CONTROLLED
     def send_values(values: CurrentValues) -> None:
-        client.write_registers(1000, values.evu_power, unit=config.configuration.modbus_id)
+        nonlocal client
+        client.write_register(Register.1000, int(values.evu_power), data_type=ModbusDataType.INT_16,
+                              unit=config.configuration.modbus_id)
 
     return ConfigurableConsumer(consumer_config=config,
                                 initializer=initializer,

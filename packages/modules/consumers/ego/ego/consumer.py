@@ -5,10 +5,8 @@ from typing import Optional
 from modules.common.abstract_consumer import CurrentValues
 from modules.common.abstract_device import DeviceDescriptor
 from modules.common.component_state import ConsumerState
-from modules.common.component_type import ComponentType
 from modules.common.configurable_consumer import ConfigurableConsumer, SetLimitData
 from modules.common.modbus import ModbusDataType, ModbusTcpClient_
-from modules.common.simcount._simcounter import SimCounterConsumer
 from modules.consumers.ego.ego.config import Ego
 
 log = logging.getLogger(__name__)
@@ -16,12 +14,10 @@ log = logging.getLogger(__name__)
 
 def create_consumer(config: Ego):
     client: Optional[ModbusTcpClient_] = None
-    sim_counter: Optional[SimCounterConsumer] = None
 
     def initializer():
-        nonlocal client, sim_counter
+        nonlocal client
         client = ModbusTcpClient_(config.configuration.ip_address, config.configuration.port)
-        sim_counter = SimCounterConsumer(config.id, ComponentType.CONSUMER)
 
     def send_values(values: CurrentValues) -> None:
         unit = config.configuration.modbus_id
@@ -40,12 +36,9 @@ def create_consumer(config: Ego):
             power += client.read_holding_registers(4128, ModbusDataType.UINT_16, unit=unit)
         if status & 0x04:
             power += client.read_holding_registers(4160, ModbusDataType.UINT_16, unit=unit)
-        imported, exported = sim_counter.sim_count(power)
 
         return ConsumerState(
             power=power,
-            imported=imported,
-            exported=exported
         )
 
     def set_power_limit(power_limit: Optional[float], data: SetLimitData) -> None:
