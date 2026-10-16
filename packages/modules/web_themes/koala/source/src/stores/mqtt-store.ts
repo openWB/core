@@ -4526,7 +4526,8 @@ export const useMqttStore = defineStore('mqtt', () => {
     () => homeConsumptionAssignment.value.notInHome,
   );
 
-  // own share in W below which a counter with components below it is hidden (threshold for showing in the home consumption details)
+  // own share in W below which a counter with components below it is hidden
+  // (threshold for showing in the home consumption details)
   const COUNTER_OWN_SHARE_THRESHOLD = 50;
 
   /**
@@ -4962,9 +4963,9 @@ export const useMqttStore = defineStore('mqtt', () => {
     componentName,
     gridComponentColor,
     counterPower,
+    counterLocalPower,
     counterDailyImported,
     counterDailyExported,
-    counterLocalPower,
     // Home data
     homePower,
     homeDailyYield,
