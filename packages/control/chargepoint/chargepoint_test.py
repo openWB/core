@@ -91,9 +91,12 @@ def test_initiate_control_pilot_interruption_uses_state_prev_not_state(state_pre
     cp.data.set.charging_ev_data.ev_template.data.control_pilot_interruption_duration = 4
     cp.data.set.charging_ev_data.ev_template.data.control_pilot_interruption_retry_interval = 0
     cp.data.config.control_pilot_interruption_hw = True
+    # state_prev ueber remember_previous_values() setzen statt direkt zuzuweisen
+    cp.data.set.current = 0
+    cp.data.control_parameter.state = state_prev
+    cp.remember_previous_values()
+    # aktueller Zyklus: Ladung startet
     cp.data.control_parameter.state = ChargepointState.WAIT_FOR_USING_PHASES
-    cp.data.set.state_prev = state_prev
-    cp.data.set.current_prev = 0
     cp.data.set.current = 6
 
     # evaluation
@@ -103,6 +106,35 @@ def test_initiate_control_pilot_interruption_uses_state_prev_not_state(state_pre
     message_present = (cp.data.get.state_str is not None and
                        "Control-Pilot-Unterbrechung" in cp.data.get.state_str)
     assert message_present == expected_message_present
+
+
+def test_initiate_control_pilot_interruption_skipped_when_phase_switch_pending():
+    """ Kontaktoren stehen noch auf falscher Phasenzahl -> initiate_phase_switch() schaltet im selben
+    Zyklus bereits CP um, keine zusaetzliche Unterbrechung noetig. """
+    # setup
+    cp = Chargepoint(0, None)
+    cp.chargepoint_module = Mock(interrupt_cp=Mock(), config=Mock(id=0))
+    cp.data.set.charging_ev_data = Ev(0)
+    cp.data.set.charging_ev_data.ev_template.data.control_pilot_interruption = True
+    cp.data.set.charging_ev_data.ev_template.data.control_pilot_interruption_duration = 4
+    cp.data.set.charging_ev_data.ev_template.data.control_pilot_interruption_retry_interval = 0
+    cp.data.config.control_pilot_interruption_hw = True
+    cp.data.set.current = 0
+    cp.data.control_parameter.state = ChargepointState.SWITCH_ON_DELAY
+    cp.remember_previous_values()
+    cp.data.control_parameter.state = ChargepointState.WAIT_FOR_USING_PHASES
+    cp.data.set.current = 6
+    # Kontaktoren (1p) weichen von der benoetigten Phasenzahl (3p) ab
+    cp.data.set.phases_to_use = 3
+    cp.data.control_parameter.phases = 1
+
+    # evaluation
+    cp.initiate_control_pilot_interruption()
+
+    # assertion
+    message_present = (cp.data.get.state_str is not None and
+                       "Control-Pilot-Unterbrechung" in cp.data.get.state_str)
+    assert message_present is False
 
 
 @pytest.mark.parametrize("required_current, max_discharge_power, dc_max_current, expected_required_current",
