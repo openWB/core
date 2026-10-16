@@ -65,6 +65,9 @@ export class Consumer implements PowerItem {
 	showInList = true
 	priority = 0
 	usage: ConsumerUsage | null = null
+	statusText = ''
+	faultState = 0
+	faultText = ''
 	now: EnergyData = {
 		energy: 0,
 		energyPv: 0,

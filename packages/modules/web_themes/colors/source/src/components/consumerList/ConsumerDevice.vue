@@ -5,6 +5,18 @@
 				<span class="devname" :style="{ color: device.color }"
 					>{{ device.name }}
 				</span>
+				<span>
+					<i
+						v-if="device.faultState === 0"
+						@click="showInfo = !showInfo"
+						class="fa-solid fa-sm fa-circle-info ms-2"
+					/>
+					<i
+						v-if="device.faultState != 0"
+						@click="showFault = !showFault"
+						class="fa-solid fa-sm fa-triangle-exclamation ms-2"
+					/>
+				</span>
 			</div>
 		</template>
 		<template #buttons>
@@ -17,6 +29,12 @@
 		</template>
 
 		<div class="subgrid pt-1">
+			<div v-if="showInfo" class="devicestatus p-2 rounded">
+				{{ device.statusText }}
+			</div>
+			<div v-if="showFault" class="devicestatus p-2">
+				{{ device.faultText }}
+			</div>
 			<RadioBarInput
 				:id="'chargemode-' + device.name"
 				v-model="device.chargeMode"
@@ -33,10 +51,10 @@
 					})
 				"
 			/>
-			<InfoItem heading="Heute:" :small="true" class="grid-col-4 grid-left">
+			<InfoItem heading="Heute:" :small="true" class="grid-col-6 grid-left">
 				<FormatWattH :watt-h="device.now.energy"></FormatWattH>
 			</InfoItem>
-			<InfoItem heading="Laufzeit:" :small="true" class="grid-col-4 grid-left">
+			<InfoItem heading="Laufzeit:" :small="true" class="grid-col-6 grid-left">
 				{{ formatTime(device.runningTime) }}
 			</InfoItem>
 		</div>
@@ -53,30 +71,17 @@ import WbBadge from '@/components/shared/WbBadge.vue'
 import InfoItem from '@/components/shared/InfoItem.vue'
 import FormatWattH from '@/components/shared/FormatWattH.vue'
 import RadioBarInput from '../shared/RadioBarInput.vue'
+import { ref } from 'vue'
 
 const props = defineProps<{
 	device: Consumer
 }>()
+
+const showInfo = ref(false)
+const showFault = ref(false)
 </script>
 
 <style scoped>
-.tablerow {
-	margin: 14px;
-	border-top: 0.1px solid var(--color-scale);
-}
-
-.tablecell {
-	color: var(--color-fg);
-	background-color: var(--color-bg);
-	text-align: center;
-	padding-top: 2px;
-	padding-left: 2px;
-	padding-right: 2px;
-	vertical-align: baseline;
-	line-height: 1.4rem;
-	font-size: var(--font-small);
-}
-
 .left {
 	text-align: left;
 }
@@ -91,5 +96,19 @@ const props = defineProps<{
 .chargemodes {
 	grid-column: 1 / 13;
 	justify-self: center;
+}
+.devicestatus {
+	grid-column: 1 / 13;
+	border: 1px solid var(--color-consumers);
+	justify-self: center;
+	font-size: var(--font-small);
+	color: black;
+	background: var(--color-menu);
+}
+.fa-circle-info {
+	color: var(--color-charging);
+}
+.fa-triangle-exclamation {
+	color: var(--color-battery);
 }
 </style>

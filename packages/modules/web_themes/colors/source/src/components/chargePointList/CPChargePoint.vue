@@ -25,7 +25,7 @@
 		</template>
 
 		<!-- Chargepoint info -->
-		<div v-if="!configmode">
+		<div v-if="!configmode" class="subgrid">
 			<div class="grid12" @click="configmode = !configmode">
 				<!-- Status information -->
 				<InfoItem heading="Status:" class="grid-col-4 grid-left">
@@ -38,9 +38,7 @@
 				<InfoItem heading="Geladen:" class="grid-col-4 grid-center">
 					<FormatWattH :watt-h="chargepoint.dailyYield" />
 				</InfoItem>
-				<InfoItem heading="Priorität:" class="grid-col-4 grid-right">
-					{{ chargepoint.priority }}
-				</InfoItem>
+				<div class="grid-col-4">&nbsp;</div>
 			</div>
 		</div>
 		<div v-if="configmode" class="row m-0 mt-0 p-0">
@@ -157,9 +155,11 @@ function toggleConfigMode() {
 .fa-ellipsis-vertical {
 	color: var(--color-menu);
 }
+
 .fa-circle-check {
 	color: var(--color-menu);
 }
+
 .errorWbBadge {
 	color: var(--color-bg);
 	background-color: var(--color-evu);
