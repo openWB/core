@@ -29,10 +29,15 @@ def _get_raw_prices(config: NaturstromTariff):
     }
     now = datetime.datetime.now(pytz.timezone("Europe/Berlin"))
     start_of_today = now.replace(hour=0, minute=0, second=0, microsecond=0)
-    end_of_today = start_of_today + datetime.timedelta(days=1) - datetime.timedelta(minutes=1)
+    # Laut Anbieter sind die EPEX-Preise ab 13 Uhr bis zum Ende des Folgetags verfügbar.
+    # openWB plant die Aktualisierung standardmäßig für 14 Uhr, mit einem zufälligen Vorlauf.
+    if now.hour < 13:
+        # Wenn Preise vor 13 Uhr abgerufen werden, liegen die Preise nur bis zum Ende des heutigen Tages vor.
+        end_of_today = start_of_today + datetime.timedelta(days=1) - datetime.timedelta(minutes=1)
+    else:
+        end_of_today = start_of_today + datetime.timedelta(days=2) - datetime.timedelta(minutes=1)
 
     params = {
-        # Hier dann nochmal fragen, ob wir die Daten für den aktuellen Tag passen
         'start': start_of_today.isoformat(),
         'stop': end_of_today.isoformat(),
     }
