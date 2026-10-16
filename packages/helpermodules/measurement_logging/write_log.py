@@ -29,7 +29,7 @@ log = logging.getLogger(__name__)
 #                     "grid": Preis für Netzbezug,
 #                     "pv": Preis für PV-Strom,
 #                     "bat": Preis für Speicherstrom
-#                     "tariff_name": Tarifzeitraum des Netzpreises (Feste Tarifstunden), sonst None
+#                     "tariff_name": Tarifzeitraum des Netzpreises, nur bei Festen Tarifstunden
 #                 }
 #                     "cp": {
 #                     "cp1": {
@@ -220,8 +220,9 @@ def create_entry(sh_log_data: LegacySmartHomeLogData, previous_entry: Optional[D
                        "pv": prices.pv,
                        "bat": prices.bat,
                        "cp": prices.cp,
-                       "fault_state": fault_state,
-                       "tariff_name": tariff_name}
+                       "fault_state": fault_state}
+        if tariff_name is not None:
+            prices_dict["tariff_name"] = tariff_name
     except Exception:
         log.exception("Fehler im Werte-Logging-Modul für Preise")
         prices_dict = {"fault_state": 0}
