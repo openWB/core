@@ -63,7 +63,7 @@ NO_MODULE = {"type": None, "configuration": {}}
 
 class UpdateConfig:
 
-    DATASTORE_VERSION = 154
+    DATASTORE_VERSION = 155
 
     FILE_OPERATION_VERSION = 0
 
@@ -4154,3 +4154,13 @@ class UpdateConfig:
 
         self._loop_all_received_topics(upgrade)
         self._append_datastore_version(154)
+
+    def upgrade_datastore_155(self) -> None:
+        def upgrade(topic: str, payload) -> Optional[dict]:
+            if "openWB/general/charge_log_data_config" == topic:
+                config = decode_payload(payload)
+                if config.get("data_tariff_split") is None:
+                    config["data_tariff_split"] = False
+                    return {topic: config}
+        self._loop_all_received_topics(upgrade)
+        self._append_datastore_version(155)
