@@ -77,10 +77,11 @@ const visible = computed({
 });
 
 const items = computed((): DetailsItem[] => {
-  const { consumerIds, counterIds } =
+  const { consumerIds } =
     props.scope === 'inHome'
       ? mqttStore.inHomeConsumption
       : mqttStore.notInHomeConsumption;
+  const counterIds = mqttStore.shownCounterIds[props.scope];
   const unmeasured =
     props.scope === 'inHome' &&
     mqttStore.unmeasuredHomeConsumptionPower('value') !== undefined
@@ -109,7 +110,7 @@ const items = computed((): DetailsItem[] => {
       color:
         mqttStore.secondaryCounterColor(id) ||
         'var(--q-secondary-counter-stroke)',
-      power: mqttStore.counterPower('textValue', id) as string,
+      power: mqttStore.counterLocalPower('textValue', id) as string,
     })),
     ...unmeasured,
   ];
