@@ -258,6 +258,8 @@ class Ev:
                                          + "Stromabweichung aus dem Fahrzeug-Profil/Minimalen Dauerstrom lädt.")
     ENOUGH_POWER = ", da ausreichend Überschuss für mehrphasiges Laden zur Verfügung steht."
     NOT_ENOUGH_POWER = ", da nicht ausreichend Überschuss für mehrphasiges Laden zur Verfügung steht."
+    BAT_BUFFERING = ", da der Speicher die Ladung puffert."
+    BAT_BUFFER_DEPLETED = ", da der Speicher-Puffer leer ist und der Speicher Vorrang hat."
 
     def _check_phase_switch_conditions(self,
                                        control_parameter: ControlParameter,
@@ -273,6 +275,23 @@ class Ev:
         max_current = min(self.ev_template.data.max_current_single_phase, max_current_cp)
         max_current_range = max_current - self.ev_template.data.nominal_difference
         phases_in_use = control_parameter.phases
+        # Die Hochschaltung 1 -> 3 bleibt von beiden Sperren unberührt: ist genug Überschuss für
+        # drei Phasen da, soll unabhängig vom Speicher hochgeschaltet werden.
+        if phases_in_use > 1 and control_parameter.submode == Chargemode.PV_CHARGING:
+            if data.data.bat_all_data.is_buffering():
+                # Der Speicher stützt die Ladung gerade mit seiner freigegebenen Entladeleistung.
+                # Diese deckt bei mehrphasigem Laden nur einen Teil des Bedarfs, der Überschuss ist
+                # also <= 0 und damit die Rückschaltbedingung erfüllt - obwohl genau dieser Zustand
+                # der ist, den der Puffer überbrücken soll. Einphasig wäre die Ladeleistung ein
+                # Drittel und der Puffer damit wirkungslos.
+                return False, self.BAT_BUFFERING
+            if data.data.bat_all_data.is_buffer_depleted():
+                # Der Puffer ist leer, der Speicher hat bis zum Mindest-SoC Vorrang. Einphasig
+                # weiterzuladen würde den Speicher weiter am Laden hindern, deshalb wird nicht
+                # zurückgeschaltet, sondern die Abschaltschwelle greifen gelassen. Erholt sich der
+                # Puffer, wird beim Einschalten neu entschieden, ob ein- oder dreiphasig gestartet
+                # wird.
+                return False, self.BAT_BUFFER_DEPLETED
         max_phases_ev = self.ev_template.data.max_phases
         required_surplus = control_parameter.min_current * max_phases_ev * 230 - get_power
         unbalanced_load_limit_reached = limit.limiting_value == LimitingValue.UNBALANCED_LOAD

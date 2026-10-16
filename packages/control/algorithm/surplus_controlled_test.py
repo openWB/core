@@ -10,6 +10,7 @@ from control.algorithm.surplus_controlled import (CONSIDERED_CHARGE_MODES_PV_ONL
 from control.chargemode import Chargemode
 from control.chargepoint.chargepoint import Chargepoint, ChargepointData
 from control.chargepoint.chargepoint_data import Get, Set
+from control.chargepoint.chargepoint_state import ChargepointState
 from control.chargepoint.chargepoint_template import CpTemplate
 from control.chargepoint.control_parameter import ControlParameter
 from control.counter_all.counter_all import CounterAll
@@ -158,3 +159,39 @@ def test_get_chargepoints_submode_pv_charging(submode_1: Chargemode,
 
     # assertion
     assert chargepoints == expected_chargepoints
+
+
+@pytest.mark.parametrize(
+    "is_buffer_depleted, expected_switch_off_checked",
+    [
+        pytest.param(True, True,
+                     id="Puffer leer -> Abschaltschwelle greift trotz möglicher Rückschaltung"),
+        pytest.param(False, False,
+                     id="Puffer nicht leer -> Rückschaltung hat wie bisher Vorrang"),
+    ])
+def test_check_submode_pv_charging_buffer_depleted(is_buffer_depleted: bool,
+                                                   expected_switch_off_checked: bool,
+                                                   mock_cp1: Chargepoint,
+                                                   monkeypatch):
+    # setup: dreiphasig ladender LP im Automatikmodus, dessen Hardware umschalten kann
+    mock_cp1.data = ChargepointData()
+    mock_cp1.data.set.charging_ev_data = Ev(1)
+    mock_cp1.data.config.ev = 1
+    mock_cp1.data.control_parameter.chargemode = Chargemode.PV_CHARGING
+    mock_cp1.data.control_parameter.submode = Chargemode.PV_CHARGING
+    mock_cp1.data.control_parameter.state = ChargepointState.CHARGING_ALLOWED
+    mock_cp1.data.control_parameter.template_phases = 0
+    mock_cp1.data.get.phases_in_use = 3
+    monkeypatch.setattr(Chargepoint, "cp_state_hw_support_phase_switch", Mock(return_value=True))
+    data.data.cp_data = {"cp1": mock_cp1}
+    data.data.counter_all_data.data.get.loadmanagement_prios = [{"type": "vehicle", "id": 1}]
+    switch_off_check_threshold_mock = Mock()
+    evu_counter_mock = Mock(switch_off_check_threshold=switch_off_check_threshold_mock)
+    monkeypatch.setattr(data.data.counter_all_data, "get_evu_counter", Mock(return_value=evu_counter_mock))
+    monkeypatch.setattr(data.data.bat_all_data, "is_buffer_depleted", Mock(return_value=is_buffer_depleted))
+
+    # execution
+    SurplusControlled().check_submode_pv_charging()
+
+    # evaluation
+    assert switch_off_check_threshold_mock.called == expected_switch_off_checked

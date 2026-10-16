@@ -1,11 +1,13 @@
-from typing import Optional
+from typing import List, Optional, Tuple
 from unittest.mock import Mock
 
 import pytest
 
 from control import data
 
+from control.chargemode import Chargemode
 from control.chargepoint.control_parameter import ControlParameter
+from control.limiting_value import LoadmanagementLimit
 from control.ev.ev import Ev, get_ev_to_rfid
 from helpermodules import timecheck
 from modules.common.abstract_vehicle import VehicleUpdateData
@@ -119,6 +121,85 @@ def test_ev_identification(rfid, vehicle_id, expected_result):
 
     # execution
     result = get_ev_to_rfid(rfid, vehicle_id)
+
+    # evaluation
+    assert result == expected_result
+
+
+@pytest.mark.parametrize(
+    "phases, submode, currents, surplus, is_buffering, expected_result",
+    [
+        pytest.param(3, Chargemode.PV_CHARGING, [6, 6, 6], -500, True, (False, Ev.BAT_BUFFERING),
+                     id="Speicher puffert -> keine Rückschaltung 3 -> 1"),
+        pytest.param(3, Chargemode.PV_CHARGING, [6, 6, 6], -500, False, (True, None),
+                     id="Speicher puffert nicht -> Rückschaltung 3 -> 1 wie bisher"),
+        pytest.param(1, Chargemode.PV_CHARGING, [16, 0, 0], 5000, True, (True, None),
+                     id="Speicher puffert, Hochschaltung 1 -> 3 bleibt unberührt"),
+        pytest.param(3, Chargemode.INSTANT_CHARGING, [6, 6, 6], -500, True, (True, None),
+                     id="kein Überschuss-Laden -> Sperre greift nicht"),
+    ])
+def test_check_phase_switch_conditions_bat_buffering(phases: int,
+                                                     submode: Chargemode,
+                                                     currents: List[float],
+                                                     surplus: float,
+                                                     is_buffering: bool,
+                                                     expected_result: Tuple[bool, Optional[str]],
+                                                     monkeypatch):
+    # setup
+    ev = Ev(0)
+    control_parameter = ControlParameter()
+    control_parameter.phases = phases
+    control_parameter.submode = submode
+    control_parameter.min_current = 6
+    control_parameter.required_current = 6
+    monkeypatch.setattr(data.data.bat_all_data, "is_buffering", Mock(return_value=is_buffering))
+
+    # execution
+    result = ev._check_phase_switch_conditions(control_parameter,
+                                               evse_current=6,
+                                               get_currents=currents,
+                                               get_power=sum(currents) * 230,
+                                               max_current_cp=16,
+                                               limit=LoadmanagementLimit(None, None),
+                                               surplus=surplus)
+
+    # evaluation
+    assert result == expected_result
+
+
+@pytest.mark.parametrize(
+    "phases, submode, is_buffer_depleted, expected_result",
+    [
+        pytest.param(3, Chargemode.PV_CHARGING, True, (False, Ev.BAT_BUFFER_DEPLETED),
+                     id="Puffer leer -> keine Rückschaltung 3 -> 1, stattdessen Abschaltung"),
+        pytest.param(3, Chargemode.PV_CHARGING, False, (True, None),
+                     id="Puffer nicht leer -> Rückschaltung 3 -> 1 wie bisher"),
+        pytest.param(1, Chargemode.PV_CHARGING, True, (False, Ev.NOT_ENOUGH_POWER),
+                     id="einphasig, es gibt nichts zurückzuschalten"),
+    ])
+def test_check_phase_switch_conditions_bat_buffer_depleted(phases: int,
+                                                           submode: Chargemode,
+                                                           is_buffer_depleted: bool,
+                                                           expected_result: Tuple[bool, Optional[str]],
+                                                           monkeypatch):
+    # setup
+    ev = Ev(0)
+    control_parameter = ControlParameter()
+    control_parameter.phases = phases
+    control_parameter.submode = submode
+    control_parameter.min_current = 6
+    control_parameter.required_current = 6
+    monkeypatch.setattr(data.data.bat_all_data, "is_buffering", Mock(return_value=False))
+    monkeypatch.setattr(data.data.bat_all_data, "is_buffer_depleted", Mock(return_value=is_buffer_depleted))
+
+    # execution
+    result = ev._check_phase_switch_conditions(control_parameter,
+                                               evse_current=6,
+                                               get_currents=[6, 6, 6],
+                                               get_power=4140,
+                                               max_current_cp=16,
+                                               limit=LoadmanagementLimit(None, None),
+                                               surplus=-500)
 
     # evaluation
     assert result == expected_result
