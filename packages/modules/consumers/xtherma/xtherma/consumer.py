@@ -5,10 +5,8 @@ from typing import Optional
 from helpermodules import timecheck
 from modules.common.abstract_device import DeviceDescriptor
 from modules.common.component_state import ConsumerState
-from modules.common.component_type import ComponentType
 from modules.common.configurable_consumer import ConfigurableConsumer, SetLimitData
 from modules.common.modbus import ModbusDataType, ModbusTcpClient_
-from modules.common.simcount._simcounter import SimCounterConsumer
 from modules.consumers.xtherma.xtherma.config import Xtherma
 
 log = logging.getLogger(__name__)
@@ -16,26 +14,18 @@ log = logging.getLogger(__name__)
 
 def create_consumer(config: Xtherma):
     client: Optional[ModbusTcpClient_] = None
-    sim_counter: Optional[SimCounterConsumer] = None
     last_write: Optional[float] = None
     last_sgready_write: Optional[float] = None
 
     def initializer():
-        nonlocal client, sim_counter
+        nonlocal client
         client = ModbusTcpClient_(config.configuration.ip_address, config.configuration.port)
-        sim_counter = SimCounterConsumer(config.id, ComponentType.CONSUMER)
 
     def update() -> ConsumerState:
         # Reg 177 (in_total): elektrische Leistungsaufnahme, Auflösung 10W
         power = client.read_holding_registers(
             177, ModbusDataType.UINT_16, unit=config.configuration.modbus_id) * 10
-        imported, exported = sim_counter.sim_count(power)
-
-        return ConsumerState(
-            power=power,
-            imported=imported,
-            exported=exported
-        )
+        return ConsumerState(power=power)
 
     def set_power_limit(power_limit: Optional[float], data: SetLimitData) -> None:
         # Reg 70/71 dürfen laut Xtherma-Protokoll höchstens 1x/min beschrieben werden.
