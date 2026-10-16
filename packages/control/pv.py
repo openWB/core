@@ -44,9 +44,19 @@ def get_factory() -> Get:
 
 
 @dataclass
+class Set:
+    pass
+
+
+def set_factory() -> Set:
+    return Set()
+
+
+@dataclass
 class PvData:
     config: Config = field(default_factory=config_factory)
     get: Get = field(default_factory=get_factory)
+    set: Set = field(default_factory=set_factory)
 
 
 class Pv:
