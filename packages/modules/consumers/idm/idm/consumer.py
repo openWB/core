@@ -38,7 +38,7 @@ def create_consumer(config: Idm):
         pv_power = max(-values.pv_power, 0)
         # Ladeleistung mit einrechnen, da diese sonst fälschlich als freier Überschuss an die
         # WP gemeldet würde, obwohl sie bereits von einer Fahrzeugladung verbraucht wird
-        surplus = max(pv_power - values.home_consumption - values.cp_power, 0)
+        surplus = max(-values.evu_power, 0)
         battery_soc = int(values.bat_soc) if values.bat_soc is not None else -1
 
         # Reg 74: Aktueller PV-Überschuss [kW]
