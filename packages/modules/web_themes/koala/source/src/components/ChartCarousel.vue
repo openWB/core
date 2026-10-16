@@ -23,7 +23,10 @@
     <template v-slot:control>
       <q-carousel-control position="bottom-left">
         <q-btn
-          v-if="currentSlide === 'history_chart'"
+          v-if="
+            currentSlide === 'history_chart' ||
+            (currentSlide === 'sankey_chart' && sankeyCompact)
+          "
           size="sm"
           push
           class="q-mr-sm legend-button-text"
@@ -54,6 +57,7 @@ import DailyTotals from './charts/dailyTotals/DailyTotals.vue';
 import SankeyChart from './charts/sankeyChart/SankeyChart.vue';
 import { useLocalDataStore } from 'src/stores/localData-store';
 import { useMqttStore } from 'src/stores/mqtt-store';
+import { useSankeyData } from './charts/sankeyChart/useSankeyData';
 
 const mqttStore = useMqttStore();
 
@@ -67,6 +71,7 @@ const toggleLegend = () => {
   localDataStore.toggleLegendVisibility();
 };
 const legendVisible = computed(() => localDataStore.legendVisible);
+const { compact: sankeyCompact } = useSankeyData();
 const fullscreen = ref(false);
 
 const carouselKey = computed(() =>
