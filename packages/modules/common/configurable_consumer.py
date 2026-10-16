@@ -79,8 +79,12 @@ class ConfigurableConsumer(Generic[T_CONSUMER]):
                     consumer_state.power,
                     consumer_state.imported,
                     consumer_state.exported)
-                if imported is None or exported is None:
-                    imported, exported = self.sim_counter.sim_count(consumer_state.power)
+                if consumer_state.imported is None or consumer_state.exported is None:
+                    simulated_imported, simulated_exported = self.sim_counter.sim_count(consumer_state.power)
+                    if consumer_state.imported is None:
+                        imported = simulated_imported
+                    if consumer_state.exported is None:
+                        exported = simulated_exported
                 consumer_state.imported = imported
                 consumer_state.exported = exported
                 self.store.set(consumer_state)

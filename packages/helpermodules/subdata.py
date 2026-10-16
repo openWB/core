@@ -153,6 +153,7 @@ class SubData:
             ("openWB/consumer/+/usage", 2),
             ("openWB/consumer/+/get/#", 2),
             ("openWB/consumer/+/set/#", 2),
+            ("openWB/consumer/+/control_parameter/#", 2),
             ("openWB/command/command_completed", 2),
             ("openWB/internal_chargepoint/#", 2),
             # MQTT Bridge Topics vor "openWB/system/+" abonnieren, damit sie auch vor
