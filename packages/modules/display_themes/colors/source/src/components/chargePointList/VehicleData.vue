@@ -117,15 +117,16 @@
 			v-model="chargeMode"
 			class="chargemodes mx-3 mt-4 mb-0"
 			:options="
-				Object.keys(chargemodes).map((v) => {
-					return {
-						text: chargemodes[v].name,
-						value: v,
-						color: chargemodes[v].color,
-						icon: chargemodes[v].icon,
-						active: chargemodes[v].mode == chargepoint.chargeMode,
-					}
+				(Object.values(chargemodes).map((v) => {
+						return {
+							text: v.name,
+							value: v.mode,
+							color: v.color,
+							icon: v.icon,
+							active: v.mode == chargepoint.chargeMode,
+						}
 				})
+			)
 			"
 		/>
 	</div>

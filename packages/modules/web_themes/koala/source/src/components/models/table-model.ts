@@ -29,6 +29,8 @@ export interface ChargePointRow extends Record<string, unknown> {
   current: string;
   powerColumn: '';
   charged: string;
+  faultState: number;
+  faultMessage: string;
   color?: string;
 }
 
@@ -40,6 +42,8 @@ export interface VehicleRow extends Record<string, unknown> {
   plugState: boolean;
   chargeState: boolean;
   vehicleSocValue: string;
+  faultState: number;
+  faultMessage: string;
   color?: string;
 }
 

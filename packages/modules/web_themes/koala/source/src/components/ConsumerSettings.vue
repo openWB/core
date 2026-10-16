@@ -18,38 +18,59 @@
         <q-separator inset />
 
         <q-card-section>
-          <div class="text-subtitle2">Betriebsmodus umstellen</div>
-          <q-btn-group spread outline class="q-mt-sm">
-            <q-btn
-              v-for="trigger in resetTriggers"
-              :key="trigger.value"
-              size="sm"
-              :outline="resetTrigger !== trigger.value"
-              :color="resetTrigger === trigger.value ? 'primary' : 'grey'"
-              :label="trigger.label"
-              @click="selectTrigger(trigger.value)"
-            />
-          </q-btn-group>
-
-          <div
-            v-if="resetTrigger === 'time'"
-            class="row q-col-gutter-sm q-mt-sm"
-          >
-            <q-input
-              v-model="resetDate"
-              type="date"
-              label="Datum"
-              class="col"
-            />
-            <q-input
-              v-model="resetTimeOfDay"
-              type="time"
-              label="Uhrzeit"
-              class="col"
+          <div class="row items-center justify-between">
+            <div class="text-subtitle2 q-mr-sm">Betriebsmodus umstellen</div>
+            <ToggleStandard
+              :model-value="resetEnabled"
+              :size="'sm'"
+              color="positive"
+              @update:model-value="setResetEnabled"
             />
           </div>
 
-          <template v-if="resetTrigger !== 'never'">
+          <template v-if="resetEnabled">
+            <q-separator inset class="q-mt-sm" />
+            <q-input v-model="resetTime" type="time" label="Uhrzeit" />
+
+            <div class="text-subtitle2 q-mt-md">Wiederholung</div>
+            <q-btn-group spread outline class="q-mt-sm">
+              <q-btn
+                v-for="mode in resetModes"
+                :key="mode.value"
+                size="sm"
+                :outline="resetMode !== mode.value"
+                :color="resetMode === mode.value ? 'primary' : 'grey'"
+                :label="mode.label"
+                @click="selectResetMode(mode.value)"
+              />
+            </q-btn-group>
+
+            <q-input
+              v-if="resetMode === 'once'"
+              v-model="resetOnceDate"
+              type="date"
+              label="Datum"
+              class="q-mt-sm"
+            />
+
+            <div
+              v-if="resetMode === 'weekly'"
+              class="row items-center q-gutter-sm justify-center no-wrap q-mt-xs"
+            >
+              <div v-for="(day, index) in weekDays" :key="day">
+                <q-btn
+                  round
+                  :size="$q.platform.is.mobile ? '0.8rem' : '0.7rem'"
+                  :flat="!resetWeeklyDays[index]"
+                  :outline="resetWeeklyDays[index]"
+                  color="primary"
+                  :label="day"
+                  :class="{ deselected: !resetWeeklyDays[index] }"
+                  @click="toggleWeeklyDay(index)"
+                />
+              </div>
+            </div>
+
             <div class="text-subtitle2 q-mt-md">Zielmodus</div>
             <q-btn-group spread outline class="q-mt-sm">
               <q-btn
@@ -89,6 +110,7 @@ import { useMqttStore } from 'src/stores/mqtt-store';
 import { useChargeModes } from 'src/composables/useChargeModes';
 import type { ConsumerResetTrigger } from 'src/stores/mqtt-store-model';
 import ConsumerModeButtons from './ConsumerModeButtons.vue';
+import ToggleStandard from './ToggleStandard.vue';
 
 const props = defineProps<{
   consumerId: number;
@@ -109,50 +131,56 @@ const visible = computed({
   set: (value) => emit('update:modelValue', value),
 });
 
-const resetTriggers: { value: ConsumerResetTrigger; label: string }[] = [
-  { value: 'never', label: 'Nie' },
-  { value: 'midnight', label: 'Mitternacht' },
-  { value: 'time', label: 'Zeitpunkt' },
+const resetModes: { value: ConsumerResetTrigger; label: string }[] = [
+  { value: 'once', label: 'Einmalig' },
+  { value: 'daily', label: 'Täglich' },
+  { value: 'weekly', label: 'Wöchentlich' },
 ];
 
-const resetTrigger = mqttStore.consumerResetTrigger(props.consumerId);
+const resetEnabled = mqttStore.consumerResetEnabled(props.consumerId);
+const resetMode = mqttStore.consumerResetTrigger(props.consumerId);
 const resetTargetMode = mqttStore.consumerResetTargetMode(props.consumerId);
 const resetTime = mqttStore.consumerResetTime(props.consumerId);
+const resetOnceDate = mqttStore.consumerResetOnceDate(props.consumerId);
+const resetWeeklyDays = mqttStore.consumerResetWeeklyDays(props.consumerId);
+const weekDays = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
 
-const pad = (part: number) => String(part).padStart(2, '0');
-
-const writeResetTime = (dateStr: string, timeStr: string) => {
-  if (!dateStr || !timeStr) return;
-  const epoch = Math.floor(new Date(`${dateStr}T${timeStr}`).getTime() / 1000);
-  if (Number.isNaN(epoch)) return;
-  resetTime.value = epoch;
+const defaultWeekdayIndex = () => {
+  // JS: 0=Sonntag ... 6=Samstag, UI: 0=Montag ... 6=Sonntag
+  return (new Date().getDay() + 6) % 7;
 };
 
-const resetDate = computed({
-  get: () => {
-    const date = resetTime.value
-      ? new Date(resetTime.value * 1000)
-      : new Date();
-    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
-  },
-  set: (dateStr: string) => writeResetTime(dateStr, resetTimeOfDay.value),
-});
-
-const resetTimeOfDay = computed({
-  get: () => {
-    const date = resetTime.value
-      ? new Date(resetTime.value * 1000)
-      : new Date();
-    return `${pad(date.getHours())}:${pad(date.getMinutes())}`;
-  },
-  set: (timeStr: string) => writeResetTime(resetDate.value, timeStr),
-});
-
-const selectTrigger = (value: ConsumerResetTrigger) => {
-  resetTrigger.value = value;
-  if (value === 'time' && resetTime.value == null) {
-    resetTime.value = Math.floor(Date.now() / 1000);
+const setResetEnabled = (enabled: boolean) => {
+  resetEnabled.value = enabled;
+  if (!enabled) {
+    return;
   }
+  if (!resetTime.value) {
+    resetTime.value = '00:00';
+  }
+  if (!resetTargetMode.value) {
+    resetTargetMode.value = 'scheduled_charging';
+  }
+  if (resetMode.value === 'weekly' && !resetWeeklyDays.value.some(Boolean)) {
+    const updated = [...resetWeeklyDays.value];
+    updated[defaultWeekdayIndex()] = true;
+    resetWeeklyDays.value = updated;
+  }
+};
+
+const selectResetMode = (value: ConsumerResetTrigger) => {
+  resetMode.value = value;
+  if (value === 'weekly' && !resetWeeklyDays.value.some(Boolean)) {
+    const updated = [...resetWeeklyDays.value];
+    updated[defaultWeekdayIndex()] = true;
+    resetWeeklyDays.value = updated;
+  }
+};
+
+const toggleWeeklyDay = (index: number) => {
+  const updated = [...resetWeeklyDays.value];
+  updated[index] = !updated[index];
+  resetWeeklyDays.value = updated;
 };
 
 const consumerUsageType = computed(() =>
@@ -161,7 +189,9 @@ const consumerUsageType = computed(() =>
 
 /** Meter-only consumers cannot be controlled, so hide the mode controls. */
 const showModeControls = computed(
-  () => consumerUsageType.value !== 'meter_only' && consumerUsageType.value !== 'self_controlled',
+  () =>
+    consumerUsageType.value !== 'meter_only' &&
+    consumerUsageType.value !== 'self_controlled',
 );
 </script>
 

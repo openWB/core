@@ -5,7 +5,6 @@ from typing import Callable, Optional, TypeVar, Generic
 from helpermodules import timecheck
 from helpermodules.pub import Pub
 from modules.common.abstract_consumer import CurrentValues
-from modules.common.abstract_device import AbstractCounter
 from modules.common.component_context import SingleComponentUpdateContext
 from modules.common.component_state import ConsumerState
 from modules.common.component_type import ComponentType
@@ -79,10 +78,15 @@ class ConfigurableConsumer(Generic[T_CONSUMER]):
                 imported, exported = self.peak_filter.check_values(
                     consumer_state.power,
                     consumer_state.imported,
-                    consumer_state.exported if consumer_state.exported is not None else 0)
-                if imported != consumer_state.imported or exported != consumer_state.exported:
-                    consumer_state.imported = imported
-                    consumer_state.exported = exported
+                    consumer_state.exported)
+                if consumer_state.imported is None or consumer_state.exported is None:
+                    simulated_imported, simulated_exported = self.sim_counter.sim_count(consumer_state.power)
+                    if consumer_state.imported is None:
+                        imported = simulated_imported
+                    if consumer_state.exported is None:
+                        exported = simulated_exported
+                consumer_state.imported = imported
+                consumer_state.exported = exported
                 self.store.set(consumer_state)
 
     def set_power_limit(self, power_limit: float, data: SetLimitData) -> None:
@@ -100,10 +104,3 @@ class ConfigurableConsumer(Generic[T_CONSUMER]):
     def send_values(self, values: CurrentValues) -> None:
         with SingleComponentUpdateContext(self.fault_state):
             self.module_send_values(values)
-
-
-def dependency_injection_devices_components(component: AbstractCounter):
-    component.sim_counter.component_type = ComponentType.CONSUMER.value
-    component.store = get_component_value_store(ComponentType.CONSUMER.value, component.component_config.id)
-    component.fault_state.component_info.type = ComponentType.CONSUMER.value
-    return component

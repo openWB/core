@@ -10,3 +10,4 @@ class ConsumerUsage(Enum):
 
 
 NOT_CONTROLLED = (ConsumerUsage.METER_ONLY, ConsumerUsage.SELF_CONTROLLED)
+ON_OFF = (ConsumerUsage.SUSPENDABLE_ONOFF, ConsumerUsage.CONTINUOUS)

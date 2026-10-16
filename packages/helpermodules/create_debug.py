@@ -221,6 +221,11 @@ def config_and_state():
                 except Exception:
                     home_consumption = "Keine Daten"
                 parsed_data += f"Home_Consumption:\n {home_consumption}\n"
+                try:
+                    not_in_home_consumption = filter_log_file('mqtt', 'openWB/counter/set/not_in_home_consumption', 5)
+                except Exception:
+                    not_in_home_consumption = "Keine Daten"
+                parsed_data += f"Not_In_Home_Consumption:\n {not_in_home_consumption}\n"
             with ErrorHandlingContext():
                 parsed_data += "\n## Charge Points ##\n"
                 parsed_data += f"CP_All_Power: {data.data.cp_all_data.data.get.power / 1000} kW\n\n"

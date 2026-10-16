@@ -7,6 +7,7 @@ from modules.devices.sunenergyxt.sunenergyxt.config import (
     SunEnergyXTBatSetup,
     SunEnergyXTConfiguration,
 )
+from control.bat import Set
 
 
 # ---------------------------------------------------------------------------
@@ -122,7 +123,7 @@ class TestSetPowerLimit:
         bat = _make_bat()
         requests_mock.post(f"{BASE_URL}/write", json={})
 
-        bat.set_power_limit(None)
+        bat.set_power_limit(Set(power_limit=None))
 
         assert requests_mock.last_request.json() == {"state": {"MM": 1, "GS": 0}}
 
@@ -131,7 +132,7 @@ class TestSetPowerLimit:
         bat = _make_bat()
         requests_mock.post(f"{BASE_URL}/write", json={})
 
-        bat.set_power_limit(0)
+        bat.set_power_limit(Set(power_limit=0))
 
         assert requests_mock.last_request.json() == {"state": {"MM": 0, "GS": 0}}
 
@@ -141,7 +142,7 @@ class TestSetPowerLimit:
         bat._gs_max = 800
         requests_mock.post(f"{BASE_URL}/write", json={})
 
-        bat.set_power_limit(-500)
+        bat.set_power_limit(Set(power_limit=-500))
 
         assert requests_mock.last_request.json() == {"state": {"MM": 0, "GS": 500}}
 
@@ -151,7 +152,7 @@ class TestSetPowerLimit:
         bat._gs_max = 800
         requests_mock.post(f"{BASE_URL}/write", json={})
 
-        bat.set_power_limit(600)
+        bat.set_power_limit(Set(power_limit=600))
 
         assert requests_mock.last_request.json() == {"state": {"MM": 0, "GS": -600}}
 
@@ -161,7 +162,7 @@ class TestSetPowerLimit:
         bat._gs_max = 800
         requests_mock.post(f"{BASE_URL}/write", json={})
 
-        bat.set_power_limit(-9999)  # Weit über Limit
+        bat.set_power_limit(Set(power_limit=-9999))  # Weit über Limit
 
         payload = requests_mock.last_request.json()
         assert payload["state"]["GS"] == 800
@@ -172,7 +173,7 @@ class TestSetPowerLimit:
         bat._gs_max = 2400
         requests_mock.post(f"{BASE_URL}/write", json={})
 
-        bat.set_power_limit(9999)  # Weit über Limit
+        bat.set_power_limit(Set(power_limit=9999))  # Weit über Limit
 
         payload = requests_mock.last_request.json()
         assert payload["state"]["GS"] == -2400
@@ -183,7 +184,7 @@ class TestSetPowerLimit:
         bat._gs_max = 2400  # Wie nach update() mit IS=2400
         requests_mock.post(f"{BASE_URL}/write", json={})
 
-        bat.set_power_limit(-2400)
+        bat.set_power_limit(Set(power_limit=-2400))
 
         payload = requests_mock.last_request.json()
         assert payload["state"]["GS"] == 2400

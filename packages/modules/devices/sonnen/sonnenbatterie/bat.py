@@ -12,6 +12,7 @@ from modules.devices.sonnen.sonnenbatterie.api import JsonApi, JsonApiVersion, R
 from modules.devices.sonnen.sonnenbatterie.config import SonnenbatterieBatSetup
 from modules.common.utils.peak_filter import PeakFilter
 from modules.common.component_type import ComponentType
+from control.bat import Set as SetPoint
 
 
 log = logging.getLogger(__name__)
@@ -53,14 +54,14 @@ class SonnenbatterieBat(AbstractBat):
     def update(self) -> None:
         self.store.set(self.api.update_battery(sim_counter=self.sim_counter, peak_filter=self.peak_filter))
 
-    def set_power_limit(self, power_limit: Optional[int]) -> None:
-        if power_limit is None:
+    def set_power_limit(self, setpoint: SetPoint) -> None:
+        if setpoint.power_limit is None:
             # Wert wird nur einmal gesetzt
             if self.last_mode is not None:
-                self.api.set_power_limit(power_limit=power_limit)
+                self.api.set_power_limit(power_limit=setpoint.power_limit)
                 self.last_mode = None
         else:
-            self.api.set_power_limit(power_limit=power_limit)
+            self.api.set_power_limit(power_limit=setpoint.power_limit)
             self.last_mode = 'active'
 
     def power_limit_controllable(self) -> bool:

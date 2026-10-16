@@ -1,5 +1,11 @@
+from __future__ import annotations
 from abc import abstractmethod
-from typing import Optional, Type
+from typing import Optional, Type, Protocol
+
+
+class SetPoint(Protocol):
+    power_limit: Optional[int]
+    evu_power: Optional[int]
 
 
 class AbstractDevice:
@@ -31,7 +37,7 @@ class AbstractBat:
         pass
 
     @abstractmethod
-    def set_power_limit(self, power_limit: Optional[int]) -> None:
+    def set_power_limit(self, setpoint: SetPoint) -> None:
         # power limit None heißt, auf maximale Speicherleistung setzen = Speicher-Begrenzung aufheben
         pass
 

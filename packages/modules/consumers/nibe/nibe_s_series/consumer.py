@@ -3,10 +3,8 @@ import logging
 from typing import Optional
 from modules.common.abstract_device import DeviceDescriptor
 from modules.common.component_state import ConsumerState
-from modules.common.component_type import ComponentType
 from modules.common.configurable_consumer import ConfigurableConsumer
 from modules.common.modbus import ModbusDataType, ModbusTcpClient_
-from modules.common.simcount._simcounter import SimCounterConsumer
 from modules.consumers.nibe.nibe_s_series.config import Nibe
 
 log = logging.getLogger(__name__)
@@ -14,12 +12,10 @@ log = logging.getLogger(__name__)
 
 def create_consumer(config: Nibe):
     client: Optional[ModbusTcpClient_] = None
-    sim_counter: Optional[SimCounterConsumer] = None
 
     def initializer():
-        nonlocal client, sim_counter
+        nonlocal client
         client = ModbusTcpClient_(config.configuration.ip_address, 502)
-        sim_counter = SimCounterConsumer(config.id, ComponentType.CONSUMER)
 
     def error_handler() -> None:
         initializer()
@@ -27,12 +23,7 @@ def create_consumer(config: Nibe):
     def update() -> ConsumerState:
         power = client.read_input_registers(2166, ModbusDataType.UINT_32,
                                             unit=config.configuration.modbus_id)  # / 10 lt Doku?
-        imported, exported = sim_counter.sim_count(power)
-        return ConsumerState(
-            power=power,
-            imported=imported,
-            exported=exported
-        )
+        return ConsumerState(power=power)
 
     return ConfigurableConsumer(consumer_config=config,
                                 initializer=initializer,

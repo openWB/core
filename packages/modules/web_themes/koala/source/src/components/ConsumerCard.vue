@@ -39,11 +39,37 @@
     </q-card-section>
 
     <q-card-section
+      v-for="sensor in temperatures.sensors"
+      :key="sensor.index"
+      class="row q-mt-sm text-subtitle2 justify-between full-width"
+    >
+      <div>
+        {{
+          temperatures.sensorCount > 1
+            ? `Temperatur ${sensor.index + 1}:`
+            : 'Temperatur:'
+        }}
+      </div>
+      <div class="q-ml-sm">
+        {{ sensor.textValue }}
+      </div>
+    </q-card-section>
+
+    <q-card-section
       class="row q-mt-sm text-subtitle2 justify-between full-width"
     >
       <div>Laufzeit:</div>
       <div class="q-ml-sm">
         {{ runTime }}
+      </div>
+    </q-card-section>
+
+    <q-card-section
+      class="row q-mt-sm text-subtitle2 justify-between full-width"
+    >
+      <div>Tagesverbrauch:</div>
+      <div class="q-ml-sm">
+        {{ dailyImported }}
       </div>
     </q-card-section>
 
@@ -87,6 +113,10 @@ const powerValue = computed(
 );
 const isRunning = computed(() => powerValue.value > 0);
 
+const temperatures = computed(() =>
+  mqttStore.consumerTemperatures(props.consumerId),
+);
+
 const runTime = computed<string>(() => {
   const seconds = mqttStore.consumerOnTime(props.consumerId);
   if (seconds === undefined) {
@@ -97,6 +127,11 @@ const runTime = computed<string>(() => {
   const minutes = totalMinutes % 60;
   return `${hours}:${String(minutes).padStart(2, '0')} h`;
 });
+
+const dailyImported = computed(
+  () =>
+    mqttStore.consumerDailyImported('textValue', props.consumerId) as string,
+);
 
 const faultState = computed(() =>
   mqttStore.consumerFaultState(props.consumerId),

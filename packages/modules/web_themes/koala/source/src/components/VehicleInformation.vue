@@ -29,9 +29,21 @@
     </template>
     <template #body-cell-name="slotProps">
       <div class="row items-center no-wrap">
-        <div class="ellipsis q-ml-sm" :title="slotProps.row.name">
+        <BaseFaultIcon
+          v-if="faultPresent"
+          :fault-state="slotProps.row.faultState"
+          class="q-ml-sm"
+        />
+        <div
+          class="col ellipsis"
+          :class="faultPresent ? 'q-ml-xs' : 'q-ml-sm'"
+          @mouseenter="titleIfTruncated"
+        >
           {{ slotProps.row.name }}
         </div>
+        <q-tooltip v-if="slotProps.row.faultState > 0 && tooltipsEnabled">
+          {{ slotProps.row.faultMessage }}
+        </q-tooltip>
       </div>
     </template>
     <template #body-cell-manufacturer="slotProps">
@@ -68,17 +80,18 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
 import { useMqttStore } from 'src/stores/mqtt-store';
-import { Screen } from 'quasar';
 import BaseCarousel from 'src/components/BaseCarousel.vue';
 import BaseTable from 'src/components/BaseTable.vue';
 import { VehicleRow } from 'src/components/models/table-model';
 import ChargePointStateIcon from 'src/components/ChargePointStateIcon.vue';
 import VehicleConnectionStateIcon from './VehicleConnectionStateIcon.vue';
+import BaseFaultIcon from './BaseFaultIcon.vue';
 import VehicleCard from 'src/components/VehicleCard.vue';
 import { ColumnConfiguration } from 'src/components/models/table-model';
+import { useTable } from 'src/composables/useTable';
 
+const { tooltipsEnabled, compactTable, titleIfTruncated } = useTable();
 const mqttStore = useMqttStore();
-const compactTable = computed(() => Screen.lt.md);
 const modalChargeVehicleCardVisible = ref(false);
 const selectedVehicleId = ref<number | null>(null);
 const filter = ref('');
@@ -90,6 +103,9 @@ const cardViewBreakpoint = computed(
 );
 const vehicles = computed(() => mqttStore.vehicleList);
 const vehicleIds = computed(() => vehicles.value.map((vehicle) => vehicle.id));
+const faultPresent = computed(() =>
+  vehicleIds.value.some((id) => mqttStore.vehicleFaultState(id) > 0),
+);
 
 const tableRowData = computed<(id: number) => VehicleRow>(() => {
   return (id: number) => {
@@ -103,6 +119,8 @@ const tableRowData = computed<(id: number) => VehicleRow>(() => {
     const model = info?.model || 'keine Angabe';
     const soc = mqttStore.vehicleSocValue(id);
     const vehicleSocValue = soc !== undefined ? `${Math.round(soc)}%` : '–';
+    const faultState = mqttStore.vehicleFaultState(id);
+    const faultMessage = mqttStore.vehicleFaultMessage(id) ?? '';
     const color = mqttStore.vehicleColor(id) || 'var(--q-vehicle-stroke)';
     return {
       id,
@@ -112,6 +130,8 @@ const tableRowData = computed<(id: number) => VehicleRow>(() => {
       plugState,
       chargeState,
       vehicleSocValue,
+      faultState,
+      faultMessage,
       color,
     };
   };
@@ -131,7 +151,7 @@ const columnConfig: ColumnConfiguration[] = [
 ];
 
 const columnConfigCompact: ColumnConfiguration[] = [
-  { field: 'name', label: 'Fahrzeug' },
+  { field: 'name', label: 'Fahrzeug', shrink: true },
   { field: 'plugged', label: 'Status', align: 'center', autoWidth: true },
   {
     field: 'vehicleSocValue',

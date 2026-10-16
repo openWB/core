@@ -1,24 +1,19 @@
 #!/usr/bin/env python3
-from control import data
 from modules.common import req
 from typing import Optional
 from modules.common.abstract_device import DeviceDescriptor
 from modules.common.component_state import ConsumerState
-from modules.common.component_type import ComponentType
 from modules.common.configurable_consumer import ConfigurableConsumer
-from modules.common.simcount._simcounter import SimCounterConsumer
 from modules.consumers.shelly.shelly_pm.config import ShellyPM
 from modules.devices.shelly.shelly.status_handler import get_generation, request_status, parse_data
 
 
 def create_consumer(config: ShellyPM):
-    sim_counter: Optional[SimCounterConsumer] = None
     model: Optional[str] = None
     generation: int = 1
 
     def initializer():
-        nonlocal sim_counter, generation, model
-        sim_counter = SimCounterConsumer(config.id, ComponentType.CONSUMER)
+        nonlocal generation, model
         generation, model = get_generation(config.configuration.ip_address)
 
     def error_handler() -> None:
@@ -62,13 +57,9 @@ def create_consumer(config: ShellyPM):
 
     def update() -> ConsumerState:
         status = request_status(config.configuration.ip_address, generation)
-        powers, voltages, currents, _, power, _ = parse_data(
-            data.data.consumer_data[f"consumer{config.id}"].data.config.phase_1, config.configuration.factor, status)
-        imported, exported = sim_counter.sim_count(power)
+        powers, voltages, currents, _, power, _ = parse_data(1, config.configuration.factor, status)
         return ConsumerState(
             power=power,
-            imported=imported,
-            exported=exported,
             voltages=voltages,
             currents=currents,
             powers=powers,

@@ -26,13 +26,21 @@
     <!-- full view table body slots -->
     <template #body-cell-name="slotProps">
       <div class="row items-center no-wrap">
-        <div class="ellipsis" :title="slotProps.row.name">
+        <BaseFaultIcon
+          v-if="faultPresent"
+          :fault-state="slotProps.row.faultState"
+          class="q-mr-xs"
+        />
+        <div class="col ellipsis" @mouseenter="titleIfTruncated">
           {{ slotProps.row.name }}
         </div>
+        <q-tooltip v-if="slotProps.row.faultState > 0 && tooltipsEnabled">
+          {{ slotProps.row.faultMessage }}
+        </q-tooltip>
       </div>
     </template>
     <template #body-cell-vehicle="slotProps">
-      <div class="ellipsis" :title="slotProps.row.vehicle">
+      <div class="ellipsis" @mouseenter="titleIfTruncated">
         {{ slotProps.row.vehicle }}
       </div>
     </template>
@@ -70,13 +78,23 @@
     <!-- compact view table body slots -->
     <!-- compact view charge point name and vehicle name displayed in one field -->
     <template #body-cell-nameAndVehicle="slotProps">
-      <div>
-        <div class="ellipsis" :title="slotProps.row.name">
-          {{ slotProps.row.name }}
+      <div class="row items-center no-wrap">
+        <BaseFaultIcon
+          v-if="faultPresent"
+          :fault-state="slotProps.row.faultState"
+          class="q-mr-xs"
+        />
+        <div class="col">
+          <div class="ellipsis" @mouseenter="titleIfTruncated">
+            {{ slotProps.row.name }}
+          </div>
+          <div class="ellipsis text-caption" @mouseenter="titleIfTruncated">
+            {{ slotProps.row.vehicle }}
+          </div>
         </div>
-        <div class="ellipsis text-caption" :title="slotProps.row.vehicle">
-          {{ slotProps.row.vehicle }}
-        </div>
+        <q-tooltip v-if="slotProps.row.faultState > 0 && tooltipsEnabled">
+          {{ slotProps.row.faultMessage }}
+        </q-tooltip>
       </div>
     </template>
 
@@ -143,10 +161,14 @@ import ChargePointStateIcon from 'src/components/ChargePointStateIcon.vue';
 import ChargePointMode from './ChargePointMode.vue';
 import ChargePointTimeCharging from './ChargePointTimeCharging.vue';
 import ChargePointPowerData from './ChargePointPowerData.vue';
+import BaseFaultIcon from './BaseFaultIcon.vue';
 import {
   ColumnConfiguration,
   ChargePointRow,
 } from 'src/components/models/table-model';
+import { useTable } from 'src/composables/useTable';
+
+const { tooltipsEnabled, compactTable, titleIfTruncated } = useTable();
 
 const mqttStore = useMqttStore();
 const { chargeModes } = useChargeModes();
@@ -157,8 +179,11 @@ const cardViewBreakpoint = computed(
 const searchInputVisible = computed(
   () => mqttStore.themeConfiguration?.chargePoint_table_search_input_field,
 );
+
+const faultPresent = computed(() =>
+  chargePointIds.value.some((id) => mqttStore.chargePointFaultState(id) > 0),
+);
 const isSmallScreen = computed(() => Screen.lt.sm);
-const compactTable = computed(() => Screen.lt.md);
 const selectedChargePointId = ref<number | null>(null);
 const modalChargePointCardVisible = ref(false);
 const filter = ref('');
@@ -189,6 +214,8 @@ const tableRowData = computed<(id: number) => ChargePointRow>(() => {
     // typecasting necessary as chargePointChargingCurrent has a union type in store and needs to be narrowed to string
     const current = mqttStore.chargePointChargingCurrent(id) as string;
     const powerColumn = '';
+    const faultState = mqttStore.chargePointFaultState(id);
+    const faultMessage = mqttStore.chargePointFaultMessage(id) ?? '';
     const color =
       mqttStore.chargePointColor(id) || 'var(--q-charge-point-stroke)';
     return {
@@ -204,6 +231,8 @@ const tableRowData = computed<(id: number) => ChargePointRow>(() => {
       current,
       powerColumn,
       charged,
+      faultState,
+      faultMessage,
       color,
     };
   };

@@ -5,9 +5,8 @@ from typing import Optional, Callable
 from modules.common import req
 from modules.common.abstract_device import DeviceDescriptor
 from modules.common.component_state import ConsumerState
-from modules.common.component_type import ComponentType
 from modules.common.configurable_consumer import ConfigurableConsumer, SetLimitData
-from modules.common.simcount._simcounter import SimCounterConsumer
+from helpermodules.utils._get_default import get_default
 from modules.consumers.generic.http.config import Http
 from modules.devices.generic.http.api import (create_post_function, create_request_function,
                                               create_request_function_array)
@@ -16,7 +15,6 @@ log = logging.getLogger(__name__)
 
 def create_consumer(config: Http):
     session: Optional[req.CustomSession] = None
-    sim_counter: Optional[SimCounterConsumer] = None
     get_power: Optional[Callable] = None
     get_imported: Optional[Callable] = None
     get_exported: Optional[Callable] = None
@@ -27,11 +25,10 @@ def create_consumer(config: Http):
     post_switch_off: Optional[Callable] = None
 
     def initializer():
-        nonlocal session, sim_counter
+        nonlocal session
         nonlocal get_power, get_imported, get_exported, get_currents, get_temperatures
         nonlocal post_set_power_limit, post_switch_on, post_switch_off
         session = req.get_http_session()
-        sim_counter = SimCounterConsumer(config.id, ComponentType.CONSUMER)
 
         get_power = create_request_function(config.configuration.url, config.configuration.power_path)
         get_imported = create_request_function(config.configuration.url, config.configuration.imported_path)
@@ -46,14 +43,13 @@ def create_consumer(config: Http):
         post_switch_on = create_post_function(config.configuration.url, config.configuration.switch_on_path)
         post_switch_off = create_post_function(config.configuration.url, config.configuration.switch_off_path)
 
-    def update() -> None:
+    def update() -> ConsumerState:
         power = get_power(session)
-        exported = get_exported(session)
-        imported = get_imported(session)
+        exported = get_exported(session) if get_exported is not None else get_default(ConsumerState, "exported")
+        imported = get_imported(session) if get_imported is not None else get_default(ConsumerState, "imported")
+
         currents = get_currents(session)
         temperatures = get_temperatures(session)
-        if imported is None or exported is None:
-            imported, exported = sim_counter.sim_count(power)
         return ConsumerState(
             power=power,
             currents=currents,

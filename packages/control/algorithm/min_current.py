@@ -1,12 +1,13 @@
 import logging
+from typing import List
 
 from control import data
 from control.algorithm import common
 from control.algorithm.chargemodes import CONSIDERED_CHARGE_MODES_MIN_CURRENT, CONSIDERED_CHARGE_MODES_PV_ONLY
-from control.chargepoint.chargepoint import Chargepoint
 from control.chargepoint.chargepoint_state import ChargepointState
+from control.load_protocol import Load
 from control.loadmanagement import Loadmanagement
-from control.algorithm.filter_chargepoints import filtered_loads_to_str, get_grouped_loads_by_mode_and_counter
+from control.algorithm.filter_chargepoints import filter_grouped_loads_by_mode_and_counter, filtered_loads_to_str
 
 log = logging.getLogger(__name__)
 
@@ -16,44 +17,43 @@ class MinCurrent:
     def __init__(self) -> None:
         pass
 
-    def set_min_current(self) -> None:
+    def set_min_current(self, grouped_loads: List[Load]) -> None:
         for counter in common.counter_generator():
-            preferenced_loads_groups = get_grouped_loads_by_mode_and_counter(CONSIDERED_CHARGE_MODES_MIN_CURRENT,
-                                                                             f"counter{counter.num}")
-            for preferenced_loads in preferenced_loads_groups:
-                if len(preferenced_loads) > 0:
-                    log.info(f"Zähler {counter.num}, Verbraucher {filtered_loads_to_str(preferenced_loads)}")
-                common.update_raw_data(preferenced_loads, diff_to_zero=True)
-                while len(preferenced_loads):
-                    load = preferenced_loads[0]
-                    missing_currents, counts = common.get_min_current(load)
-                    if max(missing_currents) > 0:
-                        available_currents, limit = Loadmanagement().get_available_currents(
-                            missing_currents, counter, load)
+            preferenced_loads = filter_grouped_loads_by_mode_and_counter(grouped_loads,
+                                                                         CONSIDERED_CHARGE_MODES_MIN_CURRENT,
+                                                                         f"counter{counter.num}")
+            log.info(f"Zähler {counter.num}, Verbraucher {filtered_loads_to_str(preferenced_loads)}")
+            common.update_raw_data(preferenced_loads, diff_to_zero=True)
+            while len(preferenced_loads):
+                load = preferenced_loads[0]
+                missing_currents, counts = common.get_min_current(load)
+                if max(missing_currents) > 0:
+                    available_currents, limit = Loadmanagement().get_available_currents(
+                        missing_currents, counter, load)
+                    if limit.limiting_value is not None:
+                        load.data.control_parameter.limit = limit
+                    available_for_load = common.available_current_for_load(
+                        load, counts, available_currents, missing_currents)
+                    current = common.get_current_to_set(
+                        load.data.set.current, available_for_load, load.data.set.target_current)
+                    if current < load.data.control_parameter.min_current:
+                        common.set_current_counterdiff(-(load.data.set.current or 0), 0, load)
                         if limit.limiting_value is not None:
-                            load.data.control_parameter.limit = limit
-                        available_for_load = common.available_current_for_load(
-                            load, counts, available_currents, missing_currents)
-                        current = common.get_current_to_set(
-                            load.data.set.current, available_for_load, load.data.set.target_current)
-                        if isinstance(load, Chargepoint) and current < load.data.control_parameter.min_current:
-                            common.set_current_counterdiff(-(load.data.set.current or 0), 0, load)
-                            if limit.limiting_value is not None:
-                                load.set_state_and_log(
-                                    f"Ladung kann nicht gestartet werden{limit.message}")
-                        else:
-                            common.set_current_counterdiff(
-                                load.data.set.target_current,
-                                load.data.control_parameter.min_current,
-                                load)
+                            load.set_state_and_log(
+                                f"Ladung kann nicht gestartet werden{limit.message}")
                     else:
-                        if (load.data.control_parameter.chargemode,
-                                load.data.control_parameter.submode) in CONSIDERED_CHARGE_MODES_PV_ONLY:
-                            try:
-                                if (load.data.control_parameter.state == ChargepointState.NO_CHARGING_ALLOWED or
-                                        load.data.control_parameter.state == ChargepointState.SWITCH_ON_DELAY):
-                                    data.data.counter_all_data.get_evu_counter().switch_on_threshold_reached(load)
-                            except Exception:
-                                log.exception(f"Fehler in der PV-gesteuerten Ladung bei {load.num}")
-                        load.data.set.current = 0
-                    preferenced_loads.pop(0)
+                        common.set_current_counterdiff(
+                            load.data.set.target_current,
+                            load.data.control_parameter.min_current,
+                            load)
+                else:
+                    if (load.data.control_parameter.chargemode,
+                            load.data.control_parameter.submode) in CONSIDERED_CHARGE_MODES_PV_ONLY:
+                        try:
+                            if (load.data.control_parameter.state == ChargepointState.NO_CHARGING_ALLOWED or
+                                    load.data.control_parameter.state == ChargepointState.SWITCH_ON_DELAY):
+                                data.data.counter_all_data.get_evu_counter().switch_on_threshold_reached(load)
+                        except Exception:
+                            log.exception(f"Fehler in der PV-gesteuerten Ladung bei {load.num}")
+                    load.data.set.current = 0
+                preferenced_loads.pop(0)
