@@ -5,10 +5,8 @@ import logging
 from modules.common.abstract_consumer import CurrentValues
 from modules.common.abstract_device import DeviceDescriptor
 from modules.common.component_state import ConsumerState
-from modules.common.component_type import ComponentType
 from modules.common.configurable_consumer import ConfigurableConsumer, SetLimitData
 from modules.common.modbus import ModbusDataType, ModbusTcpClient_
-from modules.common.simcount._simcounter import SimCounterConsumer
 from modules.consumers.ovum.ovum.config import Ovum
 
 log = logging.getLogger(__name__)
@@ -16,12 +14,10 @@ log = logging.getLogger(__name__)
 
 def create_consumer(config: Ovum):
     client: Optional[ModbusTcpClient_] = None
-    sim_counter: Optional[SimCounterConsumer] = None
 
     def initializer():
-        nonlocal client, sim_counter
+        nonlocal client
         client = ModbusTcpClient_(config.configuration.ip_address, config.configuration.port)
-        sim_counter = SimCounterConsumer(config.id, ComponentType.CONSUMER)
 
     def error_handler() -> None:
         initializer()
@@ -46,13 +42,7 @@ def create_consumer(config: Ovum):
         # Reg 708: elektrische Leistungsaufnahme Wärmepumpe [kW]*100 -> Watt = Rohwert * 10
         power = client.read_holding_registers(708, ModbusDataType.INT_16,
                                               unit=config.configuration.modbus_id) * 10
-        imported, exported = sim_counter.sim_count(power)
-
-        return ConsumerState(
-            power=power,
-            imported=imported,
-            exported=exported
-        )
+        return ConsumerState(power=power)
 
     def set_power_limit(power_limit: Optional[float], data: SetLimitData) -> None:
         # ConsumerUsage.SUSPENDABLE_TUNABLE: externe Leistungsvorgabe. Ist-Modus wird vor dem

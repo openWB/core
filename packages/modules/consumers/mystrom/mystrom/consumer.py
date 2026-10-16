@@ -4,9 +4,7 @@ from modules.common import req
 from typing import Optional
 from modules.common.abstract_device import DeviceDescriptor
 from modules.common.component_state import ConsumerState
-from modules.common.component_type import ComponentType
 from modules.common.configurable_consumer import ConfigurableConsumer
-from modules.common.simcount._simcounter import SimCounterConsumer
 from modules.consumers.mystrom.mystrom.config import MyStrom
 
 log = logging.getLogger(__name__)
@@ -14,12 +12,10 @@ log = logging.getLogger(__name__)
 
 def create_consumer(config: MyStrom):
     session: Optional[req.CustomSession] = None
-    sim_counter: Optional[SimCounterConsumer] = None
 
     def initializer():
-        nonlocal session, sim_counter
+        nonlocal session
         session = req.get_http_session()
-        sim_counter = SimCounterConsumer(config.id, ComponentType.CONSUMER)
 
     def error_handler() -> None:
         initializer()
@@ -29,11 +25,8 @@ def create_consumer(config: MyStrom):
         power = resp["power"]
         relais = resp["relay"]
         temp = float(resp["temperature"])
-        imported, exported = sim_counter.sim_count(power)
         return ConsumerState(
             power=power,
-            imported=imported,
-            exported=exported,
             temperatures=[temp],
             state=relais
         )

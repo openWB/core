@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 import logging
-from typing import Optional
 
 from helpermodules.broker import BrokerClient
 from helpermodules.pub import Pub
@@ -9,21 +8,13 @@ from helpermodules.utils.topic_parser import decode_payload
 from modules.common.abstract_consumer import CurrentValues
 from modules.common.abstract_device import DeviceDescriptor
 from modules.common.component_state import ConsumerState
-from modules.common.component_type import ComponentType
 from modules.common.configurable_consumer import ConfigurableConsumer, SetLimitData
-from modules.common.simcount._simcounter import SimCounterConsumer
 from modules.consumers.generic.mqtt.config import Mqtt
 
 log = logging.getLogger(__name__)
 
 
 def create_consumer(config: Mqtt):
-    sim_counter: Optional[SimCounterConsumer] = None
-
-    def initializer() -> None:
-        nonlocal sim_counter
-        sim_counter = SimCounterConsumer(config.id, ComponentType.CONSUMER)
-
     def update() -> ConsumerState:
         def parse_received_topics(value: str):
             return received_topics.get(f"{topic_prefix}{value}", get_default(ConsumerState, value))
@@ -44,9 +35,6 @@ def create_consumer(config: Mqtt):
             power = received_topics[f"{topic_prefix}power"]
             imported = parse_received_topics("imported")
             exported = parse_received_topics("exported")
-            if imported is None or exported is None:
-                imported, exported = sim_counter.sim_count(power)
-
             return ConsumerState(
                 power=power,
                 imported=imported,
@@ -77,7 +65,6 @@ def create_consumer(config: Mqtt):
         Pub().pub(f"openWB/set/mqtt/consumer/{config.id}/set/pv_power", values.pv_power)
 
     return ConfigurableConsumer(consumer_config=config,
-                                initializer=initializer,
                                 update=update,
                                 send_values=send_values,
                                 set_power_limit=set_power_limit,

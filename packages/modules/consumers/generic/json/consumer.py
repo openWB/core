@@ -3,12 +3,11 @@ import logging
 from typing import Callable, Optional
 import jq
 
+from helpermodules.utils._get_default import get_default
 from modules.common import req
 from modules.common.abstract_device import DeviceDescriptor
 from modules.common.component_state import ConsumerState
-from modules.common.component_type import ComponentType
 from modules.common.configurable_consumer import ConfigurableConsumer, SetLimitData
-from modules.common.simcount._simcounter import SimCounterConsumer
 from modules.consumers.generic.json.config import Json
 
 log = logging.getLogger(__name__)
@@ -16,7 +15,6 @@ log = logging.getLogger(__name__)
 
 def create_consumer(config: Json):
     session: Optional[req.CustomSession] = None
-    sim_counter: Optional[SimCounterConsumer] = None
     jq_power = None
     jq_imported = None
     jq_exported = None
@@ -45,10 +43,9 @@ def create_consumer(config: Json):
             return post_function
 
     def initializer():
-        nonlocal session, sim_counter
+        nonlocal session
         nonlocal jq_set_power_limit, jq_switch_on, jq_switch_off
         session = req.get_http_session()
-        sim_counter = SimCounterConsumer(config.id, ComponentType.CONSUMER)
 
         _compile_jq_filters()
         jq_set_power_limit = create_post_function(config.configuration.jq_set_power_limit)
@@ -60,11 +57,10 @@ def create_consumer(config: Json):
         power = float(jq_power.input(response).first())
         temperatures = float(jq_temperatures.input(response).first()) if jq_temperatures is not None else None
         currents = ([float(j.input(response).first()) for j in jq_currents] if jq_currents is not None else None)
-        if jq_imported is None or jq_exported is None:
-            imported, exported = sim_counter.sim_count(power)
-        else:
-            imported = float(jq_imported.input(response).first())
-            exported = float(jq_exported.input(response).first())
+        imported = float(jq_imported.input(response).first()
+                         ) if jq_imported is not None else get_default(ConsumerState, "imported")
+        exported = float(jq_exported.input(response).first()
+                         ) if jq_exported is not None else get_default(ConsumerState, "exported")
 
         return ConsumerState(
             power=power,

@@ -4,10 +4,8 @@ from typing import Optional
 
 from modules.common.abstract_device import DeviceDescriptor
 from modules.common.component_state import ConsumerState
-from modules.common.component_type import ComponentType
 from modules.common.configurable_consumer import ConfigurableConsumer
 from modules.common.modbus import ModbusDataType, ModbusTcpClient_
-from modules.common.simcount._simcounter import SimCounterConsumer
 from modules.consumers.luxtronik.luxtronik.config import Luxtronik
 
 log = logging.getLogger(__name__)
@@ -15,12 +13,10 @@ log = logging.getLogger(__name__)
 
 def create_consumer(config: Luxtronik):
     client: Optional[ModbusTcpClient_] = None
-    sim_counter: Optional[SimCounterConsumer] = None
 
     def initializer():
-        nonlocal client, sim_counter
+        nonlocal client
         client = ModbusTcpClient_(config.configuration.ip_address, config.configuration.port)
-        sim_counter = SimCounterConsumer(config.id, ComponentType.CONSUMER)
 
     def switch_on() -> None:
         unit = config.configuration.modbus_id
@@ -43,13 +39,7 @@ def create_consumer(config: Luxtronik):
         # Reg 10301: el. Leistungsaufnahme, Auflösung 100W (kW x0.1)
         power = client.read_input_registers(
             10301, ModbusDataType.UINT_16, unit=config.configuration.modbus_id) * 100
-        imported, exported = sim_counter.sim_count(power)
-
-        return ConsumerState(
-            power=power,
-            imported=imported,
-            exported=exported
-        )
+        return ConsumerState(power=power)
 
     return ConfigurableConsumer(consumer_config=config,
                                 initializer=initializer,
