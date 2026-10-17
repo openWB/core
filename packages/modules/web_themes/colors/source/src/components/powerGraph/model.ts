@@ -62,6 +62,7 @@ export interface RawDayGraphDataItem {
 export class GraphData {
 	data: GraphDataItem[] = []
 	private _graphMode = ''
+	errors: string[] = []
 	waitForData = true
 
 	get graphMode() {

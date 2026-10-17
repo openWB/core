@@ -15,7 +15,7 @@ import { addCounter, Counter, counters } from '../counterList/model'
 import { chargePoints } from '../chargePointList/model'
 import { addConsumer, consumers } from '../consumerList/model'
 import { PowerItemType, type PowerItem } from '@/assets/js/types'
-import { add } from '../mqttViewer/model'
+
 // methods:
 let gridCounters: string[] = []
 // Process incoming day graph data
@@ -24,7 +24,9 @@ export function processDayGraphMessages(topic: string, message: string) {
 		entries: inputTable,
 		names: itemNames2,
 		totals: energyValues,
+		message: errorTextBlock,
 	} = JSON.parse(message)
+	graphData.errors = errorTextBlock.split('\n')
 	itemNames.value = new Map(Object.entries(itemNames2))
 	resetHistoricData()
 	gridCounters = []
