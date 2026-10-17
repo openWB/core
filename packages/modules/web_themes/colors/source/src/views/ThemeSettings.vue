@@ -1,5 +1,5 @@
 <template>
-	<a class="btn btn-primary w-100 p-2" href="/settings/index.html"
+	<a class="btn btn-primary w-100 p-2" href="/openWB/web/settings/index.html"
 		>Zu den openWB-Einstellungen</a
 	>
 
