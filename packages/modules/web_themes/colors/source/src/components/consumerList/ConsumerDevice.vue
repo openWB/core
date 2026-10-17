@@ -29,12 +29,16 @@
 		</template>
 
 		<div class="subgrid pt-1">
-			<div v-if="showInfo" class="devicestatus p-2 rounded">
-				{{ device.statusText }}
-			</div>
-			<div v-if="showFault" class="devicestatus p-2">
-				{{ device.faultText }}
-			</div>
+			<transition name="status-fade">
+				<div v-if="showInfo" class="statustext status-entry p-2 rounded">
+					{{ device.statusText }}
+				</div>
+			</transition>
+			<transition name="status-fade">
+				<div v-if="showFault" class="faulttext status-entry p-2">
+					{{ device.faultText }}
+				</div>
+			</transition>
 			<RadioBarInput
 				:id="'chargemode-' + device.name"
 				v-model="device.chargeMode"
@@ -97,13 +101,45 @@ const showFault = ref(false)
 	grid-column: 1 / 13;
 	justify-self: center;
 }
-.devicestatus {
+.statustext {
 	grid-column: 1 / 13;
 	border: 1px solid var(--color-consumers);
 	justify-self: center;
 	font-size: var(--font-small);
 	color: black;
 	background: var(--color-menu);
+}
+.faulttext {
+	grid-column: 1 / 13;
+	border: 1px solid var(--color-consumers);
+	justify-self: center;
+	font-size: var(--font-small);
+	color: black;
+	background: var(--color-battery);
+}
+.status-entry {
+	overflow: hidden;
+	transform-origin: top center;
+	will-change: opacity, transform;
+}
+.status-fade-enter-active,
+.status-fade-leave-active {
+	transition:
+		opacity 0.22s cubic-bezier(0.22, 1, 0.36, 1),
+		transform 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.status-fade-enter-from {
+	opacity: 0;
+	transform: translateY(-6px) scaleY(0.96);
+}
+.status-fade-leave-to {
+	opacity: 0;
+	transform: translateY(-4px) scaleY(0.94);
+}
+.status-fade-enter-to,
+.status-fade-leave-from {
+	opacity: 1;
+	transform: translateY(0) scaleY(1);
 }
 .fa-circle-info {
 	color: var(--color-charging);

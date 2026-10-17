@@ -10,11 +10,18 @@
 					<span class="fa-solid fa-charging-station">&nbsp;</span>
 					{{ props.chargepoint.name }}</span
 				>
-				<span
-					v-if="cp.faultState == 2"
-					class="WbBadge rounded-pill errorWbBadge ms-3"
-					>Fehler</span
-				>
+				<span class="ms-2">
+					<i
+						v-if="cp.faultState === 0"
+						@click="showInfo = !showInfo"
+						class="fa-solid fa-xs fa-circle-info"
+					/>
+					<i
+						v-if="cp.faultState != 0"
+						@click="showFault = !showFault"
+						class="fa-solid fa-sm fa-triangle-exclamation"
+					/>
+				</span>
 			</span>
 		</template>
 
@@ -26,6 +33,22 @@
 
 		<!-- Chargepoint info -->
 		<div v-if="!configmode" class="subgrid">
+			<transition name="status-fade">
+				<div
+					v-if="showInfo"
+					class="statustext status-entry py-1 px-2 mb-2 rounded shadow"
+				>
+					{{ cp.stateStr }}
+				</div>
+			</transition>
+			<transition name="status-fade">
+				<div
+					v-if="showFault"
+					class="faulttext status-entry p-1 mb-2 rounded shadow"
+				>
+					{{ cp.faultStr }}
+				</div>
+			</transition>
 			<div class="grid12" @click="configmode = !configmode">
 				<!-- Status information -->
 				<InfoItem heading="Status:" class="grid-col-4 grid-left">
@@ -104,6 +127,8 @@ const props = defineProps<{
 }>()
 const cp = ref(props.chargepoint)
 const configmode = ref(false)
+const showInfo = ref(false)
+const showFault = ref(false)
 
 // computed
 const statusString = computed(() => {
@@ -171,5 +196,59 @@ function toggleConfigMode() {
 	color: var(--color-bg);
 	grid-column: 11 / span 2;
 	font-size: var(--font-settings-button);
+}
+
+.statustext {
+	grid-column: 1 / 13;
+	justify-self: center;
+	font-size: var(--font-small);
+	color: black;
+	background: var(--color-menu);
+}
+
+.faulttext {
+	grid-column: 1 / 13;
+	border: 1px solid var(--color-battery);
+	justify-self: center;
+	font-size: var(--font-small);
+	color: black;
+	background: var(--color-battery);
+}
+
+.status-entry {
+	overflow: hidden;
+	transform-origin: top center;
+	will-change: opacity, transform;
+}
+
+.status-fade-enter-active,
+.status-fade-leave-active {
+	transition:
+		opacity 0.22s cubic-bezier(0.22, 1, 0.36, 1),
+		transform 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.status-fade-enter-from {
+	opacity: 0;
+	transform: translateY(-6px) scaleY(0.96);
+}
+
+.status-fade-leave-to {
+	opacity: 0;
+	transform: translateY(-4px) scaleY(0.94);
+}
+
+.status-fade-enter-to,
+.status-fade-leave-from {
+	opacity: 1;
+	transform: translateY(0) scaleY(1);
+}
+
+.fa-circle-info {
+	color: var(--color-menu);
+}
+
+.fa-triangle-exclamation {
+	color: var(--color-battery);
 }
 </style>
