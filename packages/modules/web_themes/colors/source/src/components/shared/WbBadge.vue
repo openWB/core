@@ -10,12 +10,14 @@ import { computed } from 'vue'
 const props = defineProps<{
 	color?: string
 	bgcolor?: string
+	small?: boolean
 }>()
 
 const WbBadgestyle = computed(() => {
 	let result = {
 		color: props.color ?? 'var(--color-bg)',
 		'background-color': props.bgcolor ?? 'var(--color-menu)',
+		'font-size': props.small ? 'var(--font-smallbadge)' : 'var(--font-small)',
 	}
 	return result
 })
@@ -23,7 +25,6 @@ const WbBadgestyle = computed(() => {
 
 <style scoped>
 .pillWbBadge {
-	font-size: (var--font-small);
 	font-weight: regular;
 	display: flex;
 	justify-content: center;

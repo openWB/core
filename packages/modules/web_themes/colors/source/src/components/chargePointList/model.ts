@@ -25,7 +25,7 @@ export class ChargePoint implements PowerItem {
 	private _isLocked = false
 	private _connectedVehicle = 0
 	chargeTemplate: ChargeTemplate | null = null
-	evTemplate = 0
+	_evTemplate = 0
 	private _chargeMode = ChargeMode.pv_charging
 	private _hasPriority = false
 	currentPlan = ''
@@ -368,6 +368,14 @@ export class ChargePoint implements PowerItem {
 	}
 	get priority() {
 		return vehicles[this.connectedVehicle]?.priority ?? 0
+	}
+	get evTemplate() {
+		// get this from teh connected vehicle, if any
+		if (vehicles[this.connectedVehicle]) {
+			return vehicles[this.connectedVehicle].evTemplateId
+		} else {
+			return 0
+		}
 	}
 }
 export class Vehicle {

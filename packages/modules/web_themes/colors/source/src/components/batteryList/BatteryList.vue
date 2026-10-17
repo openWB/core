@@ -64,7 +64,7 @@ const batteryState = computed(() => {
 	} else if (registry.getPower('batIn') > 0) {
 		return `Lädt (${formatWatt(registry.getPower('batIn'))})`
 	} else {
-		return `Bereit:`
+		return `Bereit`
 	}
 })
 

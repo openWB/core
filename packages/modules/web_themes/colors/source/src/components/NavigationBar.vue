@@ -44,36 +44,17 @@
 							>
 						</div>
 					</div>
-					<div class="nav-item dropdown">
-						<a
-							id="settingsDropdown"
-							class="nav-link"
-							href="#"
-							role="button"
-							data-bs-toggle="dropdown"
-							aria-expanded="false"
-							>Einstellungen <span class="fa-solid fa-caret-down" />
-						</a>
-						<div class="dropdown-menu" aria-labelledby="settingsDropdown">
-							<a
-								id="navSettings"
-								class="nav-link"
-								href="../../settings/index.html"
-								>openWB</a
-							>
-							<a
-								class="nav-link"
-								data-bs-toggle="collapse"
-								data-bs-target="#themesettings"
-								aria-expanded="false"
-								aria-controls="themeSettings"
-							>
-								<span
-									>Look&amp;Feel<span class="fa-solid fa-caret-down" />
-								</span>
-							</a>
-						</div>
-					</div>
+					<a
+						id="settingsDropdown"
+						class="nav-link"
+						href="#"
+						role="button"
+						data-bs-toggle="modal"
+						:data-bs-target="'#' + themeSettingsModalId"
+						aria-expanded="false"
+					>
+						Einstellungen
+					</a>
 				</div>
 			</div>
 		</div>
@@ -81,6 +62,11 @@
 	<div :class="containerclass">
 		<hr class="m-0 p-0 mb-2" />
 	</div>
+
+	<ModalComponent :modal-id="themeSettingsModalId">
+		<template #title>Look &amp; Feel</template>
+		<ThemeSettings @reset-arcs="handleResetArcs" />
+	</ModalComponent>
 </template>
 
 <script setup lang="ts">
@@ -88,12 +74,21 @@ import { globalConfig } from '@/assets/js/themeConfig'
 import { computed, onBeforeUnmount, onMounted } from 'vue'
 import { formatCurrentTime } from '@/assets/js/helpers'
 import { currentTime } from '@/assets/js/model'
+import ThemeSettings from '@/views/ThemeSettings.vue'
+import ModalComponent from '@/components/shared/ModalComponent.vue'
+import { resetArcs } from '@/assets/js/themeConfig'
 
 let interval: ReturnType<typeof setInterval>
+
+const themeSettingsModalId = 'themeSettingsModal'
 
 const containerclass = computed(() => {
 	return globalConfig.fluidDisplay ? 'container-fluid' : 'container-lg'
 })
+
+function handleResetArcs() {
+	resetArcs()
+}
 
 onMounted(() => {
 	interval = setInterval(() => {
