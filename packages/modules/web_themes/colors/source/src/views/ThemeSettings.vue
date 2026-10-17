@@ -1,24 +1,11 @@
 <template>
+	<a class="btn btn-primary w-100 p-2" href="/settings/index.html"
+		>Zu den openWB-Einstellungen</a
+	>
+
 	<WbWidgetFlex :full-width="true">
 		<template #title> Look & Feel </template>
-		<template #buttons>
-			<span
-				type="button"
-				class="float-end mt-0 ms-1"
-				data-bs-toggle="collapse"
-				data-bs-target="#themesettings"
-			>
-				<span>
-					<i class="fa-solid fa-circle-check" />
-				</span>
-			</span>
-		</template>
 		<div class="subgrid m-0 p-0">
-			<div class="topbanner grid-col-12">
-				Eine Reihe von Einstellungen werden neu
-				<em>in den openWB-Einstellungen "Allgemein"</em> <br />
-				für alle Geräte einheitlich festgelegt.
-			</div>
 			<div class="settingscolumn">
 				<ConfigItem
 					:fullwidth="true"
@@ -123,14 +110,11 @@
 					</template>
 				</ConfigItem>
 			</div>
-			<div class="grid-col-12 mb-3 me-3">
-				<button
-					class="btn btn-sm btn-secondary float-end"
-					data-bs-toggle="collapse"
-					data-bs-target="#themesettings"
-				>
-					Schließen
-				</button>
+
+			<div class="topbanner grid-col-12">
+				Eine Reihe von Einstellungen werden direkt in den openWB-Einstellungen
+				<em>"Allgemein"</em>
+				für alle Geräte einheitlich festgelegt.
 			</div>
 		</div>
 	</WbWidgetFlex>
@@ -170,8 +154,8 @@ const shortListOptions: [string, string][] = [
 	padding: 20px;
 }
 .topbanner {
-	font-size: var(--font-large);
-	color: var(--color-charging);
+	font-size: var(--font-medium);
+	color: var(--color-input);
 	background-color: var(--color-bg);
 	text-align: center;
 	padding: 1em;
