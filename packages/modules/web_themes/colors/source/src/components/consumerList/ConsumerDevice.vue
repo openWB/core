@@ -20,11 +20,11 @@
 			</div>
 		</template>
 		<template #buttons>
-			<WbBadge v-if="device.priority > 0" bgcolor="var(--color-menu)"
+			<WbBadge
+				v-if="device.priority > 0"
+				:small="true"
+				bgcolor="var(--color-menu)"
 				>Prio: {{ device.priority }}
-			</WbBadge>
-			<WbBadge v-if="device.power >= 0" bgcolor="var(--color-consumers)"
-				>{{ formatWatt(device.power) }}
 			</WbBadge>
 		</template>
 
@@ -55,10 +55,13 @@
 					})
 				"
 			/>
-			<InfoItem heading="Heute:" :small="true" class="grid-col-6 grid-left">
+			<InfoItem heading="Leistung:" :small="true" class="grid-col-4 grid-left">
+				<FormatWatt :watt="device.power"></FormatWatt>
+			</InfoItem>
+			<InfoItem heading="Energie:" :small="true" class="grid-col-4 grid-center">
 				<FormatWattH :watt-h="device.now.energy"></FormatWattH>
 			</InfoItem>
-			<InfoItem heading="Laufzeit:" :small="true" class="grid-col-6 grid-left">
+			<InfoItem heading="Laufzeit:" :small="true" class="grid-col-4 grid-right">
 				{{ formatTime(device.runningTime) }}
 			</InfoItem>
 		</div>
@@ -69,11 +72,11 @@
 import WbSubwidget from '@/components/shared/WbSubwidget.vue'
 import type { Consumer } from './model.ts'
 import { formatWatt, formatTime } from '@/assets/js/helpers'
-import { type ChargeModeInfo } from '@/assets/js/types'
 import { chargemodes } from '@/assets/js/themeConfig'
 import WbBadge from '@/components/shared/WbBadge.vue'
 import InfoItem from '@/components/shared/InfoItem.vue'
 import FormatWattH from '@/components/shared/FormatWattH.vue'
+import FormatWatt from '@/components/shared/FormatWatt.vue'
 import RadioBarInput from '../shared/RadioBarInput.vue'
 import { ref } from 'vue'
 
@@ -142,7 +145,7 @@ const showFault = ref(false)
 	transform: translateY(0) scaleY(1);
 }
 .fa-circle-info {
-	color: var(--color-charging);
+	color: var(--color-menu);
 }
 .fa-triangle-exclamation {
 	color: var(--color-battery);

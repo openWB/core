@@ -6,7 +6,10 @@
 			</span>
 		</template>
 		<template #buttons>
-			<WbBadge v-if="props.inverter.power < 0" bgcolor="var(--color-pv)"
+			<WbBadge
+				v-if="props.inverter.power < 0"
+				:small="true"
+				bgcolor="var(--color-pv)"
 				>{{ formatWatt(-props.inverter.power) }}
 			</WbBadge>
 		</template>
