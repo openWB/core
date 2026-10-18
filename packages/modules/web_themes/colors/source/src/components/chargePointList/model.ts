@@ -578,7 +578,7 @@ export function resetChargePoints() {
 
 export const topVehicles = computed(() => {
 	let result: number[] = []
-	const connectedVehicles = Object.values(chargePoints)
+	const connectedVehiclesWithSoc = Object.values(chargePoints)
 		.filter(
 			(cp) =>
 				vehicles[cp.connectedVehicle] &&
@@ -586,14 +586,20 @@ export const topVehicles = computed(() => {
 		)
 		.map((cp) => cp.connectedVehicle)
 	const otherVehicles = Object.values(vehicles).filter(
-		(v) => v.visible && v.isSocConfigured && !connectedVehicles.includes(v.id),
-	) // only show vehicles with configured soc and that are visible
-	result = connectedVehicles.concat(otherVehicles.map((v) => v.id)).slice(0, 2)
-	if (result.length == 0) {
+		(v) =>
+			v.visible &&
+			v.isSocConfigured &&
+			!connectedVehiclesWithSoc.includes(v.id),
+	)
+	result = connectedVehiclesWithSoc
+		.concat(otherVehicles.map((v) => v.id))
+		.slice(0, 4)
+	/*if (result.length == 0) {
 		result = [-1, -1]
-	} else if (result.length == 1) {
+	} */ /*else if (result.length == 1) {
 		result.push(-1)
-	}
+	}*/
+	console.log(result)
 	return result
 })
 export const chargeLimitModes = [
