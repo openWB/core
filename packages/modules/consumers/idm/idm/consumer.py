@@ -47,8 +47,11 @@ def create_consumer(config: Idm):
         # Reg 78: Aktuelle PV-Produktion [kW]
         client.write_register(78, pv_power / 1000, data_type=ModbusDataType.FLOAT_32,
                               wordorder=Endian.Little, unit=modbus_id)
-        # Reg 82: Hausverbrauch [kW], Default 0
-        client.write_register(82, values.home_consumption / 1000, data_type=ModbusDataType.FLOAT_32,
+
+        # Reg 82: Hausverbrauch [kW], Default 0 - aus PV/Netz/Speicher berechnet, damit jeder Verbraucher
+        # (auch die WP selbst) automatisch enthalten ist, unabhängig von der internen Hausverbrauchs-Berechnung
+        idm_home_consumption = max(pv_power + values.evu_power - values.bat_power, 0)
+        client.write_register(82, idm_home_consumption / 1000, data_type=ModbusDataType.FLOAT_32,
                               wordorder=Endian.Little, unit=modbus_id)
         # Reg 84: Batterieentladung [kW], Default 0 (negativ = Ladung). values.bat_power kommt roh aus
         # process.py (negativ = Entladung, positiv = Ladung, gleiche Konvention wie z.B. bei Sungrow) ->
