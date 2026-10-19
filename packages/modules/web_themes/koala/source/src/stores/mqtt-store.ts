@@ -4300,6 +4300,32 @@ export const useMqttStore = defineStore('mqtt', () => {
   });
 
   /**
+   * Get the counter's own share of power: its power minus the power of the
+   * components directly below it. identified by counterId
+   * @param returnType type of return value, 'textValue', 'value', 'scaledValue', 'scaledUnit' or 'object'
+   * @param counterId counter ID
+   * @returns string | number | ValueObject | undefined
+   */
+  const counterLocalPower = computed(() => {
+    return (returnType: string = 'textValue', counterId?: number) => {
+      const id = counterId;
+      let localPower = undefined;
+      if (id !== undefined) {
+        localPower = getValue.value(`openWB/counter/${id}/get/local_power`) as
+          number | undefined;
+      }
+      const valueObject = getValueObject.value(localPower);
+      if (returnType in valueObject) {
+        return valueObject[returnType as keyof ValueObject];
+      }
+      if (returnType == 'object') {
+        return valueObject;
+      }
+      console.error('returnType not found!', returnType, localPower);
+    };
+  });
+
+  /**
    * Get daily counter energy imported identified by root grid counter in component hierarchy or counterId
    * @param returnType type of return value, 'textValue', 'value', 'scaledValue', 'scaledUnit' or 'object'
    * @param counterId counter ID
@@ -4456,6 +4482,7 @@ export const useMqttStore = defineStore('mqtt', () => {
     const ids = () => ({
       consumerIds: [] as number[],
       counterIds: [] as number[],
+      counterIdsWithChildren: [] as number[],
     });
     const result = { inHome: ids(), notInHome: ids() };
     function walk(
@@ -4474,10 +4501,19 @@ export const useMqttStore = defineStore('mqtt', () => {
             AUTO,
           ) as string | undefined;
           const mode = own && own !== AUTO ? own : parentMode;
+          let bucket;
           if (mode === NOT_HOME) {
-            result.notInHome.counterIds.push(node.id);
-          } else if (!isRoot) {
-            result.inHome.counterIds.push(node.id);
+            bucket = result.notInHome;
+          } else if (isRoot) {
+            bucket = undefined;
+          } else {
+            bucket = result.inHome;
+          }
+          if (bucket) {
+            bucket.counterIds.push(node.id);
+            if (node.children?.length) {
+              bucket.counterIdsWithChildren.push(node.id);
+            }
           }
           walk(node.children, mode, false);
         } else if (node.type === 'consumer') {
@@ -4521,6 +4557,34 @@ export const useMqttStore = defineStore('mqtt', () => {
   const notInHomeConsumption = computed(
     () => homeConsumptionAssignment.value.notInHome,
   );
+
+  // own share in W below which a counter with components below it is hidden
+  // (threshold for showing in the home consumption details)
+  const COUNTER_OWN_SHARE_THRESHOLD = 50;
+
+  /**
+   * Get the counters to list in the home consumption details. A counter with
+   * components below it is left out if its own share is negligible, as it
+   * then only measures those components.
+   * @returns object with the keys inHome and notInHome, each holding counter ids
+   */
+  const shownCounterIds = computed(() => {
+    const shown = (bucket: {
+      counterIds: number[];
+      counterIdsWithChildren: number[];
+    }) => {
+      // a counter that only measures the components below it is hidden
+      const hidden = (id: number) =>
+        bucket.counterIdsWithChildren.includes(id) &&
+        Math.abs(Number(counterLocalPower.value('value', id) ?? 0)) <
+          COUNTER_OWN_SHARE_THRESHOLD;
+      return bucket.counterIds.filter((id) => !hidden(id));
+    };
+    return {
+      inHome: shown(inHomeConsumption.value),
+      notInHome: shown(notInHomeConsumption.value),
+    };
+  });
 
   /**
    * Get the summed power of all consumers and counters that are not counted
@@ -4933,6 +4997,7 @@ export const useMqttStore = defineStore('mqtt', () => {
     componentName,
     gridComponentColor,
     counterPower,
+    counterLocalPower,
     counterDailyImported,
     counterDailyExported,
     // Home data
@@ -4940,6 +5005,7 @@ export const useMqttStore = defineStore('mqtt', () => {
     homeDailyYield,
     inHomeConsumption,
     notInHomeConsumption,
+    shownCounterIds,
     notInHomeConsumptionPower,
     unmeasuredHomeConsumptionPower,
     // PV data

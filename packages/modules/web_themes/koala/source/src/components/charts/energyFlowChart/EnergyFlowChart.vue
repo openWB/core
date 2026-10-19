@@ -144,8 +144,10 @@ const notInHomeVariants = {
     iconColor: 'var(--q-secondary-counter-stroke)',
   },
 };
+// follows the counters listed in the details: if all of them are hidden, the
+// node only shows consumers
 const notInHomeVariant = computed(() => {
-  if (!countersNotInHome.value) {
+  if (mqttStore.shownCounterIds.notInHome.length === 0) {
     return notInHomeVariants.consumer;
   }
   return mqttStore.notInHomeConsumption.consumerIds.length > 0
@@ -171,12 +173,12 @@ const openDetails = (event: MouseEvent, component: FlowComponent) => {
 const homeHasDetails = computed(
   () =>
     mqttStore.inHomeConsumption.consumerIds.length > 0 ||
-    mqttStore.inHomeConsumption.counterIds.length > 0,
+    mqttStore.shownCounterIds.inHome.length > 0,
 );
 const notInHomeHasDetails = computed(
   () =>
     mqttStore.notInHomeConsumption.consumerIds.length > 0 ||
-    mqttStore.notInHomeConsumption.counterIds.length > 0,
+    mqttStore.shownCounterIds.notInHome.length > 0,
 );
 const showConsumerPower = computed(
   () =>
