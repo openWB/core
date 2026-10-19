@@ -1,1 +1,0 @@
-import{o as e}from"./index-Q0SLxvcG.js";import{n as t}from"./chart-C5PDxaZK.js";var n=e(()=>{t.defaults.font.family=`'Roboto', sans-serif`});export{n as default};
