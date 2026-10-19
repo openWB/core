@@ -201,18 +201,12 @@ body>.container-fluid {
 	--color-ctr7: #c19a6b;
 	--color-ctr8: #987654;
 	--color-ctr9: #f4a460;
-	/* consumers use a petrol color scheme */
-	--color-consumers: #009696;
-	--color-consumer1: #009696; 
-	--color-consumer2: #00b4cc;
-	--color-consumer3: #008c9e;
-	--color-consumer4: #00dffc;
-	--color-consumer5: #00ffff;
-
+	--color-consumers: #f16913;
 	--font-normal: 1.4rem;
 	--font-large: 1.6rem;
 	--font-medium: 1.2rem;
 	--font-small: 1rem;
+	--font-smallbadge: 0.8rem;
 	--font-verysmall: 0.7rem;
 	--font-extralarge: 1.7rem;
 	--font-settings: 16px;
@@ -257,7 +251,7 @@ body>.container-fluid {
 .theme-dark {
 	--color-bg: #333333;
 	--color-export: #b2df8a;
-	--color-axis: #666666;
+	--color-axis: #999999;
 	--color-grid: black;
 	--color-menu: #999999;
 	--color-frame: #666666;

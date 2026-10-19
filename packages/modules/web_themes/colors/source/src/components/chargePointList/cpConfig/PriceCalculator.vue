@@ -98,7 +98,6 @@ const currentSoc = ref(cp.value?.soc ?? 0)
 var targetSoc = ref(currentSoc.value < 80 ? 80 : 100)
 const bufferMinutes = ref(30)
 const evTemplate = computed(() => evTemplates[cp.value?.evTemplate])
-//const chargeTemplate = computed(() => chargeTemplates[cp.value?.evTemplate])
 
 const price = computed({
 	get() {

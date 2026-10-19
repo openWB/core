@@ -109,7 +109,6 @@ const drawAxis1 = computed(() => {
 
 	axis
 		.selectAll('.tick > text')
-		//.attr('color', 'var(--color-axis)')
 		.attr('fill', (d, i) =>
 			i >= 0 || graphData.graphMode == 'month' || graphData.graphMode == 'year'
 				? 'var(--color-axis)'
