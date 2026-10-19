@@ -7,6 +7,7 @@ import pytest
 from control.consumer.consumer import Consumer
 from control.consumer.usage import ConsumerUsage
 from control.counter_all.counter_all import CounterAll
+from control.optional import Optional
 from helpermodules.subdata import SubData
 
 
@@ -190,3 +191,22 @@ def test_process_consumer_extra_meter_switches_linked_counter_in_hierarchy(monke
         ],
     }]
     mock_pub.pub.assert_called_once_with("openWB/set/counter/get/hierarchy", counter_all_data.data.get.hierarchy)
+
+
+def test_process_optional_topic_forecast_provider_none_clears_state(mock_pub):
+    subdata = SubData.__new__(SubData)
+    subdata.event_subdata_initialized = Mock()
+    subdata.event_subdata_initialized.is_set.return_value = True
+    var = Optional()
+    var._forecast_module = Mock()
+    var.data.forecast.configured = True
+    var.data.forecast.provider = {"type": "forecast_solar"}
+    var.data.forecast.get.values = {"1": 1.0}
+    msg = Mock(topic="openWB/set/optional/forecast/provider", payload=json.dumps({"type": None}).encode())
+
+    subdata.process_optional_topic(var, msg)
+
+    assert var.forecast_module is None
+    assert var.data.forecast.configured is False
+    assert var.data.forecast.provider is None
+    assert var.data.forecast.get.values == {}

@@ -9,7 +9,7 @@ from datetime import datetime
 
 from control import data
 from control.ocpp import OcppMixin
-from control.optional_data import FlexibleTariff, GridFee, OptionalData, PricingGet
+from control.optional_data import FlexibleTariff, ForecastGet, GridFee, OptionalData, PricingGet
 from helpermodules import hardware_configuration
 from helpermodules.constants import NO_ERROR
 from helpermodules.pub import Pub
@@ -61,40 +61,36 @@ class Optional(OcppMixin):
 
     @forecast_module.setter
     def forecast_module(self, value: TypingOptional[ConfigurableForecast]):
+        if (value is None or
+                (self._forecast_module and value and
+                 self._forecast_module.config != value.config)):
+            self.data.forecast.get = ForecastGet()
+            self._reset_forecast_state()
         previous_configured = self.data.forecast.configured
         self._forecast_module = value
         if value is None:
             self.data.forecast.configured = False
             self.data.forecast.provider = None
-            self.data.forecast.get.fault_state = 0
-            self.data.forecast.get.fault_str = NO_ERROR
-            self.data.forecast.get.force_update = False
-            self.data.forecast.get.values = {}
-            self.data.forecast.get.today_values = {}
-            self.data.forecast.get.tomorrow_values = {}
-            self.data.forecast.get.daily_kwh = {}
-            self.data.forecast.get.today_kwh = 0.0
-            self.data.forecast.get.tomorrow_kwh = 0.0
-            self.data.forecast.get.next_query_time = 0
-            self.data.forecast.get.last_update_time = 0
             if previous_configured is not False:
                 Pub().pub("openWB/set/optional/forecast/configured", False)
-            Pub().pub("openWB/set/optional/forecast/get/fault_state", 0)
-            Pub().pub("openWB/set/optional/forecast/get/fault_str", NO_ERROR)
-            Pub().pub("openWB/set/optional/forecast/get/force_update", False)
-            Pub().pub("openWB/set/optional/forecast/get/values", {})
-            Pub().pub("openWB/set/optional/forecast/get/today_values", {})
-            Pub().pub("openWB/set/optional/forecast/get/tomorrow_values", {})
-            Pub().pub("openWB/set/optional/forecast/get/daily_kwh", {})
-            Pub().pub("openWB/set/optional/forecast/get/today_kwh", 0.0)
-            Pub().pub("openWB/set/optional/forecast/get/tomorrow_kwh", 0.0)
-            Pub().pub("openWB/set/optional/forecast/get/next_query_time", 0)
-            Pub().pub("openWB/set/optional/forecast/get/last_update_time", 0)
         else:
             self.data.forecast.configured = True
             self.data.forecast.provider = asdict(value.config)
             if previous_configured is not True:
                 Pub().pub("openWB/set/optional/forecast/configured", True)
+
+    def _reset_forecast_state(self):
+        Pub().pub("openWB/set/optional/forecast/get/fault_state", 0)
+        Pub().pub("openWB/set/optional/forecast/get/fault_str", NO_ERROR)
+        Pub().pub("openWB/set/optional/forecast/get/force_update", False)
+        Pub().pub("openWB/set/optional/forecast/get/values", {})
+        Pub().pub("openWB/set/optional/forecast/get/today_values", {})
+        Pub().pub("openWB/set/optional/forecast/get/tomorrow_values", {})
+        Pub().pub("openWB/set/optional/forecast/get/daily_kwh", {})
+        Pub().pub("openWB/set/optional/forecast/get/today_kwh", 0.0)
+        Pub().pub("openWB/set/optional/forecast/get/tomorrow_kwh", 0.0)
+        Pub().pub("openWB/set/optional/forecast/get/next_query_time", 0)
+        Pub().pub("openWB/set/optional/forecast/get/last_update_time", 0)
 
     @grid_fee_module.setter
     def grid_fee_module(self, value: TypingOptional[ConfigurableGridFee]):
