@@ -776,6 +776,7 @@ class Chargepoint(ChargepointRfidMixin, Load):
             data.data.ocpp_client.sync_chargepoint_lifecycle(
                 self.num,
                 self.data.config.ocpp_chargebox_id,
+                self.data.config.ocpp_chargebox_password,
                 data.data.optional_data.data.ocpp.config.active,
             )
 

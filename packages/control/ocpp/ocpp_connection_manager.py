@@ -7,6 +7,8 @@ from helpermodules.utils.error_handling import ImportErrorContext
 
 with ImportErrorContext():
     import websockets
+    import base64
+    from websockets.exceptions import InvalidStatusCode
 
 from control import data
 from control.ocpp.helper import get_cp_from_chargebox_id
@@ -64,6 +66,27 @@ class OcppConnectionManager:
             return connection
         except asyncio.CancelledError:
             raise
+        except InvalidStatusCode as error:
+            if error.status_code == 401:
+                log.error(
+                    "OCPP-Authentifizierung für %s abgelehnt (HTTP 401); "
+                    "Chargebox-ID und Passwort prüfen",
+                    chargebox_id,
+                )
+            elif error.status_code == 403:
+                log.error(
+                    "OCPP-Zugriff für %s verweigert (HTTP 403); "
+                    "Zugangsdaten oder Serverfreigabe prüfen",
+                    chargebox_id,
+                )
+            else:
+                log.error(
+                    "OCPP-Verbindung zu %s mit HTTP-Status %s abgelehnt",
+                    chargebox_id,
+                    error.status_code,
+                )
+            self._schedule_reconnect(chargebox_id)
+            return None
         except Exception:
             log.exception(
                 "OCPP-Verbindung zu %s konnte nicht aufgebaut werden",
@@ -186,6 +209,17 @@ class OcppConnectionManager:
             and self._is_usable(connection)
         )
 
+    def build_custom_headers(
+        self,
+        charge_point_id: str,
+        auth_key: str,
+    ) -> dict:
+        credentials = f"{charge_point_id}:{auth_key}"
+        encoded_credentials = base64.b64encode(credentials.encode("utf-8")).decode("utf-8")
+        return {
+            "Authorization": f"Basic {encoded_credentials}"
+        }
+
     async def _open_connection(
         self,
         chargebox_id: str,
@@ -209,6 +243,10 @@ class OcppConnectionManager:
         ws = await websockets.connect(
             ws_url,
             subprotocols=[version],
+            extra_headers=self.build_custom_headers(
+                chargebox_id, data.data.cp_data[
+                    f"cp{get_cp_from_chargebox_id(chargebox_id).num}"].data.config.ocpp_chargebox_password
+            ),
         )
 
         if ws.subprotocol != version:

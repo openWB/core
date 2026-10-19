@@ -289,6 +289,7 @@ class Config:
     control_pilot_interruption_hw: bool = False
     id: int = 0
     ocpp_chargebox_id: Optional[str] = None
+    ocpp_chargebox_password: Optional[str] = None
 
     def __post_init__(self):
         self.event_update_state: Event

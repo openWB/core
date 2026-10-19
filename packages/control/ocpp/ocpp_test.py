@@ -362,17 +362,21 @@ def test_transfer_values_updates_meter_snapshot():
 
 
 @pytest.mark.parametrize(
-    "previous, chargebox_id, active, expected_disconnects",
+    "previous, chargebox_id, chargebox_pw, active, expected_disconnects",
     [
-        pytest.param(None, "box-1", False, ["box-1"], id="initial-disabled-config"),
-        pytest.param(("box-1", True), "box-1", False, ["box-1"], id="disable-ocpp"),
-        pytest.param(("box-1", True), "box-2", True, ["box-1"], id="change-id"),
-        pytest.param(("box-1", False), "box-2", False, ["box-1", "box-2"],
+        pytest.param(None, "box-1", "pw-1", False, ["box-1"], id="initial-disabled-config"),
+        pytest.param(("box-1", "pw-1", True), "box-1", "pw-1", False, ["box-1"], id="disable-ocpp"),
+        pytest.param(("box-1", "pw-1", True), "box-2", "pw-1", True, ["box-1"], id="change-id"),
+        pytest.param(("box-1", "pw-1", False), "box-2", "pw-1", False, ["box-1", "box-2"],
                      id="change-id-while-disabled"),
+        pytest.param(("box-1", "pw-1", True), "box-1", "pw-2", True, ["box-1"],
+                     id="change-password"),
+        pytest.param(("box-1", "pw-1", True), "box-1", "pw-1", True, [],
+                     id="unchanged-password"),
     ],
 )
 def test_sync_chargepoint_lifecycle(
-    previous, chargebox_id, active, expected_disconnects
+    previous, chargebox_id, chargebox_pw, active, expected_disconnects
 ):
     client = object.__new__(OcppClient)
     client._chargepoint_lifecycle = {}
@@ -381,10 +385,12 @@ def test_sync_chargepoint_lifecycle(
     disconnect = Mock()
     client.disconnect = disconnect
 
-    client.sync_chargepoint_lifecycle(1, chargebox_id, active)
+    client.sync_chargepoint_lifecycle(1, chargebox_id, chargebox_pw, active)
 
     assert [call.args[0] for call in disconnect.call_args_list] == expected_disconnects
-    assert client._chargepoint_lifecycle[1] == (chargebox_id, bool(active and chargebox_id))
+    assert client._chargepoint_lifecycle[1] == (
+        chargebox_id, chargebox_pw, bool(active and chargebox_id)
+    )
 
 
 def test_status_notification_skips_connection_check_when_status_is_unchanged():
@@ -736,6 +742,32 @@ def test_invalid_chargebox_id_does_not_connect(monkeypatch):
     assert result is None
     connect_mock.assert_not_called()
     assert connection_manager.is_wanted("invalid-cp") is False
+
+
+def test_connect_logs_unauthorized_handshake(monkeypatch, caplog):
+    ocpp_data = SimpleNamespace(config=SimpleNamespace(active=True))
+    monkeypatch.setattr(
+        ocpp_connection_manager.data,
+        "data",
+        SimpleNamespace(optional_data=SimpleNamespace(data=SimpleNamespace(ocpp=ocpp_data))),
+    )
+    connection_manager = OcppConnectionManager(
+        chargepoint_factory=Mock(),
+        on_connected=AsyncMock(),
+        on_disconnected=AsyncMock(),
+    )
+    connection_manager.ensure_connected = AsyncMock(
+        side_effect=ocpp_connection_manager.InvalidStatusCode(401, {})
+    )
+    connection_manager._schedule_reconnect = Mock()
+
+    with caplog.at_level(logging.ERROR, logger="control.ocpp.ocpp_connection_manager"):
+        result = asyncio.run(connection_manager.connect("box-1"))
+
+    assert result is None
+    assert "OCPP-Authentifizierung für box-1 abgelehnt (HTTP 401)" in caplog.text
+    assert "Passwort prüfen" in caplog.text
+    connection_manager._schedule_reconnect.assert_called_once_with("box-1")
 
 
 def test_connection_transport_is_usable_before_registration_is_accepted():
