@@ -180,6 +180,7 @@ class HandlerAlgorithm:
         ausführt, die nur alle 5 Minuten ausgeführt werden müssen.
         """
         try:
+            data.data.copy_data()
             with ChangedValuesContext(loadvars_.event_module_update_completed):
                 entries = save_log()
                 daily_totals = update_daily_yields(entries)
@@ -245,6 +246,7 @@ class HandlerAlgorithm:
             thread_errors_path = Path(Path(__file__).resolve().parents[1]/"ramdisk"/"thread_errors.log")
             with thread_errors_path.open("w") as f:
                 f.write("")
+            data.data.copy_data()
             with ChangedValuesContext(loadvars_.event_module_update_completed):
                 for consumer in data.data.consumer_data.values():
                     consumer.midnight_handler()
