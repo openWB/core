@@ -104,7 +104,7 @@ def test_add_consumer_uses_module_default_usage_type(usage_type, mock_pub, monke
     command_instance.addConsumer("test", {"data": {"vendor": "test", "type": "test_consumer"}})
 
     usage_calls = [call for call in mock_pub.pub.call_args_list
-                   if call.args[0] == "openWB/set/consumer/1/usage"]
+                   if call.args[0] == "openWB/consumer/1/usage"]
     assert len(usage_calls) == 1
     assert usage_calls[0].args[1]["type"] == usage_type.value
 
