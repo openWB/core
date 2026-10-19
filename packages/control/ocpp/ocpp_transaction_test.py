@@ -989,7 +989,7 @@ def test_websocket_transaction_survives_reconnect(monkeypatch):
                                  test_reconnect=False,
                                  config=ocpp_config_factory()),
             serial_number="serial-1",
-        )),
+        ), config=SimpleNamespace(ocpp_chargebox_password="test-password")),
         get_ocpp_status=lambda: ChargePointStatus.available,
         chargepoint_module=SimpleNamespace(config=SimpleNamespace(type="test-cp")),
     )
@@ -1036,6 +1036,7 @@ def test_websocket_transaction_survives_reconnect(monkeypatch):
         async with websockets.serve(accept, "127.0.0.1", 0, subprotocols=["ocpp1.6"]) as server:
             port = server.sockets[0].getsockname()[1]
             monkeypatch.setattr(data, "data", SimpleNamespace(
+                cp_data={"cp1": openwb_cp},
                 optional_data=SimpleNamespace(data=SimpleNamespace(ocpp=SimpleNamespace(
                     config=SimpleNamespace(
                         active=True,
