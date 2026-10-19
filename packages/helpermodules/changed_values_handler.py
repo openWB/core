@@ -1,11 +1,10 @@
-from dataclasses import fields, is_dataclass
+from copy import deepcopy
+from dataclasses import dataclass, fields, is_dataclass
 from enum import Enum
 import logging
-from threading import Event
-from typing import Dict, List, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 from control import data
 
-from control.data import Data
 from dataclass_utils import asdict
 from helpermodules.pub import Pub
 
@@ -64,43 +63,73 @@ log = logging.getLogger(__name__)
 #         self.data = SampleData()
 
 
+@dataclass
+class ChangedValuesSnapshot:
+    bat_all_data: Any
+    cp_all_data: Any
+    consumer_all_data: Any
+    counter_all_data: Any
+    optional_data: Any
+    pv_all_data: Any
+    cp_data: Dict[str, Any]
+    bat_data: Dict[str, Any]
+    counter_data: Dict[str, Any]
+    consumer_data: Dict[str, Any]
+    pv_data: Dict[str, Any]
+
+
 class ChangedValuesHandler:
-    def __init__(self, event_module_update_completed: Event) -> None:
-        self.prev_data: Data = Data(event_module_update_completed)
+    def __init__(self) -> None:
+        self.prev_data: Optional[ChangedValuesSnapshot] = None
 
     def store_initial_values(self):
         try:
-            # speichern der Daten zum Zyklus-Beginn, um später die geänderten Werte zu ermitteln
-            self.prev_data.copy_data()
+            # Snapshot des Arbeitszustands, den der Handler anschließend verändert.
+            current_data = data.data
+            self.prev_data = ChangedValuesSnapshot(
+                bat_all_data=deepcopy(current_data.bat_all_data.data),
+                cp_all_data=deepcopy(current_data.cp_all_data.data.get),
+                consumer_all_data=deepcopy(current_data.consumer_all_data.data),
+                counter_all_data=deepcopy(current_data.counter_all_data.data),
+                optional_data=deepcopy(current_data.optional_data.data),
+                pv_all_data=deepcopy(current_data.pv_all_data.data),
+                cp_data={key: deepcopy(value.data) for key, value in current_data.cp_data.items()},
+                bat_data={key: deepcopy(value.data) for key, value in current_data.bat_data.items()},
+                counter_data={key: deepcopy(value.data) for key, value in current_data.counter_data.items()},
+                consumer_data={key: deepcopy(value.data) for key, value in current_data.consumer_data.items()},
+                pv_data={key: deepcopy(value.data) for key, value in current_data.pv_data.items()},
+            )
         except Exception as e:
             log.exception(e)
 
     def pub_changed_values(self):
         try:
+            if self.prev_data is None:
+                return
             # veröffentlichen der geänderten Werte
-            self._update_value("openWB/set/bat/", self.prev_data.bat_all_data.data, data.data.bat_all_data.data)
-            self._update_value("openWB/set/chargepoint/", self.prev_data.cp_all_data.data.get,
+            self._update_value("openWB/set/bat/", self.prev_data.bat_all_data, data.data.bat_all_data.data)
+            self._update_value("openWB/set/chargepoint/", self.prev_data.cp_all_data,
                                data.data.cp_all_data.data.get)
-            self._update_value("openWB/set/consumer/", self.prev_data.consumer_all_data.data,
+            self._update_value("openWB/set/consumer/", self.prev_data.consumer_all_data,
                                data.data.consumer_all_data.data)
-            self._update_value("openWB/set/counter/", self.prev_data.counter_all_data.data,
+            self._update_value("openWB/set/counter/", self.prev_data.counter_all_data,
                                data.data.counter_all_data.data)
-            self._update_value("openWB/set/optional/", self.prev_data.optional_data.data,
+            self._update_value("openWB/set/optional/", self.prev_data.optional_data,
                                data.data.optional_data.data)
-            self._update_value("openWB/set/pv/", self.prev_data.pv_all_data.data,
+            self._update_value("openWB/set/pv/", self.prev_data.pv_all_data,
                                data.data.pv_all_data.data)
             for key, value in data.data.cp_data.items():
-                self._update_value(f"openWB/set/chargepoint/{value.num}/", self.prev_data.cp_data[key].data, value.data)
+                self._update_value(f"openWB/set/chargepoint/{value.num}/", self.prev_data.cp_data[key], value.data)
             for key, value in data.data.bat_data.items():
-                self._update_value(f"openWB/set/bat/{value.num}/", self.prev_data.bat_data[key].data, value.data)
+                self._update_value(f"openWB/set/bat/{value.num}/", self.prev_data.bat_data[key], value.data)
             for key, value in data.data.counter_data.items():
                 self._update_value(f"openWB/set/counter/{value.num}/",
-                                   self.prev_data.counter_data[key].data, value.data)
+                                   self.prev_data.counter_data[key], value.data)
             for key, value in data.data.consumer_data.items():
                 self._update_value(f"openWB/set/consumer/{value.num}/",
-                                   self.prev_data.consumer_data[key].data, value.data)
+                                   self.prev_data.consumer_data[key], value.data)
             for key, value in data.data.pv_data.items():
-                self._update_value(f"openWB/set/pv/{value.num}/", self.prev_data.pv_data[key].data, value.data)
+                self._update_value(f"openWB/set/pv/{value.num}/", self.prev_data.pv_data[key], value.data)
             # chargepoint, ev template, autolock, time and scheduled charging plans mutable_by_algorithm immer false
         except Exception as e:
             log.exception(e)
@@ -146,8 +175,8 @@ class ChangedValuesHandler:
 
 
 class ChangedValuesContext:
-    def __init__(self, event_module_update_completed: Event):
-        self.changed_values_handler = ChangedValuesHandler(event_module_update_completed)
+    def __init__(self):
+        self.changed_values_handler = ChangedValuesHandler()
 
     def __enter__(self):
         self.changed_values_handler.store_initial_values()

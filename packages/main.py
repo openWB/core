@@ -141,7 +141,7 @@ class HandlerAlgorithm:
                     wait_for_module_update_completed(loadvars_.event_module_update_completed,
                                                      "openWB/set/system/device/module_update_completed")
                     data.data.copy_data()
-                    with ChangedValuesContext(loadvars_.event_module_update_completed):
+                    with ChangedValuesContext():
                         self.heartbeat = True
                         if data.data.system_data["system"].data["perform_update"]:
                             data.data.system_data["system"].perform_update()
@@ -180,7 +180,8 @@ class HandlerAlgorithm:
         ausführt, die nur alle 5 Minuten ausgeführt werden müssen.
         """
         try:
-            with ChangedValuesContext(loadvars_.event_module_update_completed):
+            data.data.copy_data()
+            with ChangedValuesContext():
                 entries = save_log()
                 daily_totals = update_daily_yields(entries)
                 if daily_totals is not None:
@@ -233,6 +234,7 @@ class HandlerAlgorithm:
     @__with_handler_lock(error_threshold=60)
     def handler_midnight(self):
         try:
+            data.data.copy_data()
             today = timecheck.create_timestamp_YYYYMMDD()
             previous_day = timecheck.get_relative_date_string(today, day_offset=-1)
             save_daily_source_totals(previous_day)
@@ -245,7 +247,7 @@ class HandlerAlgorithm:
             thread_errors_path = Path(Path(__file__).resolve().parents[1]/"ramdisk"/"thread_errors.log")
             with thread_errors_path.open("w") as f:
                 f.write("")
-            with ChangedValuesContext(loadvars_.event_module_update_completed):
+            with ChangedValuesContext():
                 for consumer in data.data.consumer_data.values():
                     consumer.midnight_handler()
         except Exception:

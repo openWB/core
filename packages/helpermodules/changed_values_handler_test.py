@@ -1,5 +1,6 @@
 from dataclasses import dataclass, field
 from enum import IntEnum
+from types import SimpleNamespace
 from typing import Dict, List, Optional, Tuple
 from unittest.mock import Mock
 
@@ -7,6 +8,7 @@ import pytest
 
 from dataclass_utils import asdict
 from dataclass_utils.factories import currents_list_factory
+from control import data
 from helpermodules.changed_values_handler import ChangedValuesHandler
 
 NONE_TYPE = type(None)
@@ -106,12 +108,40 @@ cases = [
 @pytest.mark.parametrize("params", cases, ids=[c.name for c in cases])
 def test_update_value(params: Params, mock_pub: Mock, monkeypatch):
     # setup
-    handler = ChangedValuesHandler(Mock())
+    handler = ChangedValuesHandler()
 
     # execution
     handler._update_value("openWB/", SampleData(), params.sample_data)
 
     # evaluation
-    assert len(mock_pub.method_calls) - 1 == params.expected_calls
+    assert len(mock_pub.method_calls) == params.expected_calls
     if params.expected_calls > 0:
-        assert mock_pub.method_calls[1].args == params.expected_pub_call
+        assert mock_pub.method_calls[0].args == params.expected_pub_call
+
+
+def test_store_initial_values_snapshots_current_data(monkeypatch):
+    # setup
+    source = SimpleNamespace(
+        bat_all_data=SimpleNamespace(data={"value": [1]}),
+        cp_all_data=SimpleNamespace(data=SimpleNamespace(get={"value": [2]})),
+        consumer_all_data=SimpleNamespace(data={"value": [3]}),
+        counter_all_data=SimpleNamespace(data={"value": [4]}),
+        optional_data=SimpleNamespace(data={"value": [5]}),
+        pv_all_data=SimpleNamespace(data={"value": [6]}),
+        cp_data={"cp0": SimpleNamespace(data={"value": [7]})},
+        bat_data={},
+        counter_data={},
+        consumer_data={},
+        pv_data={},
+    )
+    monkeypatch.setattr(data, "data", source, raising=False)
+    handler = ChangedValuesHandler()
+
+    # execution
+    handler.store_initial_values()
+    source.cp_data["cp0"].data["value"].append(8)
+
+    # evaluation
+    assert handler.prev_data is not None
+    assert handler.prev_data.cp_data["cp0"] == {"value": [7]}
+    assert handler.prev_data.cp_all_data == {"value": [2]}
