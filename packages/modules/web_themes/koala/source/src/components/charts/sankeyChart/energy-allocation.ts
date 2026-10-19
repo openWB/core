@@ -1,10 +1,9 @@
-/** Fixed node ids. Chargepoints/consumers use dynamic ids (see input). */
+/** Fixed node ids. Chargepoints/consumers/counters use dynamic ids (see input). */
 export const NODE_GRID = 'grid';
 export const NODE_PV = 'pv';
 export const NODE_BATTERY = 'battery';
 export const NODE_HOUSE = 'house';
 export const NODE_HOUSE_REST = 'house_rest';
-export const NODE_NOT_IN_HOME = 'not_in_home';
 
 /** Column of each node in the diagram, left to right. */
 export const COLUMN_SOURCE = 0;
@@ -17,11 +16,12 @@ export const COLUMN_HOUSE_PART = 2;
  *   grid    : + import (source)   | - export (sink)
  *   pv      : - production (source)| + consumption (rare)
  *   battery : + charging (sink)   | - discharging (source)
- *   cp/consumer power: + drawing (sink) | - feeding back, e.g. V2G (source)
+ *   cp/consumer/counter power: + drawing (sink) | - feeding back, e.g. V2G (source)
  *
- * Consumers flagged `inHouse` are counted in the home consumption. They are
- * not drawn as sinks of their own but as parts of the household node, which
- * splits into them and the remaining household consumption in a third column.
+ * Consumers and counters flagged `inHouse` are counted in the home
+ * consumption. They are not drawn as sinks of their own but as parts of the
+ * household node, which splits into them and the remaining household
+ * consumption in a third column.
  */
 export interface EnergyFlowInput {
   grid: number;
@@ -29,11 +29,10 @@ export interface EnergyFlowInput {
   battery: number;
   chargePoints: DynamicNodeInput[];
   consumers: DynamicNodeInput[];
-  /**
-   * Power not counted in the home consumption that is no consumer.
-   * + drawing (sink) | - feeding (source).
-   */
-  notInHomeOther?: number;
+  //Secondary counters with their own share of power: their power minus the
+  //components below them, which are nodes of their own.
+
+  counters?: DynamicNodeInput[];
   /**
    * Hybrid inverter/battery pairs. A hybrid battery charges from its inverter's
    * PV directly on the shared DC bus, before the remaining PV mixes with grid
@@ -73,7 +72,7 @@ export interface AllocationResult {
   nodes: FlowNode[];
   sources: FlowNode[];
   sinks: FlowNode[];
-  /** Consumers counted in the home consumption plus the remainder. */
+  /** Consumers and counters counted in the home consumption plus the remainder. */
   houseParts: FlowNode[];
   totalSources: number;
   totalSinks: number;
@@ -124,30 +123,24 @@ function classifyNodes(input: EnergyFlowInput): {
     }
   }
 
-  for (const consumer of input.consumers) {
-    if (consumer.power > 0 && consumer.inHouse) {
+  for (const load of [...input.consumers, ...(input.counters ?? [])]) {
+    if (load.power > 0 && load.inHouse) {
       houseParts.push({
-        id: consumer.id,
-        label: consumer.label,
-        power: consumer.power,
+        id: load.id,
+        label: load.label,
+        power: load.power,
         column: COLUMN_HOUSE_PART,
       });
-    } else if (consumer.power > 0) {
-      sink(consumer.id, consumer.label, consumer.power);
-    } else if (consumer.power < 0) {
-      source(consumer.id, consumer.label, -consumer.power);
+    } else if (load.power > 0) {
+      sink(load.id, load.label, load.power);
+    } else if (load.power < 0) {
+      source(load.id, load.label, -load.power);
     }
   }
 
-  const notInHomeOther = input.notInHomeOther ?? 0;
-  if (notInHomeOther > 0) {
-    sink(NODE_NOT_IN_HOME, 'Zähler', notInHomeOther);
-  } else if (notInHomeOther < 0) {
-    source(NODE_NOT_IN_HOME, 'Zähler', -notInHomeOther);
-  }
-
-  // Household consumption = balancing residual. It includes the consumers
-  // counted in the home consumption, as they are not sinks of their own.
+  // Household consumption = balancing residual. It includes the consumers and
+  // counters counted in the home consumption, as they are not sinks of their
+  // own.
   const totalSources = sumPower(sources);
   const otherSinks = sumPower(sinks);
   const house = Math.max(0, totalSources - otherSinks);
@@ -159,21 +152,21 @@ function classifyNodes(input: EnergyFlowInput): {
 }
 
 /**
- * Split the household node into the consumers counted in it and the rest.
- * Measurement noise can make those consumers add up to more than the
+ * Split the household node into the consumers and counters counted in it and
+ * the rest. Measurement noise can make those parts add up to more than the
  * residual; they are then scaled down so the household node still balances.
  */
-function splitHouse(house: number, consumers: FlowNode[]): FlowNode[] {
-  if (house <= 0 || consumers.length === 0) {
+function splitHouse(house: number, houseParts: FlowNode[]): FlowNode[] {
+  if (house <= 0 || houseParts.length === 0) {
     return [];
   }
-  const consumerTotal = sumPower(consumers);
-  const scale = Math.min(1, house / consumerTotal);
-  const parts = consumers.map((node) => ({
+  const partsTotal = sumPower(houseParts);
+  const scale = Math.min(1, house / partsTotal);
+  const parts = houseParts.map((node) => ({
     ...node,
     power: node.power * scale,
   }));
-  const rest = house - consumerTotal * scale;
+  const rest = house - partsTotal * scale;
   if (rest >= MIN_EDGE_WATTS) {
     parts.push({
       id: NODE_HOUSE_REST,
@@ -196,8 +189,8 @@ export interface GroupOptions {
 }
 
 /**
- * Collapse a list of dynamic nodes (chargePoints or consumers) into a single
- * aggregated node once it exceeds the threshold.
+ * Collapse a list of dynamic nodes (chargePoints, consumers or counters) into
+ * a single aggregated node once it exceeds the threshold.
  */
 export function groupNodes(
   nodes: DynamicNodeInput[],
