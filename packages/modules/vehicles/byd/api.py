@@ -218,13 +218,18 @@ def _login(config: BydConfiguration) -> Dict[str, Any]:
     }
 
 
-def _get_session(config: BydConfiguration, force_relogin: bool = False) -> Dict[str, Any]:
+def _get_session(config: BydConfiguration, force_relogin: bool = False,
+                 rejected_session: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
     cache_key = config.username
     # Lock verhindert parallelen Login zweier Fahrzeuge desselben Accounts
     with _account_lock(cache_key):
         cached = _session_cache.get(cache_key)
         if (not force_relogin and cached is not None
                 and (time.monotonic() - cached["created_at"]) < _SESSION_TTL_S):
+            return cached
+        if force_relogin and cached is not None and cached is not rejected_session:
+            # bereits von einem anderen Fahrzeug desselben Accounts erneuert -> verwenden statt
+            # erneut einzuloggen (nur eine aktive Session pro Account)
             return cached
 
         failure = _login_failure_cache.get(cache_key)
@@ -381,6 +386,14 @@ def extract_range(data: Dict[str, Any]) -> Optional[float]:
     return float(value)
 
 
+def extract_soc_timestamp(data: Dict[str, Any]) -> Optional[float]:
+    # "time" ist der Messzeitpunkt des Fahrzeugs, nicht der Abrufzeitpunkt
+    value = data.get("time")
+    if value is None:
+        return None
+    return float(value)
+
+
 def extract_odometer(data: Dict[str, Any]) -> Optional[float]:
     value = data.get("totalMileage")
     if value is None or float(value) < 0:
@@ -400,7 +413,7 @@ def fetch_soc(config: BydConfiguration, vehicle: int) -> CarState:
             data = _fetch_realtime(config, session)
         except BydAuthenticationError:
             log.info("BYD: Session abgelaufen, neuer Login für Fahrzeug %s", vehicle)
-            session = _get_session(config, force_relogin=True)
+            session = _get_session(config, force_relogin=True, rejected_session=session)
             data = _fetch_realtime(config, session)
     except BydApiError:
         raise
@@ -410,5 +423,6 @@ def fetch_soc(config: BydConfiguration, vehicle: int) -> CarState:
     return CarState(
         soc=extract_soc(data),
         range=extract_range(data),
+        soc_timestamp=extract_soc_timestamp(data),
         odometer=extract_odometer(data),
     )

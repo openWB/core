@@ -32,6 +32,12 @@ def fetch(vehicle_config: Byd, vehicle: int) -> CarState:
 
 
 def create_vehicle(vehicle_config: Byd, vehicle: int):
+    config = vehicle_config.configuration
+    if config.device_fingerprint:
+        # Account-Cache vor dem ersten Poll fuellen, damit die Reihenfolge mehrerer Fahrzeuge
+        # desselben Accounts keine Rolle spielt
+        api.resolve_account_fingerprint(config.username, config.device_fingerprint)
+
     def updater(vehicle_update_data: VehicleUpdateData) -> CarState:
         return fetch(vehicle_config, vehicle)
 

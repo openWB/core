@@ -85,6 +85,33 @@ class TestGetSession:
 
         assert call_count == 1
 
+    def test_force_relogin_reuses_session_already_refreshed_by_another_vehicle(self, monkeypatch):
+        rejected_session = {"user_id": "u", "sign_token": "old", "encry_token": "old",
+                            "created_at": time.monotonic()}
+        refreshed_session = {"user_id": "u", "sign_token": "new", "encry_token": "new",
+                             "created_at": time.monotonic()}
+        api._session_cache["user@example.com"] = refreshed_session
+        login_mock = Mock(return_value={"user_id": "u", "sign_token": "newer", "encry_token": "newer",
+                                        "created_at": time.monotonic()})
+        monkeypatch.setattr(api, "_login", login_mock)
+
+        result = api._get_session(_config(), force_relogin=True, rejected_session=rejected_session)
+
+        assert result is refreshed_session
+        login_mock.assert_not_called()
+
+    def test_force_relogin_logs_in_when_cached_session_is_still_the_rejected_one(self, monkeypatch):
+        rejected_session = {"user_id": "u", "sign_token": "old", "encry_token": "old",
+                            "created_at": time.monotonic()}
+        api._session_cache["user@example.com"] = rejected_session
+        new_session = {"user_id": "u", "sign_token": "new", "encry_token": "new",
+                       "created_at": time.monotonic()}
+        monkeypatch.setattr(api, "_login", Mock(return_value=new_session))
+
+        result = api._get_session(_config(), force_relogin=True, rejected_session=rejected_session)
+
+        assert result is new_session
+
 
 class TestFetchRealtimeAuthError:
     def test_auth_error_during_poll_is_not_swallowed(self, monkeypatch):
