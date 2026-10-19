@@ -55,7 +55,9 @@ class OcppClient:
             tuple[ChargePointStatus, ChargePointErrorCode, str]
         ] = {}
         self._status_send_locks: dict[tuple[str, int], asyncio.Lock] = {}
-        self._chargepoint_lifecycle: dict[int, tuple[Optional[str], bool]] = {}
+        self._chargepoint_lifecycle: dict[
+            int, tuple[Optional[str], Optional[str], bool]
+        ] = {}
 
         with OcppClient._ocpp_runtime_lock:
             if (OcppClient._ocpp_thread is None
@@ -149,10 +151,12 @@ class OcppClient:
         self,
         chargepoint_num: int,
         chargebox_id: Optional[str],
+        chargebox_pw: Optional[str],
         ocpp_active: bool,
     ) -> None:
         """Disconnect obsolete OCPP connections after configuration changes."""
         chargebox_id = chargebox_id or None
+        chargebox_pw = chargebox_pw or None
         enabled = bool(ocpp_active and chargebox_id)
         previous = self._chargepoint_lifecycle.get(chargepoint_num)
 
@@ -161,18 +165,20 @@ class OcppClient:
             if not enabled and chargebox_id:
                 self.disconnect(chargebox_id)
         else:
-            previous_id, previous_enabled = previous
-            if previous_id and previous_id != chargebox_id:
+            previous_id, previous_pw, previous_enabled = previous
+            password_changed = previous_id == chargebox_id and previous_pw != chargebox_pw
+            if previous_id and (previous_id != chargebox_id or password_changed):
                 self.disconnect(previous_id)
 
             if (
                 chargebox_id
                 and not enabled
                 and (previous_enabled or previous_id != chargebox_id)
+                and not password_changed
             ):
                 self.disconnect(chargebox_id)
 
-        self._chargepoint_lifecycle[chargepoint_num] = (chargebox_id, enabled)
+        self._chargepoint_lifecycle[chargepoint_num] = (chargebox_id, chargebox_pw, enabled)
 
     async def _initialize_connection(
         self,
