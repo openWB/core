@@ -44,7 +44,7 @@ class LegacySmartHomeLogData:
         self.all_received_topics.update({msg.topic: msg.payload})
 
 
-def create_entry(sh_log_data: LegacySmartHomeLogData, previous_entry: Optional[Dict]) -> Dict:
+def create_entry(sh_log_data: Optional[LegacySmartHomeLogData], previous_entry: Optional[Dict]) -> Dict:
     date = timecheck.create_timestamp_HH_MM()
     current_timestamp = int(timecheck.create_timestamp())
 
@@ -196,7 +196,7 @@ def create_entry(sh_log_data: LegacySmartHomeLogData, previous_entry: Optional[D
         "pv": pv_dict,
         "bat": bat_dict,
         "consumer": consumer_dict,
-        "sh": sh_log_data.sh_dict,
+        "sh": sh_log_data.sh_dict if sh_log_data is not None else {},
         "hc": hc_dict
     }
 

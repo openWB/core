@@ -9,12 +9,26 @@ from control.chargelog import chargelog
 from control.chargelog.chargelog import calc_energy_costs
 from control.chargepoint.chargepoint import Chargepoint
 from control.general import Prices
+from helpermodules.measurement_logging import process_log_entry_builder
 
 
 @pytest.fixture()
 def mock_data() -> None:
     data.data_init(Mock())
     data.data.optional_data.et_module = None
+
+
+@pytest.mark.parametrize("sh_values", [{}, {"sh1": {"imported": 1200, "exported": 0, "temp0": 21}}])
+def test_create_entry_optional_smarthome(mock_data, sh_values):
+    sh_log_data = Mock(sh_dict=sh_values) if sh_values else None
+
+    with patch.object(process_log_entry_builder, "BrokerClient") as broker_client:
+        entry = process_log_entry_builder.create_entry(sh_log_data, None)
+
+    assert entry["sh"] == sh_values
+    assert "cp" in entry
+    assert "prices" in entry
+    broker_client.assert_not_called()
 
 
 def mock_daily_log(monkeypatch):
@@ -99,11 +113,15 @@ def test_calc_charge_cost_reference_end(mock_data, monkeypatch):
     current_entry["cp"]["cp4"]["imported"] = 4100
     current_entry["pv"]["all"]["exported"] = 3000
     current_entry["pv"]["pv1"]["exported"] = 3000
-    monkeypatch.setattr(chargelog, "create_entry", Mock(return_value=current_entry))
+    create_entry_mock = Mock(return_value=current_entry)
+    monkeypatch.setattr(chargelog, "create_entry", create_entry_mock)
 
-    with patch("builtins.open", mock_open(read_data=json.dumps(daily_log))):
+    with patch("builtins.open", mock_open(read_data=json.dumps(daily_log))), \
+            patch.object(process_log_entry_builder, "BrokerClient") as broker_client:
         calc_energy_costs(cp, True)
 
+    create_entry_mock.assert_called_once_with(None, daily_log["entries"][-1])
+    broker_client.assert_not_called()
     assert cp.data.set.log.charged_energy_by_source == {'bat': 699.57, 'cp': 0.0, 'grid': 1300.14, 'pv': 400.29}
     assert round(cp.data.set.log.costs, 5) == 0.025
 

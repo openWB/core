@@ -155,6 +155,9 @@ def test_save_log_keeps_existing_names_and_colors_when_writing_new_entry(monkeyp
     write_log.save_log()
 
     # evaluation
+    write_log.LegacySmartHomeLogData.assert_called_once_with()
+    write_log.create_entry.assert_called_once_with(
+        write_log.LegacySmartHomeLogData.return_value, existing_content["entries"][-1])
     written_content = write_and_check_mock.call_args.args[1]
     assert written_content["names"] == {
         "cp1": "Bestehender Ladepunkt",
