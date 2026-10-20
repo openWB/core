@@ -5,7 +5,7 @@ import json
 import logging
 import threading
 from types import SimpleNamespace
-from unittest.mock import AsyncMock, Mock, call
+from unittest.mock import ANY, AsyncMock, Mock, call
 import pytest
 
 from control import data
@@ -1036,6 +1036,7 @@ def test_offline_stop_is_persisted(monkeypatch):
         "id_tag": "TAG",
         "imported": 1234,
         "reason": "EVDisconnected",
+        "timestamp": ANY,
     }]
 
 
@@ -1082,6 +1083,7 @@ def test_persisted_stop_is_sent_once(monkeypatch):
         transaction_id=42,
         reason="EVDisconnected",
         id_tag="TAG",
+        timestamp=ANY,
     )
     assert openwb_cp.data.get.ocpp.pending_transactions == []
     assert cp.transaction_id is None
