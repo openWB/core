@@ -1182,7 +1182,9 @@ def test_handle_reset_aborts_when_transaction_cannot_be_stopped(monkeypatch, moc
     mock_pub.pub.assert_not_called()
 
 
-def test_meter_loop_skips_snapshot_for_stale_transaction(monkeypatch):
+@pytest.mark.parametrize("transaction_state", list(ocpp_transaction_coordinator.TransactionState))
+@pytest.mark.parametrize("snapshot_id", [123, 999])
+def test_meter_loop_only_sends_for_active_matching_transaction(monkeypatch, transaction_state, snapshot_id):
     chargepoint = SimpleNamespace(
         openwb_cp=SimpleNamespace(data=SimpleNamespace(get=SimpleNamespace(ocpp=SimpleNamespace(
             config=SimpleNamespace(MeterValueSampleInterval={"value": "1"}),
@@ -1196,9 +1198,12 @@ def test_meter_loop_skips_snapshot_for_stale_transaction(monkeypatch):
         cp=chargepoint,
     )
     client = object.__new__(OcppClient)
-    client.transactions = SimpleNamespace(get_transaction_id=Mock(return_value=123))
+    client.transactions = SimpleNamespace(
+        get_transaction_id=Mock(return_value=123),
+        get_state=Mock(return_value=transaction_state),
+    )
     client._meter_snapshots = {
-        "box-1": SimpleNamespace(transaction_id=999, connector_id=1, imported=9876),
+        "box-1": SimpleNamespace(transaction_id=snapshot_id, connector_id=1, imported=9876),
     }
     sleep_calls = 0
 
@@ -1212,8 +1217,15 @@ def test_meter_loop_skips_snapshot_for_stale_transaction(monkeypatch):
 
     asyncio.run(client._meter_loop(connection))
 
-    client.transactions.get_transaction_id.assert_called_once_with("box-1")
-    chargepoint._meter_values.assert_not_awaited()
+    client.transactions.get_state.assert_called_once_with("box-1")
+    if transaction_state == ocpp_transaction_coordinator.TransactionState.ACTIVE:
+        client.transactions.get_transaction_id.assert_called_once_with("box-1")
+    else:
+        client.transactions.get_transaction_id.assert_not_called()
+    if transaction_state == ocpp_transaction_coordinator.TransactionState.ACTIVE and snapshot_id == 123:
+        chargepoint._meter_values.assert_awaited_once()
+    else:
+        chargepoint._meter_values.assert_not_awaited()
 
 
 def test_heartbeat_loop_closes_connection_after_heartbeat_error(monkeypatch):
