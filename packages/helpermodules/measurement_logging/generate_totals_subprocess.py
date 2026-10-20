@@ -1,5 +1,6 @@
 import fcntl
 import json
+import os
 from pathlib import Path
 from datetime import date
 
@@ -86,7 +87,18 @@ def generate_totals():
             log.exception("generate_totals_subprocess läuft bereits. "
                           "Der zweite Prozess wird beendet.")
             return
-        _generate_totals()
+        try:
+            current_lock_stat = LOCK_FILE.stat()
+        except FileNotFoundError:
+            return
+        # Ein anderer Prozess kann die bereits geöffnete Lock-Datei inzwischen gelöscht und neu angelegt haben.
+        # Unsere Sperre gilt dann nur für die alte Datei. Abbrechen, damit nicht zwei Prozesse gleichzeitig rechnen.
+        if not os.path.samestat(current_lock_stat, os.fstat(lock_file.fileno())):
+            return
+        try:
+            _generate_totals()
+        finally:
+            LOCK_FILE.unlink(missing_ok=True)
 
 
 if __name__ == "__main__":

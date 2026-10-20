@@ -23,7 +23,6 @@ data/backup/*.tar.gz
 data/backup/*.openwb-backup*
 data/restore/*.tar.gz
 data/data_migration/*.tar.gz
-data/generate_totals.lock
 ramdisk/*
 web/lastcommit
 !.gitignore 
