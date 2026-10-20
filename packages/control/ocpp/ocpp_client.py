@@ -19,7 +19,7 @@ from control.ocpp.helper import _get_formatted_time, get_cp_from_chargebox_id, _
 
 from control.ocpp.ocpp_chargepoint import OcppChargePoint, get_ocpp_error_code
 from control.ocpp.ocpp_connection import OcppConnection, RegistrationState
-from control.ocpp.ocpp_transaction_coordinator import TransactionCoordinator
+from control.ocpp.ocpp_transaction_coordinator import TransactionCoordinator, TransactionState
 from control.ocpp.ocpp_connection_manager import OcppConnectionManager
 
 log = logging.getLogger(__name__)
@@ -522,6 +522,9 @@ class OcppClient:
                     break
                 if not connection.boot_accepted:
                     break
+                # Meter Values nur senden, wenn auch eine aktive Transaktion läuft
+                if self.transactions.get_state(chargebox_id) != TransactionState.ACTIVE:
+                    continue
 
                 transaction_id = self.transactions.get_transaction_id(chargebox_id)
 
