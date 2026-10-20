@@ -27,3 +27,7 @@ asyncio==3.4.3
 passlib==1.7.4
 pysolarmanv5==3.0.6
 packaging==24.2
+pye3dc==0.9.3
+py3rijndael==0.3.3
+tzlocal==5.3.1
+websocket-client==1.9.0
