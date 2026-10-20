@@ -4,6 +4,7 @@ from dataclasses import asdict
 from threading import Event
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, call
+from unittest.mock import ANY, AsyncMock, call
 
 import pytest
 import websockets
@@ -268,7 +269,7 @@ def test_stop_during_start_is_not_lost(transaction_setup, waiting_for):
         connection.cp._stop_transaction.assert_not_awaited()
     else:
         connection.cp._stop_transaction.assert_awaited_once_with(
-            meter_stop=150, transaction_id=42, reason="EVDisconnected", id_tag="TAG",
+            meter_stop=150, transaction_id=42, reason="EVDisconnected", id_tag="TAG", timestamp=ANY,
         )
         assert coordinator.get_state("box-1") == TransactionState.IDLE
         assert openwb_cp.data.get.ocpp.transaction_id is None
@@ -294,7 +295,7 @@ def test_rfid_stop_authorizes_before_stopping(transaction_setup):
 
     connection.cp._authorize.assert_awaited_once_with(id_tag="STOP_TAG")
     connection.cp._stop_transaction.assert_awaited_once_with(
-        meter_stop=150, transaction_id=42, reason="Local", id_tag="STOP_TAG",
+        meter_stop=150, transaction_id=42, reason="Local", id_tag="STOP_TAG", timestamp=ANY,
     )
     assert coordinator.get_state("box-1") == TransactionState.IDLE
 
@@ -388,6 +389,7 @@ def test_automatic_stop_during_rfid_auth_does_not_stop_again(transaction_setup, 
 
     connection.cp._stop_transaction.assert_awaited_once_with(
         meter_stop=160, transaction_id=42, reason="EVDisconnected", id_tag="START_TAG",
+        timestamp=ANY,
     )
     assert coordinator.get_transaction_id("box-1") == (43 if restart else None)
 
@@ -481,7 +483,7 @@ def test_missing_stop_confirmation_preserves_pending_stop(transaction_setup):
     assert coordinator.get_transaction_id("box-1") == 42
     assert openwb_cp.data.get.ocpp.pending_transactions == [{
         "action": "stop", "transaction_id": 42, "id_tag": "TAG",
-        "imported": 150, "reason": "EVDisconnected",
+        "imported": 150, "reason": "EVDisconnected", "timestamp": ANY,
     }]
 
 
@@ -501,7 +503,7 @@ def test_failed_stop_keeps_internal_transaction_id_and_releases_local_state(tran
     assert openwb_cp.data.get.ocpp.tag_accepted is False
     assert openwb_cp.data.get.ocpp.pending_transactions == [{
         "action": "stop", "transaction_id": 42, "id_tag": "TAG",
-        "imported": 150, "reason": "EVDisconnected",
+        "imported": 150, "reason": "EVDisconnected", "timestamp": ANY,
     }]
 
 
@@ -514,7 +516,7 @@ def test_offline_stop_is_replayed_once_after_reconnect(transaction_setup, mock_p
         assert await coordinator.stop("box-1", 150, "", "EVDisconnected") is False
         assert openwb_cp.data.get.ocpp.pending_transactions == [{
             "action": "stop", "transaction_id": 42, "id_tag": "TAG",
-            "imported": 150, "reason": "EVDisconnected",
+            "imported": 150, "reason": "EVDisconnected", "timestamp": ANY,
         }]
         connection.cp._authorize.reset_mock()
         connection.cp._authorize.side_effect = RuntimeError("must not authorize replay")
@@ -531,6 +533,7 @@ def test_offline_stop_is_replayed_once_after_reconnect(transaction_setup, mock_p
     connection.cp._authorize.assert_not_awaited()
     connection.cp._stop_transaction.assert_awaited_once_with(
         meter_stop=150, transaction_id=42, reason="EVDisconnected", id_tag="TAG",
+        timestamp=ANY,
     )
     assert openwb_cp.data.get.ocpp.pending_transactions == []
     assert coordinator.get_state("box-1") == TransactionState.IDLE
