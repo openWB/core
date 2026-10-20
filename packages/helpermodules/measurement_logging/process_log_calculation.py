@@ -197,10 +197,11 @@ def analyse_percentage(entry) -> Tuple[Dict, str]:
                 return counter
         else:
             raise KeyError(f"Kein Zähler für das Netz gefunden in Eintrag '{entry['timestamp']}'.")
+
     try:
         message = ""
-        grid_counter = get_grid_counter(entry)
         # Wenn neben dem "all" Eintrag kein weiterer Eintrag existiert, dann gibt es keine Komponenten.
+        grid_counter = get_grid_counter(entry)
         if ((safe_get_nested(entry, "bat", "all", "fault_state") == 2 and len(entry.get("bat", {})) > 1) or
                 (safe_get_nested(entry, "cp", "all", "fault_state") == 2 and len(entry.get("cp", {})) > 1) or
                 (safe_get_nested(entry, "pv", "all", "fault_state") == 2 and len(entry.get("pv", {})) > 1) or
