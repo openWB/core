@@ -1,41 +1,43 @@
+VW EU Data Act
+==============
 
-Das ist ein Startpunkt und wird noch Verbesserungen und Korrekturen benötigen.
-Dazu werden Rückmeldungen aus der Community benötigt.
-
-Dazu wird im SoC-Log einiges an Ausgaben auf Level Info ausgegeben.
-In einigen Fällen könnte es auch nötig sein, Level Debug/Details einzustellen.
-
-Die Daten im eu-data-act Portal sind bei meinem Fahrzeug mittlerweile einigermaßen aktuell.
-Wenn das Fahrzeug gefahren oder geladen wurde ca. 2 Stunden.
-
-Vor Nutzung muss die kontinuierliche Abfrage (alle Daten, 15-min) im Portal angestoßen werden.
+Vor Nutzung muss die kontinuierliche Abfrage im Portal angestoßen werden:
 https://eu-data-act.drivesomethinggreater.com/de/de/eu-data-act.html
-Benutzerdefinierte  Daten abrufen - All Data - 15 min
-Es kann dann mehrere Stunden dauern, bis erste nicht-leere Datenpakete ankommen.
+Benutzerdefinierte Daten abrufen - All Data - 15 min.
+Es kann mehrere Stunden dauern, bis erste nicht-leere Datenpakete ankommen.
+Die Fahrzeugdaten können auch danach deutlich verzögert eintreffen.
 
-Das Modul startet je konfiguriertem Fahrzeug einen parallelen Prozess um das Portal zu pollen.
-Der Thread prüft im Minutentakt auf Bereitschaft des Portals und lädt dann die neueste zip-Datei herunter.
-Die 5 letzten in den zip's enthaltenen json-Dateien werden in ramdisk/vweuda gespeichert zu evtl. Analyse.
+Das Modul fragt das Portal synchron über den normalen openWB-SoC-Scheduler ab.
+Empfehlung: die Abfrageintervalle während und außerhalb des Ladens auf 600 Sekunden
+setzen. Bei Abruffehlern fordert das Modul über den Intervall-Callback höchstens
+60 Sekunden bis zum nächsten Versuch an, unabhängig vom Drei-Fehler-Zähler.
+Nach erfolgreichem Abruf gelten wieder die konfigurierten Intervalle.
+Manuelle und reguläre frühere Abfragen bleiben möglich; die Einstellung für
+Abfragen nur bei eingestecktem Fahrzeug gilt auch für Wiederholungen.
+Ein aktiver Retry ruft die API auch bei aktivierter SoC-Berechnung auf.
+Ohne Retry gelten die normalen Regeln für berechneten SoC/SoC vom Ladepunkt.
+Es gibt keinen dauerhaften Polling-Thread. Jede Abfrage schließt ihre HTTP-Session.
 
-Aus der json wird versucht, folgende Daten zu extrahieren: soc, range, soc_timestamp, odometer.
-soc scheint immer vorhanden zu sein. 
-Range habe ich noch nie bekommen. 
-Als soc_timestamp nehme ich das maximum aller car_captured_time Felder.
-odometer kommt mal und mal nicht.
+Alle noch nicht verarbeiteten Datenpakete werden von alt nach neu ausgewertet.
+Fehlende, ungültige oder ältere SoC-Werte überschreiben keinen gültigen Stand.
+Fehlende Reichweite und Kilometerstand bleiben aus dem letzten gültigen Stand
+erhalten; der Kilometerstand wird nicht zurückgesetzt. Numerische Nullwerte gelten.
+Der Zeitstempel stammt vorrangig aus dem Caddy-SoC-Feld timestampUtc, sonst aus
+dem Maximum aller car_captured_time-Werte, ersatzweise aus timestamp (PR #4127).
+Wenn keine Reichweite bekannt ist, wird sie aus SoC, Kapazität und Verbrauch berechnet.
 
-Diese Daten werden je VIN für die Abfrage durch die openwb bereitgestellt.
+Cache, verarbeitete Datensätze und Retry-Flag bleiben ausschließlich im Arbeitsspeicher
+des Fahrzeugmoduls. Es werden weder persistente Zustandsdateien noch Rohdaten in der
+Ramdisk gespeichert oder eingelesen. Nach einem Prozessneustart oder einer Neuerstellung
+des Moduls muss der Cache durch einen erfolgreichen Portalabruf neu gefüllt werden.
+Bei Portalausfall wird der Cache mit ursprünglichem Zeitstempel und Warnung
+zurückgegeben. Ohne gültigen Cache wird ein Fehler gemeldet, kein künstlicher 0%-Wert.
+In beiden Fällen wird nach höchstens einer Minute erneut versucht.
 
-Der jeweils letzte Stand, der an die openwb gemeldet wird, wird auch persistent gehalten.
-Dieser Stand wird bei jeder Abfrage der openwb mit den letzten aus den Portal gelieferten Daten ergänzt.
-Damit wird ein Feld nicht ungültig, wenn es vom Portal nicht gemeldet wurde.
-Wenn die Reichweite/range leer ist, wird diese aus Batterie-Kapazität, SoC und Durchschnittsverbrauch berechnet.
+Code-Aufbau:
+    api.py           Login, Wiederanmeldung und HTTP-/ZIP-Abrufe
+    vehicle_data.py  Feldzuordnung, Zeitstempel und Datenauswertung
+    libeuda.py       Synchroner Abruf und In-Memory-Cache
+    soc.py           Einbindung und gemeinsamer Zustand der Scheduler-Callbacks
 
-Solange keine Daten vom Portal kommen werden entsprechende Meldungen im soc-log ausgegeben.
-
-Die Konfiguration des Moduls ist gleichgeblieben.
-
-Nach dem ersten Start ist es normal, daß erst mal keine Daten vorhanden sind.
-Auch wenn das Portal schon nicht-leere Datenpakete liefert, kann es mehrere Abfrage-Intervalle dauern, bis erste Ergebnisse in openWB ankommen.
-
-Quellen:
-     https://github.com/mikrohard/hass-vw-eu-data-act
+Quelle: https://github.com/mikrohard/hass-vw-eu-data-act
