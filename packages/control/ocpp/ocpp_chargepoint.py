@@ -136,7 +136,7 @@ class OcppChargePoint(cp):
                                 reason: str,
                                 transaction_id: int,
                                 id_tag: str,
-                                meter_stop: int) -> Optional[object]:
+                                meter_stop: int, timestamp: str) -> Optional[object]:
 
         print(f"# STOP_TRANSACTION        CP_Nr: {self.openwb_num}  OCPP_Nr: {self.chargebox_id}")
         log.debug(f"Stop Transaction for CP {self.openwb_num} OCPP_Nr: {self.chargebox_id}")
@@ -145,7 +145,7 @@ class OcppChargePoint(cp):
             transaction_id=transaction_id,
             reason=reason,
             id_tag=id_tag if id_tag else "",
-            timestamp=_get_formatted_time(),
+            timestamp=timestamp,
         )
         response: call_result.StopTransaction = await self.call(request)
         print(f"# StopTransaction response: {response}")

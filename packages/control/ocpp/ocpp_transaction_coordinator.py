@@ -6,7 +6,7 @@ from typing import Awaitable, Callable, Optional
 
 from helpermodules.pub import Pub
 
-from control.ocpp.helper import get_cp_from_chargebox_id, _get_config
+from control.ocpp.helper import get_cp_from_chargebox_id, _get_config, _get_formatted_time
 
 from control.ocpp.ocpp_connection import OcppConnection
 
@@ -40,6 +40,7 @@ class PendingStop:
     meter_stop: int
     id_tag: str
     reason: str
+    timestamp: str
 
 
 @dataclass
@@ -441,6 +442,7 @@ class TransactionCoordinator:
                 or ""
             ),
             reason=reason,
+            timestamp=_get_formatted_time()
         )
 
         #
@@ -657,6 +659,7 @@ class TransactionCoordinator:
         meter_stop = entry.get("imported")
         id_tag = entry.get("id_tag", "")
         reason = entry.get("reason", "EVDisconnected")
+        timestamp = entry.get("timestamp")
 
         valid = (
             action == "stop"
@@ -669,6 +672,8 @@ class TransactionCoordinator:
             and isinstance(id_tag, str)
             and isinstance(reason, str)
             and bool(reason)
+            and isinstance(timestamp, str)
+            and bool(timestamp)
         )
         if not valid:
             log.error(
@@ -697,6 +702,7 @@ class TransactionCoordinator:
             meter_stop=meter_stop,
             id_tag=id_tag,
             reason=reason,
+            timestamp=timestamp,
         )
 
         successful = await self._stop_active(
@@ -992,6 +998,7 @@ class TransactionCoordinator:
                 transaction_id=transaction_id,
                 reason=request.reason,
                 id_tag=request.id_tag,
+                timestamp=request.timestamp,
             )
             # Die Response muss vorhanden sein,
             # bevor die Transaktion freigegeben wird.
@@ -1068,6 +1075,7 @@ class TransactionCoordinator:
                 "id_tag": str(request.id_tag),
                 "imported": int(request.meter_stop),
                 "reason": str(request.reason),
+                "timestamp": str(request.timestamp),
             }
         ]
 
