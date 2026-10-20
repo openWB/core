@@ -81,7 +81,7 @@
 	"anonymousGroup": "anonymous",
 	"roles": [
 		{
-			"rolename": "openwb-version:12",
+			"rolename": "openwb-version:13",
 			"textname": "openWB Versionsnummer",
 			"textdescription": "Diese Rolle ist ein Platzhalter für die openWB Versionsnummer und wird automatisch aktualisiert. Sie hat keine direkten Berechtigungen.",
 			"acls": []
@@ -1425,6 +1425,43 @@
 				{
 					"acltype": "publishClientReceive",
 					"topic": "openWB/optional/ep/grid_fee/provider",
+					"priority": 0,
+					"allow": true
+				}
+			]
+		},
+		{
+			"rolename": "forecast-configuration-access",
+			"textname": "Zugang zu der PV-Prognose",
+			"textdescription": "Erlaubt den Zugang zu der PV-Prognose.",
+			"acls": [
+				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/optional/forecast/get/force_update",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/optional/forecast/provider",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/optional/forecast/#",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/system/configurable/forecasts",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/system/security/access/ForecastConfiguration",
 					"priority": 0,
 					"allow": true
 				}
