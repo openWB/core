@@ -4,6 +4,9 @@ RESTORE_DIR="$OPENWB_BASE_DIR/data/restore"
 SOURCE_FILE="$RESTORE_DIR/restore.tar.gz"
 WORKING_DIR="/home/openwb/openwb_restore"
 LOG_FILE="$OPENWB_BASE_DIR/data/log/restore.log"
+GIT_REMOTE="origin"
+
+source "$OPENWB_BASE_DIR/runs/update_version_helpers.sh" || exit 1
 
 declare resultMessage
 declare resultStatus
@@ -12,6 +15,11 @@ declare resultStatus
 	echo "$(date +"%Y-%m-%d %H:%M:%S") Preparation of restore started..."
 	echo "****************************************"
 	echo "Step 1: creating working directory \"$WORKING_DIR\""
+	echo "Step 1.1: ensure working directory is empty"
+	if [[ -d "$WORKING_DIR" ]]; then
+		echo "Removing existing working directory"
+		sudo rm -rf "$WORKING_DIR"
+	fi
 	mkdir -p "$WORKING_DIR"
 	echo "****************************************"
 	echo "Step 2: extract archive to working directory"
@@ -54,17 +62,33 @@ declare resultStatus
 			else
 				echo "****************************************"
 				echo "Step 4: sync with git"
-				GIT_REMOTE="origin"
 				BRANCH=$(<"$WORKING_DIR/GIT_BRANCH")
-				# TAG=$(<"$WORKING_DIR/GIT_HASH")
+				HASH=$(<"$WORKING_DIR/GIT_HASH")
+				UPDATE_BRANCH=""
+				if [[ -f "$WORKING_DIR/GIT_UPDATE_BRANCH" ]]; then
+					UPDATE_BRANCH=$(<"$WORKING_DIR/GIT_UPDATE_BRANCH")
+				fi
+				metadataStatus=0
+				validateRestoreGitMetadata "$BRANCH" "$UPDATE_BRANCH" || metadataStatus=$?
 				echo "Step 4.1: fetch info from git"
-				if ! git -C "$OPENWB_BASE_DIR" fetch -v "$GIT_REMOTE"; then
+				if [[ $metadataStatus -eq 1 ]]; then
+					echo "invalid logical update branch '$UPDATE_BRANCH'"
+					resultMessage="Der logische Update-Zweig des Archivs ist ungültig."
+					resultStatus=1
+				elif [[ $metadataStatus -eq 2 ]]; then
+					echo "logical update branch requires detached HEAD"
+					resultMessage="Das Archiv enthält widersprüchliche Git-Zweige."
+					resultStatus=1
+				elif ! fetchVersionRefs "$OPENWB_BASE_DIR" "$GIT_REMOTE"; then
 					resultMessage="Beim Abgleich mit dem openWB Git ist ein Fehler aufgetreten!"
 					resultStatus=1
 				else
-					echo "Step 4.2: verify branch \"$BRANCH\" from archive"
-					if ! git -C "$OPENWB_BASE_DIR" branch | grep "$BRANCH"; then
-						resultMessage="Der Entwicklungszweig \"$BRANCH\" des Archivs ist ungültig."
+					echo "Step 4.2: verify git state from archive"
+					if ! git -C "$OPENWB_BASE_DIR" rev-parse --verify --quiet "$HASH^{commit}" >/dev/null; then
+						resultMessage="Der Git-Stand \"$HASH\" des Archivs ist ungültig."
+						resultStatus=1
+					elif [[ -n $BRANCH ]] && ! remoteBranchExists "$OPENWB_BASE_DIR" "$GIT_REMOTE" "$BRANCH"; then
+						resultMessage="Der Entwicklungszweig \"$GIT_REMOTE/$BRANCH\" des Archivs ist ungültig."
 						resultStatus=1
 					else
 						echo "Step 4.3: clean mosquitto configuration, will be recreated on next boot"

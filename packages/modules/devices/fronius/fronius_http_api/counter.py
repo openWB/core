@@ -70,8 +70,12 @@ class FroniusCounter(AbstractCounter):
             if meter.location in (MeterLocation.external, MeterLocation.subload):
                 power *= -1
 
-        currents = [powers[i] / meter.voltages[i] for i in range(0, 3)]
-
+        currents = [
+            powers[i] / meter.voltages[i]
+            if powers[i] is not None and meter.voltages[i] not in (None, 0)
+            else 0
+            for i in range(3)
+        ]
         counter_state = CounterState(
             voltages=meter.voltages,
             currents=currents,

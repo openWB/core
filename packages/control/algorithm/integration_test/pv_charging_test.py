@@ -25,14 +25,15 @@ def all_cp_pv_charging_3p():
         control_parameter.chargemode = Chargemode.PV_CHARGING
         control_parameter.submode = Chargemode.PV_CHARGING
         control_parameter.phases = 3
-    control_parameter = data.data.consumer_data["consumer7"].data.control_parameter
-    control_parameter.min_current = 0.5
-    control_parameter.required_current = 0.5
-    control_parameter.required_currents = [0.5, 0, 0]
-    control_parameter.phases = 1
-    control_parameter.chargemode = Chargemode.PV_CHARGING
-    control_parameter.submode = Chargemode.PV_CHARGING
-    control_parameter.state = ChargepointState.CHARGING_ALLOWED
+    consumer = data.data.consumer_data["consumer7"]
+    consumer.data.control_parameter.min_current = 0.5
+    consumer.data.control_parameter.required_current = 0.5
+    consumer.data.control_parameter.required_currents = [0.5, 0, 0]
+    consumer.data.control_parameter.phases = 1
+    consumer.data.control_parameter.chargemode = Chargemode.PV_CHARGING
+    consumer.data.control_parameter.submode = Chargemode.PV_CHARGING
+    consumer.data.control_parameter.state = ChargepointState.CHARGING_ALLOWED
+    consumer.data.set.switch_interval_elapsed = True
 
 
 @pytest.fixture()

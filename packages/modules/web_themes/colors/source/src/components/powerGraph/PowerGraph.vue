@@ -2,6 +2,11 @@
 	<WBWidget :full-width="true">
 		<template #title>
 			{{ heading }}
+			<span
+				v-if="graphData.errors.length > 0"
+				@click="showErrors = !showErrors"
+				class="fa-solid fa-triangle-exclamation ms-2"
+			/>
 		</template>
 		<template #buttons>
 			<div class="d-flex justify-content-end">
@@ -28,7 +33,12 @@
 				</span>
 			</div>
 		</template>
-
+		<div v-if="showErrors" class="errormessage d-flex flex-column mt-2 mb-2">
+			{{ graphData.errors[0] }}
+			<span class="morebutton" @click="showErrorModal"
+				>({{ graphData.errors.length - 1 }} weitere Fehlermeldungen)
+			</span>
+		</div>
 		<figure
 			v-show="graphData.data.length > 0"
 			id="powergraphFigure"
@@ -129,7 +139,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import WBWidget from '../shared/WBWidget.vue'
 import PgSourceGraph from './PgSourceGraph.vue'
 import PgUsageGraph from './PgUsageGraph.vue'
@@ -147,7 +157,6 @@ import {
 	margin,
 	mytransform,
 } from './model'
-import { onMounted } from 'vue'
 import { zoom, type D3ZoomEvent, type Selection, select } from 'd3'
 import { globalConfig, widescreen } from '@/assets/js/themeConfig'
 import { topVehicles, vehicles } from '../chargePointList/model'
@@ -169,6 +178,7 @@ const heading = computed(() => {
 			return 'Verlauf'
 	}
 })
+const showErrors = ref(false)
 /**
  * Changes the stack order for usage graph visualization
  * Cycles through available stack orders (0 to stackOrderMax)
@@ -236,6 +246,9 @@ function zoomGraph() {
 function zoomIcon() {
 	return globalConfig.zoomGraph ? 'fa-minimize' : 'fa-maximize'
 }
+function showErrorModal() {
+	//	globalConfig.showErrorModal = true
+}
 onMounted(() => {
 	const svg = select<Element, unknown>('svg#powergraph')
 	setZoom(svg)
@@ -243,6 +256,13 @@ onMounted(() => {
 </script>
 
 <style scoped>
+.errormessage {
+	background-color: var(--color-battery);
+	color: black;
+	padding: 0.5rem;
+	border-radius: 0.25rem;
+	font-size: 0.9rem;
+}
 .fa-maximize {
 	color: var(--color-menu);
 }
@@ -251,5 +271,8 @@ onMounted(() => {
 }
 .fa-sort {
 	color: var(--color-menu);
+}
+.fa-triangle-exclamation {
+	color: var(--color-battery);
 }
 </style>

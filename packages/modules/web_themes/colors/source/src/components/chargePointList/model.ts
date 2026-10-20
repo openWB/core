@@ -25,7 +25,7 @@ export class ChargePoint implements PowerItem {
 	private _isLocked = false
 	private _connectedVehicle = 0
 	chargeTemplate: ChargeTemplate | null = null
-	evTemplate = 0
+	_evTemplate = 0
 	private _chargeMode = ChargeMode.pv_charging
 	private _hasPriority = false
 	currentPlan = ''
@@ -369,6 +369,14 @@ export class ChargePoint implements PowerItem {
 	get priority() {
 		return vehicles[this.connectedVehicle]?.priority ?? 0
 	}
+	get evTemplate() {
+		// get this from teh connected vehicle, if any
+		if (vehicles[this.connectedVehicle]) {
+			return vehicles[this.connectedVehicle].evTemplateId
+		} else {
+			return 0
+		}
+	}
 }
 export class Vehicle {
 	id: number
@@ -570,7 +578,7 @@ export function resetChargePoints() {
 
 export const topVehicles = computed(() => {
 	let result: number[] = []
-	const connectedVehicles = Object.values(chargePoints)
+	const connectedVehiclesWithSoc = Object.values(chargePoints)
 		.filter(
 			(cp) =>
 				vehicles[cp.connectedVehicle] &&
@@ -578,14 +586,20 @@ export const topVehicles = computed(() => {
 		)
 		.map((cp) => cp.connectedVehicle)
 	const otherVehicles = Object.values(vehicles).filter(
-		(v) => v.visible && v.isSocConfigured && !connectedVehicles.includes(v.id),
-	) // only show vehicles with configured soc and that are visible
-	result = connectedVehicles.concat(otherVehicles.map((v) => v.id)).slice(0, 2)
-	if (result.length == 0) {
+		(v) =>
+			v.visible &&
+			v.isSocConfigured &&
+			!connectedVehiclesWithSoc.includes(v.id),
+	)
+	result = connectedVehiclesWithSoc
+		.concat(otherVehicles.map((v) => v.id))
+		.slice(0, 4)
+	/*if (result.length == 0) {
 		result = [-1, -1]
-	} else if (result.length == 1) {
+	} */ /*else if (result.length == 1) {
 		result.push(-1)
-	}
+	}*/
+	console.log(result)
 	return result
 })
 export const chargeLimitModes = [

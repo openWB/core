@@ -65,6 +65,9 @@ export class Consumer implements PowerItem {
 	showInList = true
 	priority = 0
 	usage: ConsumerUsage | null = null
+	statusText = ''
+	faultState = 0
+	faultText = ''
 	now: EnergyData = {
 		energy: 0,
 		energyPv: 0,
@@ -110,14 +113,12 @@ export class Consumer implements PowerItem {
 export const consumers = reactive(new Map<number, Consumer>())
 
 export function addConsumer(index: number, showInList = true) {
-	const consumerColorCount = 5
+	const consumerColorCount = 9
 	if (!consumers.has(index)) {
 		consumers.set(index, new Consumer(index, showInList))
 		const dev = consumers.get(index)!
 		dev.color =
-			'var(--color-consumer' +
-			(((consumers.size - 1) % consumerColorCount) + 1) +
-			')'
+			'var(--color-sh' + (((consumers.size - 1) % consumerColorCount) + 1) + ')'
 		// console.log('Added consumer with index ' + index + ' and color ' + dev.color)
 	} else {
 		console.warn('Consumer with index ' + index + ' already exists.')

@@ -5,6 +5,9 @@
 			Verbraucher
 		</template>
 		<template #buttons>
+			<WbBadge bgcolor="var(--color-consumers)"
+				><FormatWatt :watt="registry.getItem('consumers')?.power" />
+			</WbBadge>
 			<span
 				type="button"
 				class="ms-2 ps-1 pt-1"
@@ -33,11 +36,14 @@
 </template>
 
 <script setup lang="ts">
+import { ref } from 'vue'
 import { type Consumer, consumers } from './model.ts'
+import { registry } from '@/assets/js/model.ts'
 import WbWidgetFlex from '@/components/shared/WbWidgetFlex.vue'
 import ConsumerDevice from './ConsumerDevice.vue'
 import ConsumerSettings from './ConsumerSettings.vue'
-import { ref } from 'vue'
+import WbBadge from '../shared/WbBadge.vue'
+import FormatWatt from '../shared/FormatWatt.vue'
 
 const configmode = ref(false)
 </script>

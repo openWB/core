@@ -132,7 +132,7 @@ class Consumer(Load):
             return (0, message, self.data.control_parameter.chargemode, Chargemode.STOP)
         if self.data.set.switch_interval_elapsed is False:
             log.debug("Intervall für neuen Schaltbefehl nicht abgelaufen.")
-            return (0,
+            return (max(self.data.get.currents),
                     None,
                     self.data.control_parameter.chargemode,
                     self.data.control_parameter.submode)

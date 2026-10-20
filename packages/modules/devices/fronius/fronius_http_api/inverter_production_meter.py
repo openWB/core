@@ -50,7 +50,12 @@ class FroniusProductionMeter(AbstractInverter):
         # Dokumentation (4.8.6/4.8.7) positive Werte für Erzeugung -- openWBs Konvention ist umgekehrt
         # (negativ = Erzeugung, siehe inverter.py), daher wird hier immer invertiert.
         power = meter.power_sum * -1
-        currents = [meter.powers[i] / meter.voltages[i] for i in range(0, 3)]
+        currents = [
+            meter.powers[i] / meter.voltages[i]
+            if meter.powers[i] is not None and meter.voltages[i] not in (None, 0)
+            else 0
+            for i in range(3)
+        ]
 
         self.peak_filter.check_values(power)
         _, exported = self.sim_counter.sim_count(power)

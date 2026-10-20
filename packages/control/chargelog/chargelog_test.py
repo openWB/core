@@ -9,12 +9,26 @@ from control.chargelog import chargelog
 from control.chargelog.chargelog import calc_energy_costs
 from control.chargepoint.chargepoint import Chargepoint
 from control.general import Prices
+from helpermodules.measurement_logging import process_log_entry_builder
 
 
 @pytest.fixture()
 def mock_data() -> None:
     data.data_init(Mock())
     data.data.optional_data.et_module = None
+
+
+@pytest.mark.parametrize("sh_values", [{}, {"sh1": {"imported": 1200, "exported": 0, "temp0": 21}}])
+def test_create_entry_optional_smarthome(mock_data, sh_values):
+    sh_log_data = Mock(sh_dict=sh_values) if sh_values else None
+
+    with patch.object(process_log_entry_builder, "BrokerClient") as broker_client:
+        entry = process_log_entry_builder.create_entry(sh_log_data, None)
+
+    assert entry["sh"] == sh_values
+    assert "cp" in entry
+    assert "prices" in entry
+    broker_client.assert_not_called()
 
 
 def mock_daily_log(monkeypatch):
@@ -92,12 +106,95 @@ def test_calc_charge_cost_reference_end(mock_data, monkeypatch):
     cp.data.get.imported = 4100
     cp.data.set.log.charged_energy_by_source = {'grid': 1243, 'pv': 386, 'bat': 671, 'cp': 0.0}
     daily_log = mock_daily_log(monkeypatch)
+    current_entry = json.loads(json.dumps(daily_log["entries"][-1]))
+    current_entry["bat"]["all"]["exported"] = 4000
+    current_entry["bat"]["bat2"]["exported"] = 4000
+    current_entry["counter"]["counter0"]["imported"] = 4500
+    current_entry["cp"]["cp4"]["imported"] = 4100
+    current_entry["pv"]["all"]["exported"] = 3000
+    current_entry["pv"]["pv1"]["exported"] = 3000
+    create_entry_mock = Mock(return_value=current_entry)
+    monkeypatch.setattr(chargelog, "create_entry", create_entry_mock)
 
-    with patch("builtins.open", mock_open(read_data=json.dumps(daily_log))):
+    with patch("builtins.open", mock_open(read_data=json.dumps(daily_log))), \
+            patch.object(process_log_entry_builder, "BrokerClient") as broker_client:
         calc_energy_costs(cp, True)
 
+    create_entry_mock.assert_called_once_with(None, daily_log["entries"][-1])
+    broker_client.assert_not_called()
     assert cp.data.set.log.charged_energy_by_source == {'bat': 699.57, 'cp': 0.0, 'grid': 1300.14, 'pv': 400.29}
     assert round(cp.data.set.log.costs, 5) == 0.025
+
+
+def test_calc_charge_cost_short_charge_uses_current_entry(mock_data, monkeypatch):
+    cp = Chargepoint(4, None)
+
+    # Kurzer Ladevorgang: insgesamt nur 80 Wh geladen.
+    # Es wurde vorher noch kein Energieanteil verbucht.
+    cp.data.set.log.imported_since_plugged = 80
+    cp.data.set.log.imported_since_mode_switch = 80
+    cp.data.set.log.timestamp_mode_switch = 1652683260  # 8:41
+    cp.data.get.imported = 4080
+    cp.data.set.log.charged_energy_by_source = {
+        'bat': 0,
+        'cp': 0,
+        'grid': 0,
+        'pv': 0
+    }
+
+    daily_log = mock_daily_log(monkeypatch)
+
+    # Letzter gespeicherter Daily-Log ist 8:40:
+    #
+    # Grid imported = 2500 Wh
+    # PV exported   = 2500 Wh
+    # CP imported   = 4000 Wh
+    #
+    # Jetzt erzeugen wir den Live-Snapshot beim Ladeende um 8:42.
+    current_entry = json.loads(json.dumps(daily_log["entries"][-1]))
+
+    current_entry["date"] = "8:42"
+    current_entry["timestamp"] = 1652683320
+
+    # Zwischen 8:40 und 8:42:
+    #
+    # +20 Wh Netz
+    # +60 Wh PV
+    # =80 Wh Verbrauch/Ladung
+    #
+    # Erwarteter Strommix:
+    # Netz = 20 / 80 = 25 %
+    # PV   = 60 / 80 = 75 %
+
+    current_entry["counter"]["counter0"]["imported"] = 2520
+
+    current_entry["pv"]["all"]["exported"] = 2560
+    current_entry["pv"]["pv1"]["exported"] = 2560
+
+    current_entry["cp"]["all"]["imported"] = 4080
+    current_entry["cp"]["cp4"]["imported"] = 4080
+
+    # _get_reference_entries() soll diesen aktuellen Snapshot verwenden.
+    monkeypatch.setattr(
+        chargelog,
+        "create_entry",
+        Mock(return_value=current_entry)
+    )
+
+    calc_energy_costs(cp, True)
+
+    assert cp.data.set.log.charged_energy_by_source == pytest.approx({
+        'bat': 0,
+        'cp': 0,
+        'grid': 20,
+        'pv': 60
+    })
+
+    # Kosten:
+    # Netz: 20 Wh * 0.0003 €/Wh  = 0.006 €
+    # PV:   60 Wh * 0.00015 €/Wh = 0.009 €
+    # Gesamt                         0.015 €
+    assert cp.data.set.log.costs == pytest.approx(0.015)
 
 
 def test_calc_charge_cost_reference_end_unique_price(mock_data, monkeypatch):
@@ -107,6 +204,14 @@ def test_calc_charge_cost_reference_end_unique_price(mock_data, monkeypatch):
     cp.data.get.imported = 4100
     cp.data.set.log.charged_energy_by_source = {'grid': 1243, 'pv': 386, 'bat': 671, 'cp': 0.0}
     daily_log = mock_daily_log(monkeypatch)
+    current_entry = json.loads(json.dumps(daily_log["entries"][-1]))
+    current_entry["bat"]["all"]["exported"] = 4000
+    current_entry["bat"]["bat2"]["exported"] = 4000
+    current_entry["counter"]["counter0"]["imported"] = 4500
+    current_entry["cp"]["cp4"]["imported"] = 4100
+    current_entry["pv"]["all"]["exported"] = 3000
+    current_entry["pv"]["pv1"]["exported"] = 3000
+    monkeypatch.setattr(chargelog, "create_entry", Mock(return_value=current_entry))
     data.data.general_data.data.prices = Prices(bat=0.0002, cp=0, grid=0.0002, pv=0.0002)
 
     with patch("builtins.open", mock_open(read_data=json.dumps(daily_log))):
@@ -170,3 +275,33 @@ def test_calc_charge_cost_reference_middle_day_change(mock_data, monkeypatch):
     assert cp.data.set.log.charged_energy_by_source == {
         'grid': 1242.8, 'pv': 385.8, 'bat': 671.4, 'cp': 0.0}
     assert round(cp.data.set.log.costs, 5) == 0.5
+
+
+def test_small_positive_charge_is_assigned_to_energy_sources(mock_data, monkeypatch):
+    cp = Chargepoint(4, None)
+    charged_energy = 80
+    cp.data.set.log.imported_since_plugged = cp.data.set.log.imported_since_mode_switch = charged_energy
+
+    # Beispielhafte Verteilung
+    processed_entries = {
+        "totals": {
+            "cp": {
+                "cp4": {
+                    "energy_imported": 1000,
+                    "bat": 250,
+                    "cp": 0,
+                    "grid": 500,
+                    "pv": 250,
+                }
+            }
+        }
+    }
+    monkeypatch.setattr(chargelog, "_get_reference_position", Mock(return_value=chargelog.ReferenceTime.START))
+
+    charged_energy_by_source = chargelog.calculate_charged_energy_by_source(
+        cp, processed_entries, []
+    )
+
+    assert charged_energy_by_source == {'bat': 20, 'cp': 0, 'grid': 40, 'pv': 20}
+
+    assert sum(charged_energy_by_source.values()) == cp.data.set.log.imported_since_mode_switch

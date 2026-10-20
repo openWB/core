@@ -66,72 +66,40 @@
 							:config="globalConfig"
 						/>
 
-						<!-- Show the SoC for the first two cars -->
+						<!-- Show the SoC of cars, batteries, and electricity price, in the 4 corners of the graph -->
 						<PMLabel
-							v-if="
-								topVehicles[0] != undefined &&
-								vehicles[topVehicles[0]] != undefined &&
-								vehicles[topVehicles[0]].isSocConfigured
-							"
 							:x="-width / 2 - margin / 4 + 10"
 							:y="-height / 2 + margin + 5"
-							:labeltext="
-								trimName(vehicles[topVehicles[0]].name) +
-								': ' +
-								Math.round(vehicles[topVehicles[0]].soc) +
-								'%'
-							"
-							:labelcolor="
-								chargepoints[0]
-									? chargepoints[0].color
-									: 'var(--color-charging)'
-							"
+							:labeltext="cornerLabels[0].text"
+							labelcolor="var(--color-charging)"
 							:anchor="'start'"
 							:config="globalConfig"
 						/>
 						<PMLabel
-							v-if="
-								topVehicles[1] != undefined &&
-								vehicles[topVehicles[1]] != undefined &&
-								vehicles[topVehicles[1]].isSocConfigured
-							"
 							:x="width / 2 + margin / 4 - 10"
 							:y="-height / 2 + margin + 5"
-							:labeltext="
-								trimName(vehicles[topVehicles[1]].name) +
-								': ' +
-								Math.round(vehicles[topVehicles[1]].soc) +
-								'%'
-							"
-							:labelcolor="
-								chargepoints[1]
-									? chargepoints[1].color
-									: 'var(--color-charging)'
-							"
-							:anchor="'end'"
-							:config="globalConfig"
-						/>
-						<!-- Show the SoC of the batteries -->
-						<PMLabel
-							v-if="globalData.batterySoc > 0"
-							:x="-width / 2 - margin / 4 + 10"
-							:y="height / 2 - margin + 15"
-							:labeltext="'Speicher: ' + globalData.batterySoc + '%'"
-							:labelcolor="registry.getItem('batIn')!.color"
-							:anchor="'start'"
-							:config="globalConfig"
-						/>
-						<!-- Show the current energy price -->
-						<PMLabel
-							v-if="etData.active"
-							:x="width / 2 + margin / 4 - 10"
-							:y="height / 2 - margin + 15"
-							:value="currentPrice"
-							:labeltext="etData.etCurrentPriceString"
+							:labeltext="cornerLabels[1].text"
 							labelcolor="var(--color-charging)"
 							:anchor="'end'"
 							:config="globalConfig"
 						/>
+						<PMLabel
+							:x="-width / 2 - margin / 4 + 10"
+							:y="height / 2 - margin + 15"
+							:labeltext="cornerLabels[2].text"
+							:labelcolor="cornerLabels[2].color"
+							:anchor="'start'"
+							:config="globalConfig"
+						/>
+						<PMLabel
+							:x="width / 2 + margin / 4 - 10"
+							:y="height / 2 - margin + 15"
+							:labeltext="cornerLabels[3].text"
+							:labelcolor="cornerLabels[3].color"
+							:anchor="'end'"
+							:config="globalConfig"
+						/>
+
 						<!-- Show the current consumption -->
 						<PMLabel
 							:x="0"
@@ -190,6 +158,7 @@ import PMLabel from './PMLabel.vue'
 import WBWidget from '../shared/WBWidget.vue'
 import { formatWatt } from '@/assets/js/helpers'
 import { etData } from '../priceChart/model'
+import { batteries } from '../batteryList/model.ts'
 
 // state:
 const width = 500
@@ -275,6 +244,53 @@ const scheme = computed(() => schemes[valuesToDisplay.value.length - 1])
 function labelCoordinates(item: number) {
 	return labelPositions[scheme.value[item]]
 }
+// deliver the name, value and color to be used for the labels that show Soc and electricity price. This returns an array of 4 objects without labelCoordinates, which are added in the HTML part already
+const cornerLabels = computed(() => {
+	let result = []
+	// first label - Soc of topvehicles[0] if existing, otherwise empty
+	result.push({
+		text: topVehicles.value[0]
+			? ` ${trimName(vehicles[topVehicles.value[0]]?.name ?? '')}: ${Math.round(vehicles[topVehicles.value[0]]?.soc ?? 0)}%`
+			: '',
+		color: 'var(--color-charging)',
+	})
+
+	// second label - Soc of topvehicles[1] if existing, otherwise empty
+	result.push({
+		text: topVehicles.value[1]
+			? ` ${trimName(vehicles[topVehicles.value[1]]?.name ?? '')}: ${Math.round(vehicles[topVehicles.value[1]]?.soc ?? 0)}%`
+			: '',
+		color: 'var(--color-charging)',
+	})
+	// third label - Soc of the batteries if existing, otherwise Soc of topvehicles[2] if existing, otherwise empty
+	result.push({
+		text:
+			batteries.value.size > 0
+				? ` Speicher: ${globalData.batterySoc}%`
+				: topVehicles.value[2]
+					? ` ${trimName(vehicles[topVehicles.value[2]]?.name ?? '')}: ${Math.round(vehicles[topVehicles.value[2]]?.soc ?? 0)}%`
+					: '',
+		color:
+			batteries.value.size > 0
+				? 'var(--color-battery)'
+				: 'var(--color-charging)',
+	})
+	// fourth label - Current electricity prices if configured, otherwise Soc of topvehicles[2] if batteries are existing, topvehicles[3], if no batteries are existing, otherwise empty
+	result.push({
+		text: etData.active
+			? etData.etCurrentPriceString
+			: batteries.value.size > 0
+				? topVehicles.value[2]
+					? ` ${trimName(vehicles[topVehicles.value[2]]?.name ?? '')}: ${Math.round(vehicles[topVehicles.value[2]]?.soc ?? 0)}%`
+					: ''
+				: topVehicles.value[3]
+					? ` ${trimName(vehicles[topVehicles.value[3]]?.name ?? '')}: ${Math.round(vehicles[topVehicles.value[3]]?.soc ?? 0)}%`
+					: '',
+		color: 'var(--color-charging)',
+	})
+
+	return result
+})
 
 // methods
 function trimName(name: string) {

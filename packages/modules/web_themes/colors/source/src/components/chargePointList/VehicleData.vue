@@ -18,6 +18,9 @@
 			/>
 		</h3>
 		<div class="d-flex align-items-center">
+			<WbBadge bgcolor="var(--color-menu)">
+				Prio:&nbsp;{{ chargepoint.priority }}
+			</WbBadge>
 			<WbBadge v-if="chargepoint.isSocConfigured" :bgcolor="batcolor">
 				<BatterySymbol :soc="soc ?? 0" color="var(--color-bg)" class="me-2" />
 				<i
@@ -77,7 +80,7 @@
 				:watt-h="Math.max(chargepoint.chargedSincePlugged, 0)"
 			></FormatWattH>
 		</InfoItem>
-		<InfoItem heading="gel. Reichw.:" class="grid-col-4">
+		<InfoItem heading="gel. Reichw.:" class="grid-col-4 grid-center">
 			{{ chargedRangeString }}
 		</InfoItem>
 
@@ -93,6 +96,7 @@
 			}}
 			km
 		</InfoItem>
+		<div v-else class="grid-col-4 grid-right">&nbsp;</div>
 		<div
 			v-if="editSoc"
 			class="socEditor rounded mt-2 d-flex flex-column align-items-center grid-col-12 grid-left"
