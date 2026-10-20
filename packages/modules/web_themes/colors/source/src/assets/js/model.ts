@@ -344,14 +344,6 @@ export const sourceSummary: { [key: string]: PowerItem } = reactive({
 	pv: createPowerItem('pv', PowerItemType.pvSummary),
 	batOut: createPowerItem('batOut', PowerItemType.batterySummary),
 })
-/* export const usageSummary: { [key: string]: PowerItem } = reactive({
-	evuOut: createPowerItem('evuOut', PowerItemType.counter),
-	charging: createPowerItem('charging', PowerItemType.chargeSummary),
-	devices: createPowerItem('devices', PowerItemType.deviceSummary),
-	counters: createPowerItem('counters', PowerItemType.counterSummary),
-	batIn: createPowerItem('batIn', PowerItemType.batterySummary),
-	house: createPowerItem('house', PowerItemType.house),
-}) */
 export const globalData = reactive(new GlobalData())
 export const etPriceList = ref('')
 export const energyMeterNeedsRedraw = ref(false)

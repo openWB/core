@@ -1,7 +1,7 @@
 import base64
 
-from modules.common.component_state import CounterState
-from modules.devices.sma.sma_shm import counter, speedwiredecoder
+from modules.common.component_state import CounterState, InverterState
+from modules.devices.sma.sma_shm import counter, inverter, speedwiredecoder
 
 # This sample was collected from an SMA Energy Meter with Firmware 2.0.18.R on 2021-12-22:
 SAMPLE_SMA_ENERGY_EM = """
@@ -19,7 +19,7 @@ OkkgBJBAAAAAPokAAAAAIAElIAAAAA
 """
 
 
-def test_process_datagram_energy_meter():
+def test_process_datagram_energy_meter(data_):
     # setup
     data = base64.b64decode(SAMPLE_SMA_ENERGY_EM)
     sma_data = speedwiredecoder.decode_speedwire(data)
@@ -27,7 +27,7 @@ def test_process_datagram_energy_meter():
     sma_counter.initialize()
 
     # execution
-    sma_counter.read_datagram(sma_data)
+    assert sma_counter.read_datagram(sma_data)
 
     # evaluation
     assert vars(sma_counter.store.delegate.delegate.state) == vars(CounterState(currents=[-17.16, -17.1, -16.02],
@@ -39,3 +39,19 @@ def test_process_datagram_energy_meter():
                                                                                 power=-11967.0,
                                                                                 frequency=50,
                                                                                 serial_number=None))
+
+
+def test_process_datagram_inverter(data_):
+    # setup
+    decoded_data = speedwiredecoder.decode_speedwire(base64.b64decode(SAMPLE_SMA_ENERGY_EM))
+    sma_inverter = inverter.create_component(inverter.component_descriptor.configuration_factory(id=1))
+    sma_inverter.initialize()
+
+    # execution
+    assert sma_inverter.read_datagram(decoded_data)
+
+    # evaluation
+    assert vars(sma_inverter.store.delegate.delegate.state) == vars(InverterState(
+        power=-11967,
+        exported=86688627.0,
+    ))

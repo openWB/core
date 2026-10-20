@@ -7,6 +7,9 @@ MOSQUITTO_DB_DIR="/var/lib/mosquitto"
 MOSQUITTO_LOCAL_DB_DIR="/var/lib/mosquitto_local"
 MOSQUITTO_CONF_DIR="/etc/mosquitto"
 LOG_FILE="$OPENWB_BASE_DIR/data/log/restore.log"
+GIT_REMOTE="origin"
+
+source "$OPENWB_BASE_DIR/runs/update_version_helpers.sh" || exit 1
 
 {
 	echo "$(date +"%Y-%m-%d %H:%M:%S") Restore of backup started..."
@@ -22,23 +25,39 @@ LOG_FILE="$OPENWB_BASE_DIR/data/log/restore.log"
 	# give systemctl some time to finish, may be unnecessary?
 	sleep 2
 	echo "****************************************"
-	echo "Step 6: checkout matching git branch and tag"
+	echo "Step 6: checkout matching git branch and hash"
 	BRANCH=$(<"$WORKING_DIR/GIT_BRANCH")
-	TAG=$(<"$WORKING_DIR/GIT_HASH")
-	echo "Step 6.1: checkout branch: $BRANCH"
-	if ! git -C "$OPENWB_BASE_DIR" checkout --force "$BRANCH"; then
-		echo "checkout of branch \"$BRANCH\" failed! aborting restore"
+	HASH=$(<"$WORKING_DIR/GIT_HASH")
+	UPDATE_BRANCH=""
+	if [[ -f "$WORKING_DIR/GIT_UPDATE_BRANCH" ]]; then
+		UPDATE_BRANCH=$(<"$WORKING_DIR/GIT_UPDATE_BRANCH")
+	fi
+	metadataStatus=0
+	validateRestoreGitMetadata "$BRANCH" "$UPDATE_BRANCH" || metadataStatus=$?
+	if [[ $metadataStatus -eq 1 ]]; then
+		echo "invalid logical update branch '$UPDATE_BRANCH'! aborting restore"
+		exit 1
+	elif [[ $metadataStatus -eq 2 ]]; then
+		echo "logical update branch requires detached HEAD! aborting restore"
 		exit 1
 	fi
-	echo "Step 6.2: reset to matching version: [$TAG]"
-	if ! git -C "$OPENWB_BASE_DIR" reset --hard "$TAG"; then
-		echo "reset to version [$TAG] failed! aborting restore"
+	if [[ -z $BRANCH ]]; then
+		echo "checkout detached commit: $HASH"
+	else
+		echo "checkout branch from remote: $GIT_REMOTE/$BRANCH"
+	fi
+	echo "apply saved version: [$HASH]"
+	if ! applyVersion "$OPENWB_BASE_DIR" "$GIT_REMOTE" "$BRANCH" "$HASH" "$UPDATE_BRANCH"; then
+		echo "applying version [$HASH] failed! aborting restore"
 		exit 1
 	fi
 	echo "****************************************"
 	echo "Step 7: restore contents of backup"
 	# we use cp not mv because of not empty directories in destination
-	sudo cp -v -p -r "${WORKING_DIR}/openWB/." "${OPENWB_BASE_DIR}/"
+	if ! sudo cp -v -p -r "${WORKING_DIR}/openWB/." "${OPENWB_BASE_DIR}/"; then
+		echo "restoring openWB files failed! aborting restore"
+		exit 1
+	fi
 	if [[ -f "$WORKING_DIR/configuration.json" ]]; then
 		sudo mv -v -f "${WORKING_DIR}/configuration.json" "/home/openwb/"
 	else

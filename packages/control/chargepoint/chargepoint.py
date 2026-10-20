@@ -248,6 +248,7 @@ class Chargepoint(ChargepointRfidMixin, Load):
         self.data.set.plug_state_prev = self.data.get.plug_state
         self.data.set.current_prev = self.data.set.current
         self.data.set.ev_prev = self.data.config.ev
+        self.data.set.state_prev = self.data.control_parameter.state
 
     def reset_log_data_chargemode_switch(self) -> None:
         reset_log = Log()
@@ -284,9 +285,12 @@ class Chargepoint(ChargepointRfidMixin, Load):
                 if self.data.config.control_pilot_interruption_hw:
                     control_parameter = self.data.control_parameter
                     retry_interval = charging_ev.ev_template.data.control_pilot_interruption_retry_interval
-                    # Wird die Ladung gestartet? (nicht nach Phasenumschaltung, da diese bereits CP umschaltet)
+                    # Wird die Ladung gestartet? Nicht, wenn eine Phasenumschaltung gerade lief oder jetzt
+                    # ansteht - die schaltet CP bereits selbst um (state_prev statt state, da
+                    # WAIT_FOR_USING_PHASES auch unabhängig von einer Umschaltung erreicht wird).
                     started_now = (self.data.set.current_prev == 0 and self.data.set.current != 0 and
-                                   self.data.control_parameter.state != ChargepointState.WAIT_FOR_USING_PHASES)
+                                   self.data.set.state_prev != ChargepointState.PERFORMING_PHASE_SWITCH and
+                                   self._is_phase_switch_required() is False)
                     # Ladung angefordert, Auto lädt aber trotz gültigem Signal seit geraumer Zeit nicht.
                     stuck = (
                         retry_interval > 0 and
@@ -732,13 +736,18 @@ class Chargepoint(ChargepointRfidMixin, Load):
             if self.data.get.plug_state and self.data.set.plug_state_prev is False:
                 self.data.control_parameter.timestamp_chargemode_changed = create_timestamp()
             # SoC nach Anstecken aktualisieren
+            soc_update_target_ev = vehicle if vehicle != -1 else self.data.config.ev
             if ((self.data.get.plug_state and self.data.set.plug_state_prev is False) or
                     (self.data.get.plug_state is False and self.data.set.plug_state_prev) or
                     (self.data.get.soc_timestamp and self.data.set.charging_ev_data.data.get.soc_timestamp and
-                        self.data.get.soc_timestamp > self.data.set.charging_ev_data.data.get.soc_timestamp)):
-                Pub().pub(
-                    f"openWB/set/vehicle/{vehicle if vehicle != -1 else self.data.config.ev}/get/force_soc_update",
-                    True)
+                        self.data.get.soc_timestamp > self.data.set.charging_ev_data.data.get.soc_timestamp and
+                        # nicht jeden Zyklus erneut anstoßen, wenn der EV-SoC dauerhaft veraltet bleibt
+                        # (zB API-Fehler); nur bei neuem CP-SoC oder EV-Wechsel am LP erneut auslösen
+                        (self.data.get.soc_timestamp != self.data.set.soc_timestamp_force_update_prev or
+                            soc_update_target_ev != self.data.set.soc_timestamp_force_update_prev_ev))):
+                Pub().pub(f"openWB/set/vehicle/{soc_update_target_ev}/get/force_soc_update", True)
+                self.data.set.soc_timestamp_force_update_prev = self.data.get.soc_timestamp
+                self.data.set.soc_timestamp_force_update_prev_ev = soc_update_target_ev
                 log.debug("SoC nach Anstecken")
             self.set_state_and_log(message)
         except Exception:
@@ -767,6 +776,9 @@ class Chargepoint(ChargepointRfidMixin, Load):
             self.update_charge_template(charging_ev.charge_template)
         if self.data.config.ev != vehicle:
             Pub().pub(f"openWB/set/vehicle/{charging_ev.num}/get/force_soc_update", True)
+            # verhindert doppeltes Pub in der "SoC nach Anstecken"-Prüfung im selben update()-Zyklus
+            self.data.set.soc_timestamp_force_update_prev = self.data.get.soc_timestamp
+            self.data.set.soc_timestamp_force_update_prev_ev = vehicle
             log.debug("SoC nach EV-Wechsel")
             self.data.config.ev = vehicle
         self.data.set.charging_ev_data = charging_ev

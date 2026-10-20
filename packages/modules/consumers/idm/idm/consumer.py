@@ -6,10 +6,8 @@ from typing import Optional
 from modules.common.abstract_consumer import CurrentValues
 from modules.common.abstract_device import DeviceDescriptor
 from modules.common.component_state import ConsumerState
-from modules.common.component_type import ComponentType
 from modules.common.configurable_consumer import ConfigurableConsumer, SetLimitData
 from modules.common.modbus import ModbusDataType, ModbusTcpClient_
-from modules.common.simcount._simcounter import SimCounterConsumer
 from modules.consumers.idm.idm.config import Idm
 
 log = logging.getLogger(__name__)
@@ -17,12 +15,10 @@ log = logging.getLogger(__name__)
 
 def create_consumer(config: Idm):
     client: Optional[ModbusTcpClient_] = None
-    sim_counter: Optional[SimCounterConsumer] = None
 
     def initializer():
-        nonlocal client, sim_counter
+        nonlocal client
         client = ModbusTcpClient_(config.configuration.ip_address, config.configuration.port)
-        sim_counter = SimCounterConsumer(config.id, ComponentType.CONSUMER)
 
     def error_handler() -> None:
         initializer()
@@ -42,7 +38,7 @@ def create_consumer(config: Idm):
         pv_power = max(-values.pv_power, 0)
         # Ladeleistung mit einrechnen, da diese sonst fälschlich als freier Überschuss an die
         # WP gemeldet würde, obwohl sie bereits von einer Fahrzeugladung verbraucht wird
-        surplus = max(pv_power - values.home_consumption - values.cp_power, 0)
+        surplus = max(-values.evu_power, 0)
         battery_soc = int(values.bat_soc) if values.bat_soc is not None else -1
 
         # Reg 74: Aktueller PV-Überschuss [kW]
@@ -51,8 +47,11 @@ def create_consumer(config: Idm):
         # Reg 78: Aktuelle PV-Produktion [kW]
         client.write_register(78, pv_power / 1000, data_type=ModbusDataType.FLOAT_32,
                               wordorder=Endian.Little, unit=modbus_id)
-        # Reg 82: Hausverbrauch [kW], Default 0
-        client.write_register(82, values.home_consumption / 1000, data_type=ModbusDataType.FLOAT_32,
+
+        # Reg 82: Hausverbrauch [kW], Default 0 - aus PV/Netz/Speicher berechnet, damit jeder Verbraucher
+        # (auch die WP selbst) automatisch enthalten ist, unabhängig von der internen Hausverbrauchs-Berechnung
+        idm_home_consumption = max(pv_power + values.evu_power - values.bat_power, 0)
+        client.write_register(82, idm_home_consumption / 1000, data_type=ModbusDataType.FLOAT_32,
                               wordorder=Endian.Little, unit=modbus_id)
         # Reg 84: Batterieentladung [kW], Default 0 (negativ = Ladung). values.bat_power kommt roh aus
         # process.py (negativ = Entladung, positiv = Ladung, gleiche Konvention wie z.B. bei Sungrow) ->
@@ -65,18 +64,12 @@ def create_consumer(config: Idm):
     def update() -> ConsumerState:
         if config.configuration.version == 1:
             power = client.read_holding_registers(
-                4122, ModbusDataType.FLOAT_32, unit=config.configuration.modbus_id)
+                4122, ModbusDataType.FLOAT_32, wordorder=Endian.Little, unit=config.configuration.modbus_id)
         else:
             power = client.read_input_registers(
-                4122, ModbusDataType.FLOAT_32, unit=config.configuration.modbus_id)
+                4122, ModbusDataType.FLOAT_32, wordorder=Endian.Little, unit=config.configuration.modbus_id)
         power *= 1000
-        imported, exported = sim_counter.sim_count(power)
-
-        return ConsumerState(
-            power=power,
-            imported=imported,
-            exported=exported
-        )
+        return ConsumerState(power=power)
 
     def set_power_limit(power_limit: float, data: SetLimitData) -> None:
         # Schreibt den von openWB berechneten Überschuss in Register 74 (PV-Überschuss [kW]).

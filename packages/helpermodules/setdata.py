@@ -497,6 +497,8 @@ class SetData:
                         "/set/charge_state_prev" in msg.topic or
                         "/set/plug_state_prev" in msg.topic):
                     self._validate_value(msg, bool)
+                elif "/set/state_prev" in msg.topic:
+                    self._validate_value(msg, int, [(0, 7)])
                 elif "/set/autolock_state" in msg.topic:
                     self._validate_value(msg, int, [(0, 4)])
                 elif "/set/rfid" in msg.topic:
@@ -504,6 +506,8 @@ class SetData:
                 elif "/set/plug_time" in msg.topic:
                     self._validate_value(msg, float)
                 elif "/set/ocpp_transaction_id" in msg.topic:
+                    self._validate_value(msg, int)
+                elif "/set/soc_timestamp_force_update_prev" in msg.topic:
                     self._validate_value(msg, int)
                 elif "/set/log" in msg.topic:
                     self._validate_value(msg, "json")
@@ -909,6 +913,32 @@ class SetData:
                 self._validate_value(msg, "json")
             elif "openWB/set/optional/ep/configured" in msg.topic:
                 self._validate_value(msg, bool)
+            elif "openWB/set/optional/forecast/configured" in msg.topic:
+                self._validate_value(msg, bool)
+            elif "openWB/set/optional/forecast/provider" in msg.topic:
+                self._validate_value(msg, "json")
+            elif "openWB/set/optional/forecast/get/values" in msg.topic:
+                self._validate_value(msg, "json")
+            elif "openWB/set/optional/forecast/get/today_values" in msg.topic:
+                self._validate_value(msg, "json")
+            elif "openWB/set/optional/forecast/get/tomorrow_values" in msg.topic:
+                self._validate_value(msg, "json")
+            elif "openWB/set/optional/forecast/get/daily_kwh" in msg.topic:
+                self._validate_value(msg, "json")
+            elif "openWB/set/optional/forecast/get/today_kwh" in msg.topic:
+                self._validate_value(msg, float)
+            elif "openWB/set/optional/forecast/get/tomorrow_kwh" in msg.topic:
+                self._validate_value(msg, float)
+            elif "openWB/set/optional/forecast/get/next_query_time" in msg.topic:
+                self._validate_value(msg, int)
+            elif "openWB/set/optional/forecast/get/last_update_time" in msg.topic:
+                self._validate_value(msg, int)
+            elif "openWB/set/optional/forecast/get/fault_state" in msg.topic:
+                self._validate_value(msg, int, [(0, 2)])
+            elif "openWB/set/optional/forecast/get/fault_str" in msg.topic:
+                self._validate_value(msg, str)
+            elif "openWB/set/optional/forecast/get/force_update" in msg.topic:
+                self._validate_value(msg, bool)
             elif "module_update_completed" in msg.topic:
                 self._validate_value(msg, bool)
             elif "openWB/set/optional/ocpp/config" in msg.topic:
@@ -1002,7 +1032,8 @@ class SetData:
                 elif ("/get/fault_str" in msg.topic or
                       "/get/serial_number" in msg.topic):
                     self._validate_value(msg, str)
-                elif "/get/power" in msg.topic:
+                elif ("/get/power" in msg.topic or
+                      "/get/local_power" in msg.topic):
                     self._validate_value(
                         msg, float, [(float("-inf"), float("inf"))])
                 elif "/get/soc" in msg.topic:
@@ -1255,50 +1286,55 @@ class SetData:
                     "openWB/set/consumer/get/daily_imported" in msg.topic or
                     "openWB/set/consumer/get/daily_exported" in msg.topic):
                 self._validate_value(msg, float)
-            elif (re.search("openWB/set/consumer/[0-9]+/module$", msg.topic) is not None or
-                  re.search("openWB/set/consumer/[0-9]+/module/simulation$", msg.topic) is not None or
-                  re.search("openWB/set/consumer/[0-9]+/config$", msg.topic) is not None or
-                    re.search("openWB/set/consumer/[0-9]+/usage$", msg.topic) is not None):
+            elif re.search("openWB/set/consumer/[0-9]+/config$", msg.topic) is not None:
                 self._validate_value(msg, "json")
-            elif re.search("openWB/set/consumer/[0-9]+/extra_meter$", msg.topic) is not None:
-                self._validate_value(msg, int)
-            elif (re.search("consumer/[0-9]+/get/power$", msg.topic) is not None or
-                  re.search("consumer/[0-9]+/set/power$", msg.topic) is not None or
-                  re.search("consumer/[0-9]+/set/current$", msg.topic) is not None or
-                  re.search("consumer/[0-9]+/set/on_time$", msg.topic) is not None or
-                  re.search("consumer/[0-9]+/set/plug_time$", msg.topic) is not None or
-                  re.search("consumer/[0-9]+/set/timestamp_last_current_set$", msg.topic) is not None or
-                  re.search("consumer/[0-9]+/set/timestamp_wrote_last_on_time$", msg.topic) is not None or
-                  re.search("consumer/[0-9]+/get/set_power$", msg.topic) is not None):
-                self._validate_value(msg, float)
-            elif (re.search("consumer/[0-9]+/get/currents$", msg.topic) is not None or
-                  re.search("consumer/[0-9]+/get/voltages$", msg.topic) is not None or
-                  re.search("consumer/[0-9]+/get/powers$", msg.topic) is not None or
-                  re.search("consumer/[0-9]+/get/temperatures$", msg.topic) is not None):
-                self._validate_value(msg, float, collection=list)
-            elif (re.search("consumer/[0-9]+/get/exported$", msg.topic) is not None or
-                  re.search("consumer/[0-9]+/get/imported$", msg.topic) is not None or
-                  re.search("consumer/[0-9]+/get/daily_exported$", msg.topic) is not None or
-                  re.search("consumer/[0-9]+/get/daily_imported$", msg.topic) is not None):
-                self._validate_value(msg, float, [(0, float("inf"))])
-            elif (re.search("consumer/[0-9]+/get/fault_state$", msg.topic) is not None or
-                  re.search("consumer/get/fault_state$", msg.topic) is not None):
-                self._validate_value(msg, int, [(0, 2)])
-            elif (re.search("consumer/get/fault_str$", msg.topic) is not None or
-                  re.search("consumer/[0-9]+/get/fault_str$", msg.topic) is not None or
-                  re.search("consumer/[0-9]+/get/state_str$", msg.topic) is not None or
-                  re.search("consumer/[0-9]+/set/wait_for_start_state$", msg.topic) is not None):
-                self._validate_value(msg, str)
-            elif (re.search("consumer/[0-9]+/get/charge_state$", msg.topic) is not None or
-                  re.search("consumer/[0-9]+/get/plug_state$", msg.topic) is not None or
-                  re.search("consumer/[0-9]+/get/state$", msg.topic) is not None):
-                self._validate_value(msg, bool)
-            elif re.search("consumer/[0-9]+/set/phases_to_use$", msg.topic) is not None:
-                self._validate_value(msg, int, [(0, 3)])
-            elif re.search("consumer/[0-9]+/control_parameter/", msg.topic) is not None:
-                self.process_control_parameter_topics(msg)
+            elif subdata.SubData.consumer_data.get(f"consumer{get_index(msg.topic)}"):
+                if (re.search("openWB/set/consumer/[0-9]+/module$", msg.topic) is not None or
+                    re.search("openWB/set/consumer/[0-9]+/module/simulation$", msg.topic) is not None or
+                    re.search("openWB/set/consumer/[0-9]+/config$", msg.topic) is not None or
+                        re.search("openWB/set/consumer/[0-9]+/usage$", msg.topic) is not None):
+                    self._validate_value(msg, "json")
+                elif re.search("openWB/set/consumer/[0-9]+/extra_meter$", msg.topic) is not None:
+                    self._validate_value(msg, int)
+                elif (re.search("consumer/[0-9]+/get/power$", msg.topic) is not None or
+                        re.search("consumer/[0-9]+/set/power$", msg.topic) is not None or
+                        re.search("consumer/[0-9]+/set/current$", msg.topic) is not None or
+                        re.search("consumer/[0-9]+/set/on_time$", msg.topic) is not None or
+                        re.search("consumer/[0-9]+/set/plug_time$", msg.topic) is not None or
+                        re.search("consumer/[0-9]+/set/timestamp_last_current_set$", msg.topic) is not None or
+                        re.search("consumer/[0-9]+/set/timestamp_wrote_last_on_time$", msg.topic) is not None or
+                        re.search("consumer/[0-9]+/get/set_power$", msg.topic) is not None):
+                    self._validate_value(msg, float)
+                elif (re.search("consumer/[0-9]+/get/currents$", msg.topic) is not None or
+                      re.search("consumer/[0-9]+/get/voltages$", msg.topic) is not None or
+                      re.search("consumer/[0-9]+/get/powers$", msg.topic) is not None or
+                      re.search("consumer/[0-9]+/get/temperatures$", msg.topic) is not None):
+                    self._validate_value(msg, float, collection=list)
+                elif (re.search("consumer/[0-9]+/get/exported$", msg.topic) is not None or
+                      re.search("consumer/[0-9]+/get/imported$", msg.topic) is not None or
+                      re.search("consumer/[0-9]+/get/daily_exported$", msg.topic) is not None or
+                      re.search("consumer/[0-9]+/get/daily_imported$", msg.topic) is not None):
+                    self._validate_value(msg, float, [(0, float("inf"))])
+                elif (re.search("consumer/[0-9]+/get/fault_state$", msg.topic) is not None or
+                      re.search("consumer/get/fault_state$", msg.topic) is not None):
+                    self._validate_value(msg, int, [(0, 2)])
+                elif (re.search("consumer/get/fault_str$", msg.topic) is not None or
+                      re.search("consumer/[0-9]+/get/fault_str$", msg.topic) is not None or
+                      re.search("consumer/[0-9]+/get/state_str$", msg.topic) is not None or
+                      re.search("consumer/[0-9]+/set/wait_for_start_state$", msg.topic) is not None):
+                    self._validate_value(msg, str)
+                elif (re.search("consumer/[0-9]+/get/charge_state$", msg.topic) is not None or
+                      re.search("consumer/[0-9]+/get/plug_state$", msg.topic) is not None or
+                      re.search("consumer/[0-9]+/get/state$", msg.topic) is not None):
+                    self._validate_value(msg, bool)
+                elif re.search("consumer/[0-9]+/set/phases_to_use$", msg.topic) is not None:
+                    self._validate_value(msg, int, [(0, 3)])
+                elif re.search("consumer/[0-9]+/control_parameter/", msg.topic) is not None:
+                    self.process_control_parameter_topics(msg)
+                else:
+                    self.__unknown_topic(msg)
             else:
-                self.__unknown_topic(msg)
+                self.__unknown_id(msg)
         except Exception:
             log.exception(f"Fehler im setdata-Modul: Topic {msg.topic}, Value: {msg.payload}")
 

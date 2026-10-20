@@ -1,4 +1,4 @@
-from typing import Tuple, Optional
+from typing import Optional, Tuple
 
 from modules.common.component_type import ComponentType, special_to_general_type_mapping
 from modules.common.simcount._simcount import sim_count

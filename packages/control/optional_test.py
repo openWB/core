@@ -1,10 +1,20 @@
 import datetime
+from dataclasses import dataclass
 from unittest.mock import Mock
 import pytest
 from helpermodules import timecheck
 from control.optional import Optional
 from modules.electricity_pricing.flexible_tariffs.fixed_hours.config import (FixedHoursTariff,
                                                                              FixedHoursTariffConfiguration)
+
+
+@dataclass
+class _FakeForecastConfig:
+    type: str = "fake"
+
+
+def _fake_forecast_module(forecast_type: str = "fake") -> Mock:
+    return Mock(config=_FakeForecastConfig(type=forecast_type))
 
 
 ONE_HOUR_SECONDS = 3600
@@ -552,3 +562,39 @@ def test_ep_get_current_tariff_name_none(configured, prices):
 
     # evaluation
     assert result is None
+
+
+class TestForecastModule:
+    def _configured_opt(self) -> Optional:
+        opt = Optional()
+        opt.forecast_module = _fake_forecast_module("forecast_solar")
+        opt.data.forecast.get.values = {"1": 1.0}
+        opt.data.forecast.get.today_kwh = 5.0
+        return opt
+
+    def test_selecting_none_clears_configured_and_data(self):
+        opt = self._configured_opt()
+
+        opt.forecast_module = None
+
+        assert opt.data.forecast.configured is False
+        assert opt.data.forecast.provider is None
+        assert opt.data.forecast.get.values == {}
+        assert opt.data.forecast.get.today_kwh == 0.0
+
+    def test_switching_provider_clears_old_data(self):
+        opt = self._configured_opt()
+
+        opt.forecast_module = _fake_forecast_module("open_meteo")
+
+        assert opt.data.forecast.configured is True
+        assert opt.data.forecast.get.values == {}
+        assert opt.data.forecast.get.today_kwh == 0.0
+
+    def test_same_provider_config_keeps_data(self):
+        opt = self._configured_opt()
+
+        opt.forecast_module = _fake_forecast_module("forecast_solar")
+
+        assert opt.data.forecast.get.values == {"1": 1.0}
+        assert opt.data.forecast.get.today_kwh == 5.0

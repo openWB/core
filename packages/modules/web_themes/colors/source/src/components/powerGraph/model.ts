@@ -62,6 +62,7 @@ export interface RawDayGraphDataItem {
 export class GraphData {
 	data: GraphDataItem[] = []
 	private _graphMode = ''
+	errors: string[] = []
 	waitForData = true
 
 	get graphMode() {
@@ -112,7 +113,6 @@ export function setGraphData(d: GraphDataItem[]) {
 	} else {
 		graphData.data = d
 		graphData.waitForData = false
-		console.log('graph data set')
 	}
 }
 // LIVE GRAPH

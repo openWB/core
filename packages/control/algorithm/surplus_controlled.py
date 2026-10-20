@@ -169,7 +169,8 @@ class SurplusControlled:
                                                 CONSIDERED_CHARGE_MODES_BIDI_DISCHARGE):
             try:
                 control_parameter = load.data.control_parameter
-                if control_parameter.required_current != 0:
+                if ((isinstance(load, Chargepoint) and control_parameter.required_current != 0) or
+                        (isinstance(load, Consumer) and load.data.set.switch_interval_elapsed)):
                     required_currents = control_parameter.required_currents
                     if isinstance(load, Chargepoint):
                         charging_ev_data = load.data.set.charging_ev_data

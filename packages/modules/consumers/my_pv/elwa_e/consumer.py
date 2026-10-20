@@ -4,10 +4,8 @@ import logging
 from modules.common.abstract_device import DeviceDescriptor
 from typing import Optional
 from modules.common.component_state import ConsumerState
-from modules.common.component_type import ComponentType
 from modules.common.configurable_consumer import ConfigurableConsumer, SetLimitData
 from modules.common.modbus import ModbusDataType, ModbusTcpClient_
-from modules.common.simcount._simcounter import SimCounterConsumer
 from modules.consumers.my_pv.elwa_e.config import Elwa
 
 log = logging.getLogger(__name__)
@@ -43,14 +41,12 @@ def create_consumer(config: Elwa):
     client: Optional[ModbusTcpClient_] = None
     fuse = 1
     power = 0
-    sim_counter: Optional[SimCounterConsumer] = None
     state = None
 
     def initializer():
-        nonlocal client, fuse, sim_counter
+        nonlocal client, fuse
         client = ModbusTcpClient_(config.configuration.ip_address, config.configuration.port)
         fuse = client.read_input_registers(1014, ModbusDataType.INT_16, unit=config.configuration.modbus_id)
-        sim_counter = SimCounterConsumer(config.id, ComponentType.CONSUMER)
 
     def error_handler() -> None:
         initializer()
@@ -63,11 +59,8 @@ def create_consumer(config: Elwa):
         state = resp[Register.STATE]
         if state > 200:
             raise Exception(f"Elwa-E meldet einen Fehler-Status: {STATE_MAPPING.get(state, 'Unknown fault state')}")
-        imported, exported = sim_counter.sim_count(power)
         return ConsumerState(
             power=power,
-            imported=imported,
-            exported=exported,
             temperatures=[resp[Register.TEMP0]/10]
         )
 

@@ -2,6 +2,7 @@ from unittest.mock import Mock
 
 import requests
 import requests_mock
+from control import data
 
 from modules.common.configurable_device import ConfigurableDevice
 from modules.devices.tesla.tesla import bat
@@ -145,8 +146,9 @@ def assert_battery_state_correct(state: BatState):
     assert state.exported == 1169030
 
 
-def test_powerwall_update_if_cookie_cached(monkeypatch, requests_mock: requests_mock.Mocker):
+def test_powerwall_update_if_cookie_cached(monkeypatch, requests_mock: requests_mock.Mocker, data_):
     # setup
+    data.data.bat_data["bat0"] = Mock(data=Mock(config=Mock(max_power=10000)))
     mock_bat_value_store = Mock()
     monkeypatch.setattr(bat, "get_component_value_store", Mock(return_value=mock_bat_value_store))
     requests_mock.get("https://sample-address/api/meters/aggregates", text=sample_aggregates_json,
@@ -179,6 +181,9 @@ def test_powerwall_counter_falls_back_to_aggregates_if_meters_site_404(monkeypat
     # setup
     mock_counter_value_store = Mock()
     monkeypatch.setattr(counter, "get_component_value_store", Mock(return_value=mock_counter_value_store))
+    peak_filter = Mock()
+    peak_filter.check_values.side_effect = lambda power, imported, exported: (imported, exported)
+    monkeypatch.setattr(counter, "PeakFilter", Mock(return_value=peak_filter))
     requests_mock.get("https://sample-address/api/meters/aggregates", text=sample_aggregates_json)
     meters_site_mock = requests_mock.get("https://sample-address/api/meters/site", status_code=404)
     monkeypatch.setattr(device, "_authenticate",
@@ -194,6 +199,8 @@ def test_powerwall_counter_falls_back_to_aggregates_if_meters_site_404(monkeypat
     assert state.power == -21.449996948242188
     assert state.imported == 3276432.6625
     assert state.exported == 1136916.6875
+    assert peak_filter.check_values.call_count == 2
+    peak_filter.check_values.assert_called_with(-21.449996948242188, 3276432.6625, 1136916.6875)
     assert mock_counter_value_store.set.call_count == 2
     # endpoint is not requested again once it is known to be missing
     assert meters_site_mock.call_count == 1

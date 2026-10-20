@@ -93,6 +93,17 @@ class ConfigurableTariff(Generic[T_TARIFF_CONFIG]):
         next_query_time = (now.replace(hour=next_hour, minute=0, second=0, microsecond=0) +
                            timedelta(days=day_offset, minutes=random.randint(1, 7) * -5))
         if latest_price_timestamp < next_query_time:
+            tomorrow_start = (now + timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
+            warning_hour = min(self.tariff_update_hours) + LATE_WARNING_OFFSET_HOURS
+            if latest_price_timestamp < tomorrow_start and now.hour < warning_hour:
+                # Noch keine Preise für den Folgetag und die Warnschwelle ist noch nicht erreicht:
+                # kurzer Backoff statt auf das Ende der heute schon bekannten Preise zu springen.
+                # Sonst würde bei Anbietern mit rollierender Tagesantwort (Preise reichen jeden
+                # Abruf etwas weiter in den noch laufenden Tag, ohne je den Folgetag zu erreichen)
+                # der Abruf für Stunden pausiert, noch bevor überhaupt die Warnschwelle erreicht ist
+                # (siehe #3703).
+                self._delay_next_query()
+                return
             # Falls die Preise nicht bis zum nächsten geplanten Abruf gültig sind,
             # den Abruf auf die Gültigkeitsdauer der Preise setzen
             log.debug(f"Die Preise sind nur bis {latest_price_timestamp} gültig, "

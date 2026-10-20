@@ -1,5 +1,6 @@
 """Optionale Module
 """
+from dataclasses import asdict
 import logging
 from math import ceil
 from threading import Thread
@@ -8,12 +9,13 @@ from datetime import datetime
 
 from control import data
 from control.ocpp import OcppMixin
-from control.optional_data import FlexibleTariff, GridFee, OptionalData, PricingGet
+from control.optional_data import FlexibleTariff, ForecastGet, GridFee, OptionalData, PricingGet
 from helpermodules import hardware_configuration
 from helpermodules.constants import NO_ERROR
 from helpermodules.pub import Pub
 from helpermodules import timecheck
 from helpermodules.utils import thread_handler
+from modules.common.configurable_forecast import ConfigurableForecast
 from modules.common.configurable_tariff import ConfigurableFlexibleTariff, ConfigurableGridFee
 from modules.common.configurable_monitoring import ConfigurableMonitoring
 from modules.electricity_pricing.flexible_tariffs.fixed_hours.tariff import get_tariff_name_for_time_slot
@@ -30,6 +32,7 @@ class Optional(OcppMixin):
             self.data = OptionalData()
             self._flexible_tariff_module: TypingOptional[ConfigurableFlexibleTariff] = None
             self._grid_fee_module: TypingOptional[ConfigurableGridFee] = None
+            self._forecast_module: TypingOptional[ConfigurableForecast] = None
             self.monitoring_module: TypingOptional[ConfigurableMonitoring] = None
             self.data.dc_charging = hardware_configuration.get_hardware_configuration_setting("dc_charging")
             Pub().pub("openWB/optional/dc_charging", self.data.dc_charging)
@@ -53,6 +56,43 @@ class Optional(OcppMixin):
     @property
     def grid_fee_module(self) -> TypingOptional[ConfigurableGridFee]:
         return self._grid_fee_module
+
+    @property
+    def forecast_module(self) -> TypingOptional[ConfigurableForecast]:
+        return self._forecast_module
+
+    @forecast_module.setter
+    def forecast_module(self, value: TypingOptional[ConfigurableForecast]):
+        if (value is None or
+                (self._forecast_module and value and
+                 self._forecast_module.config != value.config)):
+            self.data.forecast.get = ForecastGet()
+            self._reset_forecast_state()
+        previous_configured = self.data.forecast.configured
+        self._forecast_module = value
+        if value is None:
+            self.data.forecast.configured = False
+            self.data.forecast.provider = None
+            if previous_configured is not False:
+                Pub().pub("openWB/set/optional/forecast/configured", False)
+        else:
+            self.data.forecast.configured = True
+            self.data.forecast.provider = asdict(value.config)
+            if previous_configured is not True:
+                Pub().pub("openWB/set/optional/forecast/configured", True)
+
+    def _reset_forecast_state(self):
+        Pub().pub("openWB/set/optional/forecast/get/fault_state", 0)
+        Pub().pub("openWB/set/optional/forecast/get/fault_str", NO_ERROR)
+        Pub().pub("openWB/set/optional/forecast/get/force_update", False)
+        Pub().pub("openWB/set/optional/forecast/get/values", {})
+        Pub().pub("openWB/set/optional/forecast/get/today_values", {})
+        Pub().pub("openWB/set/optional/forecast/get/tomorrow_values", {})
+        Pub().pub("openWB/set/optional/forecast/get/daily_kwh", {})
+        Pub().pub("openWB/set/optional/forecast/get/today_kwh", 0.0)
+        Pub().pub("openWB/set/optional/forecast/get/tomorrow_kwh", 0.0)
+        Pub().pub("openWB/set/optional/forecast/get/next_query_time", 0)
+        Pub().pub("openWB/set/optional/forecast/get/last_update_time", 0)
 
     @grid_fee_module.setter
     def grid_fee_module(self, value: TypingOptional[ConfigurableGridFee]):
