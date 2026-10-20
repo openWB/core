@@ -76,10 +76,10 @@
 					<RadioInput2
 						v-model="cp.pvMinSocPhases"
 						class="grid-col-1"
-						:columns="2"
 						:options="[
 							['1', 1],
 							['Maximum', 3],
+							['Auto', 0],
 						]"
 					/>
 				</div>
