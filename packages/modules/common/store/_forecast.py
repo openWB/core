@@ -34,7 +34,8 @@ def _filter_values_for_date(values: Dict[str, float], target_date) -> Dict[str, 
 
 class ForecastValueStore(ValueStore[ForecastState]):
     def __init__(self):
-        pass
+        # erlaubt update() bereits vor dem ersten Abruf
+        self.state = ForecastState()
 
     def set(self, state: ForecastState) -> None:
         self.state = state

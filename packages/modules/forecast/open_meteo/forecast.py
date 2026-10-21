@@ -9,7 +9,8 @@ from modules.common.component_state import ForecastState
 
 from modules.forecast.open_meteo.config import OpenMeteoForecast, OpenMeteoForecastConfiguration
 
-OPEN_METEO_FORECAST_HOURS = 48
+# > 48h, damit "morgen" nach Mitternacht schon vor dem ersten Abruf des neuen Tages vollständig vorliegt
+OPEN_METEO_FORECAST_HOURS = 60
 log = logging.getLogger("forecast")
 
 
