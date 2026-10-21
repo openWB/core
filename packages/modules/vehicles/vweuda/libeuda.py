@@ -2,6 +2,7 @@
 
 import logging
 import re
+import time
 from typing import Optional
 
 from modules.common.abstract_vehicle import VehicleUpdateData
@@ -70,6 +71,7 @@ class EudaVehicle:
             except (DatasetError, ValueError, TypeError, KeyError, AttributeError):
                 log.warning("EUDA ev%s: Ungültiges Datenpaket übersprungen", self.vehicle)
             self._processed.add(name)
+            time.sleep(.5)
 
     def fetch(self, update: VehicleUpdateData) -> CarState:
         error_message = None
