@@ -1,4 +1,5 @@
 #!/usr/bin/python
+from contextlib import ExitStack
 import copy
 import logging
 from threading import Event, Thread
@@ -160,27 +161,22 @@ class InternalChargepointHandler:
                     heartbeat_cp1 = self.cp1.update(data["global_data"], data["cp1"].data, data["rfid_data"])
                 self.heartbeat = True if heartbeat_cp0 and heartbeat_cp1 else False
                 time.sleep(1.1)
+        # Allgemeine Fehlermeldungen an LP 1
         with SingleComponentUpdateContext(self.fault_state_info_cp0, update_always=False):
-            # Allgemeine Fehlermeldungen an LP 1
-            if self.cp0 is not None and self.cp0.mode == InternalChargepointMode.PRO_PLUS:
+            clients = []
+            is_pro_plus = self.cp0 is not None and self.cp0.mode == InternalChargepointMode.PRO_PLUS
+            if not is_pro_plus:
+                for handler in (self.cp0_client_handler, self.cp1_client_handler):
+                    if handler is not None and handler.client not in clients:
+                        clients.append(handler.client)
+                if not clients:
+                    log.error("Kein ClientHandler vorhanden. Beende.")
+                    return
+
+            with ExitStack() as stack:
+                for client in clients:
+                    stack.enter_context(client)
                 _loop()
-            elif self.cp0_client_handler is None and self.cp1_client_handler is None:
-                log.error("Kein ClientHandler vorhanden. Beende.")
-            elif self.cp0_client_handler is not None and self.cp1_client_handler is None:
-                with self.cp0_client_handler.client:
-                    _loop()
-            elif self.cp0_client_handler is None and self.cp1_client_handler is not None:
-                with self.cp1_client_handler.client:
-                    _loop()
-            elif self.cp0_client_handler.client == self.cp1_client_handler.client:
-                with self.cp0_client_handler.client:
-                    _loop()
-            elif self.cp0_client_handler is not None and self.cp1_client_handler is not None:
-                with self.cp0_client_handler.client:
-                    with self.cp1_client_handler.client:
-                        _loop()
-            else:
-                log.error("Kein ClientHandler vorhanden. Beende.")
 
 
 class HandlerChargepoint:
