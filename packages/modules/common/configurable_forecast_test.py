@@ -19,3 +19,9 @@ def test_store_update_runs_even_when_no_fetch_is_due():
     forecast.store.update.assert_called_once()
     forecast.store.set.assert_not_called()
     forecast._component_updater.assert_not_called()
+
+
+def test_real_store_does_not_crash_before_first_fetch():
+    forecast = _make_forecast()
+
+    forecast.update()

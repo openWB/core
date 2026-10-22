@@ -9,6 +9,7 @@ from control import data
 from control.optional import Optional
 from modules.common.component_state import ForecastState
 from modules.common.store import _forecast
+from modules.common.store._api import LoggingValueStore
 from modules.common.store._forecast import ForecastValueStore
 
 
@@ -70,10 +71,20 @@ def test_update_reruns_split_after_midnight_without_new_fetch(monkeypatch: pytes
     assert data.data.optional_data.data.forecast.get.tomorrow_kwh == 0.0
 
 
-def test_update_safe_before_first_fetch():
-    # ForecastValueStore() muss schon vor dem ersten set() aufrufbar sein (siehe
-    # ConfigurableForecast.update(), das update() auch ohne fälligen Abruf jeden Zyklus ruft)
-    ForecastValueStore().update()
+def test_update_before_first_fetch_raises_attribute_error():
+    # signalisiert LoggingValueStore.update(), dass noch nichts zu publizieren ist
+    with pytest.raises(AttributeError):
+        ForecastValueStore().update()
+
+
+def test_logging_store_swallows_missing_state_as_safe_noop(monkeypatch: pytest.MonkeyPatch):
+    store = LoggingValueStore(ForecastValueStore())
+    pub = Mock()
+    monkeypatch.setattr(_forecast, "pub_to_broker", pub)
+
+    store.update()
+
+    pub.assert_not_called()
 
 
 def test_dst_transition_does_not_shift_day_boundary(monkeypatch: pytest.MonkeyPatch):
