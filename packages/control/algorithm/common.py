@@ -151,8 +151,10 @@ def available_current_for_load(load: Load,
 def update_raw_data(preferenced_loads: List[Load],
                     diff_to_zero: bool = False,
                     surplus: bool = False) -> None:
-    """alle CP, die schon einen Soll-Strom haben, wieder herausrechnen, da dieser neu gesetzt wird
-        und die neue Differenz bei den Zählern eingetragen wird."""
+    """Zuteilungen dieser Stufe bis auf target_current herausrechnen, bevor sie neu gesetzt werden.
+
+    In der Mindeststromstufe (diff_to_zero) stattdessen den Mindeststrom herausrechnen.
+    """
     for load in preferenced_loads:
         required_currents = load.data.control_parameter.required_currents
         max_target_set_current = max(load.data.set.target_current, load.data.set.current or 0)
@@ -161,12 +163,8 @@ def update_raw_data(preferenced_loads: List[Load],
 
         if diff_to_zero is False:
             if load.data.control_parameter.min_current < max_target_set_current:
-                if surplus:
-                    diffs = [load.data.set.target_current -
-                             max_target_set_current if required_currents[i] != 0 else 0 for i in range(3)]
-                else:
-                    diffs = [load.data.control_parameter.min_current -
-                             max_target_set_current if required_currents[i] != 0 else 0 for i in range(3)]
+                diffs = [load.data.set.target_current -
+                         max_target_set_current if required_currents[i] != 0 else 0 for i in range(3)]
             else:
                 continue
         else:
