@@ -4575,9 +4575,10 @@ export const useMqttStore = defineStore('mqtt', () => {
     }) => {
       const hidden = (id: number) => {
         // a counter that only measures the components below it is hidden
-        if (bucket.counterIdsWithChildren.includes(id) &&
+        if (
+          bucket.counterIdsWithChildren.includes(id) &&
           Math.abs(Number(counterLocalPower.value('value', id) ?? 0)) <
-          COUNTER_OWN_SHARE_THRESHOLD
+            COUNTER_OWN_SHARE_THRESHOLD
         ) {
           return true;
         }
