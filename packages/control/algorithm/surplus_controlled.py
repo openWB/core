@@ -95,9 +95,10 @@ class SurplusControlled:
                                    limit: LoadmanagementLimit,
                                    load: Load) -> None:
         # Strom muss an diesem Zähler geändert werden
-        if (current != load.data.set.current and
+        if ((load.data.set.current is None or round(current, 2) != round(load.data.set.current, 2)) and
                 # Strom erreicht nicht die vorgegebene Stromstärke
-                current != max(load.data.control_parameter.required_currents) and
+                round(current, 2) != round(max(load.data.control_parameter.required_currents), 2) and
+                limit.message is not None and
                 # im PV-Laden wird der Strom immer durch die Leistung begrenzt
                 limit.limiting_value != LimitingValue.POWER):
             load.set_state_and_log(f"Es kann nicht mit der vorgegebenen Stromstärke geladen werden"
