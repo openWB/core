@@ -3,7 +3,6 @@ import json
 from dataclasses import asdict
 from threading import Event
 from types import SimpleNamespace
-from unittest.mock import AsyncMock, call
 from unittest.mock import ANY, AsyncMock, call
 
 import pytest

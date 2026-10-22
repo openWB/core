@@ -28,6 +28,7 @@ def internal_chargepoint_data_factory() -> InternalChargepointData:
 
 @dataclass
 class Get:
+    unlock_blocked: bool = False
     charge_state: bool = False
     currents: List[float] = field(default_factory=currents_list_factory)
     evse_current: float = 0
