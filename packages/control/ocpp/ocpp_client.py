@@ -94,6 +94,7 @@ class OcppClient:
         return OcppChargePoint(charge_point_id,
                                ws,
                                reset_callback=self._handle_reset,
+                               unlock_callback=self._handle_unlock,
                                trigger_msg_callback=self.handler_trigger_msg)
 
     # Startet den Event-Loop des OCPP-Clients
@@ -837,6 +838,25 @@ class OcppClient:
             f"StopTransaction {chargebox_id}",
             chargebox_id=chargebox_id,
         )
+
+    async def _handle_unlock(self, chargebox_id: str) -> str:
+        openwb_cp = get_cp_from_chargebox_id(chargebox_id)
+        if openwb_cp is None:
+            return "failed"
+        module = openwb_cp.chargepoint_module
+        configuration = module.config.configuration
+        if module.config.type != "internal_openwb" or getattr(configuration, "mode", None) != "socket":
+            return "not_supported"
+        self.transactions.block_start(chargebox_id)
+        openwb_cp.data.get.ocpp.unlock_stop = True
+        openwb_cp.data.get.ocpp.unlock_in_progress = True
+        Pub().pub(f"openWB/set/chargepoint/{openwb_cp.num}/get/ocpp/unlock_stop", True)
+        try:
+            from modules.common.connector_unlock import request_unlock
+            return await request_unlock(configuration.duo_num)
+
+        finally:
+            openwb_cp.data.get.ocpp.unlock_in_progress = False
 
     async def _handle_reset(
         self,

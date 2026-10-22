@@ -40,12 +40,14 @@ log = logging.getLogger(__name__)
 
 class OcppChargePoint(cp):
 
-    def __init__(self, chargebox_id, ws, reset_callback=None, trigger_msg_callback=None):
+    def __init__(self, chargebox_id, ws, reset_callback=None, trigger_msg_callback=None, unlock_callback=None):
         super().__init__(chargebox_id, ws)
         self.chargebox_id = chargebox_id
         self.ws = ws
 
         self.reset_callback = reset_callback
+        self.unlock_callback = unlock_callback
+        self._unlock_lock = asyncio.Lock()
         self.trigger_msg_callback = trigger_msg_callback
         self._accepted_triggers = set()
         self._accepted_resets = set()
@@ -443,7 +445,8 @@ class OcppChargePoint(cp):
         requested_connector_id = connector_id if connector_id is not None else 1
         openwb_cp = self.openwb_cp
         if (openwb_cp is None or requested_connector_id != 1 or
-                not all(openwb_cp.data.get.ocpp.availability)):
+                not all(openwb_cp.data.get.ocpp.availability)
+                or getattr(openwb_cp.data.get.ocpp, "unlock_stop", False)):
             return call_result.RemoteStartTransaction(
                 status=RemoteStartStopStatus.rejected
             )
@@ -498,13 +501,30 @@ class OcppChargePoint(cp):
 
     @on(Action.unlock_connector)
     async def unlock_connector(self, connector_id: int, **kwargs):
-        # Nur wenn der Stecker nicht fest mit der Wallbox verbunden ist relevant
-        # Also nur wenn beim kabel an beiden Seiten ein Stecker ist
-        #
-        # Antwort mit not_supported muss trotzdem gesendet werden!
-        return call_result.UnlockConnector(
-            status=UnlockStatus.not_supported
+        print(f"# UNLOCK_CONNECTOR  CP_Nr: {self.openwb_num} OCPP_Nr: {self.chargebox_id} Connector ID: {connector_id}")
+        log.debug(
+            "UnlockConnector request for CP %s / OCPP %s / Connector ID %s",
+            self.openwb_num,
+            self.chargebox_id,
+            connector_id,
         )
+        if connector_id != 1:
+            return call_result.UnlockConnector(status=UnlockStatus.not_supported)
+        if self.openwb_cp is None or self._unlock_lock.locked():
+            return call_result.UnlockConnector(status=UnlockStatus.unlock_failed)
+        if self.unlock_callback is None:
+            return call_result.UnlockConnector(status=UnlockStatus.not_supported)
+        async with self._unlock_lock:
+            try:
+                result = await self.unlock_callback(self.chargebox_id)
+                status = {"unlocked": UnlockStatus.unlocked,
+                          "not_supported": UnlockStatus.not_supported}.get(result, UnlockStatus.unlock_failed)
+                print(f"# UNLOCK_CONNECTOR  Await result: {status}")
+                return call_result.UnlockConnector(status=status)
+            except Exception:
+                log.exception("UnlockConnector failed for %s", self.chargebox_id)
+                print("# UNLOCK_CONNECTOR Exception occurred")
+                return call_result.UnlockConnector(status=UnlockStatus.unlock_failed)
 
     @on(Action.clear_cache)
     async def clear_cache(self, **kwargs):
