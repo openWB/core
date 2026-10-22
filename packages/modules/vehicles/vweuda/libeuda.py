@@ -53,7 +53,8 @@ class EudaVehicle:
             raise ApiError("Kontinuierlicher Datenabruf im Portal noch nicht bereit")
         listing = client.list_datasets(self.vin, identifier)
         content = sorted((entry for entry in listing
-                          if entry.get("name") and not entry["name"].endswith(NO_CONTENT_SUFFIX)), key=dataset_time)
+                          if entry.get("name") and not entry["name"].endswith(NO_CONTENT_SUFFIX)),
+                         key=dataset_time, reverse=True)
         if not content:
             raise ApiError("Im Portal sind noch keine Datenpakete mit Inhalt verfügbar")
         self._processed.intersection_update(entry["name"] for entry in content)
@@ -66,7 +67,11 @@ class EudaVehicle:
                 if payload.get("vin") != self.vin:
                     raise ValueError("VIN mismatch")
                 result = parse_vehicle_data(payload)
-                self._merge(result)
+                if self._merge(result):
+                    # SoC and timestamp suffice; optional values do not justify
+                    # more downloads. Skip the remaining history on later polls.
+                    self._processed.update(entry["name"] for entry in content)
+                    return
             except (DatasetError, ValueError, TypeError, KeyError, AttributeError):
                 log.warning("EUDA ev%s: Ungültiges Datenpaket übersprungen", self.vehicle)
             self._processed.add(name)
