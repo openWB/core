@@ -4573,11 +4573,21 @@ export const useMqttStore = defineStore('mqtt', () => {
       counterIds: number[];
       counterIdsWithChildren: number[];
     }) => {
-      // a counter that only measures the components below it is hidden
-      const hidden = (id: number) =>
-        bucket.counterIdsWithChildren.includes(id) &&
-        Math.abs(Number(counterLocalPower.value('value', id) ?? 0)) <
-          COUNTER_OWN_SHARE_THRESHOLD;
+      const hidden = (id: number) => {
+        // a counter that only measures the components below it is hidden
+        if (bucket.counterIdsWithChildren.includes(id) &&
+          Math.abs(Number(counterLocalPower.value('value', id) ?? 0)) <
+          COUNTER_OWN_SHARE_THRESHOLD
+        ) {
+          return true;
+        }
+        // a counter that is linked to a consumer does not exist in the hierarchy
+        const counterIds = getObjectIds.value('counter');
+        if (!counterIds.includes(id)) {
+          return true;
+        }
+        return false;
+      };
       return bucket.counterIds.filter((id) => !hidden(id));
     };
     return {
