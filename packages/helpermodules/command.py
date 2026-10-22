@@ -215,6 +215,11 @@ class Command:
         """ löscht ein Device.
         """
         if self.max_id_device >= payload["data"]["id"]:
+            device = SubData.system_data.get(f'device{payload["data"]["id"]}')
+            if device is not None:
+                for component in device.components.values():
+                    if self._prevent_linked_meter_removal(connection_id, payload, component.component_config.id):
+                        return
             ProcessBrokerBranch(f'system/device/{payload["data"]["id"]}/').remove_topics()
             pub_user_message(payload, connection_id, f'Gerät mit ID \'{payload["data"]["id"]}\' gelöscht.',
                              MessageType.SUCCESS)
@@ -727,12 +732,26 @@ class Command:
             f'Neue Komponente vom Typ \'{payload["data"]["type"]}\' mit ID \'{new_id}\' hinzugefügt.',
             MessageType.SUCCESS)
 
+    def _prevent_linked_meter_removal(self, connection_id: str, payload: dict, component_id: int) -> bool:
+        for consumer in SubData.consumer_data.values():
+            if consumer.data.extra_meter is not None and consumer.data.extra_meter == component_id:
+                pub_user_message(
+                    payload, connection_id,
+                    f'Zähler mit ID \'{component_id}\' kann nicht gelöscht werden, da er beim Verbraucher '
+                    f'\'{consumer.data.module.name}\' als separate Leistungsmessung zugeordnet ist. '
+                    'Bitte zuerst die Zuordnung beim Verbraucher ändern.',
+                    MessageType.ERROR)
+                return True
+        return False
+
     def removeComponent(self, connection_id: str, payload: dict) -> None:
         """ löscht eine Komponente.
         """
         if self.max_id_hierarchy < payload["data"]["id"]:
             log.error(payload, connection_id,
                       "Die ID ist größer als die maximal vergebene ID.", MessageType.ERROR)
+        if self._prevent_linked_meter_removal(connection_id, payload, payload["data"]["id"]):
+            return
         branch = f'system/device/{payload["data"]["deviceId"]}/component/{payload["data"]["id"]}/'
         ProcessBrokerBranch(branch).remove_topics()
         # remove ACL roles for component access, if user management is active
