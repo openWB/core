@@ -1,0 +1,50 @@
+{
+  "name": "openwb-quartz-web-theme",
+  "version": "0.0.1",
+  "description": "Quartz web theme for openWB software2",
+  "license": "GPL-3.0-or-later",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "dev": "vite --host",
+    "build": "run-p type-check \"build-only {@}\" --",
+    "build-only": "vite build --base=/openWB/web/themes/quartz --outDir=../web --emptyOutDir",
+    "preview": "vite preview --host",
+    "type-check": "vue-tsc --build --force",
+    "lint": "eslint . --fix",
+    "format": "prettier 'src/' --write",
+    "test:unit": "vitest run --root src/"
+  },
+  "dependencies": {
+    "chart.js": "^4.5.1",
+    "chartjs-adapter-luxon": "^1.3.1",
+    "chartjs-plugin-annotation": "^3.1.0",
+    "luxon": "^3.7.2",
+    "mqtt": "^5.16.0",
+    "pinia": "^3.0.4",
+    "vue": "^3.5.44",
+    "vue-chartjs": "^5.3.4",
+    "vue-router": "^5.4.0"
+  },
+  "devDependencies": {
+    "@eslint/compat": "^2.1.1",
+    "@eslint/eslintrc": "^3.3.7",
+    "@eslint/js": "^10.0.1",
+    "@tsconfig/node20": "^20.1.10",
+    "@types/node": "^20.19.43",
+    "@typescript-eslint/eslint-plugin": "^8.57.1",
+    "@typescript-eslint/parser": "^8.57.1",
+    "@vitejs/plugin-vue": "^6.0.10",
+    "@vue/eslint-config-prettier": "^10.2.0",
+    "@vue/tsconfig": "^0.9.1",
+    "eslint": "^10.12.0",
+    "eslint-plugin-vue": "^10.11.1",
+    "globals": "^17.13.0",
+    "npm-run-all2": "^9.0.3",
+    "prettier": "^3.9.10",
+    "typescript": "^6.0.3",
+    "vite": "^8.3.4",
+    "vitest": "^4.1.11",
+    "vue-tsc": "^3.3.13"
+  }
+}
