@@ -25,7 +25,7 @@ def config():
     return VWEUDA(configuration=VWEUDAConfiguration(user_id="test@example.com", password="test", vin=VIN))
 
 
-def test_history_keeps_valid_data_and_processes_each_dataset_once(config):
+def test_newest_valid_dataset_stops_search_without_optional_values(config):
     portal = libeuda.EudaVehicle(config.configuration, 1)
     client = Mock()
     client.get_metadata.return_value = {"Identifier": "id"}
@@ -39,12 +39,42 @@ def test_history_keeps_valid_data_and_processes_each_dataset_once(config):
                 "new.zip": payload(value=60, timestamp="2026-10-19T12:00:00Z")}
     client.download_dataset.side_effect = lambda vin, identifier, name: (VIN + name + ".json", contents[name])
     portal._poll(client)
-    assert [call.args[2] for call in client.download_dataset.call_args_list] == [
-        "old.zip", "incomplete.zip", "new.zip"]
+    assert [call.args[2] for call in client.download_dataset.call_args_list] == ["new.zip"]
     assert portal._result["soc"] == 60
-    assert portal._result["odometer"] == 1000
+    assert portal._result["odometer"] is None
+    assert portal._result["range"] is None
     portal._poll(client)
-    assert client.download_dataset.call_count == 3
+    assert client.download_dataset.call_count == 1
+
+    # A later update also preserves optional cached values without backfilling.
+    portal._result.update(odometer=1000, range=200)
+    client.list_datasets.return_value.append({"name": "latest.zip", "createdOn": "2026-10-19T13:00:00Z"})
+    contents["latest.zip"] = payload(value=65, timestamp="2026-10-19T13:00:00Z")
+    portal._poll(client)
+    assert [call.args[2] for call in client.download_dataset.call_args_list] == ["new.zip", "latest.zip"]
+    assert portal._result["soc"] == 65
+    assert portal._result["odometer"] == 1000
+    assert portal._result["range"] == 200
+
+
+@pytest.mark.parametrize("newest", [payload(value=None), payload(timestamp=None), payload(value=101)])
+def test_search_moves_backwards_until_soc_and_timestamp_are_valid(config, newest):
+    portal = libeuda.EudaVehicle(config.configuration, 1)
+    client = Mock()
+    client.get_metadata.return_value = {"Identifier": "id"}
+    client.list_datasets.return_value = [
+        {"name": "old.zip", "createdOn": "2026-10-19T09:00:00Z"},
+        {"name": "new.zip", "createdOn": "2026-10-19T11:00:00Z"},
+        {"name": "valid.zip", "createdOn": "2026-10-19T10:00:00Z"},
+    ]
+    contents = {"new.zip": newest, "valid.zip": payload(value=0), "old.zip": payload(odometer=1000)}
+    client.download_dataset.side_effect = lambda vin, identifier, name: (name, contents[name])
+    portal._poll(client)
+    assert [call.args[2] for call in client.download_dataset.call_args_list] == ["new.zip", "valid.zip"]
+    assert portal._result["soc"] == 0
+    assert portal._result["soc_timestamp"] == 1792404000
+    portal._poll(client)
+    assert client.download_dataset.call_count == 2
 
 
 @pytest.mark.parametrize("value", [None, "bad", -1, 101, "NaN", "Infinity"])
@@ -129,16 +159,22 @@ def test_empty_portal_response_without_cache_is_error_and_requests_retry(config,
     assert portal.get_request_interval_override() == 60
 
 
-def test_foreign_and_corrupt_datasets_do_not_block_later_valid_data(config):
+def test_foreign_and_corrupt_datasets_do_not_block_older_valid_data(config):
     client = Mock()
     client.get_metadata.return_value = {"Identifier": "id"}
-    client.list_datasets.return_value = [{"name": name} for name in ("bad.zip", "foreign.zip", "good.zip")]
+    client.list_datasets.return_value = [
+        {"name": "good.zip", "createdOn": "2026-10-19T09:00:00Z"},
+        {"name": "foreign.zip", "createdOn": "2026-10-19T10:00:00Z"},
+        {"name": "bad.zip", "createdOn": "2026-10-19T11:00:00Z"},
+    ]
     foreign = dict(payload(), vin="WVW00000000000002")
     client.download_dataset.side_effect = [libeuda.DatasetError("bad archive"),
                                            ("foreign.json", foreign), (VIN + ".json", payload())]
     portal = libeuda.EudaVehicle(config.configuration, 1)
     portal._poll(client)
     assert portal._result["soc"] == 55
+    assert [call.args[2] for call in client.download_dataset.call_args_list] == [
+        "bad.zip", "foreign.zip", "good.zip"]
 
 
 def test_memory_cache_used_with_original_timestamp_and_calculated_range_on_failure(config, monkeypatch):
