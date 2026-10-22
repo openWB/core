@@ -84,7 +84,7 @@ class SurplusControlled:
             self._set_loadmangement_message(current, limit, load)
             limited_current = limit_adjust_current(load, current)
             common.set_current_counterdiff(
-                load.data.control_parameter.min_current,
+                load.data.set.target_current,
                 limited_current,
                 load,
                 surplus=True)
