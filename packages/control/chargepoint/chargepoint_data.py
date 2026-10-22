@@ -129,6 +129,8 @@ class Ocpp:
     transaction_id: Optional[int] = None
     tag_accepted: bool = False
     remote_stop: bool = False
+    unlock_stop: bool = False
+    unlock_in_progress: bool = False
     test_reconnect: bool = False
     # RFID/IdTag der laufenden OCPP-Transaction.
     transaction_id_tag: Optional[str] = None
