@@ -16,6 +16,7 @@ from modules.internal_chargepoint_handler import chargepoint_module
 from modules.internal_chargepoint_handler.clients import ClientHandler, client_factory
 from modules.internal_chargepoint_handler.pro_plus import ProPlus
 from modules.internal_chargepoint_handler.socket import Socket
+from modules.common.connector_unlock import UnlockRequest, take_unlock_request
 from modules.internal_chargepoint_handler.internal_chargepoint_handler_config import (
     GlobalHandlerData, InternalChargepoint, InternalChargepointData, RfidData)
 log = logging.getLogger(__name__)
@@ -32,6 +33,8 @@ class UpdateState:
         self.old_set_current = 0
         self.phase_switch_thread = None  # type: Optional[Thread]
         self.cp_interruption_thread = None  # type: Optional[Thread]
+        # Entriegelung in einem eigenen Hardware-Thread ausführen.
+        self.unlock_thread = None  # type: Optional[Thread]
         self.actor_cooldown_thread = None  # type: Optional[Thread]
         self.cp_module = cp_module
         self.hierarchy_id = hierarchy_id
@@ -42,6 +45,10 @@ class UpdateState:
         else:
             set_current = data.set_current
         log.debug(f"Values from parentWB: {data}")
+
+        # Während eines Entriegelungsauftrags keine Stromvorgaben oder Umschaltungen ausführen.
+        if self.handle_unlock():
+            return
 
         if self.phase_switch_thread:
             if self.phase_switch_thread.is_alive():
@@ -54,6 +61,11 @@ class UpdateState:
                           " noch aktiv. Es muss erst gewartet werden, bis die CP-Unterbrechung abgeschlossen ist.")
                 return
         self.cp_module.set_current(set_current)
+        if getattr(self.cp_module, "unlock_blocked", False):
+            # Socket erzwingt lokal 0 A. Auch nach Thread-Ende bleiben weitere
+            # Hardwareaktionen bis zum sicher erkannten Abstecken gesperrt.
+            Pub().pub(f"openWB/set/chargepoint/{self.hierarchy_id}/set/current", payload=0)
+            return
         Pub().pub(f"openWB/set/chargepoint/{self.hierarchy_id}/set/current", payload=set_current)
         if data.trigger_phase_switch:
             log.debug("Switch Phases from "+str(self.old_phases_to_use) + " to " + str(data.phases_to_use))
@@ -64,6 +76,55 @@ class UpdateState:
 
         if data.cp_interruption_duration > 0:
             self.__thread_cp_interruption(data.cp_interruption_duration)
+
+    def handle_unlock(self) -> bool:
+        # True bedeutet: Der Auftrag wird bearbeitet oder wurde in diesem Aufruf
+        # beantwortet; das normale Hardware-Update darf dann nicht fortgesetzt werden.
+        if self.unlock_thread and self.unlock_thread.is_alive():
+            log.debug(f"Entriegelungs-Thread an LP{self.cp_module.local_charge_point_num} noch aktiv. "
+                      "Es muss erst gewartet werden, bis die Entriegelung abgeschlossen ist.")
+            return True
+        # Lokalen Auftrag genau einmal übernehmen. Abgelaufene oder bereits
+        # abgebrochene Aufträge werden von take_unlock_request nicht herausgegeben.
+        request = take_unlock_request(self.cp_module.local_charge_point_num)
+        if request is None:
+            return False
+        if not isinstance(self.cp_module, Socket):
+            request.result.set_result("not_supported")
+        elif any(thread and thread.is_alive()
+                 for thread in (self.phase_switch_thread, self.cp_interruption_thread)):
+            # Entriegelung nicht parallel zu einer laufenden Hardwareumschaltung starten.
+            request.result.set_result("failed")
+        else:
+            self.__thread_unlock(request)
+        return True
+
+    def __thread_unlock(self, request: UnlockRequest) -> None:
+        def unlock():
+            status = "failed"
+            try:
+                # Hardwarefehler dem Ladepunkt zuordnen und an den Worker weiterreichen,
+                # damit sie nicht versehentlich als erfolgreiche Entriegelung gelten.
+                with SingleComponentUpdateContext(self.cp_module.fault_state, update_always=False, reraise=True):
+                    # Nur die verbleibende Auftragszeit nutzen. Das Abbruchsignal
+                    # wird auch während der Strom- und EVSE-Prüfung berücksichtigt.
+                    remaining = request.deadline - time.monotonic()
+                    if self.cp_module.perform_unlock(timeout=remaining, cancelled=request.cancelled):
+                        status = "unlocked"
+            except Exception:
+                log.exception("Entriegelung an LP %s fehlgeschlagen", self.cp_module.local_charge_point_num)
+            finally:
+                # Das threadsichere Future weckt den asynchron wartenden OCPP-Aufruf
+                # mit dem tatsächlichen Ergebnis; ein MQTT-Antwortkanal ist nicht nötig.
+                request.result.set_result(status)
+
+        self.unlock_thread = Thread(target=unlock, name=f"perform unlock cp{self.cp_module.local_charge_point_num}")
+        try:
+            self.unlock_thread.start()
+        except Exception:
+            # Auch bei einem fehlgeschlagenen Thread-Start den wartenden Aufruf beenden.
+            request.result.set_result("failed")
+            raise
 
     def __thread_phase_switch(self, phases_to_use: int) -> None:
         self.phase_switch_thread = Thread(
@@ -147,7 +208,18 @@ class InternalChargepointHandler:
         def _loop():
             while True:
                 if self.event_stop.is_set():
+                    # Entriegelung beenden lassen, bevor der Hardware-Client geschlossen
+                    # oder der Handler neu erzeugt wird.
+                    for cp in (self.cp0, self.cp1):
+                        if cp and cp.update_state.unlock_thread:
+                            cp.update_state.unlock_thread.join()
                     break
+                # Während der Entriegelung gehört der Hardware-Client dem Unlock-Thread.
+                # Auch andere interne Ladepunkte pausieren, da sie denselben Bus nutzen können.
+                if any(cp and cp.update_state.unlock_thread and cp.update_state.unlock_thread.is_alive()
+                       for cp in (self.cp0, self.cp1)):
+                    time.sleep(0.1)
+                    continue
                 clear_in_memory_log_handler("internal_chargepoint")
                 log.debug("***Start***")
                 data = copy.deepcopy(SubData.internal_chargepoint_data)
@@ -156,6 +228,10 @@ class InternalChargepointHandler:
                 heartbeat_cp0, heartbeat_cp1 = True, True
                 if self.cp0:
                     heartbeat_cp0 = self.cp0.update(data["global_data"], data["cp0"].data, data["rfid_data"])
+                    if self.cp0.update_state.unlock_thread and self.cp0.update_state.unlock_thread.is_alive():
+                        # Ein gerade gestarteter Unlock-Thread sperrt den gemeinsamen Bus
+                        # sofort, also bereits vor dem Update des zweiten Ladepunkts.
+                        continue
                 if self.cp1:
                     heartbeat_cp1 = self.cp1.update(data["global_data"], data["cp1"].data, data["rfid_data"])
                 self.heartbeat = True if heartbeat_cp0 and heartbeat_cp1 else False
@@ -218,6 +294,10 @@ class HandlerChargepoint:
             else:
                 return False
         with SingleComponentUpdateContext(self.module.fault_state):
+            # Auftrag vor get_values übernehmen, damit weder Messwertabfragen noch
+            # die automatische Buchsenverriegelung parallel zum Unlock-Thread laufen.
+            if self.update_state.handle_unlock():
+                return True
             if self.local_charge_point_num == 1:
                 time.sleep(0.1)
             phase_switch_cp_active = __thread_active(self.update_state.cp_interruption_thread) or __thread_active(

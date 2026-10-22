@@ -600,8 +600,10 @@ class SetData:
             finally:
                 Pub().pub(msg.topic, "")
         elif ("/get/charge_state" in msg.topic or
+                "/get/unlock_blocked" in msg.topic or
                 "/get/plug_state" in msg.topic or
                 "/get/ocpp/remote_stop" in msg.topic or
+                "/get/ocpp/unlock_stop" in msg.topic or
                 "/get/ocpp/tag_accepted" in msg.topic or
                 "/get/ocpp/test_reconnect" in msg.topic or
                 "/get/ocpp/connected" in msg.topic or

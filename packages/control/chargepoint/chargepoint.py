@@ -190,6 +190,9 @@ class Chargepoint(ChargepointRfidMixin, Load):
                       "Stecker abziehen und erneut verbinden."
             state = False
 
+        elif self.data.get.ocpp.unlock_stop:
+            message = "Keine Ladung: Buchsenentriegelung angefordert. Stecker abziehen und erneut verbinden."
+            state = False
         elif self.data.get.ocpp.remote_stop:
             print("#####################################")
             print("OCPP Remote Stop aktiv")
@@ -251,7 +254,14 @@ class Chargepoint(ChargepointRfidMixin, Load):
         # hier nicht nach data.data.optional_data.data.ocpp.config.active prüfen
         # Stop muss immer aufgerufen werden, wenn noch eine alten Transaktion aktiv ist.
         if (chargebox_id and self.data.get.ocpp.transaction_id is not None):
-            if self.data.get.ocpp.remote_stop:
+            if self.data.get.ocpp.unlock_stop:
+                data.data.ocpp_client.request_stop(
+                    chargebox_id=chargebox_id,
+                    imported=self.data.get.imported,
+                    id_tag=self.data.set.rfid,
+                    reason="UnlockCommand",
+                )
+            elif self.data.get.ocpp.remote_stop:
 
                 data.data.ocpp_client.request_stop(
                     chargebox_id=chargebox_id,
@@ -781,9 +791,12 @@ class Chargepoint(ChargepointRfidMixin, Load):
             )
 
             # Wenn Stecker abgezogen wurde, reset remote_stop und reset_stop OCPP
-            if ((self.data.get.ocpp.remote_stop or self.data.get.ocpp.reset or self.data.get.ocpp.rfid_stop) and
-                    self.data.get.plug_state is False):
+            if ((self.data.get.ocpp.remote_stop or self.data.get.ocpp.reset or self.data.get.ocpp.rfid_stop or
+                 self.data.get.ocpp.unlock_stop) and
+                    self.data.get.plug_state is False and not self.data.get.ocpp.unlock_in_progress):
                 self.data.get.ocpp.remote_stop = False
+                self.data.get.ocpp.unlock_stop = False
+                Pub().pub(f"openWB/set/chargepoint/{self.num}/get/ocpp/unlock_stop", False)
                 Pub().pub(f"openWB/set/chargepoint/"f"{self.num}/get/ocpp/remote_stop", False)
 
                 self.data.get.ocpp.reset = False
@@ -927,7 +940,7 @@ class Chargepoint(ChargepointRfidMixin, Load):
 
             # als ocpp Chargepoint konfiguriert?
             if data.data.optional_data.data.ocpp.config.active and chargebox_id:
-                if not self.data.get.plug_state:  # <- Stecker eingesteckt?
+                if not self.data.get.plug_state and not self.data.get.ocpp.unlock_in_progress:
                     data.data.ocpp_client.clear_start_block(chargebox_id)
                 elif (self.data.get.ocpp.connected  # <- mit OCPP-Server verbunden
                         and self.data.get.plug_state and id_tag
@@ -1084,7 +1097,7 @@ class Chargepoint(ChargepointRfidMixin, Load):
         if not all(self.data.get.ocpp.availability):
             return ChargePointStatus.unavailable
 
-        if self.data.get.ocpp.remote_stop or self.data.get.ocpp.reset:
+        if self.data.get.ocpp.remote_stop or self.data.get.ocpp.reset or self.data.get.ocpp.unlock_stop:
             return ChargePointStatus.finishing
 
         if self.data.get.fault_state:
