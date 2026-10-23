@@ -1,4 +1,6 @@
 import asyncio
+from contextlib import asynccontextmanager
+import json
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, Mock
 
@@ -9,6 +11,124 @@ from control.ocpp import ocpp_chargepoint, ocpp_client
 from control.ocpp.ocpp_chargepoint import OcppChargePoint
 from control.ocpp.ocpp_client import OcppClient
 from modules.common import connector_unlock
+
+
+@asynccontextmanager
+async def _receiving_charge_point(monkeypatch, callback):
+    monkeypatch.setattr(ocpp_chargepoint, "get_cp_from_chargebox_id", lambda _: SimpleNamespace(num=1))
+    incoming = asyncio.Queue()
+    outgoing = asyncio.Queue()
+    websocket = SimpleNamespace(recv=incoming.get, send=outgoing.put)
+    cp = OcppChargePoint("box", websocket, unlock_callback=callback)
+    receiver = asyncio.create_task(cp.start())
+    try:
+        yield cp, incoming, outgoing
+    finally:
+        await cp.cancel_background_tasks()
+        receiver.cancel()
+        await asyncio.gather(receiver, return_exceptions=True)
+
+
+@pytest.mark.parametrize("result,status", [("unlocked", "Unlocked"),
+                                           ("failed", "UnlockFailed"),
+                                           ("not_supported", "NotSupported")])
+def test_unlock_keeps_receiving_call_results_until_hardware_finishes(monkeypatch, result, status):
+    async def run():
+        entered = asyncio.Event()
+        release = asyncio.Event()
+
+        async def unlock(chargebox_id):
+            assert chargebox_id == "box"
+            entered.set()
+            await release.wait()
+            return result
+
+        async with _receiving_charge_point(monkeypatch, unlock) as (cp, incoming, outgoing):
+            heartbeat = asyncio.create_task(cp._heartbeat())
+            try:
+                request = json.loads(await asyncio.wait_for(outgoing.get(), 1))
+                assert request[0] == 2
+                assert request[2] == "Heartbeat"
+                await incoming.put(json.dumps([2, "unlock-1", "UnlockConnector", {"connectorId": 1}]))
+                await asyncio.wait_for(entered.wait(), 1)
+
+                await incoming.put(json.dumps([3, request[1], {"currentTime": "2026-10-23T12:00:00Z"}]))
+                response = await asyncio.wait_for(heartbeat, 1)
+                assert response.current_time == "2026-10-23T12:00:00Z"
+                assert outgoing.empty()
+
+                release.set()
+                response = json.loads(await asyncio.wait_for(outgoing.get(), 1))
+                assert response == [3, "unlock-1", {"status": status}]
+            finally:
+                heartbeat.cancel()
+                await asyncio.gather(heartbeat, return_exceptions=True)
+
+    asyncio.run(run())
+
+
+@pytest.mark.parametrize("payload", [{}, {"connectorId": "invalid"}])
+def test_invalid_unlock_payload_receives_call_error(monkeypatch, payload):
+    callback = AsyncMock()
+
+    async def run():
+        async with _receiving_charge_point(monkeypatch, callback) as (_, incoming, outgoing):
+            await incoming.put(json.dumps([2, "invalid-unlock", "UnlockConnector", payload]))
+            response = json.loads(await asyncio.wait_for(outgoing.get(), 1))
+            assert response[:2] == [4, "invalid-unlock"]
+            callback.assert_not_awaited()
+
+    asyncio.run(run())
+
+
+def test_second_unlock_is_rejected_while_first_request_waits(monkeypatch):
+    async def run():
+        entered = asyncio.Event()
+        release = asyncio.Event()
+
+        async def unlock(_):
+            entered.set()
+            await release.wait()
+            return "unlocked"
+
+        callback = AsyncMock(side_effect=unlock)
+        async with _receiving_charge_point(monkeypatch, callback) as (_, incoming, outgoing):
+            await incoming.put(json.dumps([2, "first", "UnlockConnector", {"connectorId": 1}]))
+            await asyncio.wait_for(entered.wait(), 1)
+            await incoming.put(json.dumps([2, "second", "UnlockConnector", {"connectorId": 1}]))
+            response = json.loads(await asyncio.wait_for(outgoing.get(), 1))
+            assert response == [3, "second", {"status": "UnlockFailed"}]
+            callback.assert_awaited_once_with("box")
+
+            release.set()
+            response = json.loads(await asyncio.wait_for(outgoing.get(), 1))
+            assert response == [3, "first", {"status": "Unlocked"}]
+
+    asyncio.run(run())
+
+
+def test_connection_cleanup_cancels_waiting_unlock_request(monkeypatch):
+    async def run():
+        entered = asyncio.Event()
+        cancelled = asyncio.Event()
+
+        async def unlock(_):
+            entered.set()
+            try:
+                await asyncio.Event().wait()
+            finally:
+                cancelled.set()
+
+        async with _receiving_charge_point(monkeypatch, unlock) as (cp, incoming, outgoing):
+            await incoming.put(json.dumps([2, "unlock", "UnlockConnector", {"connectorId": 1}]))
+            await asyncio.wait_for(entered.wait(), 1)
+            await asyncio.wait_for(cp.cancel_background_tasks(), 1)
+            assert cancelled.is_set()
+            assert not cp._background_tasks
+            assert not cp._unlock_lock.locked()
+            assert outgoing.empty()
+
+    asyncio.run(run())
 
 
 @pytest.mark.parametrize("result,status", [("unlocked", UnlockStatus.unlocked),
