@@ -1,4 +1,5 @@
 import asyncio
+import copy
 import json
 from dataclasses import asdict
 from threading import Event
@@ -39,13 +40,15 @@ def ocpp_config_for_test():
 def transaction_setup(monkeypatch):
     openwb_cp = SimpleNamespace(
         num=1,
-        data=SimpleNamespace(get=SimpleNamespace(ocpp=SimpleNamespace(
+        data=SimpleNamespace(get=SimpleNamespace(plug_state=True, imported=100, ocpp=SimpleNamespace(
             transaction_id=None,
             transaction_id_tag=None,
             tag_accepted=False,
             availability=[True, True],
             pending_transactions=[],
             pending_availability=[False, False],
+            unlock_stop=False,
+            remote_stop=False,
         ))),
     )
     charge_point = SimpleNamespace(
@@ -57,6 +60,7 @@ def transaction_setup(monkeypatch):
             id_tag_info={"status": "Accepted"}, transaction_id=42,
         )),
         _stop_transaction=AsyncMock(return_value=SimpleNamespace(id_tag_info=None)),
+        apply_pending_availability=AsyncMock(),
     )
     connection = SimpleNamespace(cp=charge_point, boot_accepted=True)
     ensure_connected = AsyncMock(return_value=connection)
@@ -234,16 +238,19 @@ def test_start_response_error_does_not_retry_same_tag(transaction_setup):
     connection.cp._start_transaction.assert_awaited_once()
 
 
-@pytest.mark.parametrize("waiting_for", ["authorize", "start"])
-def test_stop_during_start_is_not_lost(transaction_setup, waiting_for):
+@pytest.mark.parametrize("waiting_for", ["connect", "authorize", "start"])
+def test_stop_during_start_is_not_lost(transaction_setup, mock_pub, monkeypatch, waiting_for):
     coordinator, connection, openwb_cp = transaction_setup
-    original = getattr(connection.cp, f"_{waiting_for}" if waiting_for == "authorize" else "_start_transaction")
+    original = (coordinator._ensure_connected if waiting_for == "connect" else
+                getattr(connection.cp, "_authorize" if waiting_for == "authorize" else "_start_transaction"))
+    event_time = "2026-10-23T12:00:00Z"
+    monkeypatch.setattr(ocpp_transaction_coordinator, "_get_formatted_time", lambda: event_time)
 
     async def check():
         entered = asyncio.Event()
         release = asyncio.Event()
 
-        async def delayed(**kwargs):
+        async def delayed(*args, **kwargs):
             entered.set()
             await release.wait()
             return original.return_value
@@ -258,21 +265,138 @@ def test_stop_during_start_is_not_lost(transaction_setup, waiting_for):
             raise
         assert openwb_cp.data.get.ocpp.tag_accepted is False
         assert await coordinator.stop("box-1", 150, "", "EVDisconnected") is False
+        monkeypatch.setattr(ocpp_transaction_coordinator, "_get_formatted_time",
+                            lambda: "2026-10-23T12:01:00Z")
         release.set()
-        await start
+        assert await start is False
 
     asyncio.run(check())
 
-    if waiting_for == "authorize":
+    if waiting_for != "start":
         connection.cp._start_transaction.assert_not_awaited()
         connection.cp._stop_transaction.assert_not_awaited()
+        if waiting_for == "connect":
+            connection.cp._authorize.assert_not_awaited()
     else:
         connection.cp._stop_transaction.assert_awaited_once_with(
-            meter_stop=150, transaction_id=42, reason="EVDisconnected", id_tag="TAG", timestamp=ANY,
+            meter_stop=150, transaction_id=42, reason="EVDisconnected", id_tag="TAG", timestamp=event_time,
         )
-        assert coordinator.get_state("box-1") == TransactionState.IDLE
+    assert coordinator.get_state("box-1") == TransactionState.IDLE
+    assert openwb_cp.data.get.ocpp.transaction_id is None
+    assert openwb_cp.data.get.ocpp.tag_accepted is False
+    assert call("openWB/set/chargepoint/1/get/ocpp/tag_accepted", True) not in mock_pub.pub.call_args_list
+
+
+@pytest.mark.parametrize("waiting_for", ["connect", "authorize"])
+@pytest.mark.parametrize("abort", ["unplug", "block", "unavailable"])
+def test_start_rechecks_conditions_after_waiting(transaction_setup, mock_pub, waiting_for, abort):
+    coordinator, connection, openwb_cp = transaction_setup
+
+    async def check():
+        entered = asyncio.Event()
+        release = asyncio.Event()
+        waiting = coordinator._ensure_connected if waiting_for == "connect" else connection.cp._authorize
+
+        async def delayed(*args, **kwargs):
+            entered.set()
+            await release.wait()
+            return waiting.return_value
+
+        waiting.side_effect = delayed
+        start = asyncio.create_task(coordinator.start("box-1", 1, "TAG", 100))
+        await asyncio.wait_for(entered.wait(), 5)
+        if abort == "unplug":
+            openwb_cp.data.get.plug_state = False
+        elif abort == "block":
+            coordinator.block_start("box-1")
+        else:
+            openwb_cp.data.get.ocpp.availability = [True, False]
+        release.set()
+        assert await start is False
+
+    asyncio.run(check())
+    connection.cp._start_transaction.assert_not_awaited()
+    connection.cp._stop_transaction.assert_not_awaited()
+    if waiting_for == "connect":
+        connection.cp._authorize.assert_not_awaited()
+    assert coordinator.get_state("box-1") == TransactionState.IDLE
+    assert call("openWB/set/chargepoint/1/get/ocpp/tag_accepted", True) not in mock_pub.pub.call_args_list
+
+
+def test_start_rechecks_current_model_after_authorize(transaction_setup, monkeypatch):
+    coordinator, connection, openwb_cp = transaction_setup
+
+    async def authorize(**kwargs):
+        current_cp = copy.deepcopy(openwb_cp)
+        current_cp.data.get.plug_state = False
+        monkeypatch.setattr(ocpp_transaction_coordinator, "get_cp_from_chargebox_id", lambda _: current_cp)
+        return connection.cp._authorize.return_value
+
+    connection.cp._authorize.side_effect = authorize
+    assert asyncio.run(coordinator.start("box-1", 1, "TAG", 100)) is False
+    connection.cp._start_transaction.assert_not_awaited()
+    assert coordinator.get_state("box-1") == TransactionState.IDLE
+
+
+@pytest.mark.parametrize("abort,reason", [("unplug", "EVDisconnected"), ("block", "Other"),
+                                        ("unavailable", "Other"), ("unlock", "UnlockCommand"),
+                                        ("remote", "Remote")])
+@pytest.mark.parametrize("stop_fails", [False, True])
+def test_abort_during_start_confirmation_stops_without_releasing_charging(
+        transaction_setup, mock_pub, monkeypatch, abort, reason, stop_fails):
+    coordinator, connection, openwb_cp = transaction_setup
+    stop_time = "2026-10-23T12:00:00Z"
+    monkeypatch.setattr(ocpp_transaction_coordinator, "_get_formatted_time", lambda: stop_time)
+
+    async def check():
+        entered = asyncio.Event()
+        release = asyncio.Event()
+
+        async def delayed_start(**kwargs):
+            entered.set()
+            await release.wait()
+            return connection.cp._start_transaction.return_value
+
+        connection.cp._start_transaction.side_effect = delayed_start
+        if stop_fails:
+            connection.cp._stop_transaction.side_effect = ConnectionError("stop response lost")
+        start = asyncio.create_task(coordinator.start("box-1", 1, "TAG", 100))
+        await asyncio.wait_for(entered.wait(), 5)
+        openwb_cp.data.get.imported = 175
+        if abort == "unplug":
+            openwb_cp.data.get.plug_state = False
+        elif abort == "unavailable":
+            openwb_cp.data.get.ocpp.availability = [False, True]
+        else:
+            coordinator.block_start("box-1")
+            if abort == "unlock":
+                openwb_cp.data.get.ocpp.unlock_stop = True
+            elif abort == "remote":
+                openwb_cp.data.get.ocpp.remote_stop = True
+        release.set()
+        assert await start is False
+        if stop_fails:
+            assert "box-1" in coordinator._replay_tasks
+            await coordinator.on_disconnected("box-1", connection)
+
+    asyncio.run(check())
+    connection.cp._stop_transaction.assert_awaited_once_with(
+        meter_stop=175, transaction_id=42, reason=reason, id_tag="TAG", timestamp=stop_time,
+    )
+    assert openwb_cp.data.get.ocpp.tag_accepted is False
+    assert call("openWB/set/chargepoint/1/get/ocpp/tag_accepted", True) not in mock_pub.pub.call_args_list
+    if stop_fails:
+        assert coordinator.get_state("box-1") == TransactionState.ERROR
+        assert coordinator.get_transaction_id("box-1") == 42
         assert openwb_cp.data.get.ocpp.transaction_id is None
-        assert openwb_cp.data.get.ocpp.tag_accepted is False
+        assert openwb_cp.data.get.ocpp.pending_transactions == [{
+            "action": "stop", "transaction_id": 42, "id_tag": "TAG", "imported": 175,
+            "reason": reason, "timestamp": stop_time,
+        }]
+    else:
+        assert coordinator.get_state("box-1") == TransactionState.IDLE
+        assert coordinator.get_transaction_id("box-1") is None
+        assert openwb_cp.data.get.ocpp.pending_transactions == []
 
 
 def test_rfid_stop_authorizes_before_stopping(transaction_setup):
@@ -641,6 +765,7 @@ def handler_setup(monkeypatch):
         num=1,
         data=SimpleNamespace(get=SimpleNamespace(ocpp=SimpleNamespace(
             transaction_id=None, availability=[True, True], pending_availability=[False, False],
+            authorization_flow_status=None,
             config=ocpp_config_for_test(),
         ))),
     )
@@ -655,9 +780,13 @@ def handler_setup(monkeypatch):
 
 
 @pytest.mark.parametrize("connector_id", [0, 1])
-def test_inoperative_availability_is_scheduled_until_stop(handler_setup, mock_pub, connector_id):
+@pytest.mark.parametrize("stage", ["active", "starting"])
+def test_inoperative_availability_is_scheduled_until_stop(handler_setup, mock_pub, connector_id, stage):
     make_charge_point, openwb_cp = handler_setup
-    openwb_cp.data.get.ocpp.transaction_id = 42
+    if stage == "active":
+        openwb_cp.data.get.ocpp.transaction_id = 42
+    else:
+        openwb_cp.data.get.ocpp.authorization_flow_status = "start_starting"
 
     async def check():
         charge_point = make_charge_point()
@@ -670,6 +799,7 @@ def test_inoperative_availability_is_scheduled_until_stop(handler_setup, mock_pu
         await charge_point.apply_pending_availability()
         assert openwb_cp.data.get.ocpp.availability == [True, True]
         openwb_cp.data.get.ocpp.transaction_id = None
+        openwb_cp.data.get.ocpp.authorization_flow_status = None
         await charge_point.apply_pending_availability()
 
     asyncio.run(check())
@@ -677,6 +807,117 @@ def test_inoperative_availability_is_scheduled_until_stop(handler_setup, mock_pu
     assert openwb_cp.data.get.ocpp.availability == [connector_id == 1, False]
     assert openwb_cp.data.get.ocpp.pending_availability == [False, False]
     mock_pub.pub.assert_any_call("openWB/set/chargepoint/1/get/ocpp/availability", [connector_id == 1, False])
+
+
+@pytest.mark.parametrize("connector_id", [0, 1])
+@pytest.mark.parametrize("outcome", ["accepted", "Blocked", "Expired", "Invalid", "ConcurrentTx",
+                                   "timeout", "missing_response"])
+def test_availability_during_start_is_applied_after_transaction_or_explicit_rejection(
+        transaction_setup, monkeypatch, connector_id, outcome):
+    coordinator, connection, openwb_cp = transaction_setup
+    monkeypatch.setattr(ocpp_chargepoint, "get_cp_from_chargebox_id", lambda _: openwb_cp)
+
+    async def check():
+        handler = OcppChargePoint("box-1", AsyncMock())
+        connection.cp.apply_pending_availability = AsyncMock(wraps=handler.apply_pending_availability)
+        entered = asyncio.Event()
+        release = asyncio.Event()
+
+        async def delayed_start(**kwargs):
+            entered.set()
+            await release.wait()
+            if outcome == "timeout":
+                raise asyncio.TimeoutError("start response lost")
+            if outcome == "missing_response":
+                return None
+            if outcome != "accepted":
+                return SimpleNamespace(id_tag_info={"status": outcome}, transaction_id=42)
+            return connection.cp._start_transaction.return_value
+
+        connection.cp._start_transaction.side_effect = delayed_start
+        start = asyncio.create_task(coordinator.start("box-1", 1, "TAG", 100))
+        await asyncio.wait_for(entered.wait(), 5)
+        assert coordinator.get_state("box-1") == TransactionState.STARTING
+        assert openwb_cp.data.get.ocpp.transaction_id is None
+
+        response = await handler.on_change_availability(connector_id, AvailabilityType.inoperative)
+        assert response.status == AvailabilityStatus.scheduled
+        assert openwb_cp.data.get.ocpp.availability == [True, True]
+        assert openwb_cp.data.get.ocpp.pending_availability == [connector_id == 0, True]
+
+        # Auch ein zusätzlicher Aufruf während der ausstehenden Startantwort
+        # darf die Vormerkung nicht vorzeitig anwenden.
+        await handler.apply_pending_availability()
+        assert openwb_cp.data.get.ocpp.availability == [True, True]
+        assert openwb_cp.data.get.ocpp.pending_availability == [connector_id == 0, True]
+
+        release.set()
+        result = await asyncio.wait_for(start, 5)
+        connection.cp._stop_transaction.assert_not_awaited()
+        if outcome == "accepted":
+            assert result is True
+            assert coordinator.get_state("box-1") == TransactionState.ACTIVE
+            assert openwb_cp.data.get.ocpp.transaction_id == 42
+            assert openwb_cp.data.get.ocpp.tag_accepted is True
+            assert openwb_cp.data.get.ocpp.availability == [True, True]
+            connection.cp.apply_pending_availability.assert_not_awaited()
+            assert await coordinator.stop("box-1", 150, reason="Local") is True
+            connection.cp._stop_transaction.assert_awaited_once()
+            connection.cp.apply_pending_availability.assert_awaited_once()
+            assert coordinator.get_state("box-1") == TransactionState.IDLE
+        elif outcome in ("timeout", "missing_response"):
+            assert result is False
+            expected = TransactionState.ERROR if outcome == "timeout" else TransactionState.REJECTED
+            assert coordinator.get_state("box-1") == expected
+            assert openwb_cp.data.get.ocpp.availability == [True, True]
+            assert openwb_cp.data.get.ocpp.pending_availability == [connector_id == 0, True]
+            connection.cp.apply_pending_availability.assert_not_awaited()
+            return
+        else:
+            assert result is False
+            assert coordinator.get_state("box-1") == TransactionState.REJECTED
+            connection.cp.apply_pending_availability.assert_awaited_once()
+
+        assert openwb_cp.data.get.ocpp.transaction_id is None
+        assert openwb_cp.data.get.ocpp.tag_accepted is False
+        assert openwb_cp.data.get.ocpp.availability == [connector_id == 1, False]
+        assert openwb_cp.data.get.ocpp.pending_availability == [False, False]
+
+    asyncio.run(check())
+
+
+@pytest.mark.parametrize("waiting_for", ["connect", "authorize"])
+@pytest.mark.parametrize("connector_id", [0, 1])
+def test_inoperative_before_start_request_is_immediate_and_prevents_start(
+        transaction_setup, monkeypatch, waiting_for, connector_id):
+    coordinator, connection, openwb_cp = transaction_setup
+    monkeypatch.setattr(ocpp_chargepoint, "get_cp_from_chargebox_id", lambda _: openwb_cp)
+
+    async def check():
+        handler = OcppChargePoint("box-1", AsyncMock())
+        entered = asyncio.Event()
+        release = asyncio.Event()
+        waiting = coordinator._ensure_connected if waiting_for == "connect" else connection.cp._authorize
+
+        async def delayed(*args, **kwargs):
+            entered.set()
+            await release.wait()
+            return waiting.return_value
+
+        waiting.side_effect = delayed
+        start = asyncio.create_task(coordinator.start("box-1", 1, "TAG", 100))
+        await asyncio.wait_for(entered.wait(), 5)
+        response = await handler.on_change_availability(connector_id, AvailabilityType.inoperative)
+        assert response.status == AvailabilityStatus.accepted
+        assert openwb_cp.data.get.ocpp.availability == [connector_id == 1, False]
+        assert openwb_cp.data.get.ocpp.pending_availability == [False, False]
+        release.set()
+        assert await asyncio.wait_for(start, 5) is False
+
+    asyncio.run(check())
+    connection.cp._start_transaction.assert_not_awaited()
+    connection.cp._stop_transaction.assert_not_awaited()
+    assert coordinator.get_state("box-1") == TransactionState.IDLE
 
 
 def test_change_availability_rejects_unknown_connector(handler_setup):
@@ -985,9 +1226,12 @@ def test_websocket_transaction_survives_reconnect(monkeypatch):
         data=SimpleNamespace(get=SimpleNamespace(
             fault_state=0,
             fault_str="",
+            plug_state=True,
+            imported=100,
             ocpp=SimpleNamespace(transaction_id=None, transaction_id_tag=None,
                                  tag_accepted=False, availability=[True, True],
                                  pending_availability=[False, False], pending_transactions=[],
+                                 authorization_flow_status=None,
                                  test_reconnect=False,
                                  config=ocpp_config_factory()),
             serial_number="serial-1",

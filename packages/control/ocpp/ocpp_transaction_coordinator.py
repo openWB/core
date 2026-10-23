@@ -216,14 +216,15 @@ class TransactionCoordinator:
             self._commit(chargebox_id, transaction)
             return False
 
-        # Stop kam während Verbindungsaufbau.
-        #
-        # Es wurde noch kein Authorize und keine
-        # StartTransaction gesendet.
-        if transaction.pending_stop is not None:
+        # Nach dem Verbindungsaufbau die aktuellen Startbedingungen prüfen.
+        # Es wurde noch keine StartTransaction gesendet.
+        if (
+            transaction.pending_stop is not None
+            or not self._can_continue_start(chargebox_id)
+        ):
             log.info(
-                f"OCPP {chargebox_id}: Start vor Authorize abgebrochen, "
-                "Stop wurde bereits angefordert.",
+                "OCPP %s: Start vor Authorize abgebrochen",
+                chargebox_id,
             )
 
             transaction.reset()
@@ -270,12 +271,14 @@ class TransactionCoordinator:
 
             return False
 
-        # Fahrzeug wurde während Authorize
-        # wieder abgesteckt.
-        if transaction.pending_stop is not None:
+        # Während Authorize kann abgesteckt oder eine Sperre gesetzt worden sein.
+        if (
+            transaction.pending_stop is not None
+            or not self._can_continue_start(chargebox_id)
+        ):
             log.info(
-                f"OCPP {chargebox_id}: Start nach Authorize abgebrochen, "
-                "Stop wurde bereits angefordert.",
+                "OCPP %s: Start nach Authorize abgebrochen",
+                chargebox_id,
             )
 
             transaction.reset()
@@ -345,10 +348,15 @@ class TransactionCoordinator:
                 TransactionState.REJECTED,
             )
 
+            # Nur eine ausdrückliche Ablehnung beendet das Warten auf die
+            # vorgemerkte Nichtverfügbarkeit; eine fehlende Antwort genügt nicht.
+            if status in ("Blocked", "Expired", "Invalid", "ConcurrentTx"):
+                await cp.apply_pending_availability()
+
             return False
 
         #
-        # TRANSACTION ACTIVE
+        # STARTTRANSACTION BESTÄTIGT
         #
 
         transaction.transaction_id = int(
@@ -356,17 +364,36 @@ class TransactionCoordinator:
         )
         transaction.last_error = None
 
-        self._transition(
-            chargebox_id,
-            transaction,
-            TransactionState.ACTIVE,
-        )
+        # Eine bereits serverseitig gestartete Transaktion darf bei einem
+        # zwischenzeitlichen Abbruch nicht einfach lokal verworfen werden.
+        if (
+            transaction.pending_stop is None
+            and not self._can_continue_start(chargebox_id)
+        ):
+            openwb_cp = get_cp_from_chargebox_id(chargebox_id)
+            if openwb_cp is not None:
+                meter_stop = openwb_cp.data.get.imported
+                if openwb_cp.data.get.ocpp.unlock_stop:
+                    reason = "UnlockCommand"
+                elif openwb_cp.data.get.ocpp.remote_stop:
+                    reason = "Remote"
+                elif not openwb_cp.data.get.plug_state:
+                    reason = "EVDisconnected"
+                else:
+                    reason = "Other"
+            else:
+                meter_stop = imported
+                reason = "Other"
 
-        log.info(
-            f"OCPP Transaction {transaction.transaction_id} für {chargebox_id} gestartet.",
-        )
+            transaction.pending_stop = PendingStop(
+                meter_stop=int(meter_stop),
+                id_tag=id_tag,
+                reason=reason,
+                timestamp=_get_formatted_time(),
+            )
 
-        # Während StartTransaction kam bereits ein Stop.
+        # Direkt nach STOPPING wechseln, ohne kurzzeitig eine Ladefreigabe
+        # über ACTIVE/tag_accepted zu veröffentlichen.
         if transaction.pending_stop is not None:
             pending_stop = transaction.pending_stop
 
@@ -387,7 +414,32 @@ class TransactionCoordinator:
                 )
                 self._schedule_replay_retry(chargebox_id, connection)
 
+            return False
+
+        self._transition(
+            chargebox_id,
+            transaction,
+            TransactionState.ACTIVE,
+        )
+
+        log.info(
+            f"OCPP Transaction {transaction.transaction_id} für {chargebox_id} gestartet.",
+        )
+
         return True
+
+    def _can_continue_start(self, chargebox_id: str) -> bool:
+        if chargebox_id in self._start_blocked:
+            return False
+
+        openwb_cp = get_cp_from_chargebox_id(chargebox_id)
+        if openwb_cp is None:
+            return False
+
+        return (
+            bool(openwb_cp.data.get.plug_state)
+            and all(openwb_cp.data.get.ocpp.availability)
+        )
 
     async def stop(
         self,

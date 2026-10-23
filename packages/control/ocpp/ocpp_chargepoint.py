@@ -258,12 +258,17 @@ class OcppChargePoint(cp):
                 )
 
             connectors = (0, 1) if connector_id == 0 else (1,)
-            pending = self.openwb_cp.data.get.ocpp.pending_availability.copy()
-            if (availability_type == AvailabilityType.inoperative
-                    and self.openwb_cp.data.get.ocpp.transaction_id is not None):
+            ocpp_data = self.openwb_cp.data.get.ocpp
+            pending = ocpp_data.pending_availability.copy()
+            transaction_exists = ocpp_data.transaction_id is not None
+            start_request_in_progress = ocpp_data.authorization_flow_status == "start_starting"
+            if (
+                availability_type == AvailabilityType.inoperative
+                and (transaction_exists or start_request_in_progress)
+            ):
                 for connector in connectors:
                     pending[connector] = True
-                self.openwb_cp.data.get.ocpp.pending_availability = pending
+                ocpp_data.pending_availability = pending
                 Pub().pub(f"openWB/set/chargepoint/{self.openwb_num}/get/ocpp/pending_availability", pending)
                 return call_result.ChangeAvailability(
                     status=AvailabilityStatus.scheduled
@@ -316,15 +321,22 @@ class OcppChargePoint(cp):
 
     async def apply_pending_availability(self):
         openwb_cp = self.openwb_cp
-        if (openwb_cp is None or openwb_cp.data.get.ocpp.transaction_id is not None
-                or not any(openwb_cp.data.get.ocpp.pending_availability)):
+        if openwb_cp is None:
+            return
+
+        ocpp_data = openwb_cp.data.get.ocpp
+        if (
+            ocpp_data.transaction_id is not None
+            or ocpp_data.authorization_flow_status == "start_starting"
+            or not any(ocpp_data.pending_availability)
+        ):
             return
 
         availability = [available and not pending for available, pending in zip(
-            openwb_cp.data.get.ocpp.availability, openwb_cp.data.get.ocpp.pending_availability)]
-        openwb_cp.data.get.ocpp.availability = availability
+            ocpp_data.availability, ocpp_data.pending_availability)]
+        ocpp_data.availability = availability
         Pub().pub(f"openWB/set/chargepoint/{self.openwb_num}/get/ocpp/availability", availability)
-        openwb_cp.data.get.ocpp.pending_availability = [False, False]
+        ocpp_data.pending_availability = [False, False]
         Pub().pub(f"openWB/set/chargepoint/{self.openwb_num}/get/ocpp/pending_availability", [False, False])
 
     @on(Action.get_configuration)
