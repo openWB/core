@@ -141,6 +141,10 @@ class TransactionCoordinator:
         if getattr(openwb_cp.data.get.ocpp, "previous_chargebox_id", None):
             return False
 
+        # Alte Stops müssen bestätigt sein, bevor eine neue Transaction beginnt.
+        if openwb_cp.data.get.ocpp.pending_transactions:
+            return False
+
         if not all(openwb_cp.data.get.ocpp.availability):
             log.debug(
                 f"OCPP {chargebox_id}: Start blockiert, ChargePoint ist nicht verfügbar.",
@@ -198,6 +202,12 @@ class TransactionCoordinator:
             "StartTransaction",
         )
 
+        # Der Verbindungsaufbau kann ein Stop-Replay ausführen. Dessen Zustand
+        # darf dieser wartende Start auch im Fehlerfall nicht zurücksetzen.
+        if (self._transactions.get(chargebox_id) is not transaction
+                or transaction.state != TransactionState.START_PENDING):
+            return False
+
         if connection is None:
             transaction.reset()
             self._commit(chargebox_id, transaction)
@@ -238,6 +248,17 @@ class TransactionCoordinator:
         )
 
         authorization = await self._authorize_on_connection(chargebox_id, connection, id_tag)
+
+        # Erst die Zuständigkeit prüfen, dann die verspätete Antwort auswerten.
+        if (self._transactions.get(chargebox_id) is not transaction
+                or transaction.state != TransactionState.AUTHORIZING):
+            return False
+
+        openwb_cp = get_cp_from_chargebox_id(chargebox_id)
+        if openwb_cp is not None and openwb_cp.data.get.ocpp.pending_transactions:
+            transaction.reset()
+            self._commit(chargebox_id, transaction)
+            return False
 
         if authorization.error is not None:
             transaction.last_error = authorization.error
@@ -441,6 +462,7 @@ class TransactionCoordinator:
         return (
             bool(openwb_cp.data.get.plug_state)
             and not getattr(openwb_cp.data.get.ocpp, "previous_chargebox_id", None)
+            and not openwb_cp.data.get.ocpp.pending_transactions
             and all(openwb_cp.data.get.ocpp.availability)
         )
 

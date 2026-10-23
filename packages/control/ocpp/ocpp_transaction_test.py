@@ -82,6 +82,131 @@ def test_transaction_start_rejects_unavailable_connector(transaction_setup, avai
     connection.cp._start_transaction.assert_not_awaited()
 
 
+def test_start_waits_for_persisted_stop_confirmation(transaction_setup, mock_pub):
+    coordinator, connection, cp = transaction_setup
+    cp.data.get.ocpp.pending_transactions = [{
+        "action": "stop", "transaction_id": 17, "id_tag": "OLD", "imported": 90,
+        "reason": "Local", "timestamp": "2026-10-23T12:00:00Z",
+    }]
+
+    async def check():
+        assert await coordinator.start("box-1", 1, "NEW", 100) is False
+        coordinator._ensure_connected.assert_not_awaited()
+        connection.cp._authorize.assert_not_awaited()
+        connection.cp._start_transaction.assert_not_awaited()
+
+        connection.cp._stop_transaction.return_value = None
+        assert await coordinator._replay_persisted_stop_once("box-1", connection) is False
+        assert await coordinator.start("box-1", 1, "NEW", 100) is False
+        assert cp.data.get.ocpp.pending_transactions
+        connection.cp._start_transaction.assert_not_awaited()
+
+        connection.cp._stop_transaction.return_value = SimpleNamespace()
+        assert await coordinator._replay_persisted_stop_once("box-1", connection) is True
+        assert cp.data.get.ocpp.pending_transactions == []
+        assert await coordinator.start("box-1", 1, "NEW", 100) is True
+
+    asyncio.run(check())
+    connection.cp._start_transaction.assert_awaited_once()
+
+
+@pytest.mark.parametrize("confirmed", [False, True])
+def test_start_preserves_replay_state_during_connection_setup(transaction_setup, mock_pub, confirmed):
+    coordinator, connection, cp = transaction_setup
+
+    async def connect(_):
+        cp.data.get.ocpp.pending_transactions = [{
+            "action": "stop", "transaction_id": 17, "id_tag": "OLD", "imported": 90,
+            "reason": "Local", "timestamp": "2026-10-23T12:00:00Z",
+        }]
+        connection.cp._stop_transaction.return_value = SimpleNamespace() if confirmed else None
+        assert await coordinator._replay_persisted_stop_once("box-1", connection) is confirmed
+        return connection
+
+    async def check():
+        coordinator._ensure_connected.side_effect = connect
+        assert await coordinator.start("box-1", 1, "NEW", 100) is False
+        transaction = coordinator._get_transaction("box-1")
+        assert transaction.state == (TransactionState.IDLE if confirmed else TransactionState.ERROR)
+        assert transaction.transaction_id == (None if confirmed else 17)
+        assert bool(cp.data.get.ocpp.pending_transactions) is not confirmed
+        connection.cp._authorize.assert_not_awaited()
+        connection.cp._start_transaction.assert_not_awaited()
+
+        coordinator._ensure_connected.side_effect = None
+        assert await coordinator.start("box-1", 1, "NEW", 100) is confirmed
+
+    asyncio.run(check())
+
+
+@pytest.mark.parametrize("phase", ["connect", "authorize"])
+@pytest.mark.parametrize("replace_transaction", [False, True])
+@pytest.mark.parametrize("failure", [False, True])
+def test_waiting_start_does_not_change_another_transaction_state(
+    transaction_setup, mock_pub, phase, replace_transaction, failure
+):
+    coordinator, connection, cp = transaction_setup
+    transferred = []
+
+    async def take_over(*args, **kwargs):
+        transaction = coordinator._get_transaction("box-1")
+        if replace_transaction:
+            transaction = ocpp_transaction_coordinator.OcppTransaction()
+            coordinator._transactions["box-1"] = transaction
+        transaction.state = TransactionState.STOPPING
+        transaction.transaction_id = 17
+        transaction.id_tag = "OLD"
+        coordinator._commit("box-1", transaction)
+        transferred.append((transaction, vars(transaction).copy(), vars(cp.data.get.ocpp).copy()))
+        mock_pub.pub.reset_mock()
+        if failure:
+            raise ConnectionError("Transport verloren")
+        return connection if phase == "connect" else SimpleNamespace(id_tag_info={"status": "Blocked"})
+
+    if phase == "connect":
+        coordinator._ensure_connected.side_effect = take_over
+    else:
+        connection.cp._authorize.side_effect = take_over
+
+    assert asyncio.run(coordinator.start("box-1", 1, "NEW", 100)) is False
+    transaction, previous_transaction, previous_model = transferred[0]
+    assert vars(transaction) == previous_transaction
+    assert vars(cp.data.get.ocpp) == previous_model
+    mock_pub.pub.assert_not_called()
+    connection.cp._start_transaction.assert_not_awaited()
+
+
+@pytest.mark.parametrize("phase", ["connect", "authorize"])
+@pytest.mark.parametrize("authorization_status", ["Accepted", "Blocked", None])
+def test_start_rechecks_persisted_stops_after_waiting(
+    transaction_setup, mock_pub, phase, authorization_status
+):
+    coordinator, connection, cp = transaction_setup
+    pending = [{"action": "stop", "transaction_id": 17}]
+
+    async def add_pending(*args, **kwargs):
+        cp.data.get.ocpp.pending_transactions = pending
+        if phase == "connect":
+            return connection
+        if authorization_status is None:
+            raise ConnectionError("Authorize fehlgeschlagen")
+        return SimpleNamespace(id_tag_info={"status": authorization_status})
+
+    if phase == "connect":
+        coordinator._ensure_connected.side_effect = add_pending
+    else:
+        connection.cp._authorize.side_effect = add_pending
+
+    async def check():
+        assert await coordinator.start("box-1", 1, "NEW", 100) is False
+        assert coordinator.get_state("box-1") == TransactionState.IDLE
+        assert cp.data.get.ocpp.pending_transactions == pending
+        assert await coordinator.start("box-1", 1, "NEW", 100) is False
+
+    asyncio.run(check())
+    connection.cp._start_transaction.assert_not_awaited()
+
+
 @pytest.mark.parametrize("status", ["Accepted", "Blocked", None])
 @pytest.mark.parametrize("active", [False, True])
 def test_standalone_authorize_preserves_transaction(transaction_setup, mock_pub, status, active):
