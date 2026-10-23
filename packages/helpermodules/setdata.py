@@ -640,7 +640,8 @@ class SetData:
               "/get/connected_vehicle/soc" in msg.topic or
               "/get/ocpp/pending_transactions" in msg.topic):
             self._validate_value(msg, "json")
-        elif msg.topic.endswith("/get/ocpp/transaction_id_tag"):
+        elif (msg.topic.endswith("/get/ocpp/transaction_id_tag") or
+              msg.topic.endswith("/get/ocpp/previous_chargebox_id")):
             self._validate_value(msg, str)
         elif "/get/ocpp/config" in msg.topic:
             self._validate_value(msg, "json")

@@ -16,6 +16,7 @@ from control.ocpp import ocpp_chargepoint
 from control.ocpp import ocpp_connection_manager
 from control.ocpp import ocpp_transaction_coordinator
 from control.ocpp.helper import _get_config
+from control.ocpp.helper import get_chargebox_id, get_cp_from_chargebox_id
 from control.ocpp.ocpp_chargepoint import OcppChargePoint
 from control.ocpp.ocpp_client import OcppClient
 from control.ocpp.ocpp_connection_manager import OcppConnectionManager
@@ -744,6 +745,57 @@ def test_automatic_stop_does_not_authorize(transaction_setup, reason):
     connection.cp._stop_transaction.assert_awaited_once()
 
 
+def test_stop_and_wait_replays_persisted_stop_after_restart(transaction_setup):
+    coordinator, connection, openwb_cp = transaction_setup
+
+    async def check():
+        assert await coordinator.start("box-1", 1, "TAG", 100)
+        coordinator._ensure_connected.return_value = None
+        assert await coordinator.stop("box-1", 150) is False
+        assert openwb_cp.data.get.ocpp.transaction_id is None
+        assert openwb_cp.data.get.ocpp.pending_transactions
+
+        connect = AsyncMock(return_value=connection)
+        restored = TransactionCoordinator(ensure_connected=connect)
+        wait = asyncio.create_task(restored.stop_and_wait("box-1", 150, timeout=None))
+        await asyncio.sleep(0)
+        assert not wait.done()
+        connect.assert_awaited_once_with("box-1")
+        # Wie bei erfolgreicher Verbindungsinitialisierung den Replay ausführen.
+        await restored.on_connected("box-1", connection)
+        assert await asyncio.wait_for(wait, 1) is True
+        assert openwb_cp.data.get.ocpp.pending_transactions == []
+
+    asyncio.run(check())
+    connection.cp._stop_transaction.assert_awaited_once()
+
+
+@pytest.mark.parametrize("state", [TransactionState.START_UNCONFIRMED, TransactionState.ERROR])
+def test_bounded_stop_and_wait_returns_on_unknown_start_error(transaction_setup, state):
+    coordinator, _, _ = transaction_setup
+    coordinator._get_transaction("box-1").state = state
+
+    async def check():
+        assert await asyncio.wait_for(coordinator.stop_and_wait("box-1", 150), 1) is False
+
+    asyncio.run(check())
+
+
+def test_bounded_stop_and_wait_does_not_report_pending_stop_as_completed(transaction_setup):
+    coordinator, connection, openwb_cp = transaction_setup
+
+    async def check():
+        assert await coordinator.start("box-1", 1, "TAG", 100)
+        coordinator._ensure_connected.return_value = None
+        assert await coordinator.stop("box-1", 150) is False
+        restored = TransactionCoordinator(ensure_connected=AsyncMock(return_value=None))
+        assert await restored.stop_and_wait("box-1", 150, timeout=0.01) is False
+        assert openwb_cp.data.get.ocpp.pending_transactions
+
+    asyncio.run(check())
+    connection.cp._stop_transaction.assert_not_awaited()
+
+
 def test_active_stop_clears_transaction_only_after_response(transaction_setup):
     coordinator, connection, openwb_cp = transaction_setup
 
@@ -1304,6 +1356,249 @@ def connection_config_setup(handler_setup, monkeypatch):
     manager._connections["box-1"] = old
     manager._last_connection_settings["box-1"] = (old.server_url, old.subprotocol)
     return manager, old, config, openwb_cp
+
+
+@pytest.fixture
+def identity_change_setup(monkeypatch):
+    cp = SimpleNamespace(num=1, data=SimpleNamespace(
+        config=SimpleNamespace(ocpp_chargebox_id="NEW", ocpp_chargebox_password="pw"),
+        get=SimpleNamespace(imported=150, plug_state=True, ocpp=Ocpp(
+            previous_chargebox_id="OLD", transaction_id=42, transaction_id_tag="TAG",
+        )),
+    ))
+    monkeypatch.setattr(data, "data", SimpleNamespace(
+        cp_data={"cp1": cp},
+        optional_data=SimpleNamespace(data=SimpleNamespace(ocpp=SimpleNamespace(
+            config=SimpleNamespace(active=True),
+        ))),
+    ))
+    connection = SimpleNamespace(boot_accepted=True, cp=SimpleNamespace(
+        openwb_cp=cp, _stop_transaction=AsyncMock(return_value=SimpleNamespace()),
+        _authorize=AsyncMock(return_value=SimpleNamespace(id_tag_info={"status": "Accepted"})),
+        _start_transaction=AsyncMock(return_value=SimpleNamespace(
+            id_tag_info={"status": "Accepted"}, transaction_id=43,
+        )),
+        apply_pending_availability=AsyncMock(),
+    ))
+    client = object.__new__(OcppClient)
+    client._identity_change_jobs = {}
+    client._chargepoint_lifecycle = {}
+    client._meter_snapshots = {"OLD": SimpleNamespace()}
+    client._rfid_authorize_pending = {}
+    client.connection_manager = SimpleNamespace(
+        connect=AsyncMock(return_value=connection), disconnect=AsyncMock(),
+    )
+    client.transactions = TransactionCoordinator(ensure_connected=client.connection_manager.connect)
+    return client, cp, connection
+
+
+def test_id_change_stops_old_transaction_before_connecting_new_identity(identity_change_setup, mock_pub):
+    client, cp, connection = identity_change_setup
+    events = []
+
+    async def stop(**kwargs):
+        assert get_cp_from_chargebox_id("OLD") is cp
+        assert get_cp_from_chargebox_id("NEW") is None
+        assert get_chargebox_id(cp) == "OLD"
+        events.append(("stop", kwargs["transaction_id"]))
+        return SimpleNamespace()
+
+    async def disconnect(chargebox_id):
+        assert cp.data.get.ocpp.transaction_id is None
+        assert cp.data.get.ocpp.previous_chargebox_id == "OLD"
+        events.append(("disconnect", chargebox_id))
+
+    async def connect(chargebox_id):
+        if chargebox_id == "NEW":
+            assert cp.data.get.ocpp.transaction_id is None
+            assert get_chargebox_id(cp) == "NEW"
+            assert get_cp_from_chargebox_id("OLD") is None
+            events.append(("connect", chargebox_id))
+        return connection
+
+    connection.cp._stop_transaction.side_effect = stop
+    client.connection_manager.connect.side_effect = connect
+    client.connection_manager.disconnect.side_effect = disconnect
+    asyncio.run(client._change_chargebox_id(1, "OLD"))
+
+    assert events == [("stop", 42), ("disconnect", "OLD"), ("connect", "NEW")]
+    assert connection.cp._stop_transaction.await_args.kwargs["reason"] == "Other"
+    assert connection.cp._stop_transaction.await_args.kwargs["meter_stop"] == 150
+    assert "OLD" not in client._meter_snapshots
+    mock_pub.pub.assert_any_call("openWB/set/chargepoint/1/get/ocpp/previous_chargebox_id", None)
+
+
+@pytest.mark.parametrize("restored", [False, True])
+def test_pending_id_change_survives_model_replacement_and_deduplicates_jobs(identity_change_setup, restored):
+    client, cp, _ = identity_change_setup
+    if not restored:
+        cp.data.get.ocpp.previous_chargebox_id = None
+        client._chargepoint_lifecycle[1] = ("OLD", "pw", True)
+    submitted = []
+    running = SimpleNamespace(done=lambda: False)
+
+    def submit(coroutine, *args, **kwargs):
+        coroutine.close()
+        submitted.append(kwargs["chargebox_id"])
+        return running
+
+    client._submit = submit
+    client.sync_chargepoint_lifecycle(1, "NEW", "pw", True)
+    replacement = copy.deepcopy(cp)
+    data.data.cp_data["cp1"] = replacement
+    assert get_cp_from_chargebox_id("OLD") is replacement
+    assert get_cp_from_chargebox_id("NEW") is None
+    client.sync_chargepoint_lifecycle(1, "NEW", "pw", True)
+    assert submitted == ["OLD"]
+    assert replacement.data.get.ocpp.previous_chargebox_id == "OLD"
+
+
+@pytest.mark.parametrize("new_id,active", [("NEW", True), ("NEW", False), (None, True)])
+def test_id_change_without_transaction_only_reconnects_when_enabled(identity_change_setup, new_id, active):
+    client, cp, connection = identity_change_setup
+    cp.data.get.ocpp.transaction_id = None
+    cp.data.get.ocpp.authorization_flow_status = "init"
+    cp.data.config.ocpp_chargebox_id = new_id
+    data.data.optional_data.data.ocpp.config.active = active
+
+    asyncio.run(client._change_chargebox_id(1, "OLD"))
+
+    connection.cp._stop_transaction.assert_not_awaited()
+    client.connection_manager.disconnect.assert_awaited_once_with("OLD")
+    assert cp.data.get.ocpp.previous_chargebox_id is None
+    assert cp.data.get.ocpp.authorization_flow_status is None
+    if new_id and active:
+        client.connection_manager.connect.assert_awaited_once_with(new_id)
+    else:
+        client.connection_manager.connect.assert_not_awaited()
+
+
+@pytest.mark.parametrize("flow_status", ["start_starting", "start_unconfirmed"])
+def test_id_change_waits_for_unplug_when_start_is_unknown(identity_change_setup, flow_status):
+    client, cp, _ = identity_change_setup
+    cp.data.get.ocpp.transaction_id = None
+    cp.data.get.ocpp.authorization_flow_status = flow_status
+
+    async def check():
+        change = asyncio.create_task(client._change_chargebox_id(1, "OLD"))
+        await asyncio.sleep(0)
+        assert not change.done()
+        client.connection_manager.disconnect.assert_not_awaited()
+        client.connection_manager.connect.assert_not_awaited()
+        assert get_chargebox_id(cp) == "OLD"
+        cp.data.get.plug_state = False
+        client.transactions.clear_start_block("OLD")
+        await asyncio.wait_for(change, 3)
+
+    asyncio.run(check())
+    client.connection_manager.disconnect.assert_awaited_once_with("OLD")
+    client.connection_manager.connect.assert_awaited_once_with("NEW")
+
+
+def test_id_change_does_not_connect_new_identity_without_stop_confirmation(identity_change_setup):
+    client, cp, connection = identity_change_setup
+    connection.cp._stop_transaction.side_effect = asyncio.TimeoutError()
+
+    async def check():
+        change = asyncio.create_task(client._change_chargebox_id(1, "OLD"))
+        await asyncio.sleep(0)
+        await asyncio.sleep(0)
+        assert not change.done()
+        assert cp.data.get.ocpp.previous_chargebox_id == "OLD"
+        assert client.transactions.get_transaction_id("OLD") == 42
+        assert cp.data.get.ocpp.pending_transactions[0]["transaction_id"] == 42
+        client.connection_manager.disconnect.assert_not_awaited()
+        assert all(call.args == ("OLD",) for call in client.connection_manager.connect.await_args_list)
+        change.cancel()
+        with pytest.raises(asyncio.CancelledError):
+            await change
+
+    asyncio.run(check())
+
+
+@pytest.mark.parametrize("waiting_for", ["authorize", "start"])
+def test_id_change_during_start_finishes_old_request_before_switch(identity_change_setup, waiting_for):
+    client, cp, connection = identity_change_setup
+    cp.data.config.ocpp_chargebox_id = "OLD"
+    cp.data.get.ocpp.previous_chargebox_id = None
+    cp.data.get.ocpp.transaction_id = None
+    waiting = getattr(connection.cp, "_authorize" if waiting_for == "authorize" else "_start_transaction")
+
+    async def check():
+        entered = asyncio.Event()
+        release = asyncio.Event()
+
+        async def delayed(**kwargs):
+            entered.set()
+            await release.wait()
+            return waiting.return_value
+
+        waiting.side_effect = delayed
+        start = asyncio.create_task(client.transactions.start("OLD", 1, "TAG", 100))
+        await asyncio.wait_for(entered.wait(), 3)
+        cp.data.config.ocpp_chargebox_id = "NEW"
+        cp.data.get.ocpp.previous_chargebox_id = "OLD"
+        change = asyncio.create_task(client._change_chargebox_id(1, "OLD"))
+        await asyncio.sleep(0)
+        client.connection_manager.disconnect.assert_not_awaited()
+        assert await client.transactions.start("OLD", 1, "OTHER", 100) is False
+        release.set()
+        assert await asyncio.wait_for(start, 3) is False
+        await asyncio.wait_for(change, 3)
+
+    asyncio.run(check())
+    if waiting_for == "authorize":
+        connection.cp._start_transaction.assert_not_awaited()
+        connection.cp._stop_transaction.assert_not_awaited()
+    else:
+        connection.cp._stop_transaction.assert_awaited_once()
+        assert connection.cp._stop_transaction.await_args.kwargs["transaction_id"] == 43
+        assert connection.cp._stop_transaction.await_args.kwargs["reason"] == "Other"
+    client.connection_manager.disconnect.assert_awaited_once_with("OLD")
+    assert client.connection_manager.connect.await_args_list[-1].args == ("NEW",)
+
+
+def test_id_change_waits_for_offline_stop_replay(identity_change_setup):
+    client, cp, connection = identity_change_setup
+    client.connection_manager.connect.return_value = None
+
+    async def check():
+        change = asyncio.create_task(client._change_chargebox_id(1, "OLD"))
+        await asyncio.sleep(0)
+        assert cp.data.get.ocpp.pending_transactions[0]["transaction_id"] == 42
+        assert not change.done()
+        assert get_cp_from_chargebox_id("NEW") is None
+        replacement = copy.deepcopy(cp)
+        data.data.cp_data["cp1"] = replacement
+        connection.cp.openwb_cp = replacement
+        client.connection_manager.connect.return_value = connection
+        await client.transactions.on_connected("OLD", connection)
+        await asyncio.wait_for(change, 3)
+        assert replacement.data.get.ocpp.pending_transactions == []
+        assert replacement.data.get.ocpp.transaction_id is None
+        assert replacement.data.get.ocpp.previous_chargebox_id is None
+
+    asyncio.run(check())
+    connection.cp._stop_transaction.assert_awaited_once()
+    client.connection_manager.disconnect.assert_awaited_once_with("OLD")
+    assert client.connection_manager.connect.await_args_list[-1].args == ("NEW",)
+
+
+@pytest.mark.parametrize("old_id", ["OLD", None])
+def test_id_change_retains_old_identity_in_mqtt_model(mock_pub, old_id):
+    message = SimpleNamespace(
+        topic="openWB/set/chargepoint/1/get/ocpp/previous_chargebox_id",
+        payload=json.dumps(old_id).encode(),
+    )
+    SetData(Event(), Event(), Event(), Event()).process_chargepoint_get_topics(message)
+    topic = message.topic.replace("openWB/set/", "openWB/", 1)
+    mock_pub.pub.assert_any_call(topic, old_id, retain=True)
+    model = Ocpp()
+    subscriber = object.__new__(SubData)
+    chargepoints = {"cp1": SimpleNamespace(chargepoint=SimpleNamespace(
+        data=SimpleNamespace(get=SimpleNamespace(ocpp=model))))}
+    subscriber.process_chargepoint_topic(chargepoints, SimpleNamespace(topic=topic, payload=json.dumps(old_id).encode()))
+    assert asdict(model)["previous_chargebox_id"] == old_id
 
 
 @pytest.mark.parametrize("change", ["none", "trailing_slash", "url", "version"])

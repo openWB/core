@@ -1,34 +1,37 @@
-from helpermodules.timecheck import check_timestamp, create_timestamp
-from modules.common.abstract_chargepoint import AbstractChargepoint
-from modules.chargepoints.openwb_pro.chargepoint_module import EvseSignaling
-from helpermodules.utils import thread_handler
-from helpermodules import timecheck
-from helpermodules.pub import Pub
-from helpermodules.phase_handling import convert_single_evu_phase_to_cp_phase
-from helpermodules.constants import DEFAULT_COLORS
-from dataclass_utils import asdict
-from control.text import BidiState
-from control.load_protocol import Load
-from control.limiting_value import loadmanagement_limit_factory
-from control.chargepoint.chargepoint_state import CHARGING_STATES, ChargepointState
-from control import phase_switch
-from control.ev.ev import Ev
-from control.ev.charge_template import ChargeTemplate
-from control.chargepoint.rfid import ChargepointRfidMixin
-from control.chargepoint.charging_type import ChargingType
-from control.chargepoint.control_parameter import control_parameter_factory
-from control.chargepoint.chargepoint_template import CpTemplate
-from control.chargepoint.chargepoint_data import ChargepointData, ConnectedConfig, ConnectedInfo, ConnectedSoc, Get, Log
-from control.chargemode import Chargemode
-from control import data
-from control.chargelog import chargelog
-from control.algorithm.utils import get_medium_charging_current
-from ocpp.v16.enums import ChargePointStatus
 import logging
 from threading import Thread, Event
 import traceback
 from typing import Dict, Optional, Tuple
 from fnmatch import fnmatch
+
+from ocpp.v16.enums import ChargePointStatus
+
+from control.algorithm.utils import get_medium_charging_current
+from control.chargelog import chargelog
+from control import data
+from control.chargemode import Chargemode
+from control.chargepoint.chargepoint_data import ChargepointData, ConnectedConfig, ConnectedInfo, ConnectedSoc, Get, Log
+from control.chargepoint.chargepoint_template import CpTemplate
+from control.chargepoint.control_parameter import control_parameter_factory
+from control.chargepoint.charging_type import ChargingType
+from control.chargepoint.rfid import ChargepointRfidMixin
+from control.ocpp.helper import get_chargebox_id
+from control.ev.charge_template import ChargeTemplate
+from control.ev.ev import Ev
+from control import phase_switch
+from control.chargepoint.chargepoint_state import CHARGING_STATES, ChargepointState
+from control.limiting_value import loadmanagement_limit_factory
+from control.load_protocol import Load
+from control.text import BidiState
+from dataclass_utils import asdict
+from helpermodules.constants import DEFAULT_COLORS
+from helpermodules.phase_handling import convert_single_evu_phase_to_cp_phase
+from helpermodules.pub import Pub
+from helpermodules import timecheck
+from helpermodules.utils import thread_handler
+from modules.chargepoints.openwb_pro.chargepoint_module import EvseSignaling
+from modules.common.abstract_chargepoint import AbstractChargepoint
+from helpermodules.timecheck import check_timestamp, create_timestamp
 
 
 def get_chargepoint_config_default() -> dict:
@@ -165,12 +168,19 @@ class Chargepoint(ChargepointRfidMixin, Load):
         # OCPP darf Ladepunkte ohne OCPP-Konfiguration nicht beeinflussen.
         if (
             not data.data.optional_data.data.ocpp.config.active
-            or not self.data.config.ocpp_chargebox_id
+            or not get_chargebox_id(self)
         ):
             return True, None
 
         state = all(self.data.get.ocpp.availability)
-        if self.data.get.ocpp.authorization_flow_status == "start_unconfirmed":
+        if self.data.get.ocpp.previous_chargebox_id:
+            if self.data.get.ocpp.authorization_flow_status == "start_unconfirmed":
+                message = "Keine Ladung: OCPP-ID-Wechsel wartet auf Abstecken, da die Startbestätigung fehlt. " \
+                          "Stecker abziehen und erneut verbinden."
+            else:
+                message = "Keine Ladung: OCPP-ID wird geändert. Bisherigen Vorgang zuerst beenden."
+            state = False
+        elif self.data.get.ocpp.authorization_flow_status == "start_unconfirmed":
             message = "Keine Ladung: Startbestätigung vom OCPP-Server fehlt. " \
                       "Stecker abziehen und erneut verbinden."
             state = False
@@ -254,7 +264,7 @@ class Chargepoint(ChargepointRfidMixin, Load):
         # werden soll (-1), Daten zurücksetzen.
 
         # Ocpp Stop Funktion aufrufen
-        chargebox_id = self.data.config.ocpp_chargebox_id
+        chargebox_id = get_chargebox_id(self)
         ocpp_data = self.data.get.ocpp
         transaction_exists = ocpp_data.transaction_id is not None
         start_in_progress = ocpp_data.authorization_flow_status in (
@@ -732,7 +742,9 @@ class Chargepoint(ChargepointRfidMixin, Load):
 
     def _process_ocpp_rfid(self) -> None:
         """Verarbeitet OCPP-Autorisierungen und RFID-Stops genau einmal pro Scan."""
-        chargebox_id = self.data.config.ocpp_chargebox_id
+        if self.data.get.ocpp.previous_chargebox_id:
+            return
+        chargebox_id = get_chargebox_id(self)
         ocpp_active = data.data.optional_data.data.ocpp.config.active and chargebox_id
         rfid_active = data.data.optional_data.data.rfid.active
         if not ocpp_active or not rfid_active:
@@ -760,7 +772,7 @@ class Chargepoint(ChargepointRfidMixin, Load):
                 # Sofort verbrauchen: Im nächsten Update darf kein zweiter Stop erfolgen.
                 self._clear_scanned_rfid()
                 future = data.data.ocpp_client.request_stop(
-                    chargebox_id=self.data.config.ocpp_chargebox_id,
+                    chargebox_id=get_chargebox_id(self),
                     imported=self.data.get.imported,
                     id_tag=rfid,
                     reason="Local",
@@ -782,7 +794,7 @@ class Chargepoint(ChargepointRfidMixin, Load):
                          (not self.data.get.plug_state and
                           self.data.get.rfid_timestamp is None))):
                     data.data.ocpp_client.authorize_for_rfid(
-                        chargebox_id=self.data.config.ocpp_chargebox_id,
+                        chargebox_id=get_chargebox_id(self),
                         id_tag=rfid,
                     )
                     response = self.data.get.ocpp.authorization_flow_status
@@ -827,7 +839,7 @@ class Chargepoint(ChargepointRfidMixin, Load):
                 Pub().pub(f"openWB/set/chargepoint/"f"{self.num}/get/ocpp/rfid_stop", False)
 
             ocpp_active = (data.data.optional_data.data.ocpp.config.active and
-                           self.data.config.ocpp_chargebox_id)
+                           get_chargebox_id(self))
             if self._rfid_stop_result is not None:
                 self.set_state_and_log(
                     "OCPP-Transaktionsstopp per RFID bestätigt."
@@ -933,7 +945,7 @@ class Chargepoint(ChargepointRfidMixin, Load):
             # CP sendet Statusmeldungen an den OCPP-Server
             # bei jeden update-zyklus
             # Client sendet Statusmeldungen nur wenn sich der Status ändert an den OCPP-Server
-            if data.data.optional_data.data.ocpp.config.active and self.data.config.ocpp_chargebox_id:
+            if data.data.optional_data.data.ocpp.config.active and get_chargebox_id(self):
                 print(
                     f"                                                             "
                     f"                                           {self.get_ocpp_status()}")
@@ -942,7 +954,7 @@ class Chargepoint(ChargepointRfidMixin, Load):
                     f"                                           {self.get_ocpp_status_connector_0()}")
                 self.ocpp_send_status_notification()
 
-            chargebox_id = self.data.config.ocpp_chargebox_id
+            chargebox_id = get_chargebox_id(self)
             id_tag = (
                 self.data.set.rfid
                 or self.data.get.rfid
@@ -1155,14 +1167,14 @@ class Chargepoint(ChargepointRfidMixin, Load):
         # im Ocpp wird sich der Status gemerkt und
         # nur neu gesendet, wenn sich der Status geändert hat
         data.data.ocpp_client.status_notification(
-            chargebox_id=self.data.config.ocpp_chargebox_id,
+            chargebox_id=get_chargebox_id(self),
             connector_id=0,
             fault_state=self.data.get.fault_state,
             fault_state_str=self.data.get.fault_str,
             status=self.get_ocpp_status_connector_0()
         )
         data.data.ocpp_client.status_notification(
-            chargebox_id=self.data.config.ocpp_chargebox_id,
+            chargebox_id=get_chargebox_id(self),
             connector_id=1,
             fault_state=self.data.get.fault_state,
             fault_state_str=self.data.get.fault_str,

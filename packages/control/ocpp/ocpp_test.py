@@ -307,6 +307,22 @@ def rfid_authorization_setup(monkeypatch):
     return client, openwb_cp, authorization_future
 
 
+@pytest.mark.parametrize("flow_status", [None, "start_unconfirmed"])
+def test_id_change_blocks_charging_and_new_rfid_authorization(rfid_authorization_setup, flow_status):
+    client, cp, _ = rfid_authorization_setup
+    cp.data.get.ocpp.previous_chargebox_id = "OLD"
+    cp.data.get.ocpp.authorization_flow_status = flow_status
+
+    cp._process_ocpp_rfid()
+    allowed, message = cp._is_ocpp()
+
+    client.authorize.assert_not_called()
+    assert allowed is False
+    assert "OCPP-ID" in message
+    if flow_status == "start_unconfirmed":
+        assert "Stecker abziehen" in message
+
+
 def test_authorize_for_rfid_publishes_result_and_deduplicates(rfid_authorization_setup, mock_pub):
     client, openwb_cp, authorization_future = rfid_authorization_setup
 
@@ -617,8 +633,8 @@ def test_transfer_values_updates_meter_snapshot():
     [
         pytest.param(None, "box-1", "pw-1", False, ["box-1"], id="initial-disabled-config"),
         pytest.param(("box-1", "pw-1", True), "box-1", "pw-1", False, ["box-1"], id="disable-ocpp"),
-        pytest.param(("box-1", "pw-1", True), "box-2", "pw-1", True, ["box-1"], id="change-id"),
-        pytest.param(("box-1", "pw-1", False), "box-2", "pw-1", False, ["box-1", "box-2"],
+        pytest.param(("box-1", "pw-1", True), "box-2", "pw-1", True, [], id="change-id"),
+        pytest.param(("box-1", "pw-1", False), "box-2", "pw-1", False, [],
                      id="change-id-while-disabled"),
         pytest.param(("box-1", "pw-1", True), "box-1", "pw-2", True, ["box-1"],
                      id="change-password"),
@@ -627,18 +643,24 @@ def test_transfer_values_updates_meter_snapshot():
     ],
 )
 def test_sync_chargepoint_lifecycle(
-    previous, chargebox_id, chargebox_pw, active, expected_disconnects
+    monkeypatch, previous, chargebox_id, chargebox_pw, active, expected_disconnects
 ):
+    monkeypatch.setattr(data, "data", SimpleNamespace(cp_data={}))
     client = object.__new__(OcppClient)
     client._chargepoint_lifecycle = {}
     if previous is not None:
         client._chargepoint_lifecycle[1] = previous
     disconnect = Mock()
     client.disconnect = disconnect
+    client._schedule_chargebox_id_change = Mock()
 
     client.sync_chargepoint_lifecycle(1, chargebox_id, chargebox_pw, active)
 
     assert [call.args[0] for call in disconnect.call_args_list] == expected_disconnects
+    if previous is not None and previous[0] != chargebox_id:
+        client._schedule_chargebox_id_change.assert_called_once_with(1, previous[0])
+    else:
+        client._schedule_chargebox_id_change.assert_not_called()
     assert client._chargepoint_lifecycle[1] == (
         chargebox_id, chargebox_pw, bool(active and chargebox_id)
     )

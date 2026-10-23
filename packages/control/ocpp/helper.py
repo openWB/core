@@ -11,9 +11,14 @@ def _get_formatted_time() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
+def get_chargebox_id(cp):
+    """Während eines ID-Wechsels gehört der Vorgang noch zur bisherigen ID."""
+    return getattr(cp.data.get.ocpp, "previous_chargebox_id", None) or cp.data.config.ocpp_chargebox_id
+
+
 def get_cp_from_chargebox_id(chargebox_id):
     for cp in data.data.cp_data.values():
-        if cp.data.config.ocpp_chargebox_id == chargebox_id:
+        if get_chargebox_id(cp) == chargebox_id:
             return cp
     return None
 

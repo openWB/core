@@ -15,6 +15,7 @@ from helpermodules.pub import Pub, pub_single
 from helpermodules.logging_context import ocpp_logging_context
 
 from modules.common.fault_state import FaultState
+from control import data
 from control.ocpp.helper import _get_formatted_time, get_cp_from_chargebox_id, _get_config
 
 from control.ocpp.ocpp_chargepoint import OcppChargePoint, get_ocpp_error_code
@@ -58,6 +59,8 @@ class OcppClient:
         self._chargepoint_lifecycle: dict[
             int, tuple[Optional[str], Optional[str], bool]
         ] = {}
+
+        self._identity_change_jobs: dict[int, concurrent.futures.Future] = {}
 
         with OcppClient._ocpp_runtime_lock:
             if (OcppClient._ocpp_thread is None
@@ -155,11 +158,19 @@ class OcppClient:
         chargebox_pw: Optional[str],
         ocpp_active: bool,
     ) -> None:
-        """Disconnect obsolete OCPP connections after configuration changes."""
+        """ID-Wechsel geordnet abschließen und andere Lifecycle-Änderungen übernehmen."""
         chargebox_id = chargebox_id or None
         chargebox_pw = chargebox_pw or None
         enabled = bool(ocpp_active and chargebox_id)
         previous = self._chargepoint_lifecycle.get(chargepoint_num)
+
+        openwb_cp = data.data.cp_data.get(f"cp{chargepoint_num}")
+        pending_id = (getattr(openwb_cp.data.get.ocpp, "previous_chargebox_id", None)
+                      if openwb_cp is not None else None)
+        if pending_id or (previous is not None and previous[0] and previous[0] != chargebox_id):
+            self._schedule_chargebox_id_change(chargepoint_num, pending_id or previous[0])
+            self._chargepoint_lifecycle[chargepoint_num] = (chargebox_id, chargebox_pw, enabled)
+            return
 
         if previous is None:
             # Bei deaktiviertem OCPP kann nach einem Backend-Neustart noch eine alte Verbindung bestehen.
@@ -180,6 +191,47 @@ class OcppClient:
                 self.disconnect(chargebox_id)
 
         self._chargepoint_lifecycle[chargepoint_num] = (chargebox_id, chargebox_pw, enabled)
+
+    def _schedule_chargebox_id_change(self, chargepoint_num: int, old_id: str) -> None:
+        job = self._identity_change_jobs.get(chargepoint_num)
+        if job is not None and not job.done():
+            return
+
+        openwb_cp = data.data.cp_data.get(f"cp{chargepoint_num}")
+        if openwb_cp is None:
+            return
+        # Sofort im Backendmodell sperren und über MQTT erhalten. Auch nach
+        # Modellkopie/Neustart muss ein ausstehender Stop zur alten ID gehören.
+        openwb_cp.data.get.ocpp.previous_chargebox_id = old_id
+        Pub().pub(f"openWB/set/chargepoint/{chargepoint_num}/get/ocpp/previous_chargebox_id", old_id)
+        self._identity_change_jobs[chargepoint_num] = self._submit(
+            self._change_chargebox_id(chargepoint_num, old_id),
+            f"Chargebox-ID wechseln {old_id}", chargebox_id=old_id,
+        )
+
+    async def _change_chargebox_id(self, chargepoint_num: int, old_id: str) -> None:
+        log.warning("OCPP %s: Chargebox-ID geändert; laufenden Vorgang vor dem Wechsel beenden.", old_id)
+        self.discard_rfid_authorization(old_id)
+        openwb_cp = data.data.cp_data.get(f"cp{chargepoint_num}")
+        if openwb_cp is None:
+            return
+        imported = int(openwb_cp.data.get.imported)
+        if not await self.transactions.stop_and_wait(old_id, imported, reason="Other", timeout=None):
+            return
+
+        await self.connection_manager.disconnect(old_id)
+        self._meter_snapshots.pop(old_id, None)
+        openwb_cp = data.data.cp_data.get(f"cp{chargepoint_num}")
+        if openwb_cp is None:
+            return
+        new_id = openwb_cp.data.config.ocpp_chargebox_id
+        openwb_cp.data.get.ocpp.authorization_flow_status = None
+        Pub().pub(f"openWB/set/chargepoint/{chargepoint_num}/get/ocpp/authorization_flow_status", None)
+        openwb_cp.data.get.ocpp.previous_chargebox_id = None
+        Pub().pub(f"openWB/set/chargepoint/{chargepoint_num}/get/ocpp/previous_chargebox_id", None)
+        log.info("OCPP: Wechsel der Chargebox-ID von %s auf %s nach Transaktionsende.", old_id, new_id)
+        if new_id and data.data.optional_data.data.ocpp.config.active:
+            await self.connection_manager.connect(new_id)
 
     async def _initialize_connection(
         self,
