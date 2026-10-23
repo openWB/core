@@ -296,6 +296,113 @@ def test_unconfirmed_start_survives_reconnect_and_backend_restart(transaction_se
     connection.cp._start_transaction.assert_awaited_once()
 
 
+@pytest.mark.parametrize("flow_status", ["start_pending", "start_authorizing"])
+def test_restart_clears_stale_phase_before_start_was_sent(transaction_setup, mock_pub, caplog, flow_status):
+    coordinator, connection, openwb_cp = transaction_setup
+    openwb_cp.data.get.ocpp.authorization_flow_status = flow_status
+
+    assert coordinator.get_state("box-1") == TransactionState.IDLE
+    assert openwb_cp.data.get.ocpp.authorization_flow_status is None
+    assert openwb_cp.data.get.ocpp.tag_accepted is False
+    assert openwb_cp.data.get.ocpp.transaction_id is None
+    mock_pub.pub.assert_any_call("openWB/set/chargepoint/1/get/ocpp/authorization_flow_status", None)
+    assert flow_status in caplog.text
+    assert "nach Backend-Neustart zurückgesetzt" in caplog.text
+
+    calls = mock_pub.pub.call_count
+    assert coordinator.get_transaction_id("box-1") is None
+    assert coordinator.get_state("box-1") == TransactionState.IDLE
+    assert mock_pub.pub.call_count == calls
+    assert asyncio.run(coordinator.start("box-1", 1, "TAG", 100)) is True
+    connection.cp._authorize.assert_awaited_once_with(id_tag="TAG")
+    connection.cp._start_transaction.assert_awaited_once_with(connector_id=1, id_tag="TAG", imported=100)
+
+
+def test_restart_during_start_requires_unplug_before_retry(transaction_setup, mock_pub, caplog):
+    coordinator, connection, openwb_cp = transaction_setup
+    openwb_cp.data.get.ocpp.authorization_flow_status = "start_starting"
+
+    async def check():
+        assert coordinator.get_state("box-1") == TransactionState.START_UNCONFIRMED
+        assert openwb_cp.data.get.ocpp.authorization_flow_status == "start_unconfirmed"
+        assert openwb_cp.data.get.ocpp.tag_accepted is False
+        assert coordinator.get_transaction_id("box-1") is None
+        assert await coordinator.start("box-1", 1, "TAG", 100) is False
+        assert await coordinator.start("box-1", 1, "OTHER-TAG", 100) is False
+        connection.cp._authorize.assert_not_awaited()
+        connection.cp._start_transaction.assert_not_awaited()
+
+        openwb_cp.data.get.plug_state = False
+        assert coordinator.clear_start_block("box-1") is True
+        assert openwb_cp.data.get.ocpp.authorization_flow_status is None
+        openwb_cp.data.get.plug_state = True
+        assert await coordinator.start("box-1", 1, "TAG", 100) is True
+
+    asyncio.run(check())
+    mock_pub.pub.assert_any_call("openWB/set/chargepoint/1/get/ocpp/authorization_flow_status", "start_unconfirmed")
+    assert "Backend während StartTransaction neu gestartet" in caplog.text
+    assert "serverseitige Transaktionszustand ist unbekannt" in caplog.text
+    connection.cp._start_transaction.assert_awaited_once()
+    connection.cp._stop_transaction.assert_not_awaited()
+
+
+@pytest.mark.parametrize("flow_status", ["start_pending", "start_authorizing", "start_starting"])
+def test_restart_preserves_known_transaction_over_stale_phase(transaction_setup, mock_pub, flow_status):
+    coordinator, connection, openwb_cp = transaction_setup
+    openwb_cp.data.get.ocpp.transaction_id = 42
+    openwb_cp.data.get.ocpp.transaction_id_tag = "ACTIVE-TAG"
+    openwb_cp.data.get.ocpp.authorization_flow_status = flow_status
+
+    async def check():
+        assert coordinator.get_state("box-1") == TransactionState.ACTIVE
+        assert coordinator.get_transaction_id("box-1") == 42
+        assert coordinator.get_id_tag("box-1") == "ACTIVE-TAG"
+        assert await coordinator.start("box-1", 1, "NEW-TAG", 100) is True
+
+    asyncio.run(check())
+    assert openwb_cp.data.get.ocpp.transaction_id == 42
+    connection.cp._authorize.assert_not_awaited()
+    connection.cp._start_transaction.assert_not_awaited()
+    mock_pub.pub.assert_not_called()
+
+
+@pytest.mark.parametrize("waiting_for,expected_state,flow_status", [
+    ("connect", TransactionState.START_PENDING, "start_pending"),
+    ("authorize", TransactionState.AUTHORIZING, "start_authorizing"),
+    ("start", TransactionState.STARTING, "start_starting"),
+])
+def test_reconnect_does_not_reset_live_start(transaction_setup, mock_pub, waiting_for, expected_state, flow_status):
+    coordinator, connection, openwb_cp = transaction_setup
+    waiting = (coordinator._ensure_connected if waiting_for == "connect" else
+               getattr(connection.cp, "_authorize" if waiting_for == "authorize" else "_start_transaction"))
+
+    async def check():
+        entered = asyncio.Event()
+        release = asyncio.Event()
+
+        async def delayed(*args, **kwargs):
+            entered.set()
+            await release.wait()
+            return waiting.return_value
+
+        waiting.side_effect = delayed
+        start = asyncio.create_task(coordinator.start("box-1", 1, "TAG", 100))
+        await asyncio.wait_for(entered.wait(), 5)
+        calls = mock_pub.pub.call_count
+        await coordinator.on_connected("box-1", connection)
+        assert coordinator.get_state("box-1") == expected_state
+        assert coordinator.get_transaction_id("box-1") is None
+        assert openwb_cp.data.get.ocpp.authorization_flow_status == flow_status
+        assert mock_pub.pub.call_count == calls
+        assert not start.done()
+        release.set()
+        assert await asyncio.wait_for(start, 5) is True
+
+    asyncio.run(check())
+    assert coordinator.get_state("box-1") == TransactionState.ACTIVE
+    connection.cp._start_transaction.assert_awaited_once()
+
+
 @pytest.mark.parametrize("state,transaction_id", [
     (TransactionState.ACTIVE, 42), (TransactionState.ERROR, 42), (TransactionState.STARTING, None),
 ])
