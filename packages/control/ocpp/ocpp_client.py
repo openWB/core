@@ -77,7 +77,7 @@ class OcppClient:
 
         # Neuester Zählerstand aus dem openWB-Backend.
         self._meter_snapshots = {}
-        self._rfid_authorize_pending = set()
+        self._rfid_authorize_pending = {}
 
         self.connection_manager = OcppConnectionManager(
             chargepoint_factory=self._created_charge_point,
@@ -747,7 +747,6 @@ class OcppClient:
                 or ocpp_data.authorization_flow_status is not None):
             return None
 
-        self._rfid_authorize_pending.add(chargebox_id)
         topic = f"openWB/set/chargepoint/{openwb_cp.num}/get/ocpp/authorization_flow_status"
         # Lokal und auf MQTT setzen: Der Ladepunkt muss 'init' sofort sehen,
         # auch wenn die MQTT-Rückmeldung erst im nächsten Update eintrifft.
@@ -756,36 +755,56 @@ class OcppClient:
         try:
             future = self.authorize(chargebox_id, id_tag)
         except Exception:
-            self._rfid_authorize_pending.discard(chargebox_id)
             ocpp_data.authorization_flow_status = "rejected"
             Pub().pub(topic, "rejected")
             log.exception("OCPP Authorize für %s konnte nicht gestartet werden", chargebox_id)
             return None
 
-        def publish_result(completed_future):
-            self._rfid_authorize_pending.discard(chargebox_id)
-            try:
-                result = completed_future.result()
-            except (asyncio.CancelledError, concurrent.futures.CancelledError):
-                response = "rejected"
-            except Exception:
-                log.exception("OCPP Authorize für %s fehlgeschlagen", chargebox_id)
-                response = "rejected"
-            else:
-                response = "accepted" if getattr(result, "accepted", False) else "rejected"
-
-            # Der Scan kann während der asynchronen Antwort bereits verworfen
-            # worden sein. Dann darf eine verspätete Antwort nichts freigeben.
-            if openwb_cp.data.get.rfid != id_tag:
-                if ocpp_data.authorization_flow_status == "init":
-                    ocpp_data.authorization_flow_status = None
-                    Pub().pub(topic, None)
-                return
-            ocpp_data.authorization_flow_status = response
-            Pub().pub(topic, response)
-
-        future.add_done_callback(publish_result)
+        # Nur der Ladepunkt-Updatepfad wertet das Ergebnis aus. Ein Callback
+        # im OCPP-Thread dürfte keine kopierten Ladepunktmodelle verändern.
+        self._rfid_authorize_pending[chargebox_id] = (id_tag, future)
         return future
+
+    def finish_rfid_authorization(self, chargebox_id: str, openwb_cp) -> None:
+        """Fertige Antwort im Backend-Update dem aktuellen Scan zuordnen."""
+        pending = self._rfid_authorize_pending.get(chargebox_id)
+        if pending is None:
+            return
+
+        id_tag, future = pending
+        ocpp_data = openwb_cp.data.get.ocpp
+        topic = f"openWB/set/chargepoint/{openwb_cp.num}/get/ocpp/authorization_flow_status"
+        current_scan = (
+            openwb_cp.data.config.ocpp_chargebox_id == chargebox_id
+            and openwb_cp.data.get.rfid == id_tag
+        )
+        if not current_scan or ocpp_data.authorization_flow_status != "init":
+            self.discard_rfid_authorization(chargebox_id)
+            if not current_scan and ocpp_data.authorization_flow_status == "init":
+                ocpp_data.authorization_flow_status = None
+                Pub().pub(topic, None)
+            return
+
+        if not future.done():
+            return
+
+        self.discard_rfid_authorization(chargebox_id)
+        try:
+            result = future.result()
+        except (asyncio.CancelledError, concurrent.futures.CancelledError):
+            response = "rejected"
+        except Exception:
+            log.exception("OCPP Authorize für %s fehlgeschlagen", chargebox_id)
+            response = "rejected"
+        else:
+            response = "accepted" if getattr(result, "accepted", False) else "rejected"
+
+        ocpp_data.authorization_flow_status = response
+        Pub().pub(topic, response)
+
+    def discard_rfid_authorization(self, chargebox_id: str) -> None:
+        """Scan entkoppeln; ein späteres Netzwerkergebnis hat keine Wirkung mehr."""
+        self._rfid_authorize_pending.pop(chargebox_id, None)
 
     def request_start(
         self,

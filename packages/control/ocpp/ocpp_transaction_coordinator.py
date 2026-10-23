@@ -348,8 +348,7 @@ class TransactionCoordinator:
                 TransactionState.REJECTED,
             )
 
-            # Nur eine ausdrückliche Ablehnung beendet das Warten auf die
-            # vorgemerkte Nichtverfügbarkeit; eine fehlende Antwort genügt nicht.
+            # Wenn Start abgebrochen wurde, wende change availaibilty an
             if status in ("Blocked", "Expired", "Invalid", "ConcurrentTx"):
                 await cp.apply_pending_availability()
 
