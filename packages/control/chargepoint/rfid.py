@@ -43,9 +43,10 @@ class ChargepointRfidMixin:
         Pub().pub(f"openWB/set/chargepoint/{self.num}/get/rfid", None)
         self.data.get.rfid_timestamp = None
         Pub().pub(f"openWB/set/chargepoint/{self.num}/get/rfid_timestamp", None)
-        if (not data.data.optional_data.data.rfid.active or
-                self.data.get.ocpp.authorization_flow_status not in (
-                    "start_pending", "start_starting", "start_authorizing", "start_rejected", "start_error")):
+        flow_status = self.data.get.ocpp.authorization_flow_status
+        if (flow_status != "start_unconfirmed" and
+                (not data.data.optional_data.data.rfid.active or flow_status not in (
+                    "start_pending", "start_starting", "start_authorizing", "start_rejected", "start_error"))):
             self.data.get.ocpp.authorization_flow_status = None
             Pub().pub(f"openWB/set/chargepoint/{self.num}/get/ocpp/authorization_flow_status", None)
         self.chargepoint_module.clear_rfid()
@@ -118,8 +119,9 @@ class ChargepointRfidMixin:
             Pub().pub(f"openWB/set/chargepoint/{self.num}/get/rfid", None)
             self.data.get.rfid_timestamp = None
             Pub().pub(f"openWB/set/chargepoint/{self.num}/get/rfid_timestamp", None)
-            self.data.get.ocpp.authorization_flow_status = None
-            Pub().pub(f"openWB/set/chargepoint/{self.num}/get/ocpp/authorization_flow_status", None)
+            if self.data.get.ocpp.authorization_flow_status != "start_unconfirmed":
+                self.data.get.ocpp.authorization_flow_status = None
+                Pub().pub(f"openWB/set/chargepoint/{self.num}/get/ocpp/authorization_flow_status", None)
             self.chargepoint_module.clear_rfid()
             self.set_state_and_log(msg)
 

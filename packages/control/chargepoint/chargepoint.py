@@ -170,7 +170,11 @@ class Chargepoint(ChargepointRfidMixin, Load):
             return True, None
 
         state = all(self.data.get.ocpp.availability)
-        if not self.data.get.ocpp.connected and self.data.get.ocpp.transaction_id is None:
+        if self.data.get.ocpp.authorization_flow_status == "start_unconfirmed":
+            message = "Keine Ladung: Startbestätigung vom OCPP-Server fehlt. " \
+                      "Stecker abziehen und erneut verbinden."
+            state = False
+        elif not self.data.get.ocpp.connected and self.data.get.ocpp.transaction_id is None:
             print("#####################################")
             print("OCPP NO CONN")
             print("#####################################")
@@ -957,13 +961,13 @@ class Chargepoint(ChargepointRfidMixin, Load):
 
             # als ocpp Chargepoint konfiguriert?
             if data.data.optional_data.data.ocpp.config.active and chargebox_id:
-                if not self.data.get.plug_state and not self.data.get.ocpp.unlock_in_progress:
+                if self.data.get.plug_state is False and not self.data.get.ocpp.unlock_in_progress:
                     data.data.ocpp_client.clear_start_block(chargebox_id)
                 elif (self.data.get.ocpp.connected  # <- mit OCPP-Server verbunden
                         and self.data.get.plug_state and id_tag
                         # and self.data.get.ocpp.authorization_flow_status != "init"):
                         and self.data.get.ocpp.authorization_flow_status not in (
-                            "init", "start_pending", "start_starting", "start_authorizing"
+                            "init", "start_pending", "start_starting", "start_authorizing", "start_unconfirmed"
                         )):
                     data.data.ocpp_client.request_start(
                         chargebox_id=chargebox_id,
@@ -974,7 +978,7 @@ class Chargepoint(ChargepointRfidMixin, Load):
                 elif (self.data.get.plug_state and id_tag and
                       # self.data.get.ocpp.authorization_flow_status == "init"):
                       self.data.get.ocpp.authorization_flow_status in (
-                          "init", "start_pending", "start_starting", "start_authorizing"
+                          "init", "start_pending", "start_starting", "start_authorizing", "start_unconfirmed"
                       )):
                     log.debug("OCPP %s: Start wartet auf RFID-Autorisierung/StartTransaktion", chargebox_id)
                 elif self.data.get.plug_state and id_tag:

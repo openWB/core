@@ -197,6 +197,61 @@ def test_stop_transaction(mock_data, monkeypatch, transaction_id, flow_status, s
         )
 
 
+@pytest.mark.parametrize("connected", [False, True])
+def test_unconfirmed_start_shows_unplug_instruction_even_when_disconnected(mock_data, connected):
+    cp = Chargepoint(1, None)
+    cp.data.config.ocpp_chargebox_id = "box-1"
+    cp.data.get.ocpp.connected = connected
+    cp.data.get.ocpp.authorization_flow_status = "start_unconfirmed"
+
+    allowed, message = cp._is_ocpp()
+
+    assert allowed is False
+    assert "Startbestätigung vom OCPP-Server fehlt" in message
+    assert "Stecker abziehen und erneut verbinden" in message
+
+
+@pytest.mark.parametrize("plugged", [False, True, None])
+def test_unconfirmed_start_is_only_reset_by_unplug_update(mock_data, monkeypatch, plugged):
+    cp = Chargepoint(1, None)
+    cp.data.config.ev = 0
+    cp.data.config.ocpp_chargebox_id = "box-1"
+    cp.data.set.rfid = "TAG"
+    cp.data.get.plug_state = plugged
+    cp.data.get.ocpp.connected = True
+    cp.data.get.ocpp.authorization_flow_status = "start_unconfirmed"
+    cp.template = CpTemplate()
+    cp.chargepoint_module = ChargepointModule(Mqtt())
+    start = Mock()
+    clear = Mock()
+    monkeypatch.setattr(data.data.ocpp_client, "request_start", start)
+    monkeypatch.setattr(data.data.ocpp_client, "clear_start_block", clear)
+    monkeypatch.setattr(cp, "_process_charge_stop", Mock())
+    monkeypatch.setattr(cp, "_pub_configured_ev", Mock())
+
+    cp.update({"ev0": Ev(0)})
+
+    start.assert_not_called()
+    if plugged is False:
+        clear.assert_called_once_with("box-1")
+    else:
+        clear.assert_not_called()
+
+
+@pytest.mark.parametrize("method", ["_clear_scanned_rfid", "_validate_rfid"])
+@pytest.mark.parametrize("rfid_active", [False, True])
+def test_discarding_rfid_does_not_clear_unconfirmed_start(rfid_authorization_setup, method, rfid_active):
+    _, cp, _ = rfid_authorization_setup
+    data.data.optional_data.data.rfid.active = rfid_active
+    cp.data.get.ocpp.authorization_flow_status = "start_unconfirmed"
+    cp.template.data.valid_tags = []
+
+    getattr(cp, method)()
+
+    assert cp.data.get.rfid is None
+    assert cp.data.get.ocpp.authorization_flow_status == "start_unconfirmed"
+
+
 @pytest.mark.parametrize("result", [
     AuthorizationResult(status="Accepted"),
     AuthorizationResult(status="Blocked"),
@@ -365,7 +420,7 @@ def test_rfid_authorization_failure_is_applied_in_update(rfid_authorization_setu
     assert client._rfid_authorize_pending == {}
 
 
-@pytest.mark.parametrize("status", ["start_pending", "start_authorizing", "start_starting", None])
+@pytest.mark.parametrize("status", ["start_pending", "start_authorizing", "start_starting", "start_unconfirmed", None])
 def test_rfid_authorization_cannot_overwrite_another_flow(rfid_authorization_setup, mock_pub, status):
     client, openwb_cp, future = rfid_authorization_setup
     client.authorize_for_rfid("box-1", "TAG")

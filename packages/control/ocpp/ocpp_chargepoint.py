@@ -327,7 +327,7 @@ class OcppChargePoint(cp):
         ocpp_data = openwb_cp.data.get.ocpp
         if (
             ocpp_data.transaction_id is not None
-            or ocpp_data.authorization_flow_status == "start_starting"
+            or ocpp_data.authorization_flow_status in ("start_starting", "start_unconfirmed")
             or not any(ocpp_data.pending_availability)
         ):
             return
