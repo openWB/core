@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import List, Optional
+from typing import List, Optional, Protocol
 from control.chargemode import Chargemode
 from control.chargepoint.control_parameter import ControlParameter, control_parameter_factory
 from control.consumer.usage import ConsumerUsage
@@ -33,6 +33,11 @@ class WaitForStartStates(Enum):
     START_SIGNAL_RECEIVED = "start_signal_received"
 
 
+class RfidReset(Enum):
+    AFTER_TIME = "after_time"
+    AFTER_POWER_END = "after_power_end"
+
+
 @dataclass
 class ResetChargemode(TimepointPlan):
     active: bool = False
@@ -58,10 +63,16 @@ class ConsumerConfig:
     min_power: float = 115
     min_interval: int = 60
     is_home_consumption_consumer: str = "auto_home_consumption"
+    rfid_enabled: bool = False
+    valid_tags: List[str] = field(default_factory=empty_list_factory)
+    rfid_reset: RfidReset = RfidReset.AFTER_TIME
+    rfid_timeout: int = 300
 
 
 @dataclass
 class Get:
+    rfid: Optional[str] = field(default=None, metadata={"topic": "get/rfid"})
+    rfid_timestamp: Optional[float] = field(default=None, metadata={"topic": "get/rfid_timestamp"})
     charge_state: bool = field(default=False, metadata={"topic": "get/charge_state"})
     currents: List[float] = field(default_factory=currents_list_factory)
     daily_imported: float = field(default=0, metadata={"topic": "get/daily_imported"})
@@ -82,6 +93,10 @@ class Get:
 
 @dataclass
 class Set:
+    rfid: Optional[str] = field(default=None, metadata={"topic": "set/rfid"})
+    rfid_timestamp: Optional[float] = field(default=None, metadata={"topic": "set/rfid_timestamp"})
+    rfid_power_end: Optional[float] = field(default=None, metadata={"topic": "set/rfid_power_end"})
+    rfid_power_seen: bool = field(default=False, metadata={"topic": "set/rfid_power_seen"})
     current: float = field(default=0, metadata={"topic": "set/current"})
     phases_to_use: int = field(default=1, metadata={"topic": "set/phases_to_use"})
     plug_time: Optional[float] = field(default=None, metadata={"topic": "set/plug_time"})
@@ -109,3 +124,16 @@ class ConsumerData:
     config: ConsumerConfig = field(default_factory=lambda: ConsumerConfig())
     extra_meter: Optional[int] = None
     usage: Usage = field(default_factory=lambda: Usage(), metadata={"topic": "usage"})
+
+
+class ConsumerRfidProtocol(Protocol):
+    @property
+    def data(self) -> ConsumerData: ...
+    @property
+    def module(self) -> ConsumerSetup: ...
+
+    def set_state_and_log(self, message: Optional[str]) -> None: ...
+    def rfid_required(self) -> bool: ...
+    def update_rfid(self) -> None: ...
+    def clear_rfid(self) -> None: ...
+    def reset_rfid(self) -> None: ...
