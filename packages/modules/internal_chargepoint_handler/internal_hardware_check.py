@@ -8,7 +8,7 @@ from modules.common.evse import Evse
 from modules.common.fault_state import FaultState
 from modules.common.hardware_check import check_meter
 from modules.common.modbus import ModbusSerialClient_, ModbusTcpClient_
-from modules.internal_chargepoint_handler.clients import MeterClient
+from modules.internal_chargepoint_handler.hardware_definition import MeterClient
 
 log = logging.getLogger(__name__)
 
