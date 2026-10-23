@@ -223,19 +223,94 @@ def test_rejected_start_does_not_release_charging(transaction_setup, rejected_st
         connection.cp._start_transaction.assert_not_awaited()
 
 
-def test_start_response_error_does_not_retry_same_tag(transaction_setup):
+@pytest.mark.parametrize("failure", ["timeout", "connection", "missing_response", "missing_id"])
+def test_unconfirmed_start_blocks_session_and_allows_retry_after_unplug(transaction_setup, caplog, failure):
     coordinator, connection, openwb_cp = transaction_setup
-    connection.cp._start_transaction.side_effect = RuntimeError("response lost")
+    if failure == "timeout":
+        connection.cp._start_transaction.side_effect = asyncio.TimeoutError("response lost")
+    elif failure == "connection":
+        connection.cp._start_transaction.side_effect = ConnectionError("disconnected")
+    elif failure == "missing_response":
+        connection.cp._start_transaction.return_value = None
+    else:
+        connection.cp._start_transaction.return_value = SimpleNamespace(
+            id_tag_info={"status": "Accepted"}, transaction_id=None,
+        )
 
     async def check():
         assert await coordinator.start("box-1", 1, "TAG", 100) is False
+        assert coordinator.get_state("box-1") == TransactionState.START_UNCONFIRMED
+        assert openwb_cp.data.get.ocpp.authorization_flow_status == "start_unconfirmed"
+        assert openwb_cp.data.get.ocpp.tag_accepted is False
         assert await coordinator.start("box-1", 1, "TAG", 100) is False
+        assert await coordinator.start("box-1", 1, "OTHER-TAG", 100) is False
+        assert await coordinator.stop("box-1", 100) is False
+        connection.cp._authorize.assert_awaited_once()
+        connection.cp._start_transaction.assert_awaited_once()
+        connection.cp._stop_transaction.assert_not_awaited()
+
+        openwb_cp.data.get.plug_state = False
+        assert coordinator.clear_start_block("box-1") is True
+        assert coordinator.get_state("box-1") == TransactionState.IDLE
+        assert openwb_cp.data.get.ocpp.authorization_flow_status is None
+        assert coordinator.get_transaction_id("box-1") is None
+        assert coordinator.get_id_tag("box-1") is None
+        assert coordinator._get_transaction("box-1").pending_stop is None
+        assert coordinator.clear_start_block("box-1") is False
+
+        openwb_cp.data.get.plug_state = True
+        connection.cp._start_transaction.side_effect = None
+        connection.cp._start_transaction.return_value = SimpleNamespace(
+            id_tag_info={"status": "Accepted"}, transaction_id=43,
+        )
+        assert await coordinator.start("box-1", 1, "TAG", 110) is True
 
     asyncio.run(check())
 
-    assert coordinator.get_state("box-1") == TransactionState.ERROR
-    assert openwb_cp.data.get.ocpp.tag_accepted is False
+    assert coordinator.get_state("box-1") == TransactionState.ACTIVE
+    assert coordinator.get_transaction_id("box-1") == 43
+    assert connection.cp._start_transaction.await_count == 2
+    connection.cp._stop_transaction.assert_not_awaited()
+    assert "serverseitige Transaktionszustand ist unbekannt" in caplog.text
+    assert "nach Abstecken lokal zurückgesetzt" in caplog.text
+
+
+def test_unconfirmed_start_survives_reconnect_and_backend_restart(transaction_setup):
+    coordinator, connection, openwb_cp = transaction_setup
+    connection.cp._start_transaction.side_effect = asyncio.TimeoutError()
+
+    async def check():
+        assert await coordinator.start("box-1", 1, "TAG", 100) is False
+        await coordinator.on_disconnected("box-1", connection)
+        await coordinator.on_connected("box-1", connection)
+        assert await coordinator.start("box-1", 1, "TAG", 100) is False
+
+        restored = TransactionCoordinator(ensure_connected=coordinator._ensure_connected)
+        assert restored.get_state("box-1") == TransactionState.START_UNCONFIRMED
+        assert await restored.start("box-1", 1, "OTHER-TAG", 100) is False
+        openwb_cp.data.get.plug_state = False
+        assert restored.clear_start_block("box-1") is True
+        assert openwb_cp.data.get.ocpp.authorization_flow_status is None
+
+    asyncio.run(check())
     connection.cp._start_transaction.assert_awaited_once()
+
+
+@pytest.mark.parametrize("state,transaction_id", [
+    (TransactionState.ACTIVE, 42), (TransactionState.ERROR, 42), (TransactionState.STARTING, None),
+])
+def test_unplug_does_not_forget_known_or_pending_transaction(transaction_setup, mock_pub, state, transaction_id):
+    coordinator, _, openwb_cp = transaction_setup
+    transaction = coordinator._get_transaction("box-1")
+    transaction.state = state
+    transaction.transaction_id = transaction_id
+    openwb_cp.data.get.plug_state = False
+    mock_pub.reset_mock()
+
+    assert coordinator.clear_start_block("box-1") is False
+    assert transaction.state == state
+    assert transaction.transaction_id == transaction_id
+    mock_pub.pub.assert_not_called()
 
 
 @pytest.mark.parametrize("waiting_for", ["connect", "authorize", "start"])
@@ -867,12 +942,20 @@ def test_availability_during_start_is_applied_after_transaction_or_explicit_reje
             assert coordinator.get_state("box-1") == TransactionState.IDLE
         elif outcome in ("timeout", "missing_response"):
             assert result is False
-            expected = TransactionState.ERROR if outcome == "timeout" else TransactionState.REJECTED
-            assert coordinator.get_state("box-1") == expected
+            assert coordinator.get_state("box-1") == TransactionState.START_UNCONFIRMED
             assert openwb_cp.data.get.ocpp.availability == [True, True]
             assert openwb_cp.data.get.ocpp.pending_availability == [connector_id == 0, True]
             connection.cp.apply_pending_availability.assert_not_awaited()
-            return
+            await handler.apply_pending_availability()
+            assert openwb_cp.data.get.ocpp.availability == [True, True]
+
+            openwb_cp.data.get.plug_state = False
+            client = object.__new__(OcppClient)
+            client.transactions = coordinator
+            client.connection_manager = SimpleNamespace(get=lambda _: connection)
+            await client._clear_start_block("box-1")
+            assert coordinator.get_state("box-1") == TransactionState.IDLE
+            connection.cp.apply_pending_availability.assert_awaited_once()
         else:
             assert result is False
             assert coordinator.get_state("box-1") == TransactionState.REJECTED

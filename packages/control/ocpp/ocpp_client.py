@@ -829,10 +829,19 @@ class OcppClient:
         )
 
     def clear_start_block(self, chargebox_id: str) -> None:
-        self.loop.call_soon_threadsafe(
-            self.transactions.clear_start_block,
-            chargebox_id,
+        self._submit(
+            self._clear_start_block(chargebox_id),
+            f"Sperren nach Abstecken zurücksetzen {chargebox_id}",
+            chargebox_id=chargebox_id,
         )
+
+    async def _clear_start_block(self, chargebox_id: str) -> None:
+        if self.transactions.clear_start_block(chargebox_id):
+            # Nach dem lokalen Verwerfen eines unbestätigten Starts darf eine
+            # vorgemerkte Nichtverfügbarkeit nicht bis zur nächsten Ladung warten.
+            connection = self.connection_manager.get(chargebox_id)
+            if connection is not None:
+                await connection.cp.apply_pending_availability()
 
     def request_stop(
         self,
