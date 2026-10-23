@@ -350,7 +350,7 @@ def _get_chargepoint_frequency(daemon, id_):
 
 
 def _get_chargepoint_rfid(daemon, id_):
-    return _scalar(id_, 'rfid', _as_str(_raw(daemon, f"openWB/chargepoint/{id_}/get/rfid"), None))
+    return _scalar(id_, 'rfid', _as_str(_raw(daemon, f"openWB/chargepoint/{id_}/get/rfid")))
 
 
 def _get_chargepoint_rfid_timestamp(daemon, id_):
