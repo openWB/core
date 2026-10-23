@@ -493,6 +493,24 @@ class OcppChargePoint(cp):
                 status=RemoteStartStopStatus.rejected
             )
 
+        if not data.data.optional_data.data.rfid.active:
+            log.info("OCPP %s: Remote-Start abgelehnt, lokale RFID-Identifikation ist deaktiviert.",
+                     self.chargebox_id)
+            return call_result.RemoteStartTransaction(
+                status=RemoteStartStopStatus.rejected
+            )
+
+        # Dieselbe lokale Tag-Zulassung wie in _validate_rfid() prüfen, bevor
+        # der Auftrag bestätigt und als Scan an das Backend übergeben wird.
+        if (openwb_cp.template is None or
+                not (id_tag in openwb_cp.template.data.valid_tags or
+                     any(id_tag in ev.data.tag_id for ev in data.data.ev_data.values()))):
+            log.info("OCPP %s: Remote-Start abgelehnt, Tag %s ist lokal nicht zugelassen.",
+                     self.chargebox_id, id_tag)
+            return call_result.RemoteStartTransaction(
+                status=RemoteStartStopStatus.rejected
+            )
+
         # RFID-Tag an den lokalen Ladepunkt übergeben.
         # Bei erfolgreicher Autorisierung kann dieser den Start auslösen.
         Pub().pub(f"openWB/set/chargepoint/{self.openwb_num}/get/rfid", id_tag)
