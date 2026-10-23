@@ -91,7 +91,7 @@ class Log:
     timestamp_start_charging: Optional[float] = None
     timestamp_mode_switch: Optional[float] = None
     ev: int = -1
-    prio: bool = False
+    prio: Optional[int] = None
     rfid: Optional[str] = None
     serial_number: Optional[str] = None
     soc_at_start: Optional[int] = None
