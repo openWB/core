@@ -644,12 +644,15 @@ def test_sync_chargepoint_lifecycle(
     )
 
 
-def test_status_notification_skips_connection_check_when_status_is_unchanged():
+@pytest.mark.parametrize("config_changed", [False, True])
+def test_unchanged_status_only_connects_for_configuration_change(config_changed):
     client = object.__new__(OcppClient)
     client._last_update = {
         ("cp1", 1): (ChargePointStatus.available, "NoError", ""),
     }
-    client.connection_manager = SimpleNamespace(connect=AsyncMock())
+    client.connection_manager = SimpleNamespace(
+        connect=AsyncMock(), needs_configuration_refresh=Mock(return_value=config_changed),
+    )
 
     asyncio.run(client._send_status_notification(
         chargebox_id="cp1",
@@ -660,7 +663,11 @@ def test_status_notification_skips_connection_check_when_status_is_unchanged():
         force=False,
     ))
 
-    client.connection_manager.connect.assert_not_awaited()
+    client.connection_manager.needs_configuration_refresh.assert_called_once_with("cp1")
+    if config_changed:
+        client.connection_manager.connect.assert_awaited_once_with("cp1")
+    else:
+        client.connection_manager.connect.assert_not_awaited()
 
 
 def test_status_notification_updates_client_cache_after_successful_send():
@@ -794,6 +801,7 @@ def test_trigger_status_message_after_confirmation(
         cp.call = call
         client.connection_manager = SimpleNamespace(
             is_active_charge_point=Mock(return_value=True),
+            needs_configuration_refresh=Mock(return_value=False),
             connect=AsyncMock(return_value=SimpleNamespace(cp=cp, boot_accepted=True)),
         )
         await cp.route_message(json.dumps([2, "trigger-1", "TriggerMessage", request]))
@@ -837,6 +845,7 @@ def test_trigger_status_forces_repeat_and_skips_old_connection(monkeypatch):
         cp.call = record
         client.connection_manager = SimpleNamespace(
             is_active_charge_point=Mock(side_effect=[True, True, False]),
+            needs_configuration_refresh=Mock(return_value=False),
             connect=AsyncMock(return_value=SimpleNamespace(cp=cp, boot_accepted=True)),
         )
         await client.handler_trigger_msg(cp, MessageTrigger.status_notification, 1)

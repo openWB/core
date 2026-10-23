@@ -1281,6 +1281,118 @@ def test_remote_start_requires_local_rfid_permission(
         assert "Remote-Start abgelehnt" in caplog.text
 
 
+@pytest.fixture
+def connection_config_setup(handler_setup, monkeypatch):
+    _, openwb_cp = handler_setup
+    openwb_cp.data.get.ocpp.test_reconnect = False
+    openwb_cp.data.config = SimpleNamespace(ocpp_chargebox_password="secret")
+    config = SimpleNamespace(active=True, url="wss://old.example/ocpp/", version="ocpp1.6")
+    monkeypatch.setattr(data, "data", SimpleNamespace(
+        optional_data=SimpleNamespace(data=SimpleNamespace(ocpp=SimpleNamespace(config=config))),
+        cp_data={"cp1": openwb_cp},
+    ))
+    monkeypatch.setattr(ocpp_connection_manager, "get_cp_from_chargebox_id", lambda _: openwb_cp)
+    manager = OcppConnectionManager(
+        chargepoint_factory=lambda *_: SimpleNamespace(),
+        on_connected=AsyncMock(return_value=True),
+        on_disconnected=AsyncMock(),
+    )
+    old = SimpleNamespace(
+        server_url="wss://old.example/ocpp", subprotocol="ocpp1.6", closing=False,
+        start_task=SimpleNamespace(done=lambda: False), ws=SimpleNamespace(closed=False),
+    )
+    manager._connections["box-1"] = old
+    manager._last_connection_settings["box-1"] = (old.server_url, old.subprotocol)
+    return manager, old, config, openwb_cp
+
+
+@pytest.mark.parametrize("change", ["none", "trailing_slash", "url", "version"])
+def test_connection_reused_only_with_matching_config(connection_config_setup, change):
+    manager, old, config, _ = connection_config_setup
+    if change == "trailing_slash":
+        config.url = config.url.rstrip("/")
+    elif change == "url":
+        config.url = "wss://new.example/ocpp"
+    elif change == "version":
+        config.version = "different-subprotocol"
+    manager._cleanup_connection = AsyncMock()
+    manager._open_connection = AsyncMock(return_value="new connection")
+
+    assert manager.needs_configuration_refresh("box-1") == (change in ("url", "version"))
+    result = asyncio.run(manager.ensure_connected("box-1"))
+
+    if change in ("none", "trailing_slash"):
+        assert result is old
+        manager._cleanup_connection.assert_not_awaited()
+        manager._open_connection.assert_not_awaited()
+    else:
+        assert result == "new connection"
+        manager._cleanup_connection.assert_awaited_once_with(old)
+        manager._open_connection.assert_awaited_once_with("box-1")
+
+
+@pytest.mark.parametrize("stage", [
+    "active", "init", "start_pending", "start_authorizing", "start_starting", "start_unconfirmed", "offline_stop",
+])
+def test_connection_config_change_waits_for_completion(connection_config_setup, caplog, stage):
+    manager, old, config, openwb_cp = connection_config_setup
+    config.url = "wss://new.example/ocpp"
+    ocpp = openwb_cp.data.get.ocpp
+    if stage == "active":
+        ocpp.transaction_id = 42
+    elif stage == "offline_stop":
+        ocpp.pending_transactions = [{"transaction_id": 42}]
+    else:
+        ocpp.authorization_flow_status = stage
+    manager._cleanup_connection = AsyncMock()
+    manager._open_connection = AsyncMock(return_value="new connection")
+
+    async def check():
+        assert manager.needs_configuration_refresh("box-1") is False
+        assert await manager.ensure_connected("box-1") is old
+        assert await manager.ensure_connected("box-1") is old
+        manager._cleanup_connection.assert_not_awaited()
+        manager._open_connection.assert_not_awaited()
+        assert caplog.text.count("Änderung von Server-URL oder Subprotocol zurückgestellt") == 1
+        ocpp.transaction_id = None
+        ocpp.authorization_flow_status = None
+        ocpp.pending_transactions = []
+        assert manager.needs_configuration_refresh("box-1") is True
+        assert await manager.ensure_connected("box-1") == "new connection"
+
+    asyncio.run(check())
+    manager._cleanup_connection.assert_awaited_once_with(old)
+    manager._open_connection.assert_awaited_once_with("box-1")
+
+
+@pytest.mark.parametrize("busy", [False, True])
+def test_reconnect_uses_pinned_config_until_transaction_completed(connection_config_setup, monkeypatch, busy):
+    manager, old, config, openwb_cp = connection_config_setup
+    manager._connections.clear()  # Transportverlust darf die Serverbindung nicht verlieren.
+    config.url = "wss://new.example/ocpp"
+    config.version = "new-subprotocol"
+    openwb_cp.data.get.ocpp.transaction_id = 42 if busy else None
+    expected_url = old.server_url if busy else config.url
+    expected_version = old.subprotocol if busy else config.version
+    ws = SimpleNamespace(subprotocol=expected_version, closed=False)
+    connect = AsyncMock(return_value=ws)
+    monkeypatch.setattr(ocpp_connection_manager.websockets, "connect", connect)
+    manager._run_charge_point = AsyncMock()
+
+    async def check():
+        connection = await manager.ensure_connected("box-1")
+        assert connection.server_url == expected_url
+        assert connection.subprotocol == expected_version
+        assert manager._last_connection_settings["box-1"] == (expected_url, expected_version)
+        connect.assert_awaited_once_with(
+            expected_url + "/box-1", subprotocols=[expected_version],
+            extra_headers=manager.build_custom_headers("box-1", "secret"),
+        )
+        await connection.start_task
+
+    asyncio.run(check())
+
+
 def test_pending_availability_without_request_is_not_applied(handler_setup, mock_pub):
     make_charge_point, openwb_cp = handler_setup
 
