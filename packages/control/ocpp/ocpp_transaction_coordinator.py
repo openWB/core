@@ -452,11 +452,16 @@ class TransactionCoordinator:
         reason: str = "EVDisconnected",
         authorize_stop: bool = False,
     ) -> bool:
-        """authorize_stop verlangt eine erfolgreiche Prüfung des expliziten RFID-Tags."""
+        """RFID-Stop: online autorisieren, offline nur den Transaktions-Tag akzeptieren.
+
+        Beim Offline-RFID-Stop bedeutet True lokal angenommen; die Serverbestätigung
+        folgt über den persistenten Stop-Replay.
+        """
         if not chargebox_id or (authorize_stop and not id_tag):
             return False
 
         transaction = self._get_transaction(chargebox_id)
+        offline_rfid_stop = False
 
         if authorize_stop:
             stoppable_states = (TransactionState.ACTIVE, TransactionState.ERROR)
@@ -464,10 +469,23 @@ class TransactionCoordinator:
             if transaction_id is None or transaction.state not in stoppable_states:
                 return False
 
-            print(f"# !!!!!!!!!!!__Authorize stop for chargebox_id={chargebox_id}, id_tag={id_tag}")
-            log.debug(f"Authorize stop for chargebox_id={chargebox_id}, id_tag={id_tag}")
-            authorization = await self.authorize(chargebox_id, id_tag)
-            if not authorization.accepted:
+            # Zuerst eine vorhandene Verbindung verwenden oder den Aufbau versuchen.
+            # Erst wenn kein Transport verfügbar ist, den Offline-Stop zulassen.
+            connection = await self._get_connection(chargebox_id, "Authorize stop")
+            if self._transport_connected(connection):
+                if not connection.boot_accepted:
+                    return False
+                authorization = await self._authorize_on_connection(chargebox_id, connection, id_tag)
+                if not authorization.accepted:
+                    # Eine Ablehnung oder ein Timeout bei weiterhin bestehender
+                    # Verbindung darf nicht durch den Offline-Fallback umgangen werden.
+                    if authorization.status is not None or self._transport_connected(connection):
+                        return False
+                    offline_rfid_stop = True
+            else:
+                offline_rfid_stop = True
+
+            if offline_rfid_stop and id_tag != transaction.id_tag:
                 return False
 
             if (
@@ -573,6 +591,15 @@ class TransactionCoordinator:
             TransactionState.STOPPING,
         )
 
+        if offline_rfid_stop:
+            self._persist_offline_stop(chargebox_id, transaction.transaction_id, stop_request)
+            log.warning(
+                "OCPP %s: RFID-Stop mit dem Transaktions-Tag offline lokal angenommen; "
+                "StopTransaction %s wird nach Wiederverbindung übertragen.",
+                chargebox_id, transaction.transaction_id,
+            )
+            return True
+
         connection = await self._get_connection(
             chargebox_id,
             "StopTransaction",
@@ -611,6 +638,14 @@ class TransactionCoordinator:
             self._schedule_replay_retry(chargebox_id, connection)
 
         return successful
+
+    @staticmethod
+    def _transport_connected(connection: Optional[OcppConnection]) -> bool:
+        return (
+            connection is not None
+            and not getattr(connection, "closing", False)
+            and not getattr(getattr(connection, "ws", None), "closed", False)
+        )
 
     async def stop_and_wait(
         self,
