@@ -1,5 +1,12 @@
 #!/bin/bash
 OPENWBBASEDIR=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
+# Serialize configuration changes and restarts with manage_web_php.sh.
+sudo mkdir -p /run/openwb-apache || exit 1
+sudo touch /run/openwb-apache/configuration.lock || exit 1
+sudo chmod 755 /run/openwb-apache || exit 1
+sudo chmod 644 /run/openwb-apache/configuration.lock || exit 1
+exec 9</run/openwb-apache/configuration.lock
+flock --exclusive 9 || exit 1
 restartService=0
 
 versionMatch() {
