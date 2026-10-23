@@ -1327,6 +1327,7 @@ def test_transaction_start_does_not_authorize_before_boot_accepted(monkeypatch):
         num=1,
         data=SimpleNamespace(get=SimpleNamespace(ocpp=SimpleNamespace(
             availability=[True, True],
+            pending_transactions=[],
             transaction_id=None,
             transaction_id_tag=None,
         ))),
