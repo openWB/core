@@ -991,7 +991,7 @@ def dispatch_read(
 
     for param, id_ in read_params.items():
         resolved_id = id_
-        if id_ in ('auto', ''):
+        if param != 'get_lastlivevaluesjson' and id_ in ('auto', ''):
             type_ = get_type_from_parameter(param)
             resolved_id = ph.daemon.lowest_ids.get(type_)
             if resolved_id is None:

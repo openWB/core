@@ -135,6 +135,8 @@ class SimpleAPIRequestHandler(BaseHTTPRequestHandler):
                 else:
                     if len(read_params) == 1 and next(iter(read_params)) == 'get_lastlivevaluesjson':
                         self._send(200, format_raw_output(result, 'get_lastlivevaluesjson'), raw=True)
+                    elif not result:
+                        self._send(200, [])
                     else:
                         self._send(200, result)
                 return
