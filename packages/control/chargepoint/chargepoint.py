@@ -978,6 +978,8 @@ class Chargepoint(ChargepointRfidMixin, Load):
                     data.data.ocpp_client.clear_start_block(chargebox_id)
                 elif (self.data.get.ocpp.connected  # <- mit OCPP-Server verbunden
                         and self.data.get.plug_state and id_tag
+                        and not (self.data.get.ocpp.remote_stop or self.data.get.ocpp.rfid_stop or
+                                 self.data.get.ocpp.reset or self.data.get.ocpp.unlock_stop)
                         # and self.data.get.ocpp.authorization_flow_status != "init"):
                         and self.data.get.ocpp.authorization_flow_status not in (
                             "init", "start_pending", "start_starting", "start_authorizing", "start_unconfirmed"
@@ -994,7 +996,7 @@ class Chargepoint(ChargepointRfidMixin, Load):
                           "init", "start_pending", "start_starting", "start_authorizing", "start_unconfirmed"
                       )):
                     log.debug("OCPP %s: Start wartet auf RFID-Autorisierung/StartTransaktion", chargebox_id)
-                elif self.data.get.plug_state and id_tag:
+                elif self.data.get.plug_state and id_tag and not self.data.get.ocpp.connected:
                     log.info(f"OCPP {chargebox_id} kein Start ohne Verbindung zum OCPP-Server.")
 
             ######################################################

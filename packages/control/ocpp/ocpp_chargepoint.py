@@ -487,7 +487,8 @@ class OcppChargePoint(cp):
         if (openwb_cp is None or requested_connector_id != 1 or
                 getattr(openwb_cp.data.get.ocpp, "previous_chargebox_id", None)
                 or not all(openwb_cp.data.get.ocpp.availability)
-                or getattr(openwb_cp.data.get.ocpp, "unlock_stop", False)):
+                or any(getattr(openwb_cp.data.get.ocpp, flag, False)
+                       for flag in ("remote_stop", "rfid_stop", "reset", "unlock_stop"))):
             return call_result.RemoteStartTransaction(
                 status=RemoteStartStopStatus.rejected
             )
