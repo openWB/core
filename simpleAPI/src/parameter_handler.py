@@ -40,10 +40,7 @@ CHARGEPOINT_WRITE_PARAMS = {
     'pv_charging_limit', 'pv_charging_amount', 'pv_charging_soc', 'vehicle', 'manual_soc',
 }
 
-# Full read whitelist (what counts as a recognized read parameter). Only the
-# chargepoint entries and get_lastlivevaluesjson have a handler in this phase;
-# the rest (counter/battery/pv/consumer/io) are recognized but return nothing
-# until a later phase adds their handlers.
+# Full read whitelist (what counts as a recognized read parameter).
 READ_PARAMETER_ORDER: List[str] = [
     'get_chargepoint_all',
     'get_chargepoint_voltage_p1', 'get_chargepoint_voltage_p2', 'get_chargepoint_voltage_p3',
@@ -86,7 +83,6 @@ READ_PARAMETER_ORDER: List[str] = [
     'get_consumer_phases_in_use', 'get_consumer_charge_state', 'get_consumer_state_str',
     'get_consumer_fault_str', 'get_consumer_fault_state', 'get_consumer_usage_type',
     'get_io_output_all', 'get_io_output',
-    'get_lastlivevaluesjson',
 ]
 
 COMPLEX_PARAMETERS = {
@@ -157,8 +153,6 @@ def format_raw_output(data: Any, param_name: Optional[str] = None) -> Any:
     if isinstance(data, dict) and data:
         first_key = next(iter(data))
         first_value = data[first_key]
-        if param_name == 'get_lastlivevaluesjson' and isinstance(first_value, str):
-            return first_value
         if isinstance(first_value, str):
             return first_value
         if isinstance(first_value, dict) and len(first_value) == 1:
@@ -181,7 +175,10 @@ def _as_int(value: Any, default: int = 0) -> int:
         return int(default)
 
 
-def _as_bool(value: Any) -> bool:
+def _as_bool(value: Any, default: Any = None) -> bool:
+    # default is unused (bool has no sensible "missing" distinct from False) -
+    # accepted only so this coercer has the same (value, default) signature as
+    # the others and can sit in the same dispatch table.
     if isinstance(value, bool):
         return value
     if isinstance(value, str):
@@ -195,7 +192,9 @@ def _as_str(value: Any, default: Any = '') -> Any:
     return value if isinstance(value, str) else str(value)
 
 
-def _phases(value: Any) -> List[float]:
+def _phases(value: Any, default: Any = None) -> List[float]:
+    # default is unused (each slot already defaults to 0.0) - accepted only for
+    # a uniform (value, default) coercer signature, see _as_bool.
     if not isinstance(value, (list, tuple)):
         return [0.0, 0.0, 0.0]
     return [_as_float(value[i]) if i < len(value) else 0.0 for i in range(3)]
@@ -209,8 +208,8 @@ def _raw(daemon: Any, topic: str) -> Any:
     return daemon.raw_value_cache.get(topic)
 
 
-def _scalar(id_: Any, field: str, value: Any) -> Dict[str, Any]:
-    return {f"chargepoint_{id_}": {field: value}}
+def _comp_scalar(component: str, id_: Any, field: str, value: Any) -> Dict[str, Any]:
+    return {f"{component}_{id_}": {field: value}}
 
 
 def _get_chargepoint_all(daemon: Any, id_: Any) -> Dict[str, Any]:
@@ -287,156 +286,163 @@ def _get_chargepoint_all(daemon: Any, id_: Any) -> Dict[str, Any]:
     }
 
 
-def _get_chargepoint_voltage(daemon, id_, phase):
-    return _scalar(id_, f'voltage_p{phase}', _phases(_raw(daemon, f"openWB/chargepoint/{id_}/get/voltages"))[phase - 1])
+def _make_scalar_handler(
+        component: str, mqtt_component: str, suffix: str, field: str,
+        coercer: Callable[[Any, Any], Any], default: Any, total_aware: bool) -> Callable[[Any, Any], Dict[str, Any]]:
+    """Build a read handler for the common "look up one get/<suffix> topic, coerce
+    it, wrap it as {component_id: {field: value}}" shape - optionally serving
+    id="total" from daemon.total_sums instead, for the handful of metrics that are
+    continuously aggregated across all known IDs of a component type."""
+    def handler(daemon: Any, id_: Any) -> Dict[str, Any]:
+        if total_aware and _is_total(id_):
+            return {f"{component}_total": {field: daemon.total_sums[mqtt_component][field]}}
+        raw = _raw(daemon, f"openWB/{mqtt_component}/{id_}/get/{suffix}")
+        return _comp_scalar(component, id_, field, coercer(raw, default))
+    return handler
 
 
-def _get_chargepoint_voltages(daemon, id_):
-    return _scalar(id_, 'voltages', _phases(_raw(daemon, f"openWB/chargepoint/{id_}/get/voltages")))
+# Scalar read-parameter table: one row per `get_<component>_<field>` handler that
+# reduces to "read openWB/<mqtt_component>/<id>/get/<suffix>, coerce, wrap".
+# total_aware marks the metrics that are also continuously aggregated across all
+# known IDs and so additionally serve id="total" from daemon.total_sums.
+#
+# (component, mqtt_component, topic_suffix, field, coercer, default, total_aware)
+SCALAR_READ_TABLE: List[Tuple[str, str, str, str, Callable[[Any, Any], Any], Any, bool]] = [
+    # chargepoint
+    ('chargepoint', 'chargepoint', 'power', 'power', _as_float, 0.0, True),
+    ('chargepoint', 'chargepoint', 'powers', 'powers', _phases, None, False),
+    ('chargepoint', 'chargepoint', 'imported', 'imported', _as_float, 0.0, True),
+    ('chargepoint', 'chargepoint', 'exported', 'exported', _as_float, 0.0, True),
+    ('chargepoint', 'chargepoint', 'daily_imported', 'daily_imported', _as_float, 0.0, False),
+    ('chargepoint', 'chargepoint', 'daily_exported', 'daily_exported', _as_float, 0.0, False),
+    ('chargepoint', 'chargepoint', 'monthly_exported', 'monthly_exported', _as_float, 0.0, True),
+    ('chargepoint', 'chargepoint', 'yearly_exported', 'yearly_exported', _as_float, 0.0, True),
+    ('chargepoint', 'chargepoint', 'frequency', 'frequency', _as_float, 0.0, False),
+    ('chargepoint', 'chargepoint', 'rfid', 'rfid', _as_str, '', False),
+    ('chargepoint', 'chargepoint', 'rfid_timestamp', 'rfid_timestamp', _as_int, 0, False),
+    ('chargepoint', 'chargepoint', 'evse_current', 'evse_current', _as_float, 0.0, False),
+    ('chargepoint', 'chargepoint', 'soc', 'soc', _as_int, 0, False),
+    ('chargepoint', 'chargepoint', 'state_str', 'state_str', _as_str, '', False),
+    ('chargepoint', 'chargepoint', 'fault_str', 'fault_str', _as_str, '', False),
+    ('chargepoint', 'chargepoint', 'fault_state', 'fault_state', _as_int, 0, False),
+    ('chargepoint', 'chargepoint', 'phases_in_use', 'phases_in_use', _as_int, 0, False),
+    ('chargepoint', 'chargepoint', 'plug_state', 'plug_state', _as_bool, None, False),
+    ('chargepoint', 'chargepoint', 'charge_state', 'charge_state', _as_bool, None, False),
+    ('chargepoint', 'chargepoint', 'chargemode', 'chargemode', _as_str, '', False),
+    # counter
+    ('counter', 'counter', 'power', 'power', _as_float, 0.0, False),
+    ('counter', 'counter', 'powers', 'powers', _phases, None, False),
+    ('counter', 'counter', 'power_factors', 'power_factors', _phases, None, False),
+    ('counter', 'counter', 'imported', 'imported', _as_float, 0.0, False),
+    ('counter', 'counter', 'exported', 'exported', _as_float, 0.0, False),
+    ('counter', 'counter', 'daily_imported', 'daily_imported', _as_float, 0.0, False),
+    ('counter', 'counter', 'daily_exported', 'daily_exported', _as_float, 0.0, False),
+    ('counter', 'counter', 'frequency', 'frequency', _as_float, 50.0, False),
+    ('counter', 'counter', 'fault_str', 'fault_str', _as_str, 'Kein Fehler', False),
+    ('counter', 'counter', 'fault_state', 'fault_state', _as_int, 0, False),
+    # battery (mqtt topic path is "bat", output/field prefix is "battery")
+    ('battery', 'bat', 'power', 'power', _as_float, 0.0, False),
+    ('battery', 'bat', 'soc', 'soc', _as_int, 0, False),
+    ('battery', 'bat', 'currents', 'currents', _phases, None, False),
+    ('battery', 'bat', 'imported', 'imported', _as_float, 0.0, False),
+    ('battery', 'bat', 'exported', 'exported', _as_float, 0.0, False),
+    ('battery', 'bat', 'daily_imported', 'daily_imported', _as_float, 0.0, False),
+    ('battery', 'bat', 'daily_exported', 'daily_exported', _as_float, 0.0, False),
+    ('battery', 'bat', 'fault_str', 'fault_str', _as_str, 'Kein Fehler', False),
+    ('battery', 'bat', 'fault_state', 'fault_state', _as_int, 0, False),
+    ('battery', 'bat', 'power_limit_controllable', 'power_limit_controllable', _as_bool, None, False),
+    # pv
+    ('pv', 'pv', 'power', 'power', _as_float, 0.0, True),
+    ('pv', 'pv', 'currents', 'currents', _phases, None, False),
+    ('pv', 'pv', 'imported', 'imported', _as_float, 0.0, True),
+    ('pv', 'pv', 'exported', 'exported', _as_float, 0.0, True),
+    ('pv', 'pv', 'daily_exported', 'daily_exported', _as_float, 0.0, False),
+    ('pv', 'pv', 'monthly_exported', 'monthly_exported', _as_float, 0.0, True),
+    ('pv', 'pv', 'yearly_exported', 'yearly_exported', _as_float, 0.0, True),
+    ('pv', 'pv', 'fault_str', 'fault_str', _as_str, 'Kein Fehler', False),
+    ('pv', 'pv', 'fault_state', 'fault_state', _as_int, 0, False),
+    # consumer
+    ('consumer', 'consumer', 'power', 'power', _as_float, 0.0, False),
+    ('consumer', 'consumer', 'currents', 'currents', _phases, None, False),
+    ('consumer', 'consumer', 'voltages', 'voltages', _phases, None, False),
+    ('consumer', 'consumer', 'powers', 'powers', _phases, None, False),
+    ('consumer', 'consumer', 'imported', 'imported', _as_float, 0.0, False),
+    ('consumer', 'consumer', 'exported', 'exported', _as_float, 0.0, False),
+    ('consumer', 'consumer', 'daily_imported', 'daily_imported', _as_float, 0.0, False),
+    ('consumer', 'consumer', 'phases_in_use', 'phases_in_use', _as_int, 0, False),
+    ('consumer', 'consumer', 'charge_state', 'charge_state', _as_bool, None, False),
+    ('consumer', 'consumer', 'state_str', 'state_str', _as_str, None, False),
+    ('consumer', 'consumer', 'fault_str', 'fault_str', _as_str, 'Kein Fehler', False),
+    ('consumer', 'consumer', 'fault_state', 'fault_state', _as_int, 0, False),
+]
 
 
-def _get_chargepoint_current(daemon, id_, phase):
-    return _scalar(id_, f'current_p{phase}', _phases(_raw(daemon, f"openWB/chargepoint/{id_}/get/currents"))[phase - 1])
+def _make_phase_handlers(component: str, mqtt_component: str, suffix: str) -> Dict[str, Callable[..., Any]]:
+    """Build the 4 read handlers (plural array + 3 per-phase scalars) that share
+    one underlying openWB/<mqtt_component>/<id>/get/<suffix> topic, e.g. suffix
+    "voltages" yields get_<component>_voltages plus _voltage_p1/_p2/_p3."""
+    singular = suffix[:-1]  # 'voltages' -> 'voltage', 'power_factors' -> 'power_factor'
+
+    def topic(id_: Any) -> str:
+        return f"openWB/{mqtt_component}/{id_}/get/{suffix}"
+
+    def plural_handler(daemon: Any, id_: Any) -> Dict[str, Any]:
+        return _comp_scalar(component, id_, suffix, _phases(_raw(daemon, topic(id_))))
+
+    def make_phase_handler(phase: int) -> Callable[[Any, Any], Dict[str, Any]]:
+        def handler(daemon: Any, id_: Any) -> Dict[str, Any]:
+            values = _phases(_raw(daemon, topic(id_)))
+            return _comp_scalar(component, id_, f"{singular}_p{phase}", values[phase - 1])
+        return handler
+
+    handlers: Dict[str, Callable[..., Any]] = {f"get_{component}_{suffix}": plural_handler}
+    for phase in (1, 2, 3):
+        handlers[f"get_{component}_{singular}_p{phase}"] = make_phase_handler(phase)
+    return handlers
 
 
-def _get_chargepoint_currents(daemon, id_):
-    return _scalar(id_, 'currents', _phases(_raw(daemon, f"openWB/chargepoint/{id_}/get/currents")))
-
-
-def _get_chargepoint_power(daemon, id_):
-    if _is_total(id_):
-        return {'chargepoint_total': {'power': daemon.total_sums['chargepoint']['power']}}
-    return _scalar(id_, 'power', _as_float(_raw(daemon, f"openWB/chargepoint/{id_}/get/power")))
-
-
-def _get_chargepoint_powers(daemon, id_):
-    return _scalar(id_, 'powers', _phases(_raw(daemon, f"openWB/chargepoint/{id_}/get/powers")))
-
-
-def _get_chargepoint_imported(daemon, id_):
-    if _is_total(id_):
-        return {'chargepoint_total': {'imported': daemon.total_sums['chargepoint']['imported']}}
-    return _scalar(id_, 'imported', _as_float(_raw(daemon, f"openWB/chargepoint/{id_}/get/imported")))
-
-
-def _get_chargepoint_exported(daemon, id_):
-    if _is_total(id_):
-        return {'chargepoint_total': {'exported': daemon.total_sums['chargepoint']['exported']}}
-    return _scalar(id_, 'exported', _as_float(_raw(daemon, f"openWB/chargepoint/{id_}/get/exported")))
-
-
-def _get_chargepoint_daily_imported(daemon, id_):
-    return _scalar(id_, 'daily_imported', _as_float(_raw(daemon, f"openWB/chargepoint/{id_}/get/daily_imported")))
-
-
-def _get_chargepoint_daily_exported(daemon, id_):
-    return _scalar(id_, 'daily_exported', _as_float(_raw(daemon, f"openWB/chargepoint/{id_}/get/daily_exported")))
-
-
-def _get_chargepoint_monthly_exported(daemon, id_):
-    if _is_total(id_):
-        return {'chargepoint_total': {'monthly_exported': daemon.total_sums['chargepoint']['monthly_exported']}}
-    return _scalar(id_, 'monthly_exported', _as_float(_raw(daemon, f"openWB/chargepoint/{id_}/get/monthly_exported")))
-
-
-def _get_chargepoint_yearly_exported(daemon, id_):
-    if _is_total(id_):
-        return {'chargepoint_total': {'yearly_exported': daemon.total_sums['chargepoint']['yearly_exported']}}
-    return _scalar(id_, 'yearly_exported', _as_float(_raw(daemon, f"openWB/chargepoint/{id_}/get/yearly_exported")))
-
-
-def _get_chargepoint_frequency(daemon, id_):
-    return _scalar(id_, 'frequency', _as_float(_raw(daemon, f"openWB/chargepoint/{id_}/get/frequency")))
-
-
-def _get_chargepoint_rfid(daemon, id_):
-    return _scalar(id_, 'rfid', _as_str(_raw(daemon, f"openWB/chargepoint/{id_}/get/rfid")))
-
-
-def _get_chargepoint_rfid_timestamp(daemon, id_):
-    return _scalar(id_, 'rfid_timestamp', _as_int(_raw(daemon, f"openWB/chargepoint/{id_}/get/rfid_timestamp")))
-
-
-def _get_chargepoint_evse_current(daemon, id_):
-    return _scalar(id_, 'evse_current', _as_float(_raw(daemon, f"openWB/chargepoint/{id_}/get/evse_current")))
-
-
-def _get_chargepoint_power_factors(daemon, id_):
-    return _scalar(id_, 'power_factors', _phases(_raw(daemon, f"openWB/chargepoint/{id_}/get/power_factors")))
-
-
-def _get_chargepoint_power_factor(daemon, id_, phase):
-    factors = _phases(_raw(daemon, f"openWB/chargepoint/{id_}/get/power_factors"))
-    return _scalar(id_, f'power_factor_p{phase}', factors[phase - 1])
+# (component, mqtt_component, topic_suffix) for the phase-indexed getters that
+# have both a plural array endpoint and 3 individual per-phase endpoints.
+PHASE_READ_TABLE: List[Tuple[str, str, str]] = [
+    ('chargepoint', 'chargepoint', 'voltages'),
+    ('chargepoint', 'chargepoint', 'currents'),
+    ('chargepoint', 'chargepoint', 'power_factors'),
+    ('counter', 'counter', 'voltages'),
+    ('counter', 'counter', 'currents'),
+]
 
 
 def _get_chargepoint_config_name(daemon, id_):
     config = _raw(daemon, f"openWB/chargepoint/{id_}/config") or {}
-    return _scalar(id_, 'config_name', _as_str(config.get('name'), ''))
+    return _comp_scalar('chargepoint', id_, 'config_name', _as_str(config.get('name'), ''))
 
 
 def _get_chargepoint_connected_vehicle_name(daemon, id_):
     info = _raw(daemon, f"openWB/chargepoint/{id_}/get/connected_vehicle/info") or {}
-    return _scalar(id_, 'connected_vehicle_name', _as_str(info.get('name'), ''))
+    return _comp_scalar('chargepoint', id_, 'connected_vehicle_name', _as_str(info.get('name'), ''))
 
 
 def _get_chargepoint_charge_template_name(daemon, id_):
     template = daemon.charge_template_cache.get(str(id_)) or {}
-    return _scalar(id_, 'charge_template_name', _as_str(template.get('name'), ''))
+    return _comp_scalar('chargepoint', id_, 'charge_template_name', _as_str(template.get('name'), ''))
 
 
 def _get_chargepoint_charge_template_min_current(daemon, id_):
     template = daemon.charge_template_cache.get(str(id_)) or {}
     min_current = template.get('chargemode', {}).get('pv_charging', {}).get('min_current', 0)
-    return _scalar(id_, 'charge_template_min_current', _as_float(min_current))
+    return _comp_scalar('chargepoint', id_, 'charge_template_min_current', _as_float(min_current))
 
 
 def _get_chargepoint_instant_charging_current(daemon, id_):
     template = daemon.charge_template_cache.get(str(id_)) or {}
     current = template.get('chargemode', {}).get('instant_charging', {}).get('current', 0)
-    return _scalar(id_, 'instant_charging_current', _as_float(current))
+    return _comp_scalar('chargepoint', id_, 'instant_charging_current', _as_float(current))
 
 
 def _get_chargepoint_pv_charging_min_current(daemon, id_):
     template = daemon.charge_template_cache.get(str(id_)) or {}
     min_current = template.get('chargemode', {}).get('pv_charging', {}).get('min_current', 0)
-    return _scalar(id_, 'pv_charging_min_current', _as_float(min_current))
-
-
-def _get_chargepoint_soc(daemon, id_):
-    return _scalar(id_, 'soc', _as_int(_raw(daemon, f"openWB/chargepoint/{id_}/get/soc")))
-
-
-def _get_chargepoint_state_str(daemon, id_):
-    return _scalar(id_, 'state_str', _as_str(_raw(daemon, f"openWB/chargepoint/{id_}/get/state_str"), ''))
-
-
-def _get_chargepoint_fault_str(daemon, id_):
-    return _scalar(id_, 'fault_str', _as_str(_raw(daemon, f"openWB/chargepoint/{id_}/get/fault_str"), ''))
-
-
-def _get_chargepoint_fault_state(daemon, id_):
-    return _scalar(id_, 'fault_state', _as_int(_raw(daemon, f"openWB/chargepoint/{id_}/get/fault_state")))
-
-
-def _get_chargepoint_phases_in_use(daemon, id_):
-    return _scalar(id_, 'phases_in_use', _as_int(_raw(daemon, f"openWB/chargepoint/{id_}/get/phases_in_use")))
-
-
-def _get_chargepoint_plug_state(daemon, id_):
-    return _scalar(id_, 'plug_state', _as_bool(_raw(daemon, f"openWB/chargepoint/{id_}/get/plug_state")))
-
-
-def _get_chargepoint_charge_state(daemon, id_):
-    return _scalar(id_, 'charge_state', _as_bool(_raw(daemon, f"openWB/chargepoint/{id_}/get/charge_state")))
-
-
-def _get_chargepoint_chargemode(daemon, id_):
-    return _scalar(id_, 'chargemode', _as_str(_raw(daemon, f"openWB/chargepoint/{id_}/get/chargemode"), ''))
-
-
-def _comp_scalar(component: str, id_: Any, field: str, value: Any) -> Dict[str, Any]:
-    return {f"{component}_{id_}": {field: value}}
+    return _comp_scalar('chargepoint', id_, 'pv_charging_min_current', _as_float(min_current))
 
 
 def _get_counter(daemon, id_):
@@ -459,69 +465,6 @@ def _get_counter(daemon, id_):
     }
 
 
-def _get_counter_voltage(daemon, id_, phase):
-    return _comp_scalar(
-        'counter', id_, f'voltage_p{phase}', _phases(_raw(daemon, f"openWB/counter/{id_}/get/voltages"))[phase - 1])
-
-
-def _get_counter_voltages(daemon, id_):
-    return _comp_scalar('counter', id_, 'voltages', _phases(_raw(daemon, f"openWB/counter/{id_}/get/voltages")))
-
-
-def _get_counter_current(daemon, id_, phase):
-    return _comp_scalar(
-        'counter', id_, f'current_p{phase}', _phases(_raw(daemon, f"openWB/counter/{id_}/get/currents"))[phase - 1])
-
-
-def _get_counter_currents(daemon, id_):
-    return _comp_scalar('counter', id_, 'currents', _phases(_raw(daemon, f"openWB/counter/{id_}/get/currents")))
-
-
-def _get_counter_power(daemon, id_):
-    return _comp_scalar('counter', id_, 'power', _as_float(_raw(daemon, f"openWB/counter/{id_}/get/power")))
-
-
-def _get_counter_powers(daemon, id_):
-    return _comp_scalar('counter', id_, 'powers', _phases(_raw(daemon, f"openWB/counter/{id_}/get/powers")))
-
-
-def _get_counter_power_factors(daemon, id_):
-    return _comp_scalar(
-        'counter', id_, 'power_factors', _phases(_raw(daemon, f"openWB/counter/{id_}/get/power_factors")))
-
-
-def _get_counter_imported(daemon, id_):
-    return _comp_scalar('counter', id_, 'imported', _as_float(_raw(daemon, f"openWB/counter/{id_}/get/imported")))
-
-
-def _get_counter_exported(daemon, id_):
-    return _comp_scalar('counter', id_, 'exported', _as_float(_raw(daemon, f"openWB/counter/{id_}/get/exported")))
-
-
-def _get_counter_daily_imported(daemon, id_):
-    return _comp_scalar(
-        'counter', id_, 'daily_imported', _as_float(_raw(daemon, f"openWB/counter/{id_}/get/daily_imported")))
-
-
-def _get_counter_daily_exported(daemon, id_):
-    return _comp_scalar(
-        'counter', id_, 'daily_exported', _as_float(_raw(daemon, f"openWB/counter/{id_}/get/daily_exported")))
-
-
-def _get_counter_frequency(daemon, id_):
-    return _comp_scalar(
-        'counter', id_, 'frequency', _as_float(_raw(daemon, f"openWB/counter/{id_}/get/frequency"), 50.0))
-
-
-def _get_counter_fault_str(daemon, id_):
-    return _comp_scalar(
-        'counter', id_, 'fault_str', _as_str(_raw(daemon, f"openWB/counter/{id_}/get/fault_str"), 'Kein Fehler'))
-
-
-def _get_counter_fault_state(daemon, id_):
-    return _comp_scalar('counter', id_, 'fault_state', _as_int(_raw(daemon, f"openWB/counter/{id_}/get/fault_state")))
-
-
 def _get_battery(daemon, id_):
     prefix = f"openWB/bat/{id_}/get/"
     return {
@@ -540,51 +483,6 @@ def _get_battery(daemon, id_):
     }
 
 
-def _get_battery_power(daemon, id_):
-    return _comp_scalar('battery', id_, 'power', _as_float(_raw(daemon, f"openWB/bat/{id_}/get/power")))
-
-
-def _get_battery_soc(daemon, id_):
-    return _comp_scalar('battery', id_, 'soc', _as_int(_raw(daemon, f"openWB/bat/{id_}/get/soc")))
-
-
-def _get_battery_currents(daemon, id_):
-    return _comp_scalar('battery', id_, 'currents', _phases(_raw(daemon, f"openWB/bat/{id_}/get/currents")))
-
-
-def _get_battery_imported(daemon, id_):
-    return _comp_scalar('battery', id_, 'imported', _as_float(_raw(daemon, f"openWB/bat/{id_}/get/imported")))
-
-
-def _get_battery_exported(daemon, id_):
-    return _comp_scalar('battery', id_, 'exported', _as_float(_raw(daemon, f"openWB/bat/{id_}/get/exported")))
-
-
-def _get_battery_daily_imported(daemon, id_):
-    return _comp_scalar(
-        'battery', id_, 'daily_imported', _as_float(_raw(daemon, f"openWB/bat/{id_}/get/daily_imported")))
-
-
-def _get_battery_daily_exported(daemon, id_):
-    return _comp_scalar(
-        'battery', id_, 'daily_exported', _as_float(_raw(daemon, f"openWB/bat/{id_}/get/daily_exported")))
-
-
-def _get_battery_fault_str(daemon, id_):
-    return _comp_scalar(
-        'battery', id_, 'fault_str', _as_str(_raw(daemon, f"openWB/bat/{id_}/get/fault_str"), 'Kein Fehler'))
-
-
-def _get_battery_fault_state(daemon, id_):
-    return _comp_scalar('battery', id_, 'fault_state', _as_int(_raw(daemon, f"openWB/bat/{id_}/get/fault_state")))
-
-
-def _get_battery_power_limit_controllable(daemon, id_):
-    return _comp_scalar(
-        'battery', id_, 'power_limit_controllable',
-        _as_bool(_raw(daemon, f"openWB/bat/{id_}/get/power_limit_controllable")))
-
-
 def _get_pv(daemon, id_):
     prefix = f"openWB/pv/{id_}/get/"
     return {
@@ -599,55 +497,6 @@ def _get_pv(daemon, id_):
             'fault_state': _as_int(_raw(daemon, prefix + 'fault_state')),
         }
     }
-
-
-def _get_pv_power(daemon, id_):
-    if _is_total(id_):
-        return {'pv_total': {'power': daemon.total_sums['pv']['power']}}
-    return _comp_scalar('pv', id_, 'power', _as_float(_raw(daemon, f"openWB/pv/{id_}/get/power")))
-
-
-def _get_pv_currents(daemon, id_):
-    return _comp_scalar('pv', id_, 'currents', _phases(_raw(daemon, f"openWB/pv/{id_}/get/currents")))
-
-
-def _get_pv_imported(daemon, id_):
-    if _is_total(id_):
-        return {'pv_total': {'imported': daemon.total_sums['pv']['imported']}}
-    return _comp_scalar('pv', id_, 'imported', _as_float(_raw(daemon, f"openWB/pv/{id_}/get/imported")))
-
-
-def _get_pv_exported(daemon, id_):
-    if _is_total(id_):
-        return {'pv_total': {'exported': daemon.total_sums['pv']['exported']}}
-    return _comp_scalar('pv', id_, 'exported', _as_float(_raw(daemon, f"openWB/pv/{id_}/get/exported")))
-
-
-def _get_pv_daily_exported(daemon, id_):
-    return _comp_scalar('pv', id_, 'daily_exported', _as_float(_raw(daemon, f"openWB/pv/{id_}/get/daily_exported")))
-
-
-def _get_pv_monthly_exported(daemon, id_):
-    if _is_total(id_):
-        return {'pv_total': {'monthly_exported': daemon.total_sums['pv']['monthly_exported']}}
-    return _comp_scalar(
-        'pv', id_, 'monthly_exported', _as_float(_raw(daemon, f"openWB/pv/{id_}/get/monthly_exported")))
-
-
-def _get_pv_yearly_exported(daemon, id_):
-    if _is_total(id_):
-        return {'pv_total': {'yearly_exported': daemon.total_sums['pv']['yearly_exported']}}
-    return _comp_scalar(
-        'pv', id_, 'yearly_exported', _as_float(_raw(daemon, f"openWB/pv/{id_}/get/yearly_exported")))
-
-
-def _get_pv_fault_str(daemon, id_):
-    return _comp_scalar(
-        'pv', id_, 'fault_str', _as_str(_raw(daemon, f"openWB/pv/{id_}/get/fault_str"), 'Kein Fehler'))
-
-
-def _get_pv_fault_state(daemon, id_):
-    return _comp_scalar('pv', id_, 'fault_state', _as_int(_raw(daemon, f"openWB/pv/{id_}/get/fault_state")))
 
 
 def _get_consumer_all(daemon, id_):
@@ -671,60 +520,6 @@ def _get_consumer_all(daemon, id_):
             'fault_state': _as_int(_raw(daemon, prefix + 'fault_state')),
         }
     }
-
-
-def _get_consumer_power(daemon, id_):
-    return _comp_scalar('consumer', id_, 'power', _as_float(_raw(daemon, f"openWB/consumer/{id_}/get/power")))
-
-
-def _get_consumer_currents(daemon, id_):
-    return _comp_scalar('consumer', id_, 'currents', _phases(_raw(daemon, f"openWB/consumer/{id_}/get/currents")))
-
-
-def _get_consumer_voltages(daemon, id_):
-    return _comp_scalar('consumer', id_, 'voltages', _phases(_raw(daemon, f"openWB/consumer/{id_}/get/voltages")))
-
-
-def _get_consumer_powers(daemon, id_):
-    return _comp_scalar('consumer', id_, 'powers', _phases(_raw(daemon, f"openWB/consumer/{id_}/get/powers")))
-
-
-def _get_consumer_imported(daemon, id_):
-    return _comp_scalar('consumer', id_, 'imported', _as_float(_raw(daemon, f"openWB/consumer/{id_}/get/imported")))
-
-
-def _get_consumer_exported(daemon, id_):
-    return _comp_scalar('consumer', id_, 'exported', _as_float(_raw(daemon, f"openWB/consumer/{id_}/get/exported")))
-
-
-def _get_consumer_daily_imported(daemon, id_):
-    return _comp_scalar(
-        'consumer', id_, 'daily_imported', _as_float(_raw(daemon, f"openWB/consumer/{id_}/get/daily_imported")))
-
-
-def _get_consumer_phases_in_use(daemon, id_):
-    return _comp_scalar(
-        'consumer', id_, 'phases_in_use', _as_int(_raw(daemon, f"openWB/consumer/{id_}/get/phases_in_use")))
-
-
-def _get_consumer_charge_state(daemon, id_):
-    return _comp_scalar(
-        'consumer', id_, 'charge_state', _as_bool(_raw(daemon, f"openWB/consumer/{id_}/get/charge_state")))
-
-
-def _get_consumer_state_str(daemon, id_):
-    return _comp_scalar(
-        'consumer', id_, 'state_str', _as_str(_raw(daemon, f"openWB/consumer/{id_}/get/state_str"), None))
-
-
-def _get_consumer_fault_str(daemon, id_):
-    return _comp_scalar(
-        'consumer', id_, 'fault_str', _as_str(_raw(daemon, f"openWB/consumer/{id_}/get/fault_str"), 'Kein Fehler'))
-
-
-def _get_consumer_fault_state(daemon, id_):
-    return _comp_scalar(
-        'consumer', id_, 'fault_state', _as_int(_raw(daemon, f"openWB/consumer/{id_}/get/fault_state")))
 
 
 def _get_consumer_usage_type(daemon, id_):
@@ -766,111 +561,36 @@ def _get_io_output(daemon, id_, options):
     return {f"io_{id_}": {'output': output_name, 'output_type': output_type, 'value': result}}
 
 
-def _get_last_live_values_json(daemon, id_=None):
-    return {'get_lastlivevaluesjson': daemon.last_live_values_json}
+def _build_scalar_read_dispatch() -> Dict[str, Callable[..., Dict[str, Any]]]:
+    dispatch: Dict[str, Callable[..., Dict[str, Any]]] = {}
+    for component, mqtt_component, suffix, field, coercer, default, total_aware in SCALAR_READ_TABLE:
+        dispatch[f"get_{component}_{field}"] = _make_scalar_handler(
+            component, mqtt_component, suffix, field, coercer, default, total_aware)
+    for component, mqtt_component, suffix in PHASE_READ_TABLE:
+        dispatch.update(_make_phase_handlers(component, mqtt_component, suffix))
+    return dispatch
 
 
 READ_DISPATCH: Dict[str, Callable[..., Dict[str, Any]]] = {
     'get_chargepoint_all': _get_chargepoint_all,
-    'get_chargepoint_voltage_p1': lambda d, i: _get_chargepoint_voltage(d, i, 1),
-    'get_chargepoint_voltage_p2': lambda d, i: _get_chargepoint_voltage(d, i, 2),
-    'get_chargepoint_voltage_p3': lambda d, i: _get_chargepoint_voltage(d, i, 3),
-    'get_chargepoint_voltages': _get_chargepoint_voltages,
-    'get_chargepoint_current_p1': lambda d, i: _get_chargepoint_current(d, i, 1),
-    'get_chargepoint_current_p2': lambda d, i: _get_chargepoint_current(d, i, 2),
-    'get_chargepoint_current_p3': lambda d, i: _get_chargepoint_current(d, i, 3),
-    'get_chargepoint_currents': _get_chargepoint_currents,
-    'get_chargepoint_power': _get_chargepoint_power,
-    'get_chargepoint_powers': _get_chargepoint_powers,
-    'get_chargepoint_imported': _get_chargepoint_imported,
-    'get_chargepoint_exported': _get_chargepoint_exported,
-    'get_chargepoint_daily_imported': _get_chargepoint_daily_imported,
-    'get_chargepoint_daily_exported': _get_chargepoint_daily_exported,
-    'get_chargepoint_monthly_exported': _get_chargepoint_monthly_exported,
-    'get_chargepoint_yearly_exported': _get_chargepoint_yearly_exported,
-    'get_chargepoint_frequency': _get_chargepoint_frequency,
-    'get_chargepoint_rfid': _get_chargepoint_rfid,
-    'get_chargepoint_rfid_timestamp': _get_chargepoint_rfid_timestamp,
-    'get_chargepoint_evse_current': _get_chargepoint_evse_current,
-    'get_chargepoint_power_factors': _get_chargepoint_power_factors,
-    'get_chargepoint_power_factor_p1': lambda d, i: _get_chargepoint_power_factor(d, i, 1),
-    'get_chargepoint_power_factor_p2': lambda d, i: _get_chargepoint_power_factor(d, i, 2),
-    'get_chargepoint_power_factor_p3': lambda d, i: _get_chargepoint_power_factor(d, i, 3),
+    **_build_scalar_read_dispatch(),
     'get_chargepoint_config_name': _get_chargepoint_config_name,
     'get_chargepoint_connected_vehicle_name': _get_chargepoint_connected_vehicle_name,
     'get_chargepoint_charge_template_name': _get_chargepoint_charge_template_name,
     'get_chargepoint_charge_template_min_current': _get_chargepoint_charge_template_min_current,
     'get_chargepoint_instant_charging_current': _get_chargepoint_instant_charging_current,
     'get_chargepoint_pv_charging_min_current': _get_chargepoint_pv_charging_min_current,
-    'get_chargepoint_soc': _get_chargepoint_soc,
-    'get_chargepoint_state_str': _get_chargepoint_state_str,
-    'get_chargepoint_fault_str': _get_chargepoint_fault_str,
-    'get_chargepoint_fault_state': _get_chargepoint_fault_state,
-    'get_chargepoint_phases_in_use': _get_chargepoint_phases_in_use,
-    'get_chargepoint_plug_state': _get_chargepoint_plug_state,
-    'get_chargepoint_charge_state': _get_chargepoint_charge_state,
-    'get_chargepoint_chargemode': _get_chargepoint_chargemode,
     'get_counter': _get_counter,
-    'get_counter_voltage_p1': lambda d, i: _get_counter_voltage(d, i, 1),
-    'get_counter_voltage_p2': lambda d, i: _get_counter_voltage(d, i, 2),
-    'get_counter_voltage_p3': lambda d, i: _get_counter_voltage(d, i, 3),
-    'get_counter_voltages': _get_counter_voltages,
-    'get_counter_current_p1': lambda d, i: _get_counter_current(d, i, 1),
-    'get_counter_current_p2': lambda d, i: _get_counter_current(d, i, 2),
-    'get_counter_current_p3': lambda d, i: _get_counter_current(d, i, 3),
-    'get_counter_currents': _get_counter_currents,
-    'get_counter_power': _get_counter_power,
-    'get_counter_powers': _get_counter_powers,
-    'get_counter_power_factors': _get_counter_power_factors,
-    'get_counter_imported': _get_counter_imported,
-    'get_counter_exported': _get_counter_exported,
-    'get_counter_daily_imported': _get_counter_daily_imported,
-    'get_counter_daily_exported': _get_counter_daily_exported,
-    'get_counter_frequency': _get_counter_frequency,
-    'get_counter_fault_str': _get_counter_fault_str,
-    'get_counter_fault_state': _get_counter_fault_state,
     'battery': _get_battery,
     'get_battery': _get_battery,
-    'get_battery_power': _get_battery_power,
-    'get_battery_soc': _get_battery_soc,
-    'get_battery_currents': _get_battery_currents,
-    'get_battery_imported': _get_battery_imported,
-    'get_battery_exported': _get_battery_exported,
-    'get_battery_daily_imported': _get_battery_daily_imported,
-    'get_battery_daily_exported': _get_battery_daily_exported,
-    'get_battery_fault_str': _get_battery_fault_str,
-    'get_battery_fault_state': _get_battery_fault_state,
-    'get_battery_power_limit_controllable': _get_battery_power_limit_controllable,
     'pv': _get_pv,
     'get_pv': _get_pv,
-    'get_pv_power': _get_pv_power,
-    'get_pv_currents': _get_pv_currents,
-    'get_pv_imported': _get_pv_imported,
-    'get_pv_exported': _get_pv_exported,
-    'get_pv_daily_exported': _get_pv_daily_exported,
-    'get_pv_monthly_exported': _get_pv_monthly_exported,
-    'get_pv_yearly_exported': _get_pv_yearly_exported,
-    'get_pv_fault_str': _get_pv_fault_str,
-    'get_pv_fault_state': _get_pv_fault_state,
     'consumer': _get_consumer_all,
     'get_consumer': _get_consumer_all,
     'get_consumer_all': _get_consumer_all,
-    'get_consumer_power': _get_consumer_power,
-    'get_consumer_currents': _get_consumer_currents,
-    'get_consumer_voltages': _get_consumer_voltages,
-    'get_consumer_powers': _get_consumer_powers,
-    'get_consumer_imported': _get_consumer_imported,
-    'get_consumer_exported': _get_consumer_exported,
-    'get_consumer_daily_imported': _get_consumer_daily_imported,
-    'get_consumer_phases_in_use': _get_consumer_phases_in_use,
-    'get_consumer_charge_state': _get_consumer_charge_state,
-    'get_consumer_state_str': _get_consumer_state_str,
-    'get_consumer_fault_str': _get_consumer_fault_str,
-    'get_consumer_fault_state': _get_consumer_fault_state,
     'get_consumer_usage_type': _get_consumer_usage_type,
     'get_io_output_all': _get_io_output_all,
     'get_io_output': _get_io_output,
-    'get_lastlivevaluesjson': _get_last_live_values_json,
 }
 
 # Read handlers that need the request's io_output/io_output_type options in
@@ -942,6 +662,10 @@ def extract_read_params(all_params: Dict[str, Any]) -> Dict[str, Any]:
     return {k: all_params[k] for k in READ_PARAMETER_ORDER if k in all_params}
 
 
+def _io_options(all_params: Dict[str, Any]) -> Dict[str, Any]:
+    return {'io_output': all_params.get('io_output'), 'io_output_type': all_params.get('io_output_type')}
+
+
 def dispatch_write(ph: ParameterHandler, write_params: Dict[str, Any], all_params: Dict[str, Any]) -> Dict[str, Any]:
     daemon = ph.daemon
     first_target_id = None
@@ -962,8 +686,7 @@ def dispatch_write(ph: ParameterHandler, write_params: Dict[str, Any], all_param
                 return {'success': False, 'message': f"No {id_type} devices available for auto-ID"}
             target_id = resolved
 
-        options = {'io_output': all_params.get('io_output'), 'io_output_type': all_params.get('io_output_type')}
-        result = ph.write_parameter(param, value, target_id, options)
+        result = ph.write_parameter(param, value, target_id, _io_options(all_params))
 
         if first_target_id is None:
             first_target_id = target_id
@@ -988,21 +711,21 @@ def dispatch_read(
         debug: bool) -> Tuple[Dict[str, Any], List[str]]:
     result: Dict[str, Any] = {}
     debug_info: List[str] = []
+    options = _io_options(all_params)
 
     for param, id_ in read_params.items():
         resolved_id = id_
-        if param != 'get_lastlivevaluesjson' and id_ in ('auto', ''):
+        if id_ in ('auto', ''):
             type_ = get_type_from_parameter(param)
             resolved_id = ph.daemon.lowest_ids.get(type_)
             if resolved_id is None:
                 if debug:
                     debug_info.append(f"Auto-ID failed for {param}: no {type_} devices known")
-                if 'chargepoint' in param:
+                if type_ == 'chargepoint':
                     resolved_id = 0
                 else:
                     continue
 
-        options = {'io_output': all_params.get('io_output'), 'io_output_type': all_params.get('io_output_type')}
         data = ph.read_parameter(param, resolved_id, options)
         if data is not None:
             result.update(data)
