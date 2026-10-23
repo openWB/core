@@ -127,9 +127,10 @@ class InternalChargepointHandler:
                     with SingleComponentUpdateContext(self.fault_state_info_socket, reraise=True):
                         if mode == InternalChargepointMode.PRO_PLUS:
                             self.cp0_client_handler = None
+                            self.socket = None
                         else:
                             self.cp0_client_handler = client_factory(mode, 0, self.fault_state_info_cp0)
-                        self.socket = HandlerInternalSocket(self.cp0_client_handler, global_data, parent_socket)
+                            self.socket = HandlerInternalSocket(self.cp0_client_handler, global_data, parent_socket)
                     self.cp0 = HandlerChargepoint(self.cp0_client_handler, 0, mode,
                                                   global_data, parent_cp0, hierarchy_id_cp0)
             except Exception:
