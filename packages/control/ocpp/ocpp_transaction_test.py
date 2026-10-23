@@ -82,6 +82,19 @@ def test_transaction_start_rejects_unavailable_connector(transaction_setup, avai
     connection.cp._start_transaction.assert_not_awaited()
 
 
+@pytest.mark.parametrize("stop_flag", ["remote_stop", "rfid_stop", "reset", "unlock_stop"])
+def test_stop_flag_blocks_new_transaction_before_connection(transaction_setup, mock_pub, stop_flag):
+    coordinator, connection, cp = transaction_setup
+    setattr(cp.data.get.ocpp, stop_flag, True)
+
+    assert asyncio.run(coordinator.start("box-1", 1, "TAG", 100)) is False
+
+    coordinator._ensure_connected.assert_not_awaited()
+    connection.cp._authorize.assert_not_awaited()
+    connection.cp._start_transaction.assert_not_awaited()
+    mock_pub.pub.assert_not_called()
+
+
 def test_start_waits_for_persisted_stop_confirmation(transaction_setup, mock_pub):
     coordinator, connection, cp = transaction_setup
     cp.data.get.ocpp.pending_transactions = [{
@@ -601,7 +614,7 @@ def test_stop_during_start_is_not_lost(transaction_setup, mock_pub, monkeypatch,
 
 
 @pytest.mark.parametrize("waiting_for", ["connect", "authorize"])
-@pytest.mark.parametrize("abort", ["unplug", "block", "unavailable"])
+@pytest.mark.parametrize("abort", ["unplug", "block", "unavailable", "remote_stop", "rfid_stop", "reset", "unlock_stop"])
 def test_start_rechecks_conditions_after_waiting(transaction_setup, mock_pub, waiting_for, abort):
     coordinator, connection, openwb_cp = transaction_setup
 
@@ -622,8 +635,10 @@ def test_start_rechecks_conditions_after_waiting(transaction_setup, mock_pub, wa
             openwb_cp.data.get.plug_state = False
         elif abort == "block":
             coordinator.block_start("box-1")
-        else:
+        elif abort == "unavailable":
             openwb_cp.data.get.ocpp.availability = [True, False]
+        else:
+            setattr(openwb_cp.data.get.ocpp, abort, True)
         release.set()
         assert await start is False
 
@@ -652,8 +667,8 @@ def test_start_rechecks_current_model_after_authorize(transaction_setup, monkeyp
 
 
 @pytest.mark.parametrize("abort,reason", [("unplug", "EVDisconnected"), ("block", "Other"),
-                                        ("unavailable", "Other"), ("unlock", "UnlockCommand"),
-                                        ("remote", "Remote")])
+                                         ("unavailable", "Other"), ("unlock", "UnlockCommand"),
+                                         ("remote", "Remote"), ("rfid_stop", "Other"), ("reset", "Other")])
 @pytest.mark.parametrize("stop_fails", [False, True])
 def test_abort_during_start_confirmation_stops_without_releasing_charging(
         transaction_setup, mock_pub, monkeypatch, abort, reason, stop_fails):
@@ -680,12 +695,11 @@ def test_abort_during_start_confirmation_stops_without_releasing_charging(
             openwb_cp.data.get.plug_state = False
         elif abort == "unavailable":
             openwb_cp.data.get.ocpp.availability = [False, True]
-        else:
+        elif abort == "block":
             coordinator.block_start("box-1")
-            if abort == "unlock":
-                openwb_cp.data.get.ocpp.unlock_stop = True
-            elif abort == "remote":
-                openwb_cp.data.get.ocpp.remote_stop = True
+        else:
+            flag = {"unlock": "unlock_stop", "remote": "remote_stop"}.get(abort, abort)
+            setattr(openwb_cp.data.get.ocpp, flag, True)
         release.set()
         assert await start is False
         if stop_fails:
@@ -1597,6 +1611,24 @@ def test_remote_start_requires_local_rfid_permission(
     else:
         mock_pub.pub.assert_not_called()
         assert "Remote-Start abgelehnt" in caplog.text
+
+
+@pytest.mark.parametrize("stop_flag", ["remote_stop", "rfid_stop", "reset", "unlock_stop"])
+def test_remote_start_rejects_stop_flags_without_forwarding_tag(handler_setup, mock_pub, monkeypatch, stop_flag):
+    make_charge_point, cp = handler_setup
+    cp.template = SimpleNamespace(data=SimpleNamespace(valid_tags=["TAG"]))
+    setattr(cp.data.get.ocpp, stop_flag, True)
+    monkeypatch.setattr(data, "data", SimpleNamespace(
+        optional_data=SimpleNamespace(data=SimpleNamespace(rfid=SimpleNamespace(active=True))),
+        ev_data={},
+    ))
+
+    async def check():
+        response = await make_charge_point().remote_start_transaction("TAG", 1)
+        assert response.status == RemoteStartStopStatus.rejected
+
+    asyncio.run(check())
+    mock_pub.pub.assert_not_called()
 
 
 @pytest.fixture

@@ -145,6 +145,10 @@ class TransactionCoordinator:
         if openwb_cp.data.get.ocpp.pending_transactions:
             return False
 
+        if any(getattr(openwb_cp.data.get.ocpp, flag, False)
+               for flag in ("remote_stop", "rfid_stop", "reset", "unlock_stop")):
+            return False
+
         if not all(openwb_cp.data.get.ocpp.availability):
             log.debug(
                 f"OCPP {chargebox_id}: Start blockiert, ChargePoint ist nicht verfügbar.",
@@ -463,6 +467,8 @@ class TransactionCoordinator:
             bool(openwb_cp.data.get.plug_state)
             and not getattr(openwb_cp.data.get.ocpp, "previous_chargebox_id", None)
             and not openwb_cp.data.get.ocpp.pending_transactions
+            and not any(getattr(openwb_cp.data.get.ocpp, flag, False)
+                        for flag in ("remote_stop", "rfid_stop", "reset", "unlock_stop"))
             and all(openwb_cp.data.get.ocpp.availability)
         )
 
