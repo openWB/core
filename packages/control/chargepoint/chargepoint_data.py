@@ -127,6 +127,8 @@ class Ocpp:
     # neu erzeugte CPs sind per default erstmal available
     availability: List[bool] = field(default_factory=lambda: [True, True])
     transaction_id: Optional[int] = None
+    # Bei ID-Wechsel alte Identität bis zum bestätigten Transaktionsende behalten.
+    previous_chargebox_id: Optional[str] = None
     tag_accepted: bool = False
     remote_stop: bool = False
     unlock_stop: bool = False
