@@ -31,7 +31,7 @@ file_handler = RotatingFileHandler(RAMDISK_PATH + 'simple_api.log', maxBytes=500
 file_handler.setFormatter(logging.Formatter(FORMAT_STR_SHORT))
 log.addHandler(file_handler)
 
-CONFIG_FILE_PATH = "/var/www/html/openWB/data/config/simpleAPI_mqtt_config.json"
+CONFIG_FILE_PATH = "/var/www/html/openWB/data/config/simpleapi_config.json"
 
 
 class SimpleMQTTDaemon:
