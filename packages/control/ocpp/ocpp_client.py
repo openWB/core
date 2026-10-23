@@ -432,14 +432,6 @@ class OcppClient:
         fault_state = openwb_cp.data.get.fault_state
         fault_state_str = openwb_cp.data.get.fault_str
 
-        # Connector 0 darf in OCPP 1.6 nur Available, Unavailable oder Faulted melden.
-        if fault_state:
-            controller_status = ChargePointStatus.faulted
-        elif not openwb_cp.data.get.ocpp.availability[0]:
-            controller_status = ChargePointStatus.unavailable
-        else:
-            controller_status = ChargePointStatus.available
-
         # Wir müssen hier die breits aufgebaute Verbindung nutzen,
         # damit wir nicht in einen Deadlock geraten.
         await self._send_status_notification(
@@ -447,7 +439,7 @@ class OcppClient:
             0,
             fault_state,
             fault_state_str,
-            controller_status,
+            openwb_cp.get_ocpp_status_connector_0(),
             True,
             connection=connection,
         )
@@ -1101,12 +1093,7 @@ class OcppClient:
             connectors = (0, 1) if connector_id is None else (connector_id,)
             for requested_connector in connectors:
                 if requested_connector == 0:
-                    if fault_state:
-                        status = ChargePointStatus.faulted
-                    elif not openwb_cp.data.get.ocpp.availability[0]:
-                        status = ChargePointStatus.unavailable
-                    else:
-                        status = ChargePointStatus.available
+                    status = openwb_cp.get_ocpp_status_connector_0()
                 else:
                     status = openwb_cp.get_ocpp_status()
 

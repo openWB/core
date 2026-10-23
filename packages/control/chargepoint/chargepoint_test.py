@@ -52,6 +52,47 @@ def test_ocpp_availability_status_and_permission(
         controller_status, connector_status]
 
 
+@pytest.mark.parametrize("stop_flag", ["remote_stop", "reset", "unlock_stop", "rfid_stop"])
+@pytest.mark.parametrize("plugged,transaction_id,charging,current,expected", [
+    (True, None, False, 0, ChargePointStatus.finishing),
+    (False, None, False, 0, ChargePointStatus.available),
+    (True, 42, True, 6, ChargePointStatus.charging),
+    (True, 42, False, 0, ChargePointStatus.suspended_evse),
+    (True, 42, False, 6, ChargePointStatus.suspended_ev),
+    (True, None, True, 6, ChargePointStatus.preparing),
+])
+def test_ocpp_stop_status_requires_local_transaction_and_charging_to_end(
+    stop_flag, plugged, transaction_id, charging, current, expected
+):
+    cp = Chargepoint(1, None)
+    setattr(cp.data.get.ocpp, stop_flag, True)
+    cp.data.get.ocpp.transaction_id = transaction_id
+    cp.data.get.plug_state = plugged
+    cp.data.get.charge_state = charging
+    cp.data.set.current = current
+
+    assert cp.get_ocpp_status() == expected
+
+
+@pytest.mark.parametrize("availability", [[True, True], [True, False], [False, True], [False, False]])
+@pytest.mark.parametrize("stop_flag", ["remote_stop", "reset", "unlock_stop", "rfid_stop"])
+def test_ocpp_fault_has_priority_over_availability_and_stop_flags(availability, stop_flag):
+    cp = Chargepoint(1, None)
+    cp.data.get.fault_state = 2
+    cp.data.get.ocpp.availability = availability
+    setattr(cp.data.get.ocpp, stop_flag, True)
+
+    assert cp.get_ocpp_status_connector_0() == ChargePointStatus.faulted
+    assert cp.get_ocpp_status() == ChargePointStatus.faulted
+
+
+def test_ocpp_freshly_plugged_vehicle_without_transaction_is_preparing():
+    cp = Chargepoint(1, None)
+    cp.data.get.plug_state = True
+
+    assert cp.get_ocpp_status() == ChargePointStatus.preparing
+
+
 @pytest.mark.parametrize("phase_1, phases, expected_required_currents",
                          [
                              (0, 1, [6]*3),
