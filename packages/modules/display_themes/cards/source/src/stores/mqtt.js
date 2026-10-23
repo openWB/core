@@ -651,16 +651,6 @@ export const useMqttStore = defineStore("mqtt", {
         return undefined;
       };
     },
-    getChargePointConnectedVehiclePriority(state) {
-      return (chargePointId) => {
-        if (state.getChargePointConnectedVehicleChargeTemplate(chargePointId)) {
-          return state.getChargePointConnectedVehicleChargeTemplate(
-            chargePointId,
-          ).prio;
-        }
-        return undefined;
-      };
-    },
     getChargePointConnectedVehicleInfo(state) {
       return (chargePointId) => {
         return state.topics[
