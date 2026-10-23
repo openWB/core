@@ -6,6 +6,7 @@ from pathlib import Path
 from urllib.parse import urlsplit
 from helpermodules.utils.error_handling import ImportErrorContext
 with ImportErrorContext():
+    from ocpp.exceptions import OCPPError
     from ocpp.v16 import ChargePoint as cp
     from ocpp.v16 import call, call_result
     from ocpp.v16.enums import (
@@ -65,7 +66,31 @@ class OcppChargePoint(cp):
                 msg.action,
             )
             return
+
+        if msg.action == Action.unlock_connector:
+            # Während der Hardwareprüfung muss der Empfänger insbesondere
+            # Antworten auf eigene OCPP-Anfragen weiter verarbeiten können.
+            task = asyncio.create_task(
+                self._process_unlock_call(msg),
+                name=f"ocpp-unlock-{self.chargebox_id}-{msg.unique_id}",
+            )
+            self._track_background_task(task)
+            return
+
         return await super()._handle_call(msg)
+
+    async def _process_unlock_call(self, msg):
+        try:
+            await super()._handle_call(msg)
+        except OCPPError as error:
+            # Der Request läuft außerhalb von route_message(); deshalb hier
+            # auch dessen Fehlerantwort für ungültige OCPP-Anfragen übernehmen.
+            log.exception(
+                "Fehler beim Verarbeiten von UnlockConnector für %s",
+                self.chargebox_id,
+            )
+            response = msg.create_call_error(error).to_json()
+            await self._send(response)
 
     # Der openWB-Chargepoint kann beim Reconnect neu erzeugt werden.
     @property
