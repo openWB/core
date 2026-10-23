@@ -738,8 +738,8 @@ class Command:
                 pub_user_message(
                     payload, connection_id,
                     f'Zähler mit ID \'{component_id}\' kann nicht gelöscht werden, da er beim Verbraucher '
-                    f'\'{consumer.data.module.name if consumer.data.module is not None else "Verbraucher"}\' als separate Leistungsmessung zugeordnet ist. '
-                    'Bitte zuerst die Zuordnung beim Verbraucher ändern.',
+                    f'\'{consumer.data.module.name if consumer.data.module is not None else "Verbraucher"}\' als '
+                    'separate Leistungsmessung zugeordnet ist. Bitte zuerst die Zuordnung beim Verbraucher ändern.',
                     MessageType.ERROR)
                 return True
         return False
