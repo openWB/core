@@ -8,5 +8,19 @@
   "qos": 0,
   "retain": true,
   "reconnect_delay": 10,
-  "log_level": "INFO"
+  "log_level": "INFO",
+  "http": {
+    "host": "127.0.0.1",
+    "port": 8099
+  },
+  "api": {
+    "cors_enabled": true
+  },
+  "auth": {
+    "enabled": false,
+    "require_https": false,
+    "tokens": [],
+    "users": {}
+  },
+  "debug": false
 }
