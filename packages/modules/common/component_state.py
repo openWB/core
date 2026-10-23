@@ -295,6 +295,8 @@ class ConsumerState:
         set_power: Optional[float] = None,
         state: Optional[bool] = False,
         temperatures: Optional[List[Optional[float]]] = None,
+        rfid: Optional[str] = None,
+        rfid_timestamp: Optional[float] = None,
     ):
         """Args:
             imported: total imported energy in Wh
@@ -313,3 +315,5 @@ class ConsumerState:
         self.set_power = set_power
         self.state = state
         self.temperatures = temperatures
+        self.rfid = rfid
+        self.rfid_timestamp = rfid_timestamp
