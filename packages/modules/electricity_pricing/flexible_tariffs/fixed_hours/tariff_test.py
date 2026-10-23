@@ -8,7 +8,9 @@ from modules.electricity_pricing.flexible_tariffs.fixed_hours.tariff import (
     _to_date,
     _validate_tariff_times,
     _fetch,
+    _fetch_price_for_time_slot,
     create_electricity_tariff,
+    get_tariff_name_for_time_slot,
 )
 from modules.electricity_pricing.flexible_tariffs.fixed_hours.config import (
     FixedHoursTariff,
@@ -391,3 +393,70 @@ class TestCreateElectricityTariff:
         assert len(result.prices) > 0
         for price in result.prices.values():
             assert price == expected_price
+
+
+class TestGetTariffNameForTimeSlot:
+    """Test get_tariff_name_for_time_slot function"""
+
+    # HT/NT wie in den Niederlanden: NT werktags 23-7 Uhr und am Wochenende, sonst Standardpreis
+    TARIFFS = [
+        {
+            "name": "NT",
+            "price": 0.00025,
+            "active_times": {
+                "dates": [("01-01", "31-12")],
+                "times": [("00:00", "07:00"), ("23:00", "24:00")],
+                "weekdays": [0, 1, 2, 3, 4],
+            },
+        },
+        {
+            "name": "NT Wochenende",
+            "price": 0.00025,
+            "active_times": {
+                "dates": [("01-01", "31-12")],
+                "times": [("00:00", "24:00")],
+                "weekdays": [5, 6],
+            },
+        },
+    ]
+
+    @pytest.mark.parametrize(
+        "time_slot,default_name,expected_name",
+        [
+            # Montag 16.05.2022
+            pytest.param(datetime.datetime(2022, 5, 16, 6, 45), None, "NT", id="weekday_morning_nt"),
+            pytest.param(datetime.datetime(2022, 5, 16, 7, 0), None, None, id="weekday_day_default_none"),
+            pytest.param(datetime.datetime(2022, 5, 16, 12, 0), "Standardpreis", "Standardpreis",
+                         id="weekday_day_default_name"),
+            pytest.param(datetime.datetime(2022, 5, 16, 23, 15), None, "NT", id="weekday_evening_nt"),
+            pytest.param(datetime.datetime(2022, 5, 21, 12, 0), None, "NT Wochenende", id="saturday"),
+        ],
+    )
+    def test_name_for_time_slot(self, time_slot, default_name, expected_name):
+        config = FixedHoursTariffConfiguration(default_price=0.0003, tariffs=self.TARIFFS)
+
+        assert get_tariff_name_for_time_slot(config, time_slot, default_name) == expected_name
+
+    def test_name_and_price_use_the_same_matching(self):
+        """Name und Preis müssen für jeden Zeitslot zum selben Tarif gehören."""
+        tariffs = [dict(tariff, price=price) for tariff, price in zip(self.TARIFFS, (0.0001, 0.0002))]
+        config = FixedHoursTariffConfiguration(default_price=0.0003, tariffs=tariffs)
+        prices_by_name = {"NT": 0.0001, "NT Wochenende": 0.0002, None: 0.0003}
+        start = datetime.datetime(2022, 5, 16, 0, 0)
+        for quarter_hour in range(7 * 24 * 4):
+            time_slot = start + datetime.timedelta(minutes=15 * quarter_hour)
+            name = get_tariff_name_for_time_slot(config, time_slot)
+            assert prices_by_name[name] == _fetch_price_for_time_slot(config, time_slot), time_slot
+
+    def test_missing_weekdays_and_dates(self):
+        """Fehlende weekdays gelten wie leere für alle Tage, fehlende dates wie leere für keinen Tag."""
+        no_weekdays = {"name": "ohne Wochentage", "price": 0.0001,
+                       "active_times": {"dates": [("01-01", "31-12")], "times": [("00:00", "24:00")]}}
+        no_dates = {"name": "ohne Datum", "price": 0.0001,
+                    "active_times": {"times": [("00:00", "24:00")], "weekdays": [0, 1, 2, 3, 4, 5, 6]}}
+        time_slot = datetime.datetime(2022, 5, 21, 12, 0)
+
+        assert get_tariff_name_for_time_slot(
+            FixedHoursTariffConfiguration(tariffs=[no_weekdays]), time_slot) == "ohne Wochentage"
+        assert get_tariff_name_for_time_slot(
+            FixedHoursTariffConfiguration(tariffs=[no_dates]), time_slot, "Standardpreis") == "Standardpreis"

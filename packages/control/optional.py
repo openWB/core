@@ -18,10 +18,12 @@ from helpermodules.utils import thread_handler
 from modules.common.configurable_forecast import ConfigurableForecast
 from modules.common.configurable_tariff import ConfigurableFlexibleTariff, ConfigurableGridFee
 from modules.common.configurable_monitoring import ConfigurableMonitoring
+from modules.electricity_pricing.flexible_tariffs.fixed_hours.tariff import get_tariff_name_for_time_slot
 
 log = logging.getLogger(__name__)
 AS_EURO_PER_KWH = 1000.0  # Umrechnung von €/Wh in €/kWh
 MQTT_PREFIX = "openWB/set/optional/ep"
+DEFAULT_TARIFF_NAME = "Standardpreis"
 
 
 class Optional(OcppMixin):
@@ -219,6 +221,24 @@ class Optional(OcppMixin):
             return first
         else:
             raise Exception("Kein Anbieter für strompreisbasiertes Laden konfiguriert.")
+
+    def ep_get_current_tariff_name(self) -> TypingOptional[str]:
+        """ Name des Tarifzeitraums (Feste Tarifstunden) für denselben Zeitslot, dessen Preis ep_get_current_price()
+        liefert. None, wenn ein konfiguriertes Preismodul keine festen Tarifstunden hat (z.B. dynamische Tarife).
+        """
+        try:
+            modules = [module for module in (self._flexible_tariff_module, self._grid_fee_module)
+                       if module is not None]
+            if (self.data.electricity_pricing.configured is False or len(modules) == 0 or
+                    any(module.config.type != "fixed_hours" for module in modules)):
+                return None
+            time_slot = datetime.fromtimestamp(self.__get_current_timeslot_start())
+            return " / ".join(get_tariff_name_for_time_slot(module.config.configuration, time_slot,
+                                                            DEFAULT_TARIFF_NAME)
+                              for module in modules)
+        except Exception as e:
+            log.exception("Fehler beim Ermitteln des Tarifzeitraums: %s", e)
+            return None
 
     def __calculate_price_timeslot_length(self, prices: dict) -> int:
         first_timestamps = sorted(list(prices.keys()))[:2]
