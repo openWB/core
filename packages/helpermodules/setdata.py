@@ -102,6 +102,8 @@ class SetData:
                 self.process_command_topic(msg)
             elif "openWB/set/internal_chargepoint/" in msg.topic:
                 self.process_internal_chargepoint_topic(msg)
+            elif "openWB/set/internal_socket/" in msg.topic:
+                self.process_internal_socket_topic(msg)
             elif "openWB/set/LegacySmartHome/" in msg.topic:
                 self.process_legacy_smart_home_topic(msg)
             elif "openWB/set/consumer/" in msg.topic:
@@ -1232,6 +1234,26 @@ class SetData:
                 self._validate_value(msg, str)
             else:
                 self._validate_value(msg, "json")
+        except Exception:
+            log.exception(f"Fehler im setdata-Modul: Topic {msg.topic}, Value: {msg.payload}")
+
+    def process_internal_socket_topic(self, msg):
+        try:
+            suffix = msg.topic.removeprefix("openWB/set/internal_socket/")
+            if suffix in ("data/set_state", "data/detected", "get/state"):
+                self._validate_value(msg, bool)
+            elif suffix == "get/error_timestamp":
+                self._validate_value(msg, float, [(0, TIMESTAMP_2100)])
+            elif suffix == "get/fault_state":
+                self._validate_value(msg, int, [(0, 2)])
+            elif suffix in ("data/last_tag", "get/fault_str", "get/rfid"):
+                self._validate_value(msg, str)
+            elif suffix in ("get/power", "get/imported", "get/exported"):
+                self._validate_value(msg, float)
+            elif suffix in ("get/currents", "get/voltages", "get/powers"):
+                self._validate_value(msg, "json")
+            else:
+                self.__unknown_topic(msg)
         except Exception:
             log.exception(f"Fehler im setdata-Modul: Topic {msg.topic}, Value: {msg.payload}")
 
