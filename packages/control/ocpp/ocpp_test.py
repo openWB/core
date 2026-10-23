@@ -1,5 +1,6 @@
 import asyncio
 import concurrent.futures
+import copy
 import io
 import json
 import logging
@@ -226,50 +227,65 @@ def test_client_authorize_returns_result_future(monkeypatch, result):
     asyncio.run(check())
 
 
-def test_authorize_for_rfid_publishes_result_and_deduplicates(monkeypatch, mock_pub):
+@pytest.fixture
+def rfid_authorization_setup(monkeypatch):
     client = object.__new__(OcppClient)
-    client._rfid_authorize_pending = set()
+    client._rfid_authorize_pending = {}
     authorization_future = concurrent.futures.Future()
     client.authorize = Mock(return_value=authorization_future)
-    openwb_cp = SimpleNamespace(
-        num=1,
-        data=SimpleNamespace(get=SimpleNamespace(
-            rfid="TAG",
-            ocpp=SimpleNamespace(authorization_flow_status=None),
+    openwb_cp = Chargepoint(1, None)
+    openwb_cp.data.config.ocpp_chargebox_id = "box-1"
+    openwb_cp.data.get.rfid = "TAG"
+    openwb_cp.template = CpTemplate()
+    openwb_cp.chargepoint_module = Mock()
+    openwb_cp.find_duo_partner = Mock(return_value=None)
+    monkeypatch.setattr(data, "data", SimpleNamespace(
+        ocpp_client=client,
+        cp_data={"cp1": openwb_cp},
+        ev_data={},
+        optional_data=SimpleNamespace(data=SimpleNamespace(
+            ocpp=SimpleNamespace(config=SimpleNamespace(active=True)),
+            rfid=SimpleNamespace(active=True),
         )),
-    )
+    ), raising=False)
     monkeypatch.setattr(ocpp_client, "get_cp_from_chargebox_id", lambda _: openwb_cp)
+    return client, openwb_cp, authorization_future
+
+
+def test_authorize_for_rfid_publishes_result_and_deduplicates(rfid_authorization_setup, mock_pub):
+    client, openwb_cp, authorization_future = rfid_authorization_setup
 
     future = client.authorize_for_rfid("box-1", "TAG")
 
     assert future is authorization_future
     assert client.authorize_for_rfid("box-1", "TAG") is None
     client.authorize.assert_called_once_with("box-1", "TAG")
-    authorization_future.set_result(AuthorizationResult(status="Accepted"))
+    thread = threading.Thread(target=authorization_future.set_result,
+                              args=(AuthorizationResult(status="Accepted"),))
+    thread.start()
+    thread.join(timeout=5)
+    assert not thread.is_alive()
+    assert openwb_cp.data.get.ocpp.authorization_flow_status == "init"
+    assert mock_pub.pub.call_args_list == [
+        call("openWB/set/chargepoint/1/get/ocpp/authorization_flow_status", "init"),
+    ]
+    client.finish_rfid_authorization("box-1", openwb_cp)
 
-    assert client._rfid_authorize_pending == set()
+    assert client._rfid_authorize_pending == {}
+    assert openwb_cp.data.get.ocpp.authorization_flow_status == "accepted"
     assert mock_pub.pub.call_args_list == [
         call("openWB/set/chargepoint/1/get/ocpp/authorization_flow_status", "init"),
         call("openWB/set/chargepoint/1/get/ocpp/authorization_flow_status", "accepted"),
     ]
 
 
-def test_authorize_for_rfid_publishes_rejected_when_authorize_raises(monkeypatch, mock_pub):
-    client = object.__new__(OcppClient)
-    client._rfid_authorize_pending = set()
+def test_authorize_for_rfid_publishes_rejected_when_authorize_raises(rfid_authorization_setup, mock_pub):
+    client, openwb_cp, _ = rfid_authorization_setup
     client.authorize = Mock(side_effect=RuntimeError("offline"))
-    openwb_cp = SimpleNamespace(
-        num=1,
-        data=SimpleNamespace(get=SimpleNamespace(
-            rfid="TAG",
-            ocpp=SimpleNamespace(authorization_flow_status=None),
-        )),
-    )
-    monkeypatch.setattr(ocpp_client, "get_cp_from_chargebox_id", lambda _: openwb_cp)
 
     assert client.authorize_for_rfid("box-1", "TAG") is None
 
-    assert client._rfid_authorize_pending == set()
+    assert client._rfid_authorize_pending == {}
     assert openwb_cp.data.get.ocpp.authorization_flow_status == "rejected"
     assert mock_pub.pub.call_args_list == [
         call("openWB/set/chargepoint/1/get/ocpp/authorization_flow_status", "init"),
@@ -277,30 +293,200 @@ def test_authorize_for_rfid_publishes_rejected_when_authorize_raises(monkeypatch
     ]
 
 
-def test_authorize_for_rfid_ignores_result_after_rfid_changes(monkeypatch, mock_pub):
-    client = object.__new__(OcppClient)
-    client._rfid_authorize_pending = set()
-    authorization_future = concurrent.futures.Future()
-    client.authorize = Mock(return_value=authorization_future)
-    openwb_cp = SimpleNamespace(
-        num=1,
-        data=SimpleNamespace(get=SimpleNamespace(
-            rfid="TAG",
-            ocpp=SimpleNamespace(authorization_flow_status=None),
-        )),
-    )
-    monkeypatch.setattr(ocpp_client, "get_cp_from_chargebox_id", lambda _: openwb_cp)
-
+@pytest.mark.parametrize("rfid", [None, "NEW-TAG"])
+@pytest.mark.parametrize("completed", [False, True])
+def test_authorize_for_rfid_ignores_result_after_rfid_changes(
+        rfid_authorization_setup, mock_pub, rfid, completed):
+    client, openwb_cp, authorization_future = rfid_authorization_setup
     client.authorize_for_rfid("box-1", "TAG")
-    openwb_cp.data.get.rfid = "NEW-TAG"
-    authorization_future.set_result(AuthorizationResult(status="Accepted"))
+    current_cp = copy.deepcopy(openwb_cp)
+    current_cp.data.get.rfid = rfid
+    if completed:
+        authorization_future.set_result(AuthorizationResult(status="Accepted"))
+    client.finish_rfid_authorization("box-1", current_cp)
 
-    assert client._rfid_authorize_pending == set()
-    assert openwb_cp.data.get.ocpp.authorization_flow_status is None
+    assert client._rfid_authorize_pending == {}
+    assert current_cp.data.get.ocpp.authorization_flow_status is None
+    assert openwb_cp.data.get.ocpp.authorization_flow_status == "init"
     assert mock_pub.pub.call_args_list == [
         call("openWB/set/chargepoint/1/get/ocpp/authorization_flow_status", "init"),
         call("openWB/set/chargepoint/1/get/ocpp/authorization_flow_status", None),
     ]
+    if not completed:
+        authorization_future.set_result(AuthorizationResult(status="Accepted"))
+        assert mock_pub.pub.call_count == 2
+
+
+def test_rfid_authorization_uses_current_model_and_only_finishes_once(rfid_authorization_setup, mock_pub):
+    client, old_cp, future = rfid_authorization_setup
+    client.authorize_for_rfid("box-1", "TAG")
+    current_cp = copy.deepcopy(old_cp)
+    future.set_result(AuthorizationResult(status="Accepted"))
+
+    client.finish_rfid_authorization("box-1", current_cp)
+    client.finish_rfid_authorization("box-1", current_cp)
+
+    assert current_cp.data.get.ocpp.authorization_flow_status == "accepted"
+    assert old_cp.data.get.ocpp.authorization_flow_status == "init"
+    assert client._rfid_authorize_pending == {}
+    assert mock_pub.pub.call_args_list == [
+        call("openWB/set/chargepoint/1/get/ocpp/authorization_flow_status", "init"),
+        call("openWB/set/chargepoint/1/get/ocpp/authorization_flow_status", "accepted"),
+    ]
+
+
+def test_rfid_authorization_does_not_wait_for_unfinished_future(rfid_authorization_setup, mock_pub):
+    client, openwb_cp, future = rfid_authorization_setup
+    client.authorize_for_rfid("box-1", "TAG")
+    future.result = Mock(side_effect=AssertionError("unfinished future must not be read"))
+
+    client.finish_rfid_authorization("box-1", openwb_cp)
+
+    future.result.assert_not_called()
+    assert client._rfid_authorize_pending["box-1"] == ("TAG", future)
+    assert openwb_cp.data.get.ocpp.authorization_flow_status == "init"
+    assert mock_pub.pub.call_count == 1
+
+
+@pytest.mark.parametrize("failure", ["rejected", "exception", "cancelled"])
+def test_rfid_authorization_failure_is_applied_in_update(rfid_authorization_setup, failure):
+    client, openwb_cp, future = rfid_authorization_setup
+    client.authorize_for_rfid("box-1", "TAG")
+    if failure == "rejected":
+        future.set_result(AuthorizationResult(status="Blocked"))
+    elif failure == "exception":
+        future.set_exception(RuntimeError("offline"))
+    else:
+        future.cancel()
+
+    assert openwb_cp.data.get.ocpp.authorization_flow_status == "init"
+    client.finish_rfid_authorization("box-1", openwb_cp)
+    assert openwb_cp.data.get.ocpp.authorization_flow_status == "rejected"
+    assert client._rfid_authorize_pending == {}
+
+
+@pytest.mark.parametrize("status", ["start_pending", "start_authorizing", "start_starting", None])
+def test_rfid_authorization_cannot_overwrite_another_flow(rfid_authorization_setup, mock_pub, status):
+    client, openwb_cp, future = rfid_authorization_setup
+    client.authorize_for_rfid("box-1", "TAG")
+    openwb_cp.data.get.ocpp.authorization_flow_status = status
+    future.set_result(AuthorizationResult(status="Accepted"))
+    mock_pub.reset_mock()
+
+    client.finish_rfid_authorization("box-1", openwb_cp)
+
+    assert openwb_cp.data.get.ocpp.authorization_flow_status == status
+    assert client._rfid_authorize_pending == {}
+    mock_pub.pub.assert_not_called()
+
+
+def test_rfid_authorization_is_discarded_after_chargebox_change(rfid_authorization_setup, mock_pub):
+    client, openwb_cp, future = rfid_authorization_setup
+    client.authorize_for_rfid("box-1", "TAG")
+    openwb_cp.data.config.ocpp_chargebox_id = "box-2"
+    future.set_result(AuthorizationResult(status="Accepted"))
+    client.finish_rfid_authorization("box-1", openwb_cp)
+
+    assert openwb_cp.data.get.ocpp.authorization_flow_status is None
+    assert client._rfid_authorize_pending == {}
+    assert call("openWB/set/chargepoint/1/get/ocpp/authorization_flow_status", "accepted") not in (
+        mock_pub.pub.call_args_list)
+
+
+@pytest.mark.parametrize("disabled", ["ocpp", "rfid"])
+@pytest.mark.parametrize("completed", [False, True])
+@pytest.mark.parametrize("status", ["init", "start_starting"])
+def test_chargepoint_discards_authorization_when_disabled(
+        rfid_authorization_setup, mock_pub, monkeypatch, disabled, completed, status):
+    client, openwb_cp, future = rfid_authorization_setup
+    client.authorize_for_rfid("box-1", "TAG")
+    if disabled == "ocpp":
+        data.data.optional_data.data.ocpp.config.active = False
+    else:
+        data.data.optional_data.data.rfid.active = False
+    openwb_cp.data.get.ocpp.authorization_flow_status = status
+    if completed:
+        future.set_result(AuthorizationResult(status="Accepted"))
+    finish = Mock(wraps=client.finish_rfid_authorization)
+    monkeypatch.setattr(client, "finish_rfid_authorization", finish)
+    mock_pub.reset_mock()
+
+    openwb_cp._process_ocpp_rfid()
+
+    finish.assert_not_called()
+    assert client._rfid_authorize_pending == {}
+    client.authorize.assert_called_once_with("box-1", "TAG")
+    if status == "init":
+        assert openwb_cp.data.get.ocpp.authorization_flow_status is None
+        mock_pub.pub.assert_called_once_with(
+            "openWB/set/chargepoint/1/get/ocpp/authorization_flow_status", None)
+    else:
+        assert openwb_cp.data.get.ocpp.authorization_flow_status == status
+        mock_pub.pub.assert_not_called()
+
+    if not completed:
+        mock_pub.reset_mock()
+        future.set_result(AuthorizationResult(status="Accepted"))
+        openwb_cp._process_ocpp_rfid()
+        mock_pub.pub.assert_not_called()
+
+
+@pytest.mark.parametrize("clear_method", ["_clear_scanned_rfid", "_validate_rfid", "_link_rfid_to_cp"])
+def test_consuming_or_discarding_scan_detaches_pending_authorization(
+        rfid_authorization_setup, mock_pub, clear_method):
+    client, openwb_cp, future = rfid_authorization_setup
+    client.authorize_for_rfid("box-1", "TAG")
+    if clear_method == "_validate_rfid":
+        openwb_cp.template.data.valid_tags = []
+    getattr(openwb_cp, clear_method)()
+
+    assert openwb_cp.data.get.rfid is None
+    assert client._rfid_authorize_pending == {}
+    mock_pub.reset_mock()
+    future.set_result(AuthorizationResult(status="Accepted"))
+    client.finish_rfid_authorization("box-1", openwb_cp)
+    mock_pub.pub.assert_not_called()
+
+
+def test_rescanning_same_tag_ignores_old_authorization(rfid_authorization_setup, mock_pub):
+    client, openwb_cp, old_future = rfid_authorization_setup
+    new_future = concurrent.futures.Future()
+    client.authorize.side_effect = [old_future, new_future]
+    client.authorize_for_rfid("box-1", "TAG")
+    openwb_cp._clear_scanned_rfid()
+    openwb_cp.data.get.rfid = "TAG"
+    assert client.authorize_for_rfid("box-1", "TAG") is new_future
+
+    old_future.set_result(AuthorizationResult(status="Accepted"))
+    client.finish_rfid_authorization("box-1", openwb_cp)
+    assert client._rfid_authorize_pending["box-1"] == ("TAG", new_future)
+    assert openwb_cp.data.get.ocpp.authorization_flow_status == "init"
+
+    new_future.set_result(AuthorizationResult(status="Blocked"))
+    client.finish_rfid_authorization("box-1", openwb_cp)
+    assert openwb_cp.data.get.ocpp.authorization_flow_status == "rejected"
+    assert client._rfid_authorize_pending == {}
+    assert call("openWB/set/chargepoint/1/get/ocpp/authorization_flow_status", "accepted") not in (
+        mock_pub.pub.call_args_list)
+
+
+@pytest.mark.parametrize("active", [False, True])
+def test_chargepoint_update_consumes_authorization_before_processing_scan(rfid_authorization_setup, active):
+    client, old_cp, future = rfid_authorization_setup
+    old_cp.template.data.valid_tags = ["TAG"]
+    client.authorize_for_rfid("box-1", "TAG")
+    current_cp = copy.deepcopy(old_cp)
+    if active:
+        current_cp.data.get.ocpp.transaction_id = 42
+        current_cp.data.get.ocpp.transaction_id_tag = "START-TAG"
+    future.set_result(AuthorizationResult(status="Accepted"))
+
+    current_cp._process_ocpp_rfid()
+
+    assert client._rfid_authorize_pending == {}
+    assert current_cp.data.get.ocpp.authorization_flow_status is None
+    assert current_cp.data.get.rfid == (None if active else "TAG")
+    assert old_cp.data.get.ocpp.authorization_flow_status == "init"
 
 
 def test_client_authorize_future_can_be_cancelled(monkeypatch):
