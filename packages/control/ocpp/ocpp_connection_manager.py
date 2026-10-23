@@ -43,6 +43,10 @@ class OcppConnectionManager:
         self._reconnect_tasks: dict[str, asyncio.Task] = {}
         self._connect_locks: dict[str, asyncio.Lock] = {}
         self._connection_lost_task: set[asyncio.Task] = set()
+        # Bei Transportverlust bis zum Abschluss des Vorgangs am bisherigen
+        # Server bleiben, auch wenn die globale Konfiguration geändert wurde.
+        self._last_connection_settings: dict[str, tuple[str, str]] = {}
+        self._deferred_config_changes: set[str] = set()
 
     async def connect(self, chargebox_id: str) -> Optional[OcppConnection]:
         """
@@ -147,10 +151,18 @@ class OcppConnectionManager:
         async with lock:  # Sicherstellen, dass jeweils nur ein Verbindungsversuch läuft
             existing = self._connections.get(chargebox_id)
 
-            if not force and self._is_usable(existing):
+            settings = self._get_connection_settings(chargebox_id, openwb_cp)
+            if (not force and self._is_usable(existing) and
+                    (existing.server_url, existing.subprotocol) == settings):
                 return existing
 
             if existing is not None:
+                if (existing.server_url, existing.subprotocol) != settings:
+                    log.info(
+                        "OCPP %s: Geänderte Server-URL oder Subprotocol wird übernommen; "
+                        "Verbindung wird neu aufgebaut.",
+                        chargebox_id,
+                    )
                 await self._cleanup_connection(existing)
 
             # NUR ZUM TESTN
@@ -220,12 +232,47 @@ class OcppConnectionManager:
             "Authorization": f"Basic {encoded_credentials}"
         }
 
+    def needs_configuration_refresh(self, chargebox_id: str) -> bool:
+        connection = self._connections.get(chargebox_id)
+        openwb_cp = get_cp_from_chargebox_id(chargebox_id)
+        if connection is None or openwb_cp is None:
+            return False
+        return (connection.server_url, connection.subprotocol) != self._get_connection_settings(
+            chargebox_id, openwb_cp,
+        )
+
+    def _get_connection_settings(self, chargebox_id: str, openwb_cp) -> tuple[str, str]:
+        config = data.data.optional_data.data.ocpp.config
+        requested = ((config.url or "").rstrip("/"), config.version)
+        previous = self._last_connection_settings.get(chargebox_id)
+        ocpp = openwb_cp.data.get.ocpp
+        busy = (
+            ocpp.transaction_id is not None
+            or getattr(ocpp, "authorization_flow_status", None) in (
+                "init", "start_pending", "start_authorizing", "start_starting", "start_unconfirmed",
+            )
+            or bool(getattr(ocpp, "pending_transactions", None))
+        )
+        if previous is not None and previous != requested and busy:
+            if chargebox_id not in self._deferred_config_changes:
+                log.warning(
+                    "OCPP %s: Änderung von Server-URL oder Subprotocol zurückgestellt; "
+                    "laufenden/ungeklärten Vorgang und ausstehende Stops zuerst am bisherigen Server abschließen.",
+                    chargebox_id,
+                )
+                self._deferred_config_changes.add(chargebox_id)
+            return previous
+
+        if chargebox_id in self._deferred_config_changes:
+            log.info("OCPP %s: Zurückstellung der Verbindungskonfiguration aufgehoben.", chargebox_id)
+            self._deferred_config_changes.discard(chargebox_id)
+        return requested
+
     async def _open_connection(
         self,
         chargebox_id: str,
     ) -> Optional[OcppConnection]:
-        url = data.data.optional_data.data.ocpp.config.url
-        version = data.data.optional_data.data.ocpp.config.version
+        url, version = self._get_connection_settings(chargebox_id, get_cp_from_chargebox_id(chargebox_id))
 
         if not url:
             raise ValueError("OCPP-Server-URL ist nicht konfiguriert")
@@ -265,6 +312,9 @@ class OcppConnectionManager:
                 ws=ws,
                 cp=cp,
             )
+            connection.server_url = url
+            connection.subprotocol = version
+            self._last_connection_settings[chargebox_id] = (url, version)
 
             self._connections[chargebox_id] = connection
             connection.start_task = asyncio.create_task(

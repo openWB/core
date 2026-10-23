@@ -23,6 +23,8 @@ class OcppConnection:
         self.chargebox_id = chargebox_id
         self.ws = ws
         self.cp = cp
+        self.server_url = None
+        self.subprotocol = None
 
         self.start_task = None
         self.heartbeat_task = None
