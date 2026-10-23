@@ -2015,6 +2015,7 @@ def test_websocket_transaction_survives_reconnect(monkeypatch):
             serial_number="serial-1",
         ), config=SimpleNamespace(ocpp_chargebox_password="test-password")),
         get_ocpp_status=lambda: ChargePointStatus.available,
+        get_ocpp_status_connector_0=lambda: ChargePointStatus.available,
         chargepoint_module=SimpleNamespace(config=SimpleNamespace(type="test-cp")),
     )
     monkeypatch.setattr(ocpp_client, "get_cp_from_chargebox_id", lambda _: openwb_cp)

@@ -767,6 +767,7 @@ def test_initial_status_notifications_reuse_existing_connection(availability, co
             ocpp=SimpleNamespace(availability=availability),
         )),
         get_ocpp_status=Mock(return_value=ChargePointStatus.available),
+        get_ocpp_status_connector_0=Mock(return_value=controller_status),
     )
     connection = SimpleNamespace(
         chargebox_id="box-1",
@@ -782,6 +783,45 @@ def test_initial_status_notifications_reuse_existing_connection(availability, co
         call.kwargs["connection"] is connection
         for call in client._send_status_notification.await_args_list
     )
+
+
+@pytest.mark.parametrize("fault,availability,plugged,transaction_id,charging,expected", [
+    (2, [False, False], True, None, False, (ChargePointStatus.faulted, ChargePointStatus.faulted)),
+    (0, [False, False], True, None, False, (ChargePointStatus.unavailable, ChargePointStatus.unavailable)),
+    (0, [True, True], True, None, False, (ChargePointStatus.available, ChargePointStatus.finishing)),
+    (0, [True, True], False, None, False, (ChargePointStatus.available, ChargePointStatus.available)),
+    (0, [True, True], True, 42, True, (ChargePointStatus.available, ChargePointStatus.charging)),
+])
+def test_status_mapping_matches_for_backend_boot_and_trigger(
+    mock_data, monkeypatch, fault, availability, plugged, transaction_id, charging, expected
+):
+    cp = Chargepoint(1, None)
+    cp.data.config.ocpp_chargebox_id = "box-1"
+    cp.data.get.fault_state = fault
+    cp.data.get.ocpp.availability = availability
+    cp.data.get.ocpp.rfid_stop = True
+    cp.data.get.ocpp.transaction_id = transaction_id
+    cp.data.get.plug_state = plugged
+    cp.data.get.charge_state = charging
+    regular_send = Mock()
+    monkeypatch.setattr(data.data.ocpp_client, "status_notification", regular_send)
+    cp.ocpp_send_status_notification()
+    assert tuple(c.kwargs["status"] for c in regular_send.call_args_list) == expected
+
+    client = object.__new__(OcppClient)
+    client._send_status_notification = AsyncMock()
+    client.connection_manager = SimpleNamespace(is_active_charge_point=Mock(return_value=True))
+    ocpp_cp = SimpleNamespace(chargebox_id="box-1", openwb_cp=cp)
+    connection = SimpleNamespace(chargebox_id="box-1", cp=ocpp_cp)
+
+    async def check():
+        await client._send_initial_status_notifications(connection)
+        assert tuple(c.args[4] for c in client._send_status_notification.await_args_list) == expected
+        client._send_status_notification.reset_mock()
+        await client.handler_trigger_msg(ocpp_cp, MessageTrigger.status_notification, None)
+        assert tuple(c.args[4] for c in client._send_status_notification.await_args_list) == expected
+
+    asyncio.run(check())
 
 
 def test_trigger_message_decisions(monkeypatch):
@@ -836,6 +876,7 @@ def test_trigger_status_message_after_confirmation(
             ocpp=SimpleNamespace(availability=[True, True]), fault_state=1, fault_str="error",
         )),
         get_ocpp_status=Mock(return_value=ChargePointStatus.charging),
+        get_ocpp_status_connector_0=Mock(return_value=ChargePointStatus.faulted),
     )
     monkeypatch.setattr(ocpp_chargepoint, "get_cp_from_chargebox_id", lambda _: openwb_cp)
     ws = SimpleNamespace(send=send, closed=False)
