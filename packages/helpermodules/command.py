@@ -50,6 +50,8 @@ from modules.chargepoints.internal_openwb.chargepoint_module import ChargepointM
 from modules.chargepoints.internal_openwb.config import InternalChargepointMode
 from modules.common.component_type import ComponentType, special_to_general_type_mapping, type_to_topic_mapping
 from modules.common.configurable_vehicle import GeneralVehicleConfig
+from modules.consumers.openwb.internal_socket.config import InternalSocketConfiguration
+from modules.consumers.openwb.internal_socket.selection import validate_selection
 
 
 log = logging.getLogger(__name__)
@@ -1200,11 +1202,22 @@ class Command:
     def addConsumer(self, connection_id: str, payload: dict) -> None:
         """ sendet das Topic, zu dem ein neues Device erstellt werden soll.
         """
+        socket_configuration = None
+        if payload["data"]["vendor"] == "openwb" and payload["data"]["type"] == "internal_socket":
+            socket_configuration = InternalSocketConfiguration(
+                chargepoint_id=payload["data"].get("configuration", {}).get("chargepoint_id"))
+            try:
+                validate_selection(socket_configuration)
+            except ValueError as e:
+                pub_user_message(payload, connection_id, str(e), MessageType.ERROR)
+                return
         new_id = self.max_id_hierarchy + 1
         dev = importlib.import_module(f'.consumers.{payload["data"]["vendor"]}'
                                       f'.{payload["data"]["type"]}.consumer',
                                       "modules")
         consumer_default = asdict(dev.device_descriptor.configuration_factory())
+        if socket_configuration is not None:
+            consumer_default["configuration"] = asdict(socket_configuration)
         consumer_default["id"] = new_id
         try:
             evu_counter = SubData.counter_all_data.get_id_evu_counter()
@@ -1251,6 +1264,9 @@ class Command:
                 payload, connection_id,
                 f'Die ID \'{payload["data"]["consumer_id"]}\' ist größer als die maximal vergebene '
                 f'ID \'{self.max_id_hierarchy}\'.', MessageType.ERROR)
+        consumer = SubData.consumer_data.get(f'consumer{payload["data"]["consumer_id"]}')
+        if consumer is not None and getattr(consumer.data.module, "type", None) == "internal_socket":
+            consumer.module.switch_off()
         ProcessBrokerBranch(f'consumer/{payload["data"]["consumer_id"]}/').remove_topics()
         SubData.counter_all_data.hierarchy_remove_item(payload["data"]["consumer_id"])
         Pub().pub("openWB/set/counter/get/hierarchy", SubData.counter_all_data.data.get.hierarchy)

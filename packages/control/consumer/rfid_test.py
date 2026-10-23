@@ -8,20 +8,21 @@ from control import data, optional
 from control.chargemode import Chargemode
 from control.consumer.consumer import Consumer
 from control.consumer.consumer_data import ConsumerConfig, RfidReset
+from control.consumer.rfid import RFID_SUPPORTED_MODULE_TYPES
 from control.consumer.usage import ConsumerUsage
 from dataclass_utils import asdict, dataclass_from_dict
 from helpermodules.subdata import SubData
 from helpermodules.changed_values_handler import ChangedValuesHandler
 
 
-@pytest.fixture
-def consumer(monkeypatch):
+@pytest.fixture(params=RFID_SUPPORTED_MODULE_TYPES)
+def consumer(monkeypatch, request):
     data.data_init(Mock())
     data.data.optional_data = optional.Optional()
     data.data.optional_data.data.rfid.active = True
     consumer = Consumer(1)
     consumer.module = Mock()
-    consumer.data.module = Mock(type="mqtt")
+    consumer.data.module = Mock(type=request.param)
     consumer.data.config.rfid_enabled = True
     consumer.data.config.valid_tags = ["AB??", "1234"]
     consumer.data.usage.type = ConsumerUsage.SUSPENDABLE_ONOFF

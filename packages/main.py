@@ -308,6 +308,7 @@ try:
     handler = HandlerAlgorithm()
     prep = prepare.Prepare()
     general_internal_chargepoint_handler = GeneralInternalChargepointHandler()
+    general_internal_chargepoint_handler.auto_detect_internal_socket()
     rfid = RfidReader()
     event_ev_template = Event()
     event_ev_template.set()

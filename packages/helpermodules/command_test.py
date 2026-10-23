@@ -167,3 +167,90 @@ def test_get_max_id_hierarchy_by_topics(mock_pub, monkeypatch):
 
     assert command_instance.max_id_hierarchy == 9
     mock_pub.pub.assert_any_call("openWB/set/command/max_id/hierarchy", 9)
+
+
+@pytest.mark.parametrize("consumer_type", ["internal_socket", "mqtt"])
+def test_remove_internal_socket_switches_off_before_removing_topics(consumer_type, mock_pub, monkeypatch):
+    order = []
+    consumer = SimpleNamespace(data=SimpleNamespace(module=SimpleNamespace(type=consumer_type)), module=Mock())
+    consumer.module.switch_off.side_effect = lambda: order.append("off")
+    branch = Mock()
+    branch.remove_topics.side_effect = lambda: order.append("remove")
+    monkeypatch.setattr(command, "ProcessBrokerBranch", Mock(return_value=branch))
+    monkeypatch.setattr(command, "pub_user_message", Mock())
+    monkeypatch.setattr(SubData, "consumer_data", {"consumer2": consumer})
+    monkeypatch.setattr(SubData, "counter_all_data", Mock())
+    monkeypatch.setattr(SubData, "system_data", {
+        "system": SimpleNamespace(data={"security": {"user_management_active": False}})})
+    instance = Command.__new__(Command)
+    instance.max_id_hierarchy = 2
+    instance.removeConsumer("test", {"data": {"consumer_id": 2}})
+    assert order == (["off", "remove"] if consumer_type == "internal_socket" else ["remove"])
+
+
+@pytest.mark.parametrize("existing_type, requested_type, existing_cp, requested_cp, blocked", [
+    ("internal_socket", "internal_socket", None, None, True),
+    ("mqtt", "internal_socket", None, None, False),
+    (None, "internal_socket", None, None, False),
+    ("internal_socket", "mqtt", None, None, False),
+    ("internal_socket", "internal_socket", None, 4, False),
+    ("internal_socket", "internal_socket", 4, None, False),
+    ("internal_socket", "internal_socket", 4, 5, False),
+    ("internal_socket", "internal_socket", 4, 4, True),
+    ("internal_socket", "internal_socket", 4, 6, True),
+    ("internal_socket", "internal_socket", None, 0, True),
+    ("internal_socket", "internal_socket", 0, None, True),
+])
+def test_add_consumer_rejects_second_internal_socket_before_side_effects(
+        existing_type, requested_type, existing_cp, requested_cp, blocked, mock_pub, monkeypatch):
+    existing_module = SimpleNamespace(type=existing_type, configuration=SimpleNamespace(
+        chargepoint_id=existing_cp)) if existing_type else None
+    monkeypatch.setattr(SubData, "consumer_data", {
+        "consumer2": SimpleNamespace(num=2, data=SimpleNamespace(module=existing_module))})
+    monkeypatch.setattr(SubData, "cp_data", {
+        f"cp{num}": SimpleNamespace(chargepoint=SimpleNamespace(chargepoint_module=SimpleNamespace(
+            config=SimpleNamespace(type="external_openwb", configuration=SimpleNamespace(ip_address=host)))))
+        for num, host in [(4, "192.168.1.40"), (5, "192.168.1.50"), (6, "192.168.1.40")]})
+    SubData.cp_data["cp0"] = SimpleNamespace(chargepoint=SimpleNamespace(chargepoint_module=SimpleNamespace(
+        config=SimpleNamespace(type="internal_openwb"))))
+    counter = Mock()
+    counter.get_id_evu_counter.return_value = 0
+    counter.data.get.hierarchy = []
+    counter.data.get.loadmanagement_prios = []
+    monkeypatch.setattr(SubData, "counter_all_data", counter)
+    monkeypatch.setattr(SubData, "system_data", {
+        "system": SimpleNamespace(data={"security": {"user_management_active": False}})})
+    message = Mock()
+    monkeypatch.setattr(command, "pub_user_message", message)
+    vendor = "openwb" if requested_type == "internal_socket" else "generic"
+    setup = SimpleNamespace(id=0, type=requested_type, name="Test-Verbraucher", info={},
+                            configuration=SimpleNamespace(), vendor=vendor,
+                            usage=(ConsumerUsage.SUSPENDABLE_ONOFF,))
+    module_import = Mock(return_value=SimpleNamespace(device_descriptor=SimpleNamespace(
+        configuration_factory=Mock(return_value=setup))))
+    monkeypatch.setattr(command.importlib, "import_module", module_import)
+    instance = Command.__new__(Command)
+    instance.max_id_hierarchy = 2
+    payload = {"data": {"vendor": vendor, "type": requested_type,
+                        "configuration": {"chargepoint_id": requested_cp}}}
+
+    instance.addConsumer("test", payload)
+
+    if blocked:
+        message.assert_called_once_with(
+            payload, "test", "Die Steckdose dieser openWB kann nur einem Verbraucher zugeordnet werden.",
+            command.MessageType.ERROR)
+        module_import.assert_not_called()
+        counter.get_id_evu_counter.assert_not_called()
+        counter.hierarchy_add_item_below.assert_not_called()
+        counter.add_loadmanagement_prio_item.assert_not_called()
+        mock_pub.pub.assert_not_called()
+        assert instance.max_id_hierarchy == 2
+    else:
+        assert instance.max_id_hierarchy == 3
+        counter.hierarchy_add_item_below.assert_called_once()
+        assert any(call.args[0] == "openWB/consumer/3/module" for call in mock_pub.pub.call_args_list)
+        if requested_type == "internal_socket":
+            module_payload = next(call.args[1] for call in mock_pub.pub.call_args_list
+                                  if call.args[0] == "openWB/consumer/3/module")
+            assert module_payload["configuration"] == {"chargepoint_id": requested_cp}
