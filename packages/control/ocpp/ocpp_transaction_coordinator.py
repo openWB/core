@@ -138,6 +138,9 @@ class TransactionCoordinator:
             )
             return False
 
+        if getattr(openwb_cp.data.get.ocpp, "previous_chargebox_id", None):
+            return False
+
         if not all(openwb_cp.data.get.ocpp.availability):
             log.debug(
                 f"OCPP {chargebox_id}: Start blockiert, ChargePoint ist nicht verfügbar.",
@@ -437,6 +440,7 @@ class TransactionCoordinator:
 
         return (
             bool(openwb_cp.data.get.plug_state)
+            and not getattr(openwb_cp.data.get.ocpp, "previous_chargebox_id", None)
             and all(openwb_cp.data.get.ocpp.availability)
         )
 
@@ -614,14 +618,15 @@ class TransactionCoordinator:
         imported: int,
         id_tag: str = "",
         reason: str = "EVDisconnected",
-        timeout: float = 10.0,
+        timeout: Optional[float] = 10.0,
     ) -> bool:
         """
         Stoppt eine Transaction und wartet darauf,
         dass sie vollständig abgeschlossen ist.
 
-        Gedacht für Reset, damit OcppClient die
-        internen TransactionStates nicht kennen muss.
+        Einschließlich persistierter Offline-Stops. Für Reset begrenzt warten;
+        timeout=None wartet auch bei Fehlern bis zum Abschluss oder Abstecken
+        eines unbestätigten Starts (für den Wechsel der Chargebox-ID).
         """
 
         await self.stop(
@@ -632,21 +637,32 @@ class TransactionCoordinator:
         )
 
         transaction = self._get_transaction(chargebox_id)
+        openwb_cp = get_cp_from_chargebox_id(chargebox_id)
+        if openwb_cp is None:
+            return False
+        if transaction.transaction_id is None and openwb_cp.data.get.ocpp.pending_transactions:
+            # Nach Neustart kann nur noch der persistierte Stop vorhanden sein.
+            # Den bestehenden Verbindungs-/Replay-Pfad dafür anstoßen.
+            await self._get_connection(chargebox_id, "StopTransaction replay")
 
         loop = asyncio.get_running_loop()
-        deadline = loop.time() + timeout
+        deadline = None if timeout is None else loop.time() + timeout
 
-        while loop.time() < deadline:
+        while deadline is None or loop.time() < deadline:
+            openwb_cp = get_cp_from_chargebox_id(chargebox_id)
+            if openwb_cp is None:
+                return False
             if (
                 transaction.transaction_id is None
                 and transaction.state in (
                     TransactionState.IDLE,
                     TransactionState.REJECTED,
                 )
+                and not openwb_cp.data.get.ocpp.pending_transactions
             ):
                 return True
 
-            if transaction.state in (TransactionState.START_UNCONFIRMED, TransactionState.ERROR):
+            if timeout is not None and transaction.state in (TransactionState.START_UNCONFIRMED, TransactionState.ERROR):
                 return False
 
             await asyncio.sleep(0.1)
