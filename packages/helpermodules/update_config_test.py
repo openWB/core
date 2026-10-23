@@ -373,24 +373,25 @@ def test_upgrade_datastore_142_ev_chargemode_conversion(ev0_prio: bool,
     ev0_charge_template = ChargeTemplate()
     ev0_charge_template.data.id = 0
     ev0_charge_template.data.chargemode.selected = ev0_chargemode
-    ev0_charge_template.data.prio = ev0_prio
     ev1_charge_template = ChargeTemplate()
     ev1_charge_template.data.id = 1
     ev1_charge_template.data.chargemode.selected = ev1_chargemode
-    ev1_charge_template.data.prio = ev1_prio
     ev2_charge_template = ChargeTemplate()
     ev2_charge_template.data.id = 2
     ev2_charge_template.data.chargemode.selected = ev2_chargemode
-    ev2_charge_template.data.prio = ev2_prio
 
     uc = UpdateConfig()
     uc.all_received_topics = {
         "openWB/vehicle/0/charge_template": 0,
         "openWB/vehicle/1/charge_template": 1,
         "openWB/vehicle/2/charge_template": 2,
-        "openWB/vehicle/template/charge_template/0": dataclass_utils.asdict(ev0_charge_template.data),
-        "openWB/vehicle/template/charge_template/1": dataclass_utils.asdict(ev1_charge_template.data),
-        "openWB/vehicle/template/charge_template/2": dataclass_utils.asdict(ev2_charge_template.data),
+        # Historische Payloads behalten das damalige Prioritätsfeld unabhängig vom aktuellen Datenmodell.
+        "openWB/vehicle/template/charge_template/0": {
+            **dataclass_utils.asdict(ev0_charge_template.data), "prio": ev0_prio},
+        "openWB/vehicle/template/charge_template/1": {
+            **dataclass_utils.asdict(ev1_charge_template.data), "prio": ev1_prio},
+        "openWB/vehicle/template/charge_template/2": {
+            **dataclass_utils.asdict(ev2_charge_template.data), "prio": ev2_prio},
         "openWB/system/datastore_version": [131, 132],
     }
 

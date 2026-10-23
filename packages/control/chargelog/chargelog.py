@@ -1,4 +1,5 @@
 from control.chargemode import Chargemode
+from modules.common.component_type import ComponentType
 from helpermodules.utils.json_file_handler import write_and_check
 from helpermodules import timecheck
 import copy
@@ -32,7 +33,7 @@ from helpermodules.measurement_logging.process_log_entry_builder import create_e
 #         "id": 1,
 #         "name": "Auto",
 #         "chargemode": instant_charging,
-#         "prio": False,
+#         "prio": 2,
 #         "rfid": "123"
 #         "soc_at_start": 50,
 #         "soc_at_end": 60,
@@ -121,7 +122,8 @@ def collect_data(chargepoint):
                         log_data.soc_at_start = get_value_or_default(lambda: charging_ev.data.get.soc)
 
                 log_data.ev = get_value_or_default(lambda: chargepoint.data.set.charging_ev_data.num, 0)
-                log_data.prio = get_value_or_default(lambda: chargepoint.data.control_parameter.prio, False)
+                log_data.prio = get_value_or_default(
+                    lambda: data.data.counter_all_data.get_loadmanagement_priority(ComponentType.VEHICLE, log_data.ev))
                 log_data.rfid = get_value_or_default(lambda: chargepoint.data.set.rfid)
                 log_data.odometer = get_value_or_default(lambda: charging_ev.data.get.odometer)
                 log_data.imported_since_mode_switch = get_value_or_default(

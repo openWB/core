@@ -43,7 +43,6 @@ class ConnectedConfig:
     chargemode: Chargemode = Chargemode.STOP
     current_plan: Optional[int] = 0
     ev_template: int = 0
-    priority: bool = False
     time_charging_in_use: bool = False
 
 
@@ -91,7 +90,7 @@ class Log:
     timestamp_start_charging: Optional[float] = None
     timestamp_mode_switch: Optional[float] = None
     ev: int = -1
-    prio: bool = False
+    prio: Optional[int] = None
     rfid: Optional[str] = None
     serial_number: Optional[str] = None
     soc_at_start: Optional[int] = None
