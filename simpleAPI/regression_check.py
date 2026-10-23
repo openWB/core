@@ -253,6 +253,9 @@ def main(argv: Optional[List[str]] = None) -> int:
 
     read_params = [p for p in READ_PARAMETER_ORDER if selected(p, args.only, args.skip)]
     write_params = [p for p in WRITE_PARAMETER_ORDER if selected(p, args.only, args.skip)]
+    checks = (['list_components'] if selected('list_components', args.only, args.skip) else []) + read_params
+    if args.include_writes:
+        checks += write_params
 
     print("simpleAPI regression check")
     print(f"  OLD (PHP):    {args.old_base_url}")
@@ -268,27 +271,22 @@ def main(argv: Optional[List[str]] = None) -> int:
         time.sleep(3)
     print()
 
-    results: List[Tuple[str, Optional[bool], List[str]]] = []
-
-    if selected('list_components', args.only, args.skip):
-        ok, diffs = check_list_components(args, common)
-        results.append(('list_components', ok, diffs))
-
-    for param in read_params:
-        ok, diffs = check_read_param(param, args, common)
-        results.append((param, ok, diffs))
-
-    if args.include_writes:
-        for param in write_params:
-            ok, diffs = check_write_param(param, args, common)
-            results.append((param, ok, diffs))
-
-    name_width = max((len(name) for name, _, _ in results), default=10) + 2
+    name_width = max((len(name) for name in checks), default=10) + 2
     print(f"{'PARAMETER':<{name_width}}RESULT")
     print('-' * (name_width + 6))
-    for name, ok, diffs in results:
+
+    results: List[Tuple[str, Optional[bool], List[str]]] = []
+    for name in checks:
+        if name == 'list_components':
+            ok, diffs = check_list_components(args, common)
+        elif name in write_params:
+            ok, diffs = check_write_param(name, args, common)
+        else:
+            ok, diffs = check_read_param(name, args, common)
+        results.append((name, ok, diffs))
+
         status = 'PASS' if ok is True else 'SKIP' if ok is None else 'FAIL'
-        print(f"{name:<{name_width}}{status}")
+        print(f"{name:<{name_width}}{status}", flush=True)
         if ok is False:
             for line in diffs[:args.max_diff_lines]:
                 print(f"    {line}")
