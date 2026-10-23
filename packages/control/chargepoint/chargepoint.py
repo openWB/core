@@ -15,7 +15,7 @@ from control.chargepoint.chargepoint_template import CpTemplate
 from control.chargepoint.control_parameter import control_parameter_factory
 from control.chargepoint.charging_type import ChargingType
 from control.chargepoint.rfid import ChargepointRfidMixin
-from control.ocpp.helper import get_chargebox_id
+from control.ocpp.helper import get_chargebox_id, _get_formatted_time
 from control.ev.charge_template import ChargeTemplate
 from control.ev.ev import Ev
 from control import phase_switch
@@ -969,7 +969,8 @@ class Chargepoint(ChargepointRfidMixin, Load):
                 data.data.ocpp_client.transfer_values(chargebox_id,
                                                       1,
                                                       self.data.get.ocpp.transaction_id,
-                                                      int(self.data.get.imported))
+                                                      int(self.data.get.imported),
+                                                      _get_formatted_time())
 
             # als ocpp Chargepoint konfiguriert?
             if data.data.optional_data.data.ocpp.config.active and chargebox_id:
