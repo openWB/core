@@ -9,14 +9,12 @@
           Verlauf &middot; {{ mode === 'day' ? 'Heute' : `Live · ${liveRangeMinutes} Min` }}
         </h2>
         <div style="position: relative">
-          <button
-            class="icon-btn"
-            type="button"
+          <BaseIconButton
             aria-label="Diagramm-Einstellungen"
             @click="showSettings = !showSettings"
           >
             <IconGear />
-          </button>
+          </BaseIconButton>
           <div
             v-if="showSettings"
             class="settings-backdrop"
@@ -29,22 +27,12 @@
             <div class="settings-group-label">
               Ansicht
             </div>
-            <div class="button-group">
-              <button
-                type="button"
-                :class="{ active: mode === 'day' }"
-                @click="mode = 'day'"
-              >
-                Heute
-              </button>
-              <button
-                type="button"
-                :class="{ active: mode === 'live' }"
-                @click="mode = 'live'"
-              >
-                Live
-              </button>
-            </div>
+            <BaseTabGroup
+              dense
+              :model-value="mode"
+              :options="viewOptions"
+              @update="mode = $event"
+            />
 
             <template v-if="mode === 'live'">
               <div class="settings-group-label">
@@ -82,22 +70,14 @@
 
               <div
                 v-if="visibleSeries[cat.key] && categories[cat.key].individual.length > 0"
-                class="button-group category-mode-row"
+                class="category-mode-row"
               >
-                <button
-                  type="button"
-                  :class="{ active: categoryMode[cat.key] === 'combined' }"
-                  @click="categoryMode[cat.key] = 'combined'"
-                >
-                  Gesamt
-                </button>
-                <button
-                  type="button"
-                  :class="{ active: categoryMode[cat.key] === 'individual' }"
-                  @click="categoryMode[cat.key] = 'individual'"
-                >
-                  Einzeln
-                </button>
+                <BaseTabGroup
+                  dense
+                  :model-value="categoryMode[cat.key]"
+                  :options="categoryModeOptions"
+                  @update="categoryMode[cat.key] = $event"
+                />
               </div>
 
               <div
@@ -162,44 +142,32 @@
 </template>
 
 <script setup lang="ts">
-import { computed, reactive, ref, watch, onUnmounted } from 'vue'
+import { computed, reactive, ref, watch, watchEffect, onMounted, onUnmounted } from 'vue'
 import { Line as ChartjsLine } from 'vue-chartjs'
-import {
-  Chart,
-  Tooltip,
-  Legend,
-  LineController,
-  LineElement,
-  PointElement,
-  LinearScale,
-  TimeScale,
-  Filler,
-  type ChartOptions,
-  type ChartData,
-  type Plugin,
-} from 'chart.js'
+import { Chart, type ChartOptions, type ChartData, type Plugin } from 'chart.js'
 import annotationPlugin from 'chartjs-plugin-annotation'
 import zoomPlugin from 'chartjs-plugin-zoom'
-import 'chartjs-adapter-luxon'
+import '@/utils/chartSetup'
 import { useMqttStore } from '@/stores/mqtt-store'
 import { useDailyLog } from '@/composables/useDailyLog'
 import { useLiveView } from '@/composables/useLiveView'
 import { getCssColor, hexToRgba, instanceColor } from '@/utils/color'
+import { formatTooltipTime } from '@/utils/format'
 import type { CategoryKey } from '@/types/chart'
 import IconGear from './icons/IconGear.vue'
+import BaseIconButton from './BaseIconButton.vue'
+import BaseTabGroup from './BaseTabGroup.vue'
 
-Chart.register(
-  Tooltip,
-  Legend,
-  LineController,
-  LineElement,
-  PointElement,
-  LinearScale,
-  TimeScale,
-  Filler,
-  annotationPlugin,
-  zoomPlugin,
-)
+Chart.register(annotationPlugin, zoomPlugin)
+
+const viewOptions = [
+  { value: 'day', label: 'Heute' },
+  { value: 'live', label: 'Live' },
+] as const
+const categoryModeOptions = [
+  { value: 'combined', label: 'Gesamt' },
+  { value: 'individual', label: 'Einzeln' },
+] as const
 
 const chartRef = ref<{ chart?: Chart } | null>(null)
 const isZoomed = ref(false)
@@ -209,6 +177,16 @@ function resetZoom(): void {
   isZoomed.value = false
 }
 
+// Date.now() isn't a reactive dependency, so without this, 'now' (the chart options
+// computed's xMin/xMax for the vertical line) would freeze at whatever moment the
+// component happened to last recompute, instead of tracking real time
+const now = ref(Date.now())
+let nowTimer: ReturnType<typeof setInterval> | undefined
+onMounted(() => {
+  nowTimer = setInterval(() => (now.value = Date.now()), 30_000)
+})
+onUnmounted(() => clearInterval(nowTimer))
+
 // drawn manually instead of via chartjs-plugin-annotation's own label - that label kept
 // getting clipped against the chart area regardless of position/yAdjust/clip settings
 const nowLabelPlugin: Plugin<'line'> = {
@@ -216,7 +194,7 @@ const nowLabelPlugin: Plugin<'line'> = {
   afterDraw(chart) {
     // not useful in live mode - "now" already sits right at the chart's right edge there
     if (mode.value !== 'day') return
-    const x = chart.scales.x?.getPixelForValue(Date.now())
+    const x = chart.scales.x?.getPixelForValue(now.value)
     if (x === undefined) return
     const { ctx, chartArea } = chart
     ctx.save()
@@ -233,13 +211,38 @@ const props = defineProps<{ theme: string }>()
 
 const mqttStore = useMqttStore()
 
+interface PersistedChartSettings {
+  mode?: 'day' | 'live'
+  liveRangeMinutes?: number
+  visibleSeries?: Partial<Record<CategoryKey, boolean>>
+  categoryMode?: Partial<Record<CategoryKey, 'combined' | 'individual'>>
+  instanceVisibility?: Record<string, boolean>
+}
+
+const STORAGE_KEY = 'quartz-chart-settings'
+
+function loadPersistedSettings(): PersistedChartSettings {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY)
+    return raw ? (JSON.parse(raw) as PersistedChartSettings) : {}
+  } catch {
+    return {}
+  }
+}
+
+const persisted = loadPersistedSettings()
+
 const showSettings = ref(false)
-const mode = ref<'day' | 'live'>('day')
-const liveRangeMinutes = ref(120)
+const mode = ref<'day' | 'live'>(persisted.mode ?? 'day')
+const liveRangeMinutes = ref(persisted.liveRangeMinutes ?? 120)
 
 const { categories: dayCategories } = useDailyLog()
 const { categories: liveCategories } = useLiveView(liveRangeMinutes)
 const categories = computed(() => (mode.value === 'live' ? liveCategories.value : dayCategories.value))
+
+// mode can start as 'live' on a reload (persisted) - the watch below only reacts to later
+// changes, so the initial subscription needs its own call here
+if (mode.value === 'live') mqttStore.subscribeLiveSeries()
 
 // the alllivevaluesJson* feed is only worth subscribing to while live view is actually shown;
 // default the range back to the max each time live is (re-)selected
@@ -281,6 +284,7 @@ const visibleSeries = reactive<Record<CategoryKey, boolean>>({
   battery: true,
   chargepoint: true,
   consumer: true,
+  ...persisted.visibleSeries,
 })
 
 const categoryMode = reactive<Record<CategoryKey, 'combined' | 'individual'>>({
@@ -290,11 +294,27 @@ const categoryMode = reactive<Record<CategoryKey, 'combined' | 'individual'>>({
   battery: 'combined',
   chargepoint: 'combined',
   consumer: 'combined',
+  ...persisted.categoryMode,
 })
 
 // per-instance visibility within "Einzeln" mode, keyed "<category>:<instanceId>" - defaults to
 // visible so a newly-appeared component shows up without the user having to opt it in
-const instanceVisibility = reactive<Record<string, boolean>>({})
+const instanceVisibility = reactive<Record<string, boolean>>({ ...persisted.instanceVisibility })
+
+watchEffect(() => {
+  const settings: PersistedChartSettings = {
+    mode: mode.value,
+    liveRangeMinutes: liveRangeMinutes.value,
+    visibleSeries: { ...visibleSeries },
+    categoryMode: { ...categoryMode },
+    instanceVisibility: { ...instanceVisibility },
+  }
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(settings))
+  } catch {
+    // ignore storage errors (private browsing etc.)
+  }
+})
 
 function isInstanceVisible(category: CategoryKey, id: string): boolean {
   return instanceVisibility[`${category}:${id}`] ?? true
@@ -329,8 +349,7 @@ const legend = computed(() => {
 // x-axis bounds: the whole day for the day view, or the selected rolling window for live view
 const xRange = computed(() => {
   if (mode.value === 'live') {
-    const now = Date.now()
-    return { min: now - liveRangeMinutes.value * 60 * 1000, max: now }
+    return { min: now.value - liveRangeMinutes.value * 60 * 1000, max: now.value }
   }
   return { min: new Date().setHours(0, 0, 0, 0), max: new Date().setHours(23, 59, 59, 999) }
 })
@@ -407,9 +426,7 @@ const chartOptions = computed<ChartOptions<'line'>>(() => {
         callbacks: {
           title: (items) => {
             const x = items[0]?.parsed.x
-            return typeof x === 'number'
-              ? new Date(x).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })
-              : ''
+            return typeof x === 'number' ? formatTooltipTime(x) : ''
           },
         },
       },
@@ -418,8 +435,8 @@ const chartOptions = computed<ChartOptions<'line'>>(() => {
           now: {
             type: 'line',
             display: mode.value === 'day',
-            xMin: Date.now(),
-            xMax: Date.now(),
+            xMin: now.value,
+            xMax: now.value,
             borderColor: mutedColor,
             borderWidth: 1.5,
             borderDash: [3, 4],
@@ -468,14 +485,6 @@ const chartOptions = computed<ChartOptions<'line'>>(() => {
   color: var(--muted);
 }
 
-.legend-dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 3px;
-  display: inline-block;
-  flex: none;
-}
-
 .reset-zoom-btn {
   font-size: 12px;
   color: var(--accent);
@@ -483,18 +492,6 @@ const chartOptions = computed<ChartOptions<'line'>>(() => {
   border: 1px solid var(--border);
   border-radius: 999px;
   padding: 3px 10px;
-}
-
-.icon-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 26px;
-  height: 26px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: transparent;
-  color: var(--muted);
 }
 
 .settings-backdrop {
@@ -520,37 +517,11 @@ const chartOptions = computed<ChartOptions<'line'>>(() => {
 }
 
 .settings-group-label {
-  font-size: 11px;
-  font-weight: 700;
-  color: var(--muted);
-  text-transform: uppercase;
-  letter-spacing: 0.02em;
   margin-top: 8px;
 }
 
 .settings-group-label:first-child {
   margin-top: 0;
-}
-
-.button-group {
-  display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
-}
-
-.button-group button {
-  font-size: 12px;
-  padding: 4px 9px;
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  background: transparent;
-  color: var(--text);
-}
-
-.button-group button.active {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: #fff;
 }
 
 .series-toggle {
@@ -584,10 +555,5 @@ const chartOptions = computed<ChartOptions<'line'>>(() => {
 .instance-toggle {
   font-size: 12px;
   color: var(--muted);
-}
-
-.range-slider {
-  width: 100%;
-  accent-color: var(--accent);
 }
 </style>

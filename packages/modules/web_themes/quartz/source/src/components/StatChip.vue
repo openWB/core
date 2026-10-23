@@ -1,5 +1,9 @@
 <template>
-  <div class="panel stat-chip">
+  <div
+    class="panel stat-chip"
+    :class="{ clickable }"
+    @click="clickable && $emit('click')"
+  >
     <component
       :is="icon"
       :style="{ color: `var(--${color})` }"
@@ -23,7 +27,9 @@ defineProps<{
   label: string
   value: string
   color: string
+  clickable?: boolean
 }>()
+defineEmits<{ click: [] }>()
 </script>
 
 <style scoped>
@@ -35,6 +41,14 @@ defineProps<{
   gap: 7px;
   padding: 8px 11px;
   white-space: nowrap;
+}
+
+.stat-chip.clickable {
+  cursor: pointer;
+}
+
+.stat-chip.clickable:hover {
+  border-color: var(--accent);
 }
 
 .stat-label {

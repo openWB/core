@@ -67,3 +67,148 @@ button {
   border: 1px solid var(--border);
   border-radius: 14px;
 }
+
+.settings-group-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.field-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+  display: block;
+  margin-bottom: 6px;
+}
+
+.field-select {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 13px;
+}
+
+.mode-note {
+  font-size: 12px;
+  color: var(--muted);
+  margin: 4px 0 14px;
+}
+
+.toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 0;
+  border-top: 1px solid var(--border);
+  margin-top: 8px;
+}
+
+.settings-divider {
+  border-top: 1px solid var(--border);
+  margin: 16px 0 12px;
+}
+
+.legend-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  display: inline-block;
+  flex: none;
+}
+
+.range-slider {
+  width: 100%;
+  accent-color: var(--accent);
+}
+
+.time-range-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.time-range-row .field-select {
+  flex: 1;
+}
+
+.plan-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  background: var(--bg);
+  border-radius: 8px;
+  margin-bottom: 8px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.plan-inactive {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.plan-frequency {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.add-plan-btn {
+  width: 100%;
+  font-size: 13px;
+  padding: 8px;
+  border: 1px dashed var(--border);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--accent);
+}
+
+.info-box {
+  background: var(--bg);
+  border-radius: 10px;
+  padding: 12px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.info-row {
+  display: flex;
+  gap: 10px;
+  font-size: 13px;
+}
+
+.info-label {
+  color: var(--muted);
+  min-width: 110px;
+}
+
+.status-box {
+  background: color-mix(in srgb, var(--pv) 12%, transparent);
+  border-radius: 10px;
+  padding: 12px 16px;
+  font-size: 13px;
+}
+
+.status-box p {
+  margin: 4px 0 0;
+}
+
+.status-box-fault {
+  background: color-mix(in srgb, var(--grid) 12%, transparent);
+}
+
+.plan-edit-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
