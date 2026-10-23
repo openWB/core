@@ -159,6 +159,46 @@ def test_start_transaction(mock_data, monkeypatch):
     )
 
 
+@pytest.mark.parametrize("stop_flag", ["remote_stop", "rfid_stop", "reset", "unlock_stop"])
+@pytest.mark.parametrize("identity_source", ["rfid", "vehicle_id"])
+def test_update_blocks_start_until_unplug_clears_stop_flag(mock_data, monkeypatch, stop_flag, identity_source):
+    cp = Chargepoint(1, None)
+    cp.data.config.ev = 0
+    cp.data.config.ocpp_chargebox_id = "cp1"
+    if identity_source == "rfid":
+        cp.data.set.rfid = "TAG"
+    else:
+        cp.data.get.vehicle_id = "VEHICLE"
+    cp.data.get.plug_state = True
+    cp.data.get.ocpp.connected = True
+    setattr(cp.data.get.ocpp, stop_flag, True)
+    cp.template = CpTemplate()
+    cp.chargepoint_module = ChargepointModule(Mqtt())
+    start = Mock()
+    clear = Mock()
+    monkeypatch.setattr(data.data.ocpp_client, "request_start", start)
+    monkeypatch.setattr(data.data.ocpp_client, "clear_start_block", clear)
+    monkeypatch.setattr(cp, "_process_charge_stop", Mock())
+    monkeypatch.setattr(cp, "_pub_configured_ev", Mock())
+
+    cp.update({"ev0": Ev(0)})
+    start.assert_not_called()
+    assert getattr(cp.data.get.ocpp, stop_flag) is True
+
+    cp.data.get.plug_state = False
+    cp.update({"ev0": Ev(0)})
+    start.assert_not_called()
+    assert getattr(cp.data.get.ocpp, stop_flag) is False
+    clear.assert_called_once_with("cp1")
+
+    cp.data.get.plug_state = True
+    cp.update({"ev0": Ev(0)})
+    start.assert_called_once_with(
+        chargebox_id="cp1", connector_id=1,
+        id_tag="TAG" if identity_source == "rfid" else "VEHICLE", imported=0,
+    )
+
+
 @pytest.mark.parametrize("transaction_id,flow_status", [
     (124, None), (None, "start_pending"), (None, "start_authorizing"), (None, "start_starting"),
     (None, None),
