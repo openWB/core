@@ -113,8 +113,19 @@ export function useDailyLog() {
 
   const hasData = computed(() => categories.value.grid.all.length > 0)
 
-  onMounted(() => mqttStore.fetchDailyLog())
-  onUnmounted(() => mqttStore.unsubscribe(topic))
+  // the backend only republishes this retained topic in response to a getDailyLog command - it
+  // doesn't push updates on its own, so without a periodic re-fetch the chart would go stale
+  const REFRESH_INTERVAL_MS = 60_000
+  let refreshTimer: ReturnType<typeof setInterval> | undefined
+
+  onMounted(() => {
+    mqttStore.fetchDailyLog()
+    refreshTimer = setInterval(() => mqttStore.fetchDailyLog(), REFRESH_INTERVAL_MS)
+  })
+  onUnmounted(() => {
+    mqttStore.unsubscribe(topic)
+    clearInterval(refreshTimer)
+  })
 
   return { categories, hasData }
 }
