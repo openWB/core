@@ -728,14 +728,26 @@ class Chargepoint(ChargepointRfidMixin, Load):
 
     def _process_ocpp_rfid(self) -> None:
         """Verarbeitet OCPP-Autorisierungen und RFID-Stops genau einmal pro Scan."""
-        ocpp_active = (data.data.optional_data.data.ocpp.config.active and
-                       self.data.config.ocpp_chargebox_id)
-        if ocpp_active and self.data.get.rfid is not None:
+        chargebox_id = self.data.config.ocpp_chargebox_id
+        ocpp_active = data.data.optional_data.data.ocpp.config.active and chargebox_id
+        rfid_active = data.data.optional_data.data.rfid.active
+        if not ocpp_active or not rfid_active:
+            data.data.ocpp_client.discard_rfid_authorization(chargebox_id)
+            if self.data.get.ocpp.authorization_flow_status == "init":
+                self.data.get.ocpp.authorization_flow_status = None
+                Pub().pub(
+                    f"openWB/set/chargepoint/{self.num}/get/ocpp/authorization_flow_status", None)
+            return
+
+        data.data.ocpp_client.finish_rfid_authorization(
+            chargebox_id,
+            self,
+        )
+        if self.data.get.rfid is not None:
             rfid = self.data.get.rfid
             response = self.data.get.ocpp.authorization_flow_status
-            valid_tag = (data.data.optional_data.data.rfid.active and
-                         (rfid in self.template.data.valid_tags or
-                          any(rfid in v.data.tag_id for v in data.data.ev_data.values())))
+            valid_tag = (rfid in self.template.data.valid_tags or
+                         any(rfid in v.data.tag_id for v in data.data.ev_data.values()))
             transaction_active = self.data.get.ocpp.transaction_id is not None
 
             if valid_tag and transaction_active and response is None and rfid == (
