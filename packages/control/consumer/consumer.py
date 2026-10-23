@@ -4,6 +4,7 @@ from typing import Callable, Dict, List, Optional, Tuple
 
 from control import data
 from control.consumer.usage import NOT_CONTROLLED, ON_OFF
+from control.consumer.rfid import ConsumerRfidMixin
 from control.chargemode import Chargemode
 from control.chargepoint.chargepoint_state import CHARGING_STATES, ChargepointState
 from control.consumer.consumer_data import ConsumerData, ConsumerUsage, WaitForStartStates
@@ -17,7 +18,7 @@ from modules.common.configurable_consumer import ConfigurableConsumer
 log = logging.getLogger(__name__)
 
 
-class Consumer(Load):
+class Consumer(ConsumerRfidMixin, Load):
     PAUSE_BETWEEN_WAIT_FOR_START_TEST_RUNS = 3600
     STANDBY_THRESHOLD = 0.15  # 35 Watt pro Phase
 
@@ -58,6 +59,7 @@ class Consumer(Load):
             self.data.set.phases_to_use = self.data.config.connected_phases
             self.data.get.charge_state = max(self.data.get.currents) > self.STANDBY_THRESHOLD
             self.process_on_time()
+            self.update_rfid()
 
             if self.data.usage.type in NOT_CONTROLLED:
                 return
@@ -120,6 +122,9 @@ class Consumer(Load):
                                        "Verbraucher nicht abgeschaltet werden darf.")
 
     def get_parameter(self) -> Tuple[float, Optional[str], Optional[Chargemode], Chargemode]:
+        if self.rfid_required() and self.data.set.rfid is None:
+            return (0, "Verbraucher gesperrt. Bitte per RFID freischalten.",
+                    self.data.usage.chargemode, Chargemode.STOP)
         if self.data.set.switch_interval_elapsed is False:
             log.debug("Intervall für neuen Schaltbefehl nicht abgelaufen.")
             return (max(self.data.get.currents),
