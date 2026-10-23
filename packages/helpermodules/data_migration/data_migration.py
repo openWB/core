@@ -244,7 +244,7 @@ class MigrateData:
                                 "id": vehicle_id,
                                 "name": vehicle_name,
                                 "chargemode": chargemode,
-                                "prio": False,
+                                "prio": 2,
                                 "rfid": rfid
                             },
                             "time":

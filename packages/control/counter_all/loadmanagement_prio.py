@@ -1,5 +1,5 @@
 import logging
-from typing import Dict, Generator, List, Tuple
+from typing import Dict, Generator, List, Optional, Tuple
 
 from control.chargepoint.chargepoint import Chargepoint
 from control.consumer.usage import ConsumerUsage, NOT_CONTROLLED
@@ -11,6 +11,13 @@ log = logging.getLogger(__name__)
 
 
 class LoadmanagementPrioMixin:
+    def get_loadmanagement_priority(self: LoadmanagementPrioProtocol,
+                                    type: ComponentType, id: int) -> Optional[int]:
+        for rank, entry in enumerate(self.data.get.loadmanagement_prios, start=1):
+            if self._has_loadmanagement_prio_item(type, id, [entry]):
+                return rank
+        return None
+
     def add_loadmanagement_prio_item(self: LoadmanagementPrioProtocol, type: ComponentType, id: int) -> None:
         self.data.get.loadmanagement_prios.append({"type": type.value, "id": id})
 

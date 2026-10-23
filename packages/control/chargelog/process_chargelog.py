@@ -71,16 +71,6 @@ def get_log_data(request: Dict):
                         (str(entry["vehicle"]["chargemode"]), str(request["filter"]["vehicle"]["chargemode"]))
                     )
                     continue
-                if (
-                    "prio" in request["filter"]["vehicle"] and
-                    request["filter"]["vehicle"]["prio"] is not entry["vehicle"]["prio"]
-                ):
-                    log.debug(
-                        "Verwerfe Eintrag wegen Priorität: %s != %s" %
-                        (str(entry["vehicle"]["prio"]), str(request["filter"]["vehicle"]["prio"]))
-                    )
-                    continue
-
                 # wenn wir hier ankommen, passt der Eintrag zum Filter
                 log_data["entries"].append(entry)
             log_data["totals"] = get_totals_of_filtered_log_data(log_data)
