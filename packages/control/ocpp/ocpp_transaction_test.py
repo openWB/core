@@ -1233,14 +1233,52 @@ def test_availability_operative_clears_only_targeted_pending_entries(handler_set
     ([False, True], RemoteStartStopStatus.rejected),
     ([False, False], RemoteStartStopStatus.rejected),
 ])
-def test_remote_start_checks_both_connector_availabilities(handler_setup, availability, expected_status):
+def test_remote_start_checks_both_connector_availabilities(handler_setup, monkeypatch, availability, expected_status):
     make_charge_point, openwb_cp = handler_setup
     openwb_cp.data.get.ocpp.availability = availability
+    openwb_cp.template = SimpleNamespace(data=SimpleNamespace(valid_tags=["TAG"]))
+    monkeypatch.setattr(data, "data", SimpleNamespace(
+        optional_data=SimpleNamespace(data=SimpleNamespace(rfid=SimpleNamespace(active=True))),
+        ev_data={},
+    ))
 
     async def check():
         return await make_charge_point().remote_start_transaction("TAG", 1)
 
     assert asyncio.run(check()).status == expected_status
+
+
+@pytest.mark.parametrize("rfid_active,template_tags,vehicle_tags,expected_status", [
+    (True, ["TAG"], [], RemoteStartStopStatus.accepted),
+    (True, [], ["OTHER", "TAG"], RemoteStartStopStatus.accepted),
+    (True, [], [], RemoteStartStopStatus.rejected),
+    (True, ["OTHER"], ["OTHER"], RemoteStartStopStatus.rejected),
+    (False, ["TAG"], ["TAG"], RemoteStartStopStatus.rejected),
+    (False, [], [], RemoteStartStopStatus.rejected),
+    (True, None, ["TAG"], RemoteStartStopStatus.rejected),
+])
+def test_remote_start_requires_local_rfid_permission(
+        handler_setup, monkeypatch, mock_pub, caplog,
+        rfid_active, template_tags, vehicle_tags, expected_status):
+    make_charge_point, openwb_cp = handler_setup
+    openwb_cp.template = (SimpleNamespace(data=SimpleNamespace(valid_tags=template_tags))
+                          if template_tags is not None else None)
+    monkeypatch.setattr(data, "data", SimpleNamespace(
+        optional_data=SimpleNamespace(data=SimpleNamespace(rfid=SimpleNamespace(active=rfid_active))),
+        ev_data={"ev1": SimpleNamespace(data=SimpleNamespace(tag_id=vehicle_tags))},
+    ))
+
+    async def check():
+        return await make_charge_point().remote_start_transaction("TAG", 1)
+
+    with caplog.at_level("INFO", logger=ocpp_chargepoint.__name__):
+        assert asyncio.run(check()).status == expected_status
+
+    if expected_status == RemoteStartStopStatus.accepted:
+        mock_pub.pub.assert_called_once_with("openWB/set/chargepoint/1/get/rfid", "TAG")
+    else:
+        mock_pub.pub.assert_not_called()
+        assert "Remote-Start abgelehnt" in caplog.text
 
 
 def test_pending_availability_without_request_is_not_applied(handler_setup, mock_pub):
