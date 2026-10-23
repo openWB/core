@@ -24,8 +24,6 @@ def create_consumer(config: InternalSocket):
             cp_module = data.data.cp_data[f"cp{config.configuration.chargepoint_id}"].chargepoint_module
         except KeyError:
             raise KeyError(("Bitte einen vorhandenen openWB-Ladepunkt auswählen."))
-        if cp_module.config.type == "internal_openwb":
-            return "localhost"
         return cp_module.config.configuration.ip_address
 
     def update():
