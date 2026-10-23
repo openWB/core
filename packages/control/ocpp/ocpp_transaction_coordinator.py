@@ -19,6 +19,7 @@ class TransactionState(str, Enum):
     START_PENDING = "start_pending"
     AUTHORIZING = "authorizing"
     STARTING = "starting"
+    START_UNCONFIRMED = "start_unconfirmed"
     ACTIVE = "active"
     STOPPING = "stopping"
     REJECTED = "rejected"
@@ -152,7 +153,9 @@ class TransactionCoordinator:
             TransactionState.START_PENDING,
             TransactionState.AUTHORIZING,
             TransactionState.STARTING,
+            TransactionState.START_UNCONFIRMED,
             TransactionState.STOPPING,
+            TransactionState.ERROR,
         ):
             return False
 
@@ -174,19 +177,6 @@ class TransactionCoordinator:
             self._commit(chargebox_id, transaction)
 
             return False
-
-        if transaction.state == TransactionState.ERROR:
-            # StartTransaction kann auf dem CSMS bereits angekommen sein.
-            # Deshalb denselben Tag nicht automatisch erneut senden.
-            if transaction.id_tag == id_tag:
-                return False
-
-            # nur reseten, wenn keine transaktion_id mehr vorhanden ist
-            if transaction.transaction_id is not None:
-                return False
-
-            transaction.reset()
-            self._commit(chargebox_id, transaction)
 
         transaction.id_tag = id_tag
         transaction.pending_stop = None
@@ -307,21 +297,9 @@ class TransactionCoordinator:
             raise
 
         except Exception as exc:
-            # Nicht auf IDLE setzen.
-            #
-            # Es ist unklar, ob das CSMS StartTransaction
-            # bereits verarbeitet hat und nur die Antwort
-            # verloren gegangen ist.
-            transaction.last_error = str(exc)
-
-            self._transition(
-                chargebox_id,
-                transaction,
-                TransactionState.ERROR,
+            self._mark_start_unconfirmed(
+                chargebox_id, transaction, str(exc), exc_info=True,
             )
-
-            log.exception(f"StartTransaction für {chargebox_id} fehlgeschlagen")
-
             return False
 
         status = _get_id_tag_status(response)
@@ -332,11 +310,7 @@ class TransactionCoordinator:
             None,
         )
 
-        if (
-            response is None
-            or status != "Accepted"
-            or transaction_id is None
-        ):
+        if status in ("Blocked", "Expired", "Invalid", "ConcurrentTx"):
             transaction.last_error = (
                 f"StartTransaction: {status}"
             )
@@ -349,9 +323,16 @@ class TransactionCoordinator:
             )
 
             # Wenn Start abgebrochen wurde, wende change availaibilty an
-            if status in ("Blocked", "Expired", "Invalid", "ConcurrentTx"):
-                await cp.apply_pending_availability()
+            await cp.apply_pending_availability()
 
+            return False
+
+        if response is None or status != "Accepted" or transaction_id is None:
+            self._mark_start_unconfirmed(
+                chargebox_id,
+                transaction,
+                f"Keine verwertbare StartTransaction-Bestätigung (Status: {status!r})",
+            )
             return False
 
         #
@@ -426,6 +407,25 @@ class TransactionCoordinator:
         )
 
         return True
+
+    def _mark_start_unconfirmed(
+        self,
+        chargebox_id: str,
+        transaction: OcppTransaction,
+        error: str,
+        exc_info: bool = False,
+    ) -> None:
+        transaction.last_error = error
+        self._transition(chargebox_id, transaction, TransactionState.START_UNCONFIRMED)
+        log.error(
+            "OCPP %s: Startbestätigung fehlt oder ist ungültig (Tag %s): %s. "
+            "Keine Ladefreigabe bis zum Abstecken. Der serverseitige Transaktionszustand "
+            "ist unbekannt; eine möglicherweise offene Transaktion kann ohne ID nicht beendet werden.",
+            chargebox_id,
+            transaction.id_tag,
+            error,
+            exc_info=exc_info,
+        )
 
     def _can_continue_start(self, chargebox_id: str) -> bool:
         if chargebox_id in self._start_blocked:
@@ -536,7 +536,7 @@ class TransactionCoordinator:
             return True
 
         #
-        # ERROR ohne Transaction-ID:
+        # Unbestätigter Start oder ERROR ohne Transaction-ID:
         #
         # StartTransaction könnte einen unklaren Fehler
         # produziert haben, aber wir haben keine ID,
@@ -544,7 +544,7 @@ class TransactionCoordinator:
         #
 
         if (
-            transaction.state == TransactionState.ERROR
+            transaction.state in (TransactionState.START_UNCONFIRMED, TransactionState.ERROR)
             and transaction.transaction_id is None
         ):
             return False
@@ -646,7 +646,7 @@ class TransactionCoordinator:
             ):
                 return True
 
-            if transaction.state == TransactionState.ERROR:
+            if transaction.state in (TransactionState.START_UNCONFIRMED, TransactionState.ERROR):
                 return False
 
             await asyncio.sleep(0.1)
@@ -852,8 +852,23 @@ class TransactionCoordinator:
     def block_start(self, chargebox_id: str,) -> None:
         self._start_blocked.add(chargebox_id)
 
-    def clear_start_block(self, chargebox_id: str,) -> None:
+    def clear_start_block(self, chargebox_id: str,) -> bool:
+        """Nach erkanntem Abstecken Sperren und einen unbestätigten Start zurücksetzen."""
         self._start_blocked.discard(chargebox_id)
+        transaction = self._get_transaction(chargebox_id)
+        if transaction.state != TransactionState.START_UNCONFIRMED:
+            return False
+
+        log.warning(
+            "OCPP %s: Unbestätigten Start nach Abstecken lokal zurückgesetzt (Tag %s). "
+            "Ein neuer Start ist möglich; eine eventuell serverseitig offene Transaktion "
+            "wurde dadurch nicht beendet.",
+            chargebox_id,
+            transaction.id_tag,
+        )
+        transaction.reset()
+        self._commit(chargebox_id, transaction)
+        return True
 
     async def _get_connection(
         self,
@@ -918,6 +933,9 @@ class TransactionCoordinator:
                     log.info(
                         f"Bestehende OCPP-Transaction {existing_id} für {chargebox_id} übernommen.",
                     )
+            elif getattr(openwb_cp.data.get.ocpp, "authorization_flow_status", None) == "start_unconfirmed":
+                transaction.state = TransactionState.START_UNCONFIRMED
+                transaction.last_error = "Startbestätigung fehlt; Abstecken erforderlich"
         else:
             invalid_persisted_transaction = False
 
@@ -1000,6 +1018,7 @@ class TransactionCoordinator:
             TransactionState.START_PENDING: "start_pending",
             TransactionState.AUTHORIZING: "start_authorizing",
             TransactionState.STARTING: "start_starting",
+            TransactionState.START_UNCONFIRMED: "start_unconfirmed",
             TransactionState.REJECTED: "start_rejected",
             TransactionState.ERROR: "start_error",
         }
