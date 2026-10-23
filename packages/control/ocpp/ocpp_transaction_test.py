@@ -997,22 +997,24 @@ def test_failed_stop_keeps_internal_transaction_id_and_releases_local_state(tran
     }]
 
 
-def test_offline_stop_is_replayed_once_after_reconnect(transaction_setup, mock_pub):
+@pytest.mark.parametrize("transaction_id", [42, 0, -123])
+def test_offline_stop_is_replayed_once_after_reconnect(transaction_setup, mock_pub, transaction_id):
     coordinator, connection, openwb_cp = transaction_setup
+    connection.cp._start_transaction.return_value.transaction_id = transaction_id
 
     async def check():
         await coordinator.start("box-1", 1, "TAG", 100)
         coordinator._ensure_connected.return_value = None
         assert await coordinator.stop("box-1", 150, "", "EVDisconnected") is False
         assert openwb_cp.data.get.ocpp.pending_transactions == [{
-            "action": "stop", "transaction_id": 42, "id_tag": "TAG",
+            "action": "stop", "transaction_id": transaction_id, "id_tag": "TAG",
             "imported": 150, "reason": "EVDisconnected", "timestamp": ANY,
         }]
         connection.cp._authorize.reset_mock()
         connection.cp._authorize.side_effect = RuntimeError("must not authorize replay")
         coordinator._ensure_connected.return_value = connection
         transaction_id_publications_before_replay = mock_pub.pub.call_args_list.count(
-            call("openWB/set/chargepoint/1/get/ocpp/transaction_id", 42)
+            call("openWB/set/chargepoint/1/get/ocpp/transaction_id", transaction_id)
         )
         await coordinator.on_connected("box-1", connection)
         await coordinator.on_connected("box-1", connection)
@@ -1022,7 +1024,7 @@ def test_offline_stop_is_replayed_once_after_reconnect(transaction_setup, mock_p
 
     connection.cp._authorize.assert_not_awaited()
     connection.cp._stop_transaction.assert_awaited_once_with(
-        meter_stop=150, transaction_id=42, reason="EVDisconnected", id_tag="TAG",
+        meter_stop=150, transaction_id=transaction_id, reason="EVDisconnected", id_tag="TAG",
         timestamp=ANY,
     )
     assert openwb_cp.data.get.ocpp.pending_transactions == []
@@ -1031,12 +1033,14 @@ def test_offline_stop_is_replayed_once_after_reconnect(transaction_setup, mock_p
         call("openWB/set/chargepoint/1/get/ocpp/pending_transactions", [])
     ) == 1
     assert mock_pub.pub.call_args_list.count(
-        call("openWB/set/chargepoint/1/get/ocpp/transaction_id", 42)
+        call("openWB/set/chargepoint/1/get/ocpp/transaction_id", transaction_id)
     ) == transaction_id_publications_before_replay
 
 
-def test_missing_stop_confirmation_does_not_delete_persisted_stop(transaction_setup):
+@pytest.mark.parametrize("transaction_id", [42, 0, -123])
+def test_missing_stop_confirmation_does_not_delete_persisted_stop(transaction_setup, transaction_id):
     coordinator, connection, openwb_cp = transaction_setup
+    connection.cp._start_transaction.return_value.transaction_id = transaction_id
 
     async def check():
         assert await coordinator.start("box-1", 1, "TAG", 100)
@@ -1049,8 +1053,12 @@ def test_missing_stop_confirmation_does_not_delete_persisted_stop(transaction_se
     asyncio.run(check())
 
     assert coordinator.get_state("box-1") == TransactionState.ERROR
-    assert coordinator.get_transaction_id("box-1") == 42
+    assert coordinator.get_transaction_id("box-1") == transaction_id
     assert len(openwb_cp.data.get.ocpp.pending_transactions) == 1
+    assert openwb_cp.data.get.ocpp.pending_transactions[0]["transaction_id"] == transaction_id
+    connection.cp._stop_transaction.assert_awaited_once_with(
+        meter_stop=150, transaction_id=transaction_id, reason="EVDisconnected", id_tag="TAG", timestamp=ANY,
+    )
 
 
 def test_failed_offline_stop_replay_keeps_transaction_id_cleared(transaction_setup, mock_pub):
