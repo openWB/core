@@ -606,14 +606,15 @@ def test_client_request_stop_forwards_authorization(monkeypatch, authorize_stop)
     )
 
 
-def test_transfer_values_updates_meter_snapshot():
+@pytest.mark.parametrize("timestamp", ["2026-10-23T12:00:00+00:00", "2026-10-23T12:01:00+00:00"])
+def test_transfer_values_updates_meter_snapshot(timestamp):
     client = object.__new__(OcppClient)
     client._meter_snapshots = {}
     loop = Mock()
     loop.call_soon_threadsafe.side_effect = lambda callback, *args: callback(*args)
     client.loop = loop
 
-    client.transfer_values("cp1", 1, 123456, 9876)
+    client.transfer_values("cp1", 1, 123456, 9876, timestamp)
 
     loop.call_soon_threadsafe.assert_called_once_with(
         client._set_meter_snapshot,
@@ -621,11 +622,37 @@ def test_transfer_values_updates_meter_snapshot():
         1,
         123456,
         9876,
+        timestamp,
     )
     snapshot = client._meter_snapshots["cp1"]
     assert snapshot.transaction_id == 123456
     assert snapshot.connector_id == 1
     assert snapshot.imported == 9876
+    assert snapshot.timestamp == timestamp
+
+
+def test_chargepoint_passes_meter_update_timestamp_to_client(mock_data, monkeypatch):
+    cp = Chargepoint(1, None)
+    cp.data.config.ev = 0
+    cp.data.config.ocpp_chargebox_id = "cp1"
+    cp.data.get.ocpp.transaction_id = 42
+    cp.data.get.ocpp.connected = True
+    cp.data.get.plug_state = True
+    cp.data.get.imported = 9876
+    cp.data.set.rfid = "TAG"
+    cp.template = CpTemplate()
+    cp.chargepoint_module = ChargepointModule(Mqtt())
+    transfer = Mock()
+    timestamp = "2026-10-23T12:00:00+00:00"
+    monkeypatch.setattr("control.chargepoint.chargepoint._get_formatted_time", lambda: timestamp)
+    monkeypatch.setattr(data.data.ocpp_client, "transfer_values", transfer)
+    monkeypatch.setattr(data.data.ocpp_client, "request_start", Mock())
+    monkeypatch.setattr(cp, "_process_charge_stop", Mock())
+    monkeypatch.setattr(cp, "_pub_configured_ev", Mock())
+
+    cp.update({"ev0": Ev(0)})
+
+    transfer.assert_called_once_with("cp1", 1, 42, 9876, timestamp)
 
 
 @pytest.mark.parametrize(
@@ -943,7 +970,7 @@ def test_trigger_meter_values_uses_snapshot_or_skips_when_missing(has_snapshot):
         is_active_charge_point=Mock(return_value=True),
     )
     client._meter_snapshots = (
-        {"box-1": SimpleNamespace(connector_id=1, imported=9876, )}
+        {"box-1": SimpleNamespace(connector_id=1, imported=9876, timestamp="2026-10-23T12:00:00+00:00")}
         if has_snapshot else {}
     )
     client.transactions = SimpleNamespace(
@@ -963,6 +990,7 @@ def test_trigger_meter_values_uses_snapshot_or_skips_when_missing(has_snapshot):
         kwargs = chargepoint._meter_values.await_args.kwargs
         assert kwargs["connector_id"] == 1
         assert kwargs["transaction_id"] == 42
+        assert kwargs["meter_value"][0]["timestamp"] == "2026-10-23T12:00:00+00:00"
         assert kwargs["meter_value"][0]["sampledValue"][0] == {
             "value": "9876",
             "context": "Trigger",
@@ -1486,7 +1514,9 @@ def test_meter_loop_only_sends_for_active_matching_transaction(monkeypatch, tran
         get_state=Mock(return_value=transaction_state),
     )
     client._meter_snapshots = {
-        "box-1": SimpleNamespace(transaction_id=snapshot_id, connector_id=1, imported=9876),
+        "box-1": SimpleNamespace(
+            transaction_id=snapshot_id, connector_id=1, imported=9876, timestamp="2026-10-23T12:00:00+00:00",
+        ),
     }
     sleep_calls = 0
 
@@ -1507,8 +1537,45 @@ def test_meter_loop_only_sends_for_active_matching_transaction(monkeypatch, tran
         client.transactions.get_transaction_id.assert_not_called()
     if transaction_state == ocpp_transaction_coordinator.TransactionState.ACTIVE and snapshot_id == 123:
         chargepoint._meter_values.assert_awaited_once()
+        assert chargepoint._meter_values.await_args.kwargs["meter_value"][0]["timestamp"] == "2026-10-23T12:00:00+00:00"
     else:
         chargepoint._meter_values.assert_not_awaited()
+
+
+def test_meter_loop_keeps_sending_and_only_updates_timestamp_with_new_snapshot(monkeypatch):
+    chargepoint = SimpleNamespace(
+        openwb_cp=SimpleNamespace(data=SimpleNamespace(get=SimpleNamespace(ocpp=SimpleNamespace(
+            config=SimpleNamespace(MeterValueSampleInterval={"value": "1"}),
+        )))),
+        _meter_values=AsyncMock(),
+    )
+    connection = SimpleNamespace(chargebox_id="box-1", closing=False, boot_accepted=True, cp=chargepoint)
+    client = object.__new__(OcppClient)
+    client.transactions = SimpleNamespace(
+        get_transaction_id=Mock(return_value=123),
+        get_state=Mock(return_value=ocpp_transaction_coordinator.TransactionState.ACTIVE),
+    )
+    client._meter_snapshots = {}
+    first = "2026-10-23T12:00:00+00:00"
+    second = "2026-10-23T12:01:00+00:00"
+    client._set_meter_snapshot("box-1", 1, 123, 9876, first)
+    ticks = 0
+
+    async def tick(_interval):
+        nonlocal ticks
+        ticks += 1
+        if ticks == 3:
+            # Neuer Übergabezeitpunkt, aber unveränderter Zählerstand.
+            client._set_meter_snapshot("box-1", 1, 123, 9876, second)
+        elif ticks == 4:
+            connection.closing = True
+
+    monkeypatch.setattr(ocpp_client.asyncio, "sleep", tick)
+    asyncio.run(client._meter_loop(connection))
+
+    values = [c.kwargs["meter_value"][0] for c in chargepoint._meter_values.await_args_list]
+    assert [v["timestamp"] for v in values] == [first, first, second]
+    assert [v["sampledValue"][0]["value"] for v in values] == ["9876"] * 3
 
 
 def test_heartbeat_loop_closes_connection_after_heartbeat_error(monkeypatch):

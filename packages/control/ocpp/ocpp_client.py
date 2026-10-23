@@ -31,6 +31,7 @@ class MeterSnapshot:
     transaction_id: int
     connector_id: int
     imported: int
+    timestamp: str
 
 
 class OcppClient:
@@ -600,7 +601,7 @@ class OcppClient:
                     transaction_id=transaction_id,
                     meter_value=[
                         {
-                            "timestamp": _get_formatted_time(),
+                            "timestamp": snapshot.timestamp,
                             "sampledValue": [
                                 {
                                     "value": str(snapshot.imported),
@@ -759,6 +760,7 @@ class OcppClient:
         connector_id: int,
         transaction_id: int,
         imported: int,
+        timestamp: str,
     ) -> None:
 
         self.loop.call_soon_threadsafe(
@@ -767,6 +769,7 @@ class OcppClient:
             connector_id,
             transaction_id,
             imported,
+            timestamp,
         )
 
     def _set_meter_snapshot(
@@ -775,11 +778,13 @@ class OcppClient:
         connector_id: int,
         transaction_id: int,
         imported: int,
+        timestamp: str,
     ):
         self._meter_snapshots[chargebox_id] = MeterSnapshot(
             transaction_id=transaction_id,
             connector_id=connector_id,
             imported=int(imported),
+            timestamp=timestamp,
         )
 
     def authorize(
@@ -1133,7 +1138,7 @@ class OcppClient:
                 transaction_id=transaction_id,
                 meter_value=[
                     {
-                        "timestamp": _get_formatted_time(),
+                        "timestamp": snapshot.timestamp,
                         "sampledValue": [
                             {
                                 "value": str(snapshot.imported),
