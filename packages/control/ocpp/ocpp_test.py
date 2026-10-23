@@ -158,13 +158,21 @@ def test_start_transaction(mock_data, monkeypatch):
     )
 
 
-def test_stop_transaction(mock_data, monkeypatch):
+@pytest.mark.parametrize("transaction_id,flow_status", [
+    (124, None), (None, "start_pending"), (None, "start_authorizing"), (None, "start_starting"),
+    (None, None),
+])
+@pytest.mark.parametrize("stop_reason", ["EVDisconnected", "UnlockCommand", "Remote"])
+def test_stop_transaction(mock_data, monkeypatch, transaction_id, flow_status, stop_reason):
     cp = Chargepoint(1, None)
     cp.data.config.ocpp_chargebox_id = "cp1"
     cp.data.set.rfid = "ABCDEF01234567"
     cp.data.config.ev = 1
-    cp.data.get.plug_state = False
-    cp.data.get.ocpp.transaction_id = 124
+    cp.data.get.plug_state = stop_reason != "EVDisconnected"
+    cp.data.get.ocpp.transaction_id = transaction_id
+    cp.data.get.ocpp.authorization_flow_status = flow_status
+    cp.data.get.ocpp.unlock_stop = stop_reason == "UnlockCommand"
+    cp.data.get.ocpp.remote_stop = stop_reason == "Remote"
     cp.chargepoint_module = ChargepointModule(Mqtt())
     cp.template = CpTemplate()
 
@@ -177,13 +185,15 @@ def test_stop_transaction(mock_data, monkeypatch):
 
     cp._process_charge_stop()
 
-    # assert request_stop_mock.call_args == (("cp1", cp.chargepoint_module.fault_state, 0, 124, None),)
-    request_stop_mock.assert_called_once_with(
-        chargebox_id="cp1",
-        id_tag="ABCDEF01234567",
-        imported=0,
-        reason="EVDisconnected"
-    )
+    if transaction_id is None and flow_status is None:
+        request_stop_mock.assert_not_called()
+    else:
+        request_stop_mock.assert_called_once_with(
+            chargebox_id="cp1",
+            id_tag="ABCDEF01234567",
+            imported=0,
+            reason=stop_reason,
+        )
 
 
 @pytest.mark.parametrize("result", [

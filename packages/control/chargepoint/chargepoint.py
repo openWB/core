@@ -251,17 +251,22 @@ class Chargepoint(ChargepointRfidMixin, Load):
 
         # Ocpp Stop Funktion aufrufen
         chargebox_id = self.data.config.ocpp_chargebox_id
+        ocpp_data = self.data.get.ocpp
+        transaction_exists = ocpp_data.transaction_id is not None
+        start_in_progress = ocpp_data.authorization_flow_status in (
+            "start_pending", "start_authorizing", "start_starting",
+        )
         # hier nicht nach data.data.optional_data.data.ocpp.config.active prüfen
-        # Stop muss immer aufgerufen werden, wenn noch eine alten Transaktion aktiv ist.
-        if (chargebox_id and self.data.get.ocpp.transaction_id is not None):
-            if self.data.get.ocpp.unlock_stop:
+        # Auch ein laufender Start ohne Transaktions-ID muss abgebrochen werden können.
+        if chargebox_id and (transaction_exists or start_in_progress):
+            if ocpp_data.unlock_stop:
                 data.data.ocpp_client.request_stop(
                     chargebox_id=chargebox_id,
                     imported=self.data.get.imported,
                     id_tag=self.data.set.rfid,
                     reason="UnlockCommand",
                 )
-            elif self.data.get.ocpp.remote_stop:
+            elif ocpp_data.remote_stop:
 
                 data.data.ocpp_client.request_stop(
                     chargebox_id=chargebox_id,
