@@ -48,11 +48,6 @@ export default {
         this.updateChargePointChargeTemplate(this.chargePointId, modeId, "chargemode.selected");
       }
     },
-    setChargePointConnectedVehiclePriority(priority) {
-      if (priority != this.mqttStore.getChargePointConnectedVehiclePriority(this.chargePointId)) {
-        this.updateChargePointChargeTemplate(this.chargePointId, priority, "prio");
-      }
-    },
   },
 }
 </script>
@@ -96,41 +91,6 @@ export default {
             "
           >
             {{ mode.label }}
-          </i-button>
-        </i-button-group>
-      </i-form-group>
-      <i-form-group>
-        <i-form-label>Priorität</i-form-label>
-        <i-button-group block>
-          <i-button
-            size="lg"
-            class="large-button"
-            :color="
-              mqttStore.getChargePointConnectedVehiclePriority(
-                chargePointId,
-              ) !== true
-                ? 'danger'
-                : ''
-            "
-            @click="
-              setChargePointConnectedVehiclePriority(false)
-            "
-          >
-            Nein
-          </i-button>
-          <i-button
-            :color="
-              mqttStore.getChargePointConnectedVehiclePriority(
-                chargePointId,
-              ) === true
-                ? 'success'
-                : ''
-            "
-            @click="
-              setChargePointConnectedVehiclePriority(true)
-            "
-          >
-            Ja
           </i-button>
         </i-button-group>
       </i-form-group>

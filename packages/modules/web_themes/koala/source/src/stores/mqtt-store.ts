@@ -2041,28 +2041,6 @@ export const useMqttStore = defineStore('mqtt', () => {
   };
 
   /**
-   * Get or set the charge point connected vehicle charge priority identified by the charge point id
-   * @param chargePointId charge point id
-   * @returns boolean | undefined
-   */
-  const chargePointConnectedVehiclePriority = (chargePointId: number) => {
-    return computed({
-      get() {
-        return chargePointConnectedVehicleChargeTemplate(chargePointId).value
-          ?.prio;
-      },
-      set(newValue: boolean) {
-        return updateTopic(
-          `openWB/chargepoint/${chargePointId}/set/charge_template`,
-          newValue,
-          'prio',
-          true,
-        );
-      },
-    });
-  };
-
-  /**
    * Get or set the charge point connected vehicle time charging identified by the charge point id
    * @param chargePointId charge point id
    * @returns boolean | undefined
@@ -4893,7 +4871,6 @@ export const useMqttStore = defineStore('mqtt', () => {
     chargePointConnectedVehicleEcoChargeLimitSoC,
     chargePointConnectedVehicleEcoChargeLimitEnergy,
     chargePointConnectedVehicleEcoChargeMaxPrice,
-    chargePointConnectedVehiclePriority,
     chargePointConnectedVehicleTimeCharging,
     chargePointConnectedVehicleChargeTemplate,
     chargePointConnectedVehicleBidiEnabled,

@@ -232,34 +232,6 @@ export default {
           </i-row>
           <!-- charge mode info -->
           <i-row class="_padding-top:1 _display:flex">
-            <i-column class="_padding-left:0 _padding-right:0 _flex-grow:1">
-              <i-badge
-                size="lg"
-                class="_width:100%"
-                :class="!changesLocked ? 'clickable' : ''"
-                :color="
-                  mqttStore.getChargePointConnectedVehicleChargeMode(chargePointId)?.class
-                "
-                @click="handleChargeModeClick(chargePointId)"
-              >
-                {{
-                  mqttStore.getChargePointConnectedVehicleChargeMode(chargePointId)?.label
-                }}
-                <font-awesome-icon
-                  fixed-width
-                  :icon="
-                    mqttStore.getChargePointConnectedVehiclePriority(chargePointId)
-                      ? ['fas', 'fa-star']
-                      : ['far', 'fa-star']
-                  "
-                  :class="
-                    mqttStore.getChargePointConnectedVehiclePriority(chargePointId)
-                      ? '_color:warning'
-                      : ''
-                  "
-                />
-              </i-badge>
-            </i-column>
             <i-column
               v-if="
                 mqttStore.getChargePointConnectedVehicleTimeChargingActive(chargePointId)

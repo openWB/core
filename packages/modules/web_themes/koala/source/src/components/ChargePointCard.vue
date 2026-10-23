@@ -54,10 +54,6 @@
         class="col"
         :charge-point-id="Number(props.chargePointId)"
       />
-      <ChargePointPriority
-        class="col-auto"
-        :charge-point-id="props.chargePointId"
-      />
     </q-card-section>
     <q-card-section>
       <ChargePointModeButtons :charge-point-id="props.chargePointId" />
@@ -129,7 +125,6 @@ import { useMqttStore } from 'src/stores/mqtt-store';
 import SliderDouble from './SliderDouble.vue';
 import ChargePointLock from './ChargePointLock.vue';
 import ChargePointStateIcon from './ChargePointStateIcon.vue';
-import ChargePointPriority from './ChargePointPriority.vue';
 import ChargePointModeButtons from './ChargePointModeButtons.vue';
 import BaseMessage from './BaseMessage.vue';
 import BaseFaultMessage from './BaseFaultMessage.vue';
