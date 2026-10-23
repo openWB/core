@@ -109,9 +109,10 @@ def deep_diff(old: Any, new: Any, path: str, float_tolerance: float, diffs: List
         diffs.append(f"{path}: OLD={old!r} NEW={new!r}")
 
 
-def fetch(base_url: str, query: Dict[str, Any], timeout: float) -> Tuple[Optional[int], Any, Optional[str]]:
+def fetch(base_url: str, query: Dict[str, Any], timeout: float,
+          verify: bool) -> Tuple[Optional[int], Any, Optional[str]]:
     try:
-        resp = requests.get(base_url, params=query, timeout=timeout)
+        resp = requests.get(base_url, params=query, timeout=timeout, verify=verify)
     except requests.RequestException as exc:
         return None, None, str(exc)
     try:
@@ -121,9 +122,9 @@ def fetch(base_url: str, query: Dict[str, Any], timeout: float) -> Tuple[Optiona
 
 
 def compare(old_base: str, new_base: str, query: Dict[str, Any], path: str,
-            float_tolerance: float, timeout: float) -> Tuple[Optional[bool], List[str]]:
-    old_status, old_body, old_err = fetch(old_base, query, timeout)
-    new_status, new_body, new_err = fetch(new_base, query, timeout)
+            float_tolerance: float, timeout: float, verify: bool) -> Tuple[Optional[bool], List[str]]:
+    old_status, old_body, old_err = fetch(old_base, query, timeout, verify)
+    new_status, new_body, new_err = fetch(new_base, query, timeout, verify)
 
     if old_err or new_err:
         return False, [f"request failed: OLD error={old_err!r} NEW error={new_err!r}"]
@@ -159,12 +160,14 @@ def build_common_params(args: argparse.Namespace) -> Dict[str, Any]:
 
 def check_read_param(param: str, args: argparse.Namespace, common: Dict[str, Any]) -> Tuple[Optional[bool], List[str]]:
     query = {**common, param: args.id}
-    return compare(args.old_base_url, args.new_base_url, query, param, args.float_tolerance, args.timeout)
+    return compare(args.old_base_url, args.new_base_url, query, param,
+                   args.float_tolerance, args.timeout, not args.insecure)
 
 
 def check_list_components(args: argparse.Namespace, common: Dict[str, Any]) -> Tuple[Optional[bool], List[str]]:
     query = {**common, 'list_components': 'true'}
-    return compare(args.old_base_url, args.new_base_url, query, 'list_components', args.float_tolerance, args.timeout)
+    return compare(args.old_base_url, args.new_base_url, query, 'list_components',
+                   args.float_tolerance, args.timeout, not args.insecure)
 
 
 def check_write_param(param: str, args: argparse.Namespace, common: Dict[str, Any]) -> Tuple[Optional[bool], List[str]]:
@@ -187,7 +190,8 @@ def check_write_param(param: str, args: argparse.Namespace, common: Dict[str, An
         if param == 'set_io_output':
             query['io_output'] = args.io_output_name
 
-    return compare(args.old_base_url, args.new_base_url, query, param, args.float_tolerance, args.timeout)
+    return compare(args.old_base_url, args.new_base_url, query, param,
+                   args.float_tolerance, args.timeout, not args.insecure)
 
 
 def parse_args(argv: Optional[List[str]] = None) -> argparse.Namespace:
@@ -233,12 +237,19 @@ def parse_args(argv: Optional[List[str]] = None) -> argparse.Namespace:
              "the two near-simultaneous requests (default: 0.0, exact match)")
     parser.add_argument('--timeout', type=float, default=10.0, help="per-request HTTP timeout in seconds")
     parser.add_argument('--max-diff-lines', type=int, default=20, help="diff lines printed per failing parameter")
+    parser.add_argument(
+        '-k', '--insecure', action='store_true',
+        help="don't verify TLS certificates (e.g. for a device's self-signed HTTPS cert)")
     return parser.parse_args(argv)
 
 
 def main(argv: Optional[List[str]] = None) -> int:
     args = parse_args(argv)
     common = build_common_params(args)
+
+    if args.insecure:
+        import urllib3
+        urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
     read_params = [p for p in READ_PARAMETER_ORDER if selected(p, args.only, args.skip)]
     write_params = [p for p in WRITE_PARAMETER_ORDER if selected(p, args.only, args.skip)]
