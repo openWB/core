@@ -1,32 +1,27 @@
 import { computed, onMounted, onUnmounted } from 'vue'
 import { useMqttStore } from '@/stores/mqtt-store'
+import type { CategoryData, CategoryKey, InstancePoint, InstanceSeries } from '@/types/chart'
 
 /** One flow's energy in/out of a daily_log component entry, already in kW (see process_log.py::convert_legacy_units). */
 interface FlowEntry {
   power_imported?: number
   power_exported?: number
-  soc?: number
   grid?: boolean
 }
 
 interface DailyLogEntry {
   timestamp: number
-  counter: Record<string, FlowEntry>
-  pv: Record<string, FlowEntry>
-  bat: Record<string, FlowEntry>
-  cp: Record<string, FlowEntry>
-  consumer: Record<string, FlowEntry>
+  counter?: Record<string, FlowEntry>
+  pv?: Record<string, FlowEntry>
+  bat?: Record<string, FlowEntry>
+  cp?: Record<string, FlowEntry>
+  consumer?: Record<string, FlowEntry>
   hc?: Record<string, FlowEntry>
-  prices?: { grid: number }
 }
 
-export interface ChartPoint {
-  timestamp: number
-  pv: number
-  grid: number
-  house: number
-  battery: number
-  consumer: number
+interface DailyLogResponse {
+  entries: DailyLogEntry[]
+  names?: Record<string, string>
 }
 
 function todayDateString(): string {
@@ -38,38 +33,88 @@ function todayDateString(): string {
   )
 }
 
-function toChartPoint(entry: DailyLogEntry): ChartPoint {
-  let gridImported = 0
-  let gridExported = 0
-  Object.values(entry.counter ?? {}).forEach((counter) => {
-    if (counter.grid) {
-      gridImported += counter.power_imported ?? 0
-      gridExported += counter.power_exported ?? 0
-    }
-  })
-  return {
-    timestamp: entry.timestamp * 1000,
-    pv: entry.pv?.all?.power_exported ?? 0,
-    grid: gridImported - gridExported,
-    house: entry.hc?.all?.power_imported ?? 0,
-    battery: (entry.bat?.all?.power_imported ?? 0) - (entry.bat?.all?.power_exported ?? 0),
-    consumer: entry.consumer?.all?.power_imported ?? 0,
-  }
+type SignMode = 'export' | 'import' | 'net'
+
+function flowValue(flow: FlowEntry | undefined, mode: SignMode): number {
+  if (!flow) return 0
+  if (mode === 'export') return flow.power_exported ?? 0
+  if (mode === 'import') return flow.power_imported ?? 0
+  return (flow.power_imported ?? 0) - (flow.power_exported ?? 0)
 }
 
-/** Fetches and parses today's daily_log into chart-ready points, kept live via the getDailyLog command. */
+/** Builds a category's combined ('all') series plus one series per other instance key in that group. */
+function buildCategory(
+  entries: DailyLogEntry[],
+  group: 'pv' | 'bat' | 'cp' | 'consumer',
+  mode: SignMode,
+  names: Record<string, string>,
+  fallbackLabel: string,
+): CategoryData {
+  const all: InstancePoint[] = []
+  const instancePoints = new Map<string, InstancePoint[]>()
+
+  entries.forEach((entry) => {
+    const timestamp = entry.timestamp * 1000
+    const groupData = entry[group] ?? {}
+    all.push({ timestamp, power: flowValue(groupData.all, mode) })
+    Object.keys(groupData).forEach((id) => {
+      if (id === 'all') return
+      if (!instancePoints.has(id)) instancePoints.set(id, [])
+      instancePoints.get(id)?.push({ timestamp, power: flowValue(groupData[id], mode) })
+    })
+  })
+
+  const individual: InstanceSeries[] = Array.from(instancePoints.entries()).map(([id, points]) => ({
+    id,
+    label: names[id] ?? `${fallbackLabel} ${id.replace(/\D/g, '')}`,
+    points,
+  }))
+  return { all, individual }
+}
+
+/** Grid/house have no meaningful per-instance breakdown - there's only one grid connection / one house total. */
+function buildCombinedOnly(points: InstancePoint[]): CategoryData {
+  return { all: points, individual: [] }
+}
+
+function gridPower(entry: DailyLogEntry): number {
+  let imported = 0
+  let exported = 0
+  Object.values(entry.counter ?? {}).forEach((counter) => {
+    if (counter.grid) {
+      imported += counter.power_imported ?? 0
+      exported += counter.power_exported ?? 0
+    }
+  })
+  return imported - exported
+}
+
+/** Fetches and parses today's daily_log into per-category chart series, kept live via the getDailyLog command. */
 export function useDailyLog() {
   const mqttStore = useMqttStore()
   const dateString = todayDateString()
   const topic = `openWB/log/daily/${dateString}`
 
-  const points = computed<ChartPoint[]>(() => {
-    const log = mqttStore.getValue<{ entries: DailyLogEntry[] } | undefined>(topic, undefined)
-    return log?.entries.map(toChartPoint).sort((a, b) => a.timestamp - b.timestamp) ?? []
+  const categories = computed<Record<CategoryKey, CategoryData>>(() => {
+    const log = mqttStore.getValue<DailyLogResponse | undefined>(topic, undefined)
+    const entries = log?.entries ?? []
+    const names = log?.names ?? {}
+    return {
+      pv: buildCategory(entries, 'pv', 'export', names, 'Wechselrichter'),
+      battery: buildCategory(entries, 'bat', 'net', names, 'Speicher'),
+      chargepoint: buildCategory(entries, 'cp', 'import', names, 'Ladepunkt'),
+      consumer: buildCategory(entries, 'consumer', 'import', names, 'Verbraucher'),
+      grid: buildCombinedOnly(entries.map((e) => ({ timestamp: e.timestamp * 1000, power: gridPower(e) }))),
+      house: buildCombinedOnly(
+        entries.map((e) => ({ timestamp: e.timestamp * 1000, power: flowValue(e.hc?.all, 'import') })),
+      ),
+    }
   })
+
+  const hasData = computed(() => categories.value.grid.all.length > 0)
 
   onMounted(() => mqttStore.fetchDailyLog())
   onUnmounted(() => mqttStore.unsubscribe(topic))
 
-  return { points }
+  return { categories, hasData }
 }

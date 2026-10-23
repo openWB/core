@@ -18,6 +18,22 @@ export interface LiveValues {
   'bat-all-soc'?: number
 }
 
+/**
+ * openWB/graph/alllivevaluesJson* chunks carry the same data_line shape as lastlivevaluesJson
+ * (see helpermodules/graph.py::pub_graph_data), including per-instance fields like 'cp2-power',
+ * 'counter3-power', 'consumer11-power' - no fixed instance count, hence the index signature.
+ */
+export interface RawLivePoint {
+  timestamp: number
+  grid?: number
+  'house-power'?: number
+  'charging-all'?: number
+  'consumer-all'?: number
+  'pv-all'?: number
+  'bat-all-power'?: number
+  [key: string]: number | undefined
+}
+
 export const useMqttStore = defineStore('mqtt', () => {
   let client: MqttClient | null = null
   const clientId = Math.random().toString(36).replace(/[^a-z]+/g, '').substring(0, 6)
@@ -92,6 +108,15 @@ export const useMqttStore = defineStore('mqtt', () => {
     }
   })
 
+  /** All currently-known topics whose name starts with the given prefix. */
+  function getWildcardValues(prefix: string): TopicMap {
+    const result: TopicMap = {}
+    for (const topic in topics.value) {
+      if (topic.startsWith(prefix)) result[topic] = topics.value[topic]
+    }
+    return result
+  }
+
   function doPublish(topic: string, payload: unknown, retain = true, qos: QoS = 0): void {
     client?.publish(topic, JSON.stringify(payload), { qos, retain })
   }
@@ -135,6 +160,36 @@ export const useMqttStore = defineStore('mqtt', () => {
     return ([...entries].reverse().find((entry) => entry.timestamp <= now) ?? entries[0]).power
   })
 
+  // --- live view (recent rolling window, finer-grained than the 5-min daily log) ---
+
+  // openWB/graph/alllivevaluesJson(1-16): chunked by runs/graphing.sh, each payload is newline-separated
+  // JSON lines (not one JSON document) rather than a single value, so getValue()'s auto-JSON-parsing
+  // leaves it as a raw string here - split/parse it the same way koala's mqtt-store does.
+  const liveSeriesRaw = computed<RawLivePoint[]>(() => {
+    const chunks = getWildcardValues('openWB/graph/alllivevaluesJson')
+    const points: RawLivePoint[] = []
+    Object.values(chunks).forEach((payload) => {
+      if (typeof payload !== 'string') return
+      payload.split('\n').forEach((line) => {
+        if (line.startsWith('{') && line.endsWith('}')) {
+          try {
+            points.push(JSON.parse(line) as RawLivePoint)
+          } catch {
+            // malformed/partial line, skip it
+          }
+        }
+      })
+    })
+    return points.sort((a, b) => a.timestamp - b.timestamp)
+  })
+
+  function subscribeLiveSeries(): void {
+    subscribe('openWB/graph/+')
+  }
+  function unsubscribeLiveSeries(): void {
+    unsubscribe('openWB/graph/+')
+  }
+
   // --- daily log (chart history) ---
 
   function fetchDailyLog(date: Date = new Date()): void {
@@ -169,5 +224,8 @@ export const useMqttStore = defineStore('mqtt', () => {
     forecastSeries,
     currentForecastPower,
     fetchDailyLog,
+    liveSeriesRaw,
+    subscribeLiveSeries,
+    unsubscribeLiveSeries,
   }
 })

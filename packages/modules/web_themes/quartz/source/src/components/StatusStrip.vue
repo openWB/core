@@ -37,7 +37,7 @@ const chips = computed(() => {
       color: 'battery',
     },
     { label: 'Hausverbrauch', value: formatKw(mqttStore.houseConsumption), icon: IconHouse, color: 'consumption' },
-    { label: 'Ladepunkte', value: formatKw(mqttStore.chargePointPower), icon: IconBolt, color: 'grid' },
+    { label: 'Ladepunkte', value: formatKw(mqttStore.chargePointPower), icon: IconBolt, color: 'chargepoint' },
     { label: 'Verbraucher', value: formatKw(mqttStore.consumerPower), icon: IconConsumer, color: 'consumer' },
   ]
   if (mqttStore.electricityPriceConfigured && mqttStore.currentElectricityPrice !== undefined) {
