@@ -50,6 +50,7 @@ def transaction_setup(monkeypatch):
             pending_availability=[False, False],
             unlock_stop=False,
             remote_stop=False,
+            rfid_stop=False,
         ))),
     )
     charge_point = SimpleNamespace(
@@ -65,7 +66,9 @@ def transaction_setup(monkeypatch):
     )
     connection = SimpleNamespace(cp=charge_point, boot_accepted=True)
     ensure_connected = AsyncMock(return_value=connection)
-    coordinator = TransactionCoordinator(ensure_connected=ensure_connected)
+    coordinator = TransactionCoordinator(
+        ensure_connected=ensure_connected,
+    )
     monkeypatch.setattr(ocpp_transaction_coordinator, "get_cp_from_chargebox_id", lambda _: openwb_cp)
     return coordinator, connection, openwb_cp
 
@@ -286,7 +289,9 @@ def test_unconfirmed_start_survives_reconnect_and_backend_restart(transaction_se
         await coordinator.on_connected("box-1", connection)
         assert await coordinator.start("box-1", 1, "TAG", 100) is False
 
-        restored = TransactionCoordinator(ensure_connected=coordinator._ensure_connected)
+        restored = TransactionCoordinator(
+            ensure_connected=coordinator._ensure_connected,
+        )
         assert restored.get_state("box-1") == TransactionState.START_UNCONFIRMED
         assert await restored.start("box-1", 1, "OTHER-TAG", 100) is False
         openwb_cp.data.get.plug_state = False
@@ -645,6 +650,134 @@ def test_rfid_stop_auth_failure_preserves_active_transaction(transaction_setup, 
     connection.cp._stop_transaction.assert_not_awaited()
     if failure in ("empty", "offline", "boot"):
         connection.cp._authorize.assert_not_awaited()
+
+
+@pytest.mark.parametrize("transport", ["missing", "closing", "closed"])
+def test_same_tag_rfid_stop_is_accepted_offline_and_replayed(transaction_setup, mock_pub, caplog, transport):
+    coordinator, connection, cp = transaction_setup
+
+    async def check():
+        assert await coordinator.start("box-1", 1, "TAG", 100)
+        connection.cp._authorize.reset_mock()
+        coordinator._ensure_connected.reset_mock()
+        connection.closing = transport == "closing"
+        connection.ws = SimpleNamespace(closed=transport == "closed")
+        coordinator._ensure_connected.return_value = None if transport == "missing" else connection
+
+        assert await coordinator.stop("box-1", 150, "TAG", "Local", authorize_stop=True) is True
+        coordinator._ensure_connected.assert_awaited_once_with("box-1")
+        connection.cp._authorize.assert_not_awaited()
+        connection.cp._stop_transaction.assert_not_awaited()
+        assert cp.data.get.ocpp.rfid_stop is True
+        assert cp.data.get.ocpp.tag_accepted is False
+        assert cp.data.get.ocpp.transaction_id is None
+        pending = cp.data.get.ocpp.pending_transactions[0]
+        assert pending["transaction_id"] == 42
+        assert pending["id_tag"] == "TAG"
+        assert pending["reason"] == "Local"
+        assert pending["imported"] == 150
+        assert coordinator.get_state("box-1") == TransactionState.STOPPING
+
+        connection.closing = connection.ws.closed = False
+        coordinator._ensure_connected.return_value = connection
+        await coordinator.on_connected("box-1", connection)
+        connection.cp._stop_transaction.assert_awaited_once_with(
+            meter_stop=150, transaction_id=42, reason="Local", id_tag="TAG", timestamp=pending["timestamp"],
+        )
+        assert cp.data.get.ocpp.pending_transactions == []
+        assert cp.data.get.ocpp.rfid_stop is True
+        assert coordinator.get_state("box-1") == TransactionState.IDLE
+
+    asyncio.run(check())
+    mock_pub.pub.assert_any_call("openWB/set/chargepoint/1/get/ocpp/rfid_stop", True)
+    assert "offline lokal angenommen" in caplog.text
+
+
+@pytest.mark.parametrize("connected_after_attempt", [False, True])
+def test_rfid_stop_waits_for_connection_attempt_before_offline_fallback(transaction_setup, connected_after_attempt):
+    coordinator, connection, cp = transaction_setup
+
+    async def check():
+        assert await coordinator.start("box-1", 1, "TAG", 100)
+        connection.cp._authorize.reset_mock()
+        entered = asyncio.Event()
+        release = asyncio.Event()
+
+        async def connect(chargebox_id):
+            entered.set()
+            await release.wait()
+            return connection if connected_after_attempt else None
+
+        coordinator._ensure_connected.side_effect = connect
+        stop = asyncio.create_task(coordinator.stop("box-1", 150, "TAG", "Local", authorize_stop=True))
+        await asyncio.wait_for(entered.wait(), 1)
+        assert not stop.done()
+        assert cp.data.get.ocpp.rfid_stop is False
+        assert cp.data.get.ocpp.pending_transactions == []
+        connection.cp._authorize.assert_not_awaited()
+        release.set()
+        assert await asyncio.wait_for(stop, 1) is True
+        assert cp.data.get.ocpp.rfid_stop is True
+        if connected_after_attempt:
+            connection.cp._authorize.assert_awaited_once_with(id_tag="TAG")
+            connection.cp._stop_transaction.assert_awaited_once()
+            assert cp.data.get.ocpp.pending_transactions == []
+        else:
+            connection.cp._authorize.assert_not_awaited()
+            connection.cp._stop_transaction.assert_not_awaited()
+            assert cp.data.get.ocpp.pending_transactions[0]["transaction_id"] == 42
+
+    asyncio.run(check())
+
+
+@pytest.mark.parametrize("disconnected", [False, True])
+@pytest.mark.parametrize("auth_result", ["timeout", "Blocked", "Invalid", "missing_response"])
+def test_same_tag_rfid_stop_only_falls_back_on_actual_disconnect(transaction_setup, disconnected, auth_result):
+    coordinator, connection, cp = transaction_setup
+
+    async def check():
+        assert await coordinator.start("box-1", 1, "TAG", 100)
+        connection.ws = SimpleNamespace(closed=False)
+
+        async def authorize(**kwargs):
+            connection.ws.closed = disconnected
+            if auth_result == "timeout":
+                raise asyncio.TimeoutError("no response")
+            if auth_result == "missing_response":
+                return None
+            return SimpleNamespace(id_tag_info={"status": auth_result})
+
+        connection.cp._authorize.reset_mock()
+        connection.cp._authorize.side_effect = authorize
+        expected = disconnected and auth_result in ("timeout", "missing_response")
+        assert await coordinator.stop("box-1", 150, "TAG", "Local", authorize_stop=True) is expected
+        connection.cp._authorize.assert_awaited_once_with(id_tag="TAG")
+        connection.cp._stop_transaction.assert_not_awaited()
+        assert cp.data.get.ocpp.rfid_stop is expected
+        assert bool(cp.data.get.ocpp.pending_transactions) is expected
+        if not expected:
+            assert coordinator.get_state("box-1") == TransactionState.ACTIVE
+
+    asyncio.run(check())
+
+
+def test_different_tag_cannot_use_offline_rfid_stop_fallback(transaction_setup, mock_pub):
+    coordinator, connection, cp = transaction_setup
+
+    async def check():
+        assert await coordinator.start("box-1", 1, "TAG", 100)
+        coordinator._ensure_connected.return_value = None
+        connection.cp._authorize.reset_mock()
+        mock_pub.pub.reset_mock()
+        assert await coordinator.stop("box-1", 150, "OTHER", "Local", authorize_stop=True) is False
+        assert coordinator.get_state("box-1") == TransactionState.ACTIVE
+        assert cp.data.get.ocpp.rfid_stop is False
+        assert cp.data.get.ocpp.pending_transactions == []
+        connection.cp._authorize.assert_not_awaited()
+        connection.cp._stop_transaction.assert_not_awaited()
+        mock_pub.pub.assert_not_called()
+
+    asyncio.run(check())
 
 
 @pytest.mark.parametrize("state", [
@@ -1388,7 +1521,9 @@ def identity_change_setup(monkeypatch):
     client.connection_manager = SimpleNamespace(
         connect=AsyncMock(return_value=connection), disconnect=AsyncMock(),
     )
-    client.transactions = TransactionCoordinator(ensure_connected=client.connection_manager.connect)
+    client.transactions = TransactionCoordinator(
+        ensure_connected=client.connection_manager.connect,
+    )
     return client, cp, connection
 
 
