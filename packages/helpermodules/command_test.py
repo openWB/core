@@ -167,3 +167,22 @@ def test_get_max_id_hierarchy_by_topics(mock_pub, monkeypatch):
 
     assert command_instance.max_id_hierarchy == 9
     mock_pub.pub.assert_any_call("openWB/set/command/max_id/hierarchy", 9)
+
+
+@pytest.mark.parametrize("consumer_type", ["internal_socket", "mqtt"])
+def test_remove_internal_socket_switches_off_before_removing_topics(consumer_type, mock_pub, monkeypatch):
+    order = []
+    consumer = SimpleNamespace(data=SimpleNamespace(module=SimpleNamespace(type=consumer_type)), module=Mock())
+    consumer.module.switch_off.side_effect = lambda: order.append("off")
+    branch = Mock()
+    branch.remove_topics.side_effect = lambda: order.append("remove")
+    monkeypatch.setattr(command, "ProcessBrokerBranch", Mock(return_value=branch))
+    monkeypatch.setattr(command, "pub_user_message", Mock())
+    monkeypatch.setattr(SubData, "consumer_data", {"consumer2": consumer})
+    monkeypatch.setattr(SubData, "counter_all_data", Mock())
+    monkeypatch.setattr(SubData, "system_data", {
+        "system": SimpleNamespace(data={"security": {"user_management_active": False}})})
+    instance = Command.__new__(Command)
+    instance.max_id_hierarchy = 2
+    instance.removeConsumer("test", {"data": {"consumer_id": 2}})
+    assert order == (["off", "remove"] if consumer_type == "internal_socket" else ["remove"])

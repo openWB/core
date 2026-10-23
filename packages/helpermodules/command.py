@@ -1251,6 +1251,9 @@ class Command:
                 payload, connection_id,
                 f'Die ID \'{payload["data"]["consumer_id"]}\' ist größer als die maximal vergebene '
                 f'ID \'{self.max_id_hierarchy}\'.', MessageType.ERROR)
+        consumer = SubData.consumer_data.get(f'consumer{payload["data"]["consumer_id"]}')
+        if consumer is not None and getattr(consumer.data.module, "type", None) == "internal_socket":
+            consumer.module.switch_off()
         ProcessBrokerBranch(f'consumer/{payload["data"]["consumer_id"]}/').remove_topics()
         SubData.counter_all_data.hierarchy_remove_item(payload["data"]["consumer_id"])
         Pub().pub("openWB/set/counter/get/hierarchy", SubData.counter_all_data.data.get.hierarchy)
