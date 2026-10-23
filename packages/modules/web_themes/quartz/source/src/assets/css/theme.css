@@ -4,9 +4,12 @@
   --border: #e3e5e9;
   --text: #1a1d24;
   --muted: #6b7280;
+  /* entity color convention: chargepoints blue, counters/grid red, inverters/pv green, batteries yellow, cars turquoise */
   --pv: #1f9d55;
-  --grid: #2563eb;
-  --battery: #b45309;
+  --grid: #dc2626;
+  --chargepoint: #2563eb;
+  --battery: #eab308;
+  --car: #0d9488;
   --consumption: #475569;
   --consumer: #7c3aed;
   --accent: #2563eb;
@@ -19,8 +22,10 @@
   --text: #e7e9ee;
   --muted: #9aa0ac;
   --pv: #3ec776;
-  --grid: #5b9bff;
-  --battery: #e0a44d;
+  --grid: #f87171;
+  --chargepoint: #5b9bff;
+  --battery: #facc15;
+  --car: #2dd4bf;
   --consumption: #a7b0bf;
   --consumer: #a78bfa;
 }
