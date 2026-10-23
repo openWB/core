@@ -767,7 +767,6 @@ class TransactionCoordinator:
             action == "stop"
             and isinstance(transaction_id, int)
             and not isinstance(transaction_id, bool)
-            and transaction_id >= 0
             and isinstance(meter_stop, int)
             and not isinstance(meter_stop, bool)
             and meter_stop >= 0
