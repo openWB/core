@@ -431,10 +431,13 @@ class OcppChargePoint(cp):
                 status=ConfigurationStatus.rejected
             )
 
+        # 0 deaktiviert periodische MeterValues; negative Intervalle sind ungültig.
+        if key == "MeterValueSampleInterval" and parsed_value < 0:
+            return call_result.ChangeConfiguration(status=ConfigurationStatus.rejected)
+
         # diese Parameter unterstützen nur Werte größer 0
         if key in (
             "HeartbeatInterval",
-            "MeterValueSampleInterval",
             "TransactionMessageAttempts",
             "TransactionMessageRetryInterval",
         ):
