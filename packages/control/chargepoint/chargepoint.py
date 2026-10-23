@@ -1126,19 +1126,22 @@ class Chargepoint(ChargepointRfidMixin, Load):
         return self.data.set.charging_ev_data.ev_template.data.prevent_charge_stop is False
 
     def get_ocpp_status(self):
-        # Hier dann get_OCPP_Status
-        #   -> mapped den "openWB-Status" auf nen OCPP_Status
-        if not all(self.data.get.ocpp.availability):
-            return ChargePointStatus.unavailable
-
-        if self.data.get.ocpp.remote_stop or self.data.get.ocpp.reset or self.data.get.ocpp.unlock_stop:
-            return ChargePointStatus.finishing
-
+        # Fehler haben Vorrang vor Nichtverfügbarkeit und Stop-Sperren.
         if self.data.get.fault_state:
             return ChargePointStatus.faulted
 
+        if not all(self.data.get.ocpp.availability):
+            return ChargePointStatus.unavailable
+
         if not self.data.get.plug_state:
             return ChargePointStatus.available
+
+        # Ein angeforderter Stop allein beendet noch keine laufende Ladung.
+        # Finishing erst nach lokalem Transaktionsende, solange noch angesteckt.
+        if (self.data.get.ocpp.transaction_id is None and not self.data.get.charge_state and
+                (self.data.get.ocpp.remote_stop or self.data.get.ocpp.reset or
+                 self.data.get.ocpp.unlock_stop or self.data.get.ocpp.rfid_stop)):
+            return ChargePointStatus.finishing
 
         if self.data.get.ocpp.transaction_id is None:
             return ChargePointStatus.preparing
@@ -1155,11 +1158,11 @@ class Chargepoint(ChargepointRfidMixin, Load):
         # Connector 0 kann nur die folgenden 3 Status annehmen
         # Available, Unavailable and Faulted.
 
-        if not self.data.get.ocpp.availability[0]:
-            return ChargePointStatus.unavailable
-
         if self.data.get.fault_state:
             return ChargePointStatus.faulted
+
+        if not self.data.get.ocpp.availability[0]:
+            return ChargePointStatus.unavailable
 
         return ChargePointStatus.available
 
