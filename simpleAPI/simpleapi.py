@@ -14,7 +14,7 @@ import time
 import sys
 import ssl
 import math
-from typing import Dict, Any, Optional, Set, Tuple
+from typing import Callable, Dict, Any, Optional, Set, Tuple
 from pathlib import Path
 import paho.mqtt.client as mqtt
 import re
@@ -59,10 +59,6 @@ class SimpleMQTTDaemon:
         # transformed/simplified simpleAPI output topic tree, not the
         # original openWB topics the HTTP read handlers need to mirror.
         self.raw_value_cache: Dict[str, Any] = {}
-
-        # Raw JSON text of openWB/graph/lastlivevaluesJson, served 1:1 by
-        # get_lastlivevaluesjson
-        self.last_live_values_json: Optional[str] = None
 
         # Track per-ID component values for efficient total topic aggregation
         self.total_metrics = {
@@ -139,7 +135,6 @@ class SimpleMQTTDaemon:
             client.subscribe("openWB/counter/#", qos=0)
             client.subscribe("openWB/consumer/#", qos=0)
             client.subscribe("openWB/io/#", qos=0)
-            client.subscribe("openWB/graph/lastlivevaluesJson", qos=0)
 
             # Subscribe to simpleAPI set topics for write operations
             client.subscribe("openWB/simpleAPI/set/#", qos=0)
@@ -197,10 +192,6 @@ class SimpleMQTTDaemon:
             if '/simpleAPI/' in topic:
                 return
 
-            if topic == 'openWB/graph/lastlivevaluesJson':
-                self.last_live_values_json = payload
-                return
-
             # Cache charge_template configurations for later use
             if '/set/charge_template' in topic:
                 self._cache_charge_template(topic, payload)
@@ -215,27 +206,16 @@ class SimpleMQTTDaemon:
             self._update_total_topics(topic, parsed_payload)
 
             # Transform and publish the message
-            self._transform_and_publish(topic, payload, parsed_payload)
+            self._transform_and_publish(topic, parsed_payload)
 
         except Exception as e:
             log.error(f"Error processing message {msg.topic}: {e}")
 
-    def _transform_and_publish(self, original_topic: str, payload: str, parsed_payload: Any = None):
+    def _transform_and_publish(self, original_topic: str, parsed_payload: Any):
         """Transform original topic to simpleAPI format and publish if value changed."""
         try:
-            log.debug(f"DEBUG: Processing original topic: {original_topic}")
-
-            # Parse the payload
-            if parsed_payload is None:
-                parsed_payload = self._parse_payload(payload)
-
             # Generate transformed topics
             transformed_topics = self._generate_simple_topics(original_topic, parsed_payload)
-
-            log.debug(
-                f"DEBUG: Generated {len(transformed_topics)} transformed topics: "
-                f"{list(transformed_topics.keys())}"
-            )
 
             # Publish each transformed topic if value changed
             for topic, value in transformed_topics.items():
@@ -349,8 +329,10 @@ class SimpleMQTTDaemon:
             if simple_base is None:  # Topic should be filtered out
                 return result
 
-        # Handle different value types
-        self._expand_value_to_topics(simple_base, parsed_value, result)
+        # Handle different value types - simple_base was already run through the
+        # chargepoint transform above, so the top-level (non-recursive) expansion
+        # doesn't need to redo it.
+        self._expand_value_to_topics(simple_base, parsed_value, result, already_transformed=True)
 
         # Generate simplified topics for lowest IDs
         simplified_topics = self._generate_simplified_topics(simple_base, parsed_value)
@@ -361,25 +343,17 @@ class SimpleMQTTDaemon:
     def _transform_chargepoint_topic(self, simple_base: str) -> Optional[str]:
         """Transform chargepoint topics according to simplified structure."""
 
-        log.debug(f"DEBUG: _transform_chargepoint_topic input: {simple_base}")
+        log.debug(f"_transform_chargepoint_topic input: {simple_base}")
 
         # FIRST: Handle connected_vehicle transformations (both /get/ and direct)
         # This must happen BEFORE any other filtering
         if '/connected_vehicle/config/chargemode' in simple_base:
-            log.debug(f"DEBUG: Found chargemode pattern, transforming: {simple_base}")
-            original = simple_base
             simple_base = re.sub(r'/get/connected_vehicle/config/chargemode$', '/chargemode', simple_base)
-            log.debug(f"DEBUG: After first regex: {simple_base}")
             simple_base = re.sub(r'/connected_vehicle/config/chargemode$', '/chargemode', simple_base)
-            log.debug(f"DEBUG: After second regex: {simple_base}")
-            if original != simple_base:
-                log.debug(f"DEBUG: Charge mode transformation successful: {original} -> {simple_base}")
         elif '/connected_vehicle/info/name' in simple_base:
-            log.debug(f"DEBUG: Found vehicle name pattern, transforming: {simple_base}")
             simple_base = re.sub(r'/get/connected_vehicle/info/name$', '/vehicle_name', simple_base)
             simple_base = re.sub(r'/connected_vehicle/info/name$', '/vehicle_name', simple_base)
         elif '/connected_vehicle/soc' in simple_base:
-            log.debug(f"DEBUG: Found connected_vehicle soc pattern, transforming: {simple_base}")
             simple_base = re.sub(r'/get/connected_vehicle/soc$', '/soc', simple_base)
             simple_base = re.sub(r'/connected_vehicle/soc$', '/soc', simple_base)
 
@@ -439,10 +413,10 @@ class SimpleMQTTDaemon:
             # but exclude the ones we already transformed
             if not re.search(r'/(chargemode|vehicle_name|soc)$', simple_base):
                 if re.search(r'/connected_vehicle/', simple_base):
-                    log.debug(f"DEBUG: Filtering out connected_vehicle topic: {simple_base}")
+                    log.debug(f"Filtering out connected_vehicle topic: {simple_base}")
                     return None
 
-        log.debug(f"DEBUG: _transform_chargepoint_topic output: {simple_base}")
+        log.debug(f"_transform_chargepoint_topic output: {simple_base}")
         return simple_base
 
     def _track_component_ids(self, topic: str):
@@ -464,8 +438,15 @@ class SimpleMQTTDaemon:
         else:
             self.lowest_ids[component_type] = min(self.lowest_ids[component_type], component_id)
 
-    def _expand_value_to_topics(self, base_topic: str, value: Any, result: Dict[str, Any]):
-        """Expand complex values (JSON, tuples) into individual topics."""
+    def _expand_value_to_topics(
+            self, base_topic: str, value: Any, result: Dict[str, Any], already_transformed: bool = False):
+        """Expand complex values (JSON, tuples) into individual topics.
+
+        already_transformed is True only for the initial (non-recursive) call,
+        whose base_topic has already been run through _transform_chargepoint_topic
+        once by the caller - recursive calls append a new key/index suffix the
+        caller never saw, so those topics still need their own transform.
+        """
         if isinstance(value, dict):
             # Handle JSON objects
             for key, val in value.items():
@@ -479,7 +460,7 @@ class SimpleMQTTDaemon:
         else:
             # Raw value - apply chargepoint transformations to final topics
             final_topic = base_topic
-            if '/chargepoint/' in base_topic:
+            if '/chargepoint/' in base_topic and not already_transformed:
                 transformed = self._transform_chargepoint_topic(base_topic)
                 if transformed is not None:
                     final_topic = transformed
@@ -506,12 +487,14 @@ class SimpleMQTTDaemon:
                 simplified_base = f"openWB/simpleAPI/{component_type}/{remaining_path}"
 
                 # Apply chargepoint transformations to simplified topics as well
+                already_transformed = False
                 if component_type == 'chargepoint':
                     simplified_base = self._transform_chargepoint_topic(simplified_base)
                     if simplified_base is None:
                         return result
+                    already_transformed = True
 
-                self._expand_value_to_topics(simplified_base, parsed_value, result)
+                self._expand_value_to_topics(simplified_base, parsed_value, result, already_transformed)
 
         return result
 
@@ -554,110 +537,72 @@ class SimpleMQTTDaemon:
         except Exception as e:
             log.error(f"Error caching charge_template for {topic}: {e}")
 
+    # (path from charge_template root, key in that container, output field name,
+    # optional value transform) - the set of charge_template values that get
+    # mirrored out as simpleAPI read topics whenever a charge_template is cached.
+    _CHARGE_TEMPLATE_READ_FIELDS: Tuple[Tuple[Tuple[str, ...], str, str, Optional[Callable[[Any], Any]]], ...] = (
+        (('chargemode', 'pv_charging'), 'min_current', 'minimal_permanent_current', None),
+        (('chargemode', 'pv_charging'), 'min_soc', 'minimal_pv_soc', None),
+        (('chargemode', 'eco_charging'), 'max_price', 'max_price_eco', None),
+        (('chargemode', 'instant_charging', 'limit'), 'selected', 'instant_charging_limit', None),
+        # amount is stored internally in Wh - published in kWh
+        (('chargemode', 'instant_charging', 'limit'), 'amount', 'instant_charging_limit_amount', lambda v: v / 1000),
+        (('chargemode', 'instant_charging', 'limit'), 'soc', 'instant_charging_limit_soc', None),
+        (('chargemode', 'pv_charging', 'limit'), 'selected', 'pv_charging_limit', None),
+        (('chargemode', 'pv_charging', 'limit'), 'amount', 'pv_charging_limit_amount', lambda v: v / 1000),
+        (('chargemode', 'pv_charging', 'limit'), 'soc', 'pv_charging_limit_soc', None),
+    )
+
+    def _is_lowest_chargepoint(self, chargepoint_id: str) -> bool:
+        return 'chargepoint' in self.lowest_ids and self.lowest_ids['chargepoint'] == int(chargepoint_id)
+
+    def _publish_pair(self, chargepoint_id: str, field: str, value: Any):
+        """Publish a chargepoint-scoped simpleAPI topic, and also under the
+        ID-less alias if this chargepoint happens to be the lowest known one."""
+        self._publish_if_changed(f"openWB/simpleAPI/chargepoint/{chargepoint_id}/{field}", value)
+        if self._is_lowest_chargepoint(chargepoint_id):
+            self._publish_if_changed(f"openWB/simpleAPI/chargepoint/{field}", value)
+
     def _publish_charge_template_read_topics(self, chargepoint_id: str, charge_template: Dict[str, Any]):
         """Publish readable topics for charge_template values."""
         try:
-            chargemode = charge_template.get('chargemode', {})
-
-            # Extract min_current from pv_charging
-            pv_charging = chargemode.get('pv_charging', {})
-            if 'min_current' in pv_charging:
-                topic = f"openWB/simpleAPI/chargepoint/{chargepoint_id}/minimal_permanent_current"
-                self._publish_if_changed(topic, pv_charging['min_current'])
-
-                # Also publish for lowest ID if this is it
-                if 'chargepoint' in self.lowest_ids and self.lowest_ids['chargepoint'] == int(chargepoint_id):
-                    simple_topic = "openWB/simpleAPI/chargepoint/minimal_permanent_current"
-                    self._publish_if_changed(simple_topic, pv_charging['min_current'])
-
-            # Extract min_soc from pv_charging (minimal_pv_soc)
-            if 'min_soc' in pv_charging:
-                topic = f"openWB/simpleAPI/chargepoint/{chargepoint_id}/minimal_pv_soc"
-                self._publish_if_changed(topic, pv_charging['min_soc'])
-
-                # Also publish for lowest ID if this is it
-                if 'chargepoint' in self.lowest_ids and self.lowest_ids['chargepoint'] == int(chargepoint_id):
-                    simple_topic = "openWB/simpleAPI/chargepoint/minimal_pv_soc"
-                    self._publish_if_changed(simple_topic, pv_charging['min_soc'])
-
-            # Extract max_price from eco_charging
-            eco_charging = chargemode.get('eco_charging', {})
-            if 'max_price' in eco_charging:
-                topic = f"openWB/simpleAPI/chargepoint/{chargepoint_id}/max_price_eco"
-                self._publish_if_changed(topic, eco_charging['max_price'])
-
-                # Also publish for lowest ID if this is it
-                if 'chargepoint' in self.lowest_ids and self.lowest_ids['chargepoint'] == int(chargepoint_id):
-                    simple_topic = "openWB/simpleAPI/chargepoint/max_price_eco"
-                    self._publish_if_changed(simple_topic, eco_charging['max_price'])
-
-            # Extract instant_charging_limit values
-            instant_charging = chargemode.get('instant_charging', {})
-            limit = instant_charging.get('limit', {})
-
-            if 'selected' in limit:
-                topic = f"openWB/simpleAPI/chargepoint/{chargepoint_id}/instant_charging_limit"
-                self._publish_if_changed(topic, limit['selected'])
-
-                # Also publish for lowest ID if this is it
-                if 'chargepoint' in self.lowest_ids and self.lowest_ids['chargepoint'] == int(chargepoint_id):
-                    simple_topic = "openWB/simpleAPI/chargepoint/instant_charging_limit"
-                    self._publish_if_changed(simple_topic, limit['selected'])
-
-            if 'amount' in limit:
-                # Convert from internal value (Wh) to kWh for display
-                amount_kwh = limit['amount'] / 1000
-                topic = f"openWB/simpleAPI/chargepoint/{chargepoint_id}/instant_charging_limit_amount"
-                self._publish_if_changed(topic, amount_kwh)
-
-                # Also publish for lowest ID if this is it
-                if 'chargepoint' in self.lowest_ids and self.lowest_ids['chargepoint'] == int(chargepoint_id):
-                    simple_topic = "openWB/simpleAPI/chargepoint/instant_charging_limit_amount"
-                    self._publish_if_changed(simple_topic, amount_kwh)
-
-            if 'soc' in limit:
-                topic = f"openWB/simpleAPI/chargepoint/{chargepoint_id}/instant_charging_limit_soc"
-                self._publish_if_changed(topic, limit['soc'])
-
-                # Also publish for lowest ID if this is it
-                if 'chargepoint' in self.lowest_ids and self.lowest_ids['chargepoint'] == int(chargepoint_id):
-                    simple_topic = "openWB/simpleAPI/chargepoint/instant_charging_limit_soc"
-                    self._publish_if_changed(simple_topic, limit['soc'])
-
-            # Extract pv_charging_limit values
-            pv_limit = pv_charging.get('limit', {})
-
-            if 'selected' in pv_limit:
-                topic = f"openWB/simpleAPI/chargepoint/{chargepoint_id}/pv_charging_limit"
-                self._publish_if_changed(topic, pv_limit['selected'])
-
-                # Also publish for lowest ID if this is it
-                if 'chargepoint' in self.lowest_ids and self.lowest_ids['chargepoint'] == int(chargepoint_id):
-                    simple_topic = "openWB/simpleAPI/chargepoint/pv_charging_limit"
-                    self._publish_if_changed(simple_topic, pv_limit['selected'])
-
-            if 'amount' in pv_limit:
-                # Convert from internal value (Wh) to kWh for display
-                amount_kwh = pv_limit['amount'] / 1000
-                topic = f"openWB/simpleAPI/chargepoint/{chargepoint_id}/pv_charging_limit_amount"
-                self._publish_if_changed(topic, amount_kwh)
-
-                # Also publish for lowest ID if this is it
-                if 'chargepoint' in self.lowest_ids and self.lowest_ids['chargepoint'] == int(chargepoint_id):
-                    simple_topic = "openWB/simpleAPI/chargepoint/pv_charging_limit_amount"
-                    self._publish_if_changed(simple_topic, amount_kwh)
-
-            if 'soc' in pv_limit:
-                topic = f"openWB/simpleAPI/chargepoint/{chargepoint_id}/pv_charging_limit_soc"
-                self._publish_if_changed(topic, pv_limit['soc'])
-
-                # Also publish for lowest ID if this is it
-                if 'chargepoint' in self.lowest_ids and self.lowest_ids['chargepoint'] == int(chargepoint_id):
-                    simple_topic = "openWB/simpleAPI/chargepoint/pv_charging_limit_soc"
-                    self._publish_if_changed(simple_topic, pv_limit['soc'])
+            for path, key, field, transform in self._CHARGE_TEMPLATE_READ_FIELDS:
+                container = charge_template
+                for step in path:
+                    container = container.get(step, {})
+                if key in container:
+                    value = container[key]
+                    if transform is not None:
+                        value = transform(value)
+                    self._publish_pair(chargepoint_id, field, value)
 
         except Exception as e:
             log.error(f"Error publishing charge_template read topics: {e}")
+
+    # Ordered (topic substring, handler method name) pairs for instant/pv charging
+    # limit set topics - checked in this order so the more specific suffixes
+    # (_soc, _amount) are matched before the bare limit type, which is itself a
+    # substring of both.
+    _LIMIT_OPERATIONS: Tuple[Tuple[str, str], ...] = (
+        ('instant_charging_limit_soc', '_handle_instant_charging_limit_soc_operation'),
+        ('instant_charging_limit_amount', '_handle_instant_charging_limit_amount_operation'),
+        ('instant_charging_limit', '_handle_instant_charging_limit_operation'),
+        ('pv_charging_limit_soc', '_handle_pv_charging_limit_soc_operation'),
+        ('pv_charging_limit_amount', '_handle_pv_charging_limit_amount_operation'),
+        ('pv_charging_limit', '_handle_pv_charging_limit_operation'),
+    )
+
+    def _parse_limit_topic_target(self, topic_remainder: str) -> Tuple[Optional[str], str]:
+        """Split a set-topic remainder into (explicit chargepoint ID or None, parameter name).
+
+        A limit topic arrives either as a bare parameter name (falls back to the
+        lowest known chargepoint ID) or as chargepoint/<digit>/<parameter> (explicit
+        ID) - mirrors the explicit-ID check in _handle_chargepoint_operation.
+        """
+        parts = topic_remainder.split('/')
+        if len(parts) >= 3 and parts[0] == 'chargepoint' and parts[1].isdigit():
+            return parts[1], parts[2]
+        return None, topic_remainder
 
     def _handle_write_operation(self, topic: str, payload: str):
         """Handle write operations from simpleAPI set topics."""
@@ -672,39 +617,15 @@ class SimpleMQTTDaemon:
             # Parse the set topic to extract operation details
             topic_remainder = topic.replace('openWB/simpleAPI/set/', '')
 
-            # Check for instant_charging_limit operations first (can be with or without chargepoint ID)
-            if 'instant_charging_limit_soc' in topic_remainder:
-                success, _ = self._handle_instant_charging_limit_soc_operation(payload)
-                if success:
-                    self._clear_set_topic(topic)
-                return
-            elif 'instant_charging_limit_amount' in topic_remainder:
-                success, _ = self._handle_instant_charging_limit_amount_operation(payload)
-                if success:
-                    self._clear_set_topic(topic)
-                return
-            elif 'instant_charging_limit' in topic_remainder:
-                success, _ = self._handle_instant_charging_limit_operation(payload)
-                if success:
-                    self._clear_set_topic(topic)
-                return
-
-            # Check for pv_charging_limit operations first (can be with or without chargepoint ID)
-            if 'pv_charging_limit_soc' in topic_remainder:
-                success, _ = self._handle_pv_charging_limit_soc_operation(payload)
-                if success:
-                    self._clear_set_topic(topic)
-                return
-            elif 'pv_charging_limit_amount' in topic_remainder:
-                success, _ = self._handle_pv_charging_limit_amount_operation(payload)
-                if success:
-                    self._clear_set_topic(topic)
-                return
-            elif 'pv_charging_limit' in topic_remainder:
-                success, _ = self._handle_pv_charging_limit_operation(payload)
-                if success:
-                    self._clear_set_topic(topic)
-                return
+            # Instant/pv charging limit operations (can be with or without an explicit chargepoint ID)
+            chargepoint_id, limit_param = self._parse_limit_topic_target(topic_remainder)
+            for substring, handler_name in self._LIMIT_OPERATIONS:
+                if substring in limit_param:
+                    handler = getattr(self, handler_name)
+                    success, _ = handler(payload, chargepoint_id)
+                    if success:
+                        self._clear_set_topic(topic)
+                    return
 
             topic_parts = topic_remainder.split('/')
 
@@ -787,6 +708,24 @@ class SimpleMQTTDaemon:
         log.warning(f"No cached charge_template for chargepoint {chargepoint_id}")
         return None
 
+    def _set_charge_template_field(
+            self, chargepoint_id: str, keypath: Tuple[str, ...], value: Any) -> Optional[Dict[str, Any]]:
+        """Fetch chargepoint_id's cached charge_template, set the nested field at
+        keypath, publish it back to openWB, and return the mutated template - or
+        None if no cached template is available (caller supplies the failure message)."""
+        charge_template = self._get_charge_template(chargepoint_id)
+        if charge_template is None:
+            return None
+
+        container = charge_template
+        for step in keypath[:-1]:
+            container = container[step]
+        container[keypath[-1]] = value
+
+        target_topic = f"openWB/set/chargepoint/{chargepoint_id}/set/charge_template"
+        self._publish_json(target_topic, charge_template)
+        return charge_template
+
     def _set_chargemode(self, chargepoint_id: str, mode: str) -> Tuple[bool, str]:
         """Set chargemode for a chargepoint."""
         # Mapping from simple values to internal values
@@ -809,19 +748,11 @@ class SimpleMQTTDaemon:
             return False, message
 
         internal_mode = mode_mapping[mode]
-        charge_template = self._get_charge_template(chargepoint_id)
-
-        if charge_template is None:
+        if self._set_charge_template_field(chargepoint_id, ('chargemode', 'selected'), internal_mode) is None:
             message = f"No charge_template available for chargepoint {chargepoint_id}"
             log.error(message)
             return False, message
 
-        # Modify the chargemode.selected value
-        charge_template['chargemode']['selected'] = internal_mode
-
-        # Publish the modified template
-        target_topic = f"openWB/set/chargepoint/{chargepoint_id}/set/charge_template"
-        self._publish_json(target_topic, charge_template)
         log.info(f"Set chargemode to {mode} ({internal_mode}) for chargepoint {chargepoint_id}")
         return True, f"Chargemode set to {mode} ({internal_mode})"
 
@@ -834,16 +765,12 @@ class SimpleMQTTDaemon:
             log.error(message)
             return False, message
 
-        charge_template = self._get_charge_template(chargepoint_id)
-        if charge_template is None:
+        if self._set_charge_template_field(
+                chargepoint_id, ('chargemode', 'instant_charging', 'current'), current_value) is None:
             message = f"No charge_template available for chargepoint {chargepoint_id}"
             log.error(message)
             return False, message
 
-        charge_template['chargemode']['instant_charging']['current'] = current_value
-
-        target_topic = f"openWB/set/chargepoint/{chargepoint_id}/set/charge_template"
-        self._publish_json(target_topic, charge_template)
         log.info(f"Set charge current to {current_value}A for chargepoint {chargepoint_id}")
         return True, f"Chargecurrent set to {current_value}A for chargepoint {chargepoint_id}"
 
@@ -856,16 +783,12 @@ class SimpleMQTTDaemon:
             log.error(message)
             return False, message
 
-        charge_template = self._get_charge_template(chargepoint_id)
-        if charge_template is None:
+        if self._set_charge_template_field(
+                chargepoint_id, ('chargemode', 'pv_charging', 'min_soc'), soc_value) is None:
             message = f"No charge_template available for chargepoint {chargepoint_id}"
             log.error(message)
             return False, message
 
-        charge_template['chargemode']['pv_charging']['min_soc'] = soc_value
-
-        target_topic = f"openWB/set/chargepoint/{chargepoint_id}/set/charge_template"
-        self._publish_json(target_topic, charge_template)
         log.info(f"Set minimal PV SoC to {soc_value}% for chargepoint {chargepoint_id}")
         return True, f"Minimal PV SoC set to {soc_value}% for chargepoint {chargepoint_id}"
 
@@ -878,16 +801,12 @@ class SimpleMQTTDaemon:
             log.error(message)
             return False, message
 
-        charge_template = self._get_charge_template(chargepoint_id)
-        if charge_template is None:
+        if self._set_charge_template_field(
+                chargepoint_id, ('chargemode', 'pv_charging', 'min_current'), current_value) is None:
             message = f"No charge_template available for chargepoint {chargepoint_id}"
             log.error(message)
             return False, message
 
-        charge_template['chargemode']['pv_charging']['min_current'] = current_value
-
-        target_topic = f"openWB/set/chargepoint/{chargepoint_id}/set/charge_template"
-        self._publish_json(target_topic, charge_template)
         log.info(f"Set minimal permanent current to {current_value}A for chargepoint {chargepoint_id}")
         return True, f"Minimal permanent current set to {current_value}A for chargepoint {chargepoint_id}"
 
@@ -900,16 +819,12 @@ class SimpleMQTTDaemon:
             log.error(message)
             return False, message
 
-        charge_template = self._get_charge_template(chargepoint_id)
-        if charge_template is None:
+        if self._set_charge_template_field(
+                chargepoint_id, ('chargemode', 'eco_charging', 'max_price'), price_value) is None:
             message = f"No charge_template available for chargepoint {chargepoint_id}"
             log.error(message)
             return False, message
 
-        charge_template['chargemode']['eco_charging']['max_price'] = price_value
-
-        target_topic = f"openWB/set/chargepoint/{chargepoint_id}/set/charge_template"
-        self._publish_json(target_topic, charge_template)
         log.info(f"Set max ECO price to {price_value} for chargepoint {chargepoint_id}")
         return True, f"Max price eco set to {price_value} for chargepoint {chargepoint_id}"
 
@@ -975,211 +890,132 @@ class SimpleMQTTDaemon:
             return str(self.lowest_ids['chargepoint'])
         return None
 
-    def _handle_instant_charging_limit_operation(
-            self, payload: str, chargepoint_id: Optional[str] = None) -> Tuple[bool, str]:
-        """Handle instant charging limit type operation."""
+    def _set_charging_limit_type(
+            self, mode_key: str, label: str, payload: str,
+            chargepoint_id: Optional[str] = None) -> Tuple[bool, str]:
+        """Shared body for instant_charging_limit / pv_charging_limit (the
+        chargemode.<mode_key>.limit.selected field)."""
         valid_limits = ['none', 'soc', 'amount']
 
         if payload not in valid_limits:
-            message = f"Invalid instant_charging_limit: {payload}. Valid values: {valid_limits}"
+            message = f"Invalid {mode_key}_limit: {payload}. Valid values: {valid_limits}"
             log.error(message)
             return False, message
 
         chargepoint_id = self._resolve_chargepoint_id(chargepoint_id)
         if chargepoint_id is None:
-            message = "No chargepoint ID found for instant_charging_limit operation"
+            message = f"No chargepoint ID found for {mode_key}_limit operation"
             log.error(message)
             return False, message
 
-        charge_template = self._get_charge_template(chargepoint_id)
-        if charge_template is None:
+        if self._set_charge_template_field(
+                chargepoint_id, ('chargemode', mode_key, 'limit', 'selected'), payload) is None:
             message = f"No charge_template available for chargepoint {chargepoint_id}"
             log.error(message)
             return False, message
 
-        charge_template['chargemode']['instant_charging']['limit']['selected'] = payload
+        log.info(f"Set {mode_key}_limit to {payload} for chargepoint {chargepoint_id}")
+        return True, f"{label} limit set to {payload} for chargepoint {chargepoint_id}"
 
-        target_topic = f"openWB/set/chargepoint/{chargepoint_id}/set/charge_template"
-        self._publish_json(target_topic, charge_template)
-        log.info(f"Set instant_charging_limit to {payload} for chargepoint {chargepoint_id}")
-        return True, f"Instant charging limit set to {payload} for chargepoint {chargepoint_id}"
+    def _set_charging_limit_soc(
+            self, mode_key: str, label: str, payload: str,
+            chargepoint_id: Optional[str] = None) -> Tuple[bool, str]:
+        """Shared body for instant_charging_limit_soc / pv_charging_limit_soc
+        (the chargemode.<mode_key>.limit.soc field)."""
+        try:
+            soc_value = int(payload)
+            if soc_value < 0 or soc_value > 100:
+                message = f"Invalid SoC value: {soc_value}. Must be between 0 and 100"
+                log.error(message)
+                return False, message
+        except ValueError:
+            message = f"Invalid SoC value: {payload}. Must be an integer"
+            log.error(message)
+            return False, message
+
+        chargepoint_id = self._resolve_chargepoint_id(chargepoint_id)
+        if chargepoint_id is None:
+            message = f"No chargepoint ID found for {mode_key}_limit_soc operation"
+            log.error(message)
+            return False, message
+
+        if self._set_charge_template_field(
+                chargepoint_id, ('chargemode', mode_key, 'limit', 'soc'), soc_value) is None:
+            message = f"No charge_template available for chargepoint {chargepoint_id}"
+            log.error(message)
+            return False, message
+
+        log.info(f"Set {mode_key}_limit_soc to {soc_value}% for chargepoint {chargepoint_id}")
+        return True, f"{label} SoC set to {soc_value}% for chargepoint {chargepoint_id}"
+
+    def _set_charging_limit_amount(
+            self, mode_key: str, label: str, payload: str,
+            chargepoint_id: Optional[str] = None) -> Tuple[bool, str]:
+        """Shared body for instant_charging_limit_amount / pv_charging_limit_amount
+        (the chargemode.<mode_key>.limit.amount field, stored internally in Wh)."""
+        try:
+            amount_value = int(payload)
+            if amount_value < 1 or amount_value > 50:
+                message = f"Invalid amount value: {amount_value}. Must be between 1 and 50"
+                log.error(message)
+                return False, message
+            internal_amount = amount_value * 1000
+        except ValueError:
+            message = f"Invalid amount value: {payload}. Must be an integer"
+            log.error(message)
+            return False, message
+
+        chargepoint_id = self._resolve_chargepoint_id(chargepoint_id)
+        if chargepoint_id is None:
+            message = f"No chargepoint ID found for {mode_key}_limit_amount operation"
+            log.error(message)
+            return False, message
+
+        if self._set_charge_template_field(
+                chargepoint_id, ('chargemode', mode_key, 'limit', 'amount'), internal_amount) is None:
+            message = f"No charge_template available for chargepoint {chargepoint_id}"
+            log.error(message)
+            return False, message
+
+        log.info(
+            f"Set {mode_key}_limit_amount to {amount_value} kWh "
+            f"({internal_amount} Wh) for chargepoint {chargepoint_id}"
+        )
+        message = (
+            f"{label} amount set to {amount_value}kWh ({internal_amount}Wh) "
+            f"for chargepoint {chargepoint_id}"
+        )
+        return True, message
+
+    def _handle_instant_charging_limit_operation(
+            self, payload: str, chargepoint_id: Optional[str] = None) -> Tuple[bool, str]:
+        """Handle instant charging limit type operation."""
+        return self._set_charging_limit_type('instant_charging', 'Instant charging', payload, chargepoint_id)
 
     def _handle_instant_charging_limit_soc_operation(
             self, payload: str, chargepoint_id: Optional[str] = None) -> Tuple[bool, str]:
         """Handle instant charging limit SoC operation."""
-        try:
-            soc_value = int(payload)
-            if soc_value < 0 or soc_value > 100:
-                message = f"Invalid SoC value: {soc_value}. Must be between 0 and 100"
-                log.error(message)
-                return False, message
-        except ValueError:
-            message = f"Invalid SoC value: {payload}. Must be an integer"
-            log.error(message)
-            return False, message
-
-        chargepoint_id = self._resolve_chargepoint_id(chargepoint_id)
-        if chargepoint_id is None:
-            message = "No chargepoint ID found for instant_charging_limit_soc operation"
-            log.error(message)
-            return False, message
-
-        charge_template = self._get_charge_template(chargepoint_id)
-        if charge_template is None:
-            message = f"No charge_template available for chargepoint {chargepoint_id}"
-            log.error(message)
-            return False, message
-
-        charge_template['chargemode']['instant_charging']['limit']['soc'] = soc_value
-
-        target_topic = f"openWB/set/chargepoint/{chargepoint_id}/set/charge_template"
-        self._publish_json(target_topic, charge_template)
-        log.info(f"Set instant_charging_limit_soc to {soc_value}% for chargepoint {chargepoint_id}")
-        return True, f"Instant charging SoC set to {soc_value}% for chargepoint {chargepoint_id}"
+        return self._set_charging_limit_soc('instant_charging', 'Instant charging', payload, chargepoint_id)
 
     def _handle_instant_charging_limit_amount_operation(
             self, payload: str, chargepoint_id: Optional[str] = None) -> Tuple[bool, str]:
         """Handle instant charging limit amount operation."""
-        try:
-            amount_value = int(payload)
-            if amount_value < 1 or amount_value > 50:
-                message = f"Invalid amount value: {amount_value}. Must be between 1 and 50"
-                log.error(message)
-                return False, message
-            internal_amount = amount_value * 1000
-        except ValueError:
-            message = f"Invalid amount value: {payload}. Must be an integer"
-            log.error(message)
-            return False, message
-
-        chargepoint_id = self._resolve_chargepoint_id(chargepoint_id)
-        if chargepoint_id is None:
-            message = "No chargepoint ID found for instant_charging_limit_amount operation"
-            log.error(message)
-            return False, message
-
-        charge_template = self._get_charge_template(chargepoint_id)
-        if charge_template is None:
-            message = f"No charge_template available for chargepoint {chargepoint_id}"
-            log.error(message)
-            return False, message
-
-        charge_template['chargemode']['instant_charging']['limit']['amount'] = internal_amount
-
-        target_topic = f"openWB/set/chargepoint/{chargepoint_id}/set/charge_template"
-        self._publish_json(target_topic, charge_template)
-        log.info(
-            f"Set instant_charging_limit_amount to {amount_value} kWh "
-            f"({internal_amount} Wh) for chargepoint {chargepoint_id}"
-        )
-        message = (
-            f"Instant charging amount set to {amount_value}kWh ({internal_amount}Wh) "
-            f"for chargepoint {chargepoint_id}"
-        )
-        return True, message
+        return self._set_charging_limit_amount('instant_charging', 'Instant charging', payload, chargepoint_id)
 
     def _handle_pv_charging_limit_operation(
             self, payload: str, chargepoint_id: Optional[str] = None) -> Tuple[bool, str]:
         """Handle PV charging limit type operation."""
-        valid_limits = ['none', 'soc', 'amount']
-
-        if payload not in valid_limits:
-            message = f"Invalid pv_charging_limit: {payload}. Valid values: {valid_limits}"
-            log.error(message)
-            return False, message
-
-        chargepoint_id = self._resolve_chargepoint_id(chargepoint_id)
-        if chargepoint_id is None:
-            message = "No chargepoint ID found for pv_charging_limit operation"
-            log.error(message)
-            return False, message
-
-        charge_template = self._get_charge_template(chargepoint_id)
-        if charge_template is None:
-            message = f"No charge_template available for chargepoint {chargepoint_id}"
-            log.error(message)
-            return False, message
-
-        charge_template['chargemode']['pv_charging']['limit']['selected'] = payload
-
-        target_topic = f"openWB/set/chargepoint/{chargepoint_id}/set/charge_template"
-        self._publish_json(target_topic, charge_template)
-        log.info(f"Set pv_charging_limit to {payload} for chargepoint {chargepoint_id}")
-        return True, f"PV charging limit set to {payload} for chargepoint {chargepoint_id}"
+        return self._set_charging_limit_type('pv_charging', 'PV charging', payload, chargepoint_id)
 
     def _handle_pv_charging_limit_soc_operation(
             self, payload: str, chargepoint_id: Optional[str] = None) -> Tuple[bool, str]:
         """Handle PV charging limit SoC operation."""
-        try:
-            soc_value = int(payload)
-            if soc_value < 0 or soc_value > 100:
-                message = f"Invalid SoC value: {soc_value}. Must be between 0 and 100"
-                log.error(message)
-                return False, message
-        except ValueError:
-            message = f"Invalid SoC value: {payload}. Must be an integer"
-            log.error(message)
-            return False, message
-
-        chargepoint_id = self._resolve_chargepoint_id(chargepoint_id)
-        if chargepoint_id is None:
-            message = "No chargepoint ID found for pv_charging_limit_soc operation"
-            log.error(message)
-            return False, message
-
-        charge_template = self._get_charge_template(chargepoint_id)
-        if charge_template is None:
-            message = f"No charge_template available for chargepoint {chargepoint_id}"
-            log.error(message)
-            return False, message
-
-        charge_template['chargemode']['pv_charging']['limit']['soc'] = soc_value
-
-        target_topic = f"openWB/set/chargepoint/{chargepoint_id}/set/charge_template"
-        self._publish_json(target_topic, charge_template)
-        log.info(f"Set pv_charging_limit_soc to {soc_value}% for chargepoint {chargepoint_id}")
-        return True, f"PV charging SoC set to {soc_value}% for chargepoint {chargepoint_id}"
+        return self._set_charging_limit_soc('pv_charging', 'PV charging', payload, chargepoint_id)
 
     def _handle_pv_charging_limit_amount_operation(
             self, payload: str, chargepoint_id: Optional[str] = None) -> Tuple[bool, str]:
         """Handle PV charging limit amount operation."""
-        try:
-            amount_value = int(payload)
-            if amount_value < 1 or amount_value > 50:
-                message = f"Invalid amount value: {amount_value}. Must be between 1 and 50"
-                log.error(message)
-                return False, message
-            internal_amount = amount_value * 1000
-        except ValueError:
-            message = f"Invalid amount value: {payload}. Must be an integer"
-            log.error(message)
-            return False, message
-
-        chargepoint_id = self._resolve_chargepoint_id(chargepoint_id)
-        if chargepoint_id is None:
-            message = "No chargepoint ID found for pv_charging_limit_amount operation"
-            log.error(message)
-            return False, message
-
-        charge_template = self._get_charge_template(chargepoint_id)
-        if charge_template is None:
-            message = f"No charge_template available for chargepoint {chargepoint_id}"
-            log.error(message)
-            return False, message
-
-        charge_template['chargemode']['pv_charging']['limit']['amount'] = internal_amount
-
-        target_topic = f"openWB/set/chargepoint/{chargepoint_id}/set/charge_template"
-        self._publish_json(target_topic, charge_template)
-        log.info(
-            f"Set pv_charging_limit_amount to {amount_value} kWh "
-            f"({internal_amount} Wh) for chargepoint {chargepoint_id}"
-        )
-        message = (
-            f"PV charging amount set to {amount_value}kWh ({internal_amount}Wh) "
-            f"for chargepoint {chargepoint_id}"
-        )
-        return True, message
+        return self._set_charging_limit_amount('pv_charging', 'PV charging', payload, chargepoint_id)
 
     def _publish_json(self, topic: str, data: Dict[str, Any]):
         """Publish JSON data to a topic."""
