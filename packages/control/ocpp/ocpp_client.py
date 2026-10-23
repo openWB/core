@@ -654,6 +654,14 @@ class OcppClient:
             fault_state_str,
         )
 
+        # Eine Konfigurationsänderung auch bei unverändertem Status übernehmen.
+        # Zurückgestellte Änderungen werden nach Abschluss des Vorgangs hier
+        # erneut geprüft; Boot-Statusmeldungen mit expliziter Verbindung auslassen.
+        if connection is None and self.connection_manager.needs_configuration_refresh(chargebox_id):
+            connection = await self.connection_manager.connect(chargebox_id)
+            if connection is None:
+                return
+
         # Prüfung im Client und nicht im CP
         # Unveränderte Statuswerte vor dem Verbindungsaufbau herausfiltern,
         # damit dafür keine unnötigen Verbindungsprüfungen erfolgen
