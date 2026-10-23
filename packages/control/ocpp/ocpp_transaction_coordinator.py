@@ -903,6 +903,7 @@ class TransactionCoordinator:
             return transaction
 
         transaction = OcppTransaction()
+        stale_start_phase = None
 
         openwb_cp = get_cp_from_chargebox_id(chargebox_id)
 
@@ -933,9 +934,13 @@ class TransactionCoordinator:
                     log.info(
                         f"Bestehende OCPP-Transaction {existing_id} für {chargebox_id} übernommen.",
                     )
-            elif getattr(openwb_cp.data.get.ocpp, "authorization_flow_status", None) == "start_unconfirmed":
-                transaction.state = TransactionState.START_UNCONFIRMED
-                transaction.last_error = "Startbestätigung fehlt; Abstecken erforderlich"
+            else:
+                flow_status = getattr(openwb_cp.data.get.ocpp, "authorization_flow_status", None)
+                if flow_status in ("start_pending", "start_authorizing", "start_starting"):
+                    stale_start_phase = flow_status
+                elif flow_status == "start_unconfirmed":
+                    transaction.state = TransactionState.START_UNCONFIRMED
+                    transaction.last_error = "Startbestätigung fehlt; Abstecken erforderlich"
         else:
             invalid_persisted_transaction = False
 
@@ -944,6 +949,23 @@ class TransactionCoordinator:
         if invalid_persisted_transaction:
             transaction.reset()
             self._commit(chargebox_id, transaction)
+        elif stale_start_phase in ("start_pending", "start_authorizing"):
+            # Ohne registrierten Vorgang gehört dieser Zwischenzustand zum
+            # alten Prozess. Eine StartTransaction wurde noch nicht gesendet.
+            transaction.reset()
+            self._commit(chargebox_id, transaction)
+            log.warning(
+                "OCPP %s: Verwaisten Startstatus %s nach Backend-Neustart zurückgesetzt; "
+                "ein neuer Startversuch ist möglich.",
+                chargebox_id,
+                stale_start_phase,
+            )
+        elif stale_start_phase == "start_starting":
+            self._mark_start_unconfirmed(
+                chargebox_id,
+                transaction,
+                "Backend während StartTransaction neu gestartet; Startbestätigung unbekannt",
+            )
 
         return transaction
 
