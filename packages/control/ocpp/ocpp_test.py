@@ -998,12 +998,16 @@ def test_trigger_heartbeat_ignores_connector_and_rejects_unsupported(monkeypatch
 
 
 @pytest.mark.parametrize("has_snapshot", [True, False])
-def test_trigger_meter_values_uses_snapshot_or_skips_when_missing(has_snapshot):
+@pytest.mark.parametrize("sample_interval", [0, 20])
+def test_trigger_meter_values_uses_snapshot_or_skips_when_missing(has_snapshot, sample_interval):
     chargepoint = SimpleNamespace(
         chargebox_id="box-1",
         _meter_values=AsyncMock(),
         openwb_cp=SimpleNamespace(data=SimpleNamespace(get=SimpleNamespace(ocpp=SimpleNamespace(
-            config=SimpleNamespace(MeterValuesSampledData={"value": "Power.Active.Import"}),
+            config=SimpleNamespace(
+                MeterValuesSampledData={"value": "Power.Active.Import"},
+                MeterValueSampleInterval={"value": sample_interval},
+            ),
         )))),
     )
     client = object.__new__(OcppClient)
@@ -1581,6 +1585,44 @@ def test_meter_loop_only_sends_for_active_matching_transaction(monkeypatch, tran
         assert chargepoint._meter_values.await_args.kwargs["meter_value"][0]["timestamp"] == "2026-10-23T12:00:00+00:00"
     else:
         chargepoint._meter_values.assert_not_awaited()
+
+
+@pytest.mark.parametrize("initial,changes,expected_sleeps,expected_sends", [
+    (0, {}, [1, 1, 1, 1], 0),
+    (0, {2: 10}, [1, 1, 10, 10], 1),
+    (10, {1: 0}, [10, 1, 1, 1], 0),
+    (10, {1: 0, 2: 20}, [10, 1, 20, 20], 1),
+])
+def test_meter_loop_disables_and_resumes_periodic_samples(
+    monkeypatch, initial, changes, expected_sleeps, expected_sends
+):
+    config = SimpleNamespace(MeterValueSampleInterval={"value": initial})
+    cp = SimpleNamespace(
+        openwb_cp=SimpleNamespace(data=SimpleNamespace(get=SimpleNamespace(ocpp=SimpleNamespace(config=config)))),
+        _meter_values=AsyncMock(),
+    )
+    connection = SimpleNamespace(chargebox_id="box-1", closing=False, boot_accepted=True, cp=cp)
+    client = object.__new__(OcppClient)
+    client.transactions = SimpleNamespace(
+        get_transaction_id=Mock(return_value=123),
+        get_state=Mock(return_value=ocpp_transaction_coordinator.TransactionState.ACTIVE),
+    )
+    client._meter_snapshots = {}
+    client._set_meter_snapshot("box-1", 1, 123, 9876, "2026-10-23T12:00:00+00:00")
+    sleeps = []
+
+    async def tick(interval):
+        sleeps.append(interval)
+        if len(sleeps) in changes:
+            config.MeterValueSampleInterval["value"] = changes[len(sleeps)]
+        if len(sleeps) == 4:
+            connection.closing = True
+
+    monkeypatch.setattr(ocpp_client.asyncio, "sleep", tick)
+    asyncio.run(client._meter_loop(connection))
+
+    assert sleeps == expected_sleeps
+    assert cp._meter_values.await_count == expected_sends
 
 
 def test_meter_loop_keeps_sending_and_only_updates_timestamp_with_new_snapshot(monkeypatch):

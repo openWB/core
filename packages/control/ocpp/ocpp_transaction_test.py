@@ -1944,18 +1944,33 @@ def test_change_configuration_rejects_invalid_typed_values(
     assert getattr(openwb_cp.data.get.ocpp.config, key)["value"] == initial_value
 
 
-def test_valid_configuration_interval_is_used(handler_setup):
+@pytest.mark.parametrize("interval", [0, 30])
+def test_valid_configuration_interval_is_used(handler_setup, interval):
     make_charge_point, _ = handler_setup
 
     async def check():
         charge_point = make_charge_point()
-        response = await charge_point.change_configuration("MeterValueSampleInterval", "30")
-        assert charge_point.openwb_cp.data.get.ocpp.config.MeterValueSampleInterval["value"] == 30
+        response = await charge_point.change_configuration("MeterValueSampleInterval", str(interval))
+        assert charge_point.openwb_cp.data.get.ocpp.config.MeterValueSampleInterval["value"] == interval
         return response
 
     response = asyncio.run(check())
 
     assert response.status == ConfigurationStatus.accepted
+
+
+@pytest.mark.parametrize("value", ["-1", "not-a-number", "1.5"])
+def test_invalid_meter_sample_interval_is_rejected(handler_setup, mock_pub, value):
+    make_charge_point, cp = handler_setup
+    original = cp.data.get.ocpp.config.MeterValueSampleInterval["value"]
+
+    async def check():
+        response = await make_charge_point().change_configuration("MeterValueSampleInterval", value)
+        assert response.status == ConfigurationStatus.rejected
+
+    asyncio.run(check())
+    assert cp.data.get.ocpp.config.MeterValueSampleInterval["value"] == original
+    mock_pub.pub.assert_not_called()
 
 
 def test_set_configuration_value_publishes_parameter_dictionary(handler_setup, mock_pub):

@@ -560,7 +560,11 @@ class OcppClient:
                     connection.cp.openwb_cp.data.get.ocpp.config.MeterValueSampleInterval["value"]
                 )
 
-                interval = max(interval, 1)
+                if interval <= 0:
+                    # 0 deaktiviert periodische Samples. Den Task am Leben halten,
+                    # damit eine spätere Aktivierung ohne Reconnect wirksam wird.
+                    await asyncio.sleep(1)
+                    continue
 
                 await asyncio.sleep(interval)
 
@@ -568,6 +572,9 @@ class OcppClient:
                     break
                 if not connection.boot_accepted:
                     break
+                # Das CSMS kann während der Wartephase auf 0 umgestellt haben.
+                if int(connection.cp.openwb_cp.data.get.ocpp.config.MeterValueSampleInterval["value"]) <= 0:
+                    continue
                 # Meter Values nur senden, wenn auch eine aktive Transaktion läuft
                 if self.transactions.get_state(chargebox_id) != TransactionState.ACTIVE:
                     continue
