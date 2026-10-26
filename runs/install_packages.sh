@@ -73,10 +73,12 @@ if [ -n "$php74_fix_url" ] && [ "$php74_fix_needed" -eq 1 ]; then
 		dpkg-query -W php7.4-cli php7.4-common libapache2-mod-php7.4
 		status=$(sudo systemctl is-active "apache2" || true)
 		printf 'apache2: %s\n' "$status"
-	) || {
+	)
+	php74_fix_status=$?
+	if [ "$php74_fix_status" -ne 0 ]; then
 		echo "PHP 7.4 package fix failed." >&2
-		exit 1
-	}
+		exit "$php74_fix_status"
+	fi
 elif [ -n "$php74_fix_url" ] && [ "$php74_fix_needed" -eq 0 ]; then
 	echo "PHP 7.4 package fix for php2shell is already applied."
 elif [ -z "$php74_fix_url" ]; then
