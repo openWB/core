@@ -1402,6 +1402,8 @@ def test_offline_stop_is_persisted(monkeypatch):
         num=1,
         data=SimpleNamespace(
             get=SimpleNamespace(
+                imported=1234,
+                charge_state=False,
                 ocpp=SimpleNamespace(
                     transaction_id=42,
                     transaction_id_tag="TAG",

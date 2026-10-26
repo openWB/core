@@ -41,7 +41,7 @@ def ocpp_config_for_test():
 def transaction_setup(monkeypatch):
     openwb_cp = SimpleNamespace(
         num=1,
-        data=SimpleNamespace(get=SimpleNamespace(plug_state=True, imported=100, ocpp=SimpleNamespace(
+        data=SimpleNamespace(get=SimpleNamespace(plug_state=True, charge_state=False, imported=100, ocpp=SimpleNamespace(
             transaction_id=None,
             transaction_id_tag=None,
             tag_accepted=False,
@@ -218,6 +218,145 @@ def test_start_rechecks_persisted_stops_after_waiting(
 
     asyncio.run(check())
     connection.cp._start_transaction.assert_not_awaited()
+
+
+def test_rfid_stop_waits_for_hardware_and_uses_current_model_meter(transaction_setup, mock_pub, monkeypatch):
+    coordinator, connection, cp = transaction_setup
+    cp.data.get.ocpp.transaction_id = 42
+    cp.data.get.ocpp.transaction_id_tag = "TAG"
+    cp.data.get.charge_state = True
+    current = [cp]
+    monkeypatch.setattr(ocpp_transaction_coordinator, "get_cp_from_chargebox_id", lambda _: current[0])
+    final_time = "2026-10-23T12:00:30Z"
+
+    async def authorize(**kwargs):
+        cp.data.get.imported = 120
+        return SimpleNamespace(id_tag_info={"status": "Accepted"})
+
+    async def hardware_tick(interval):
+        assert interval == 0.5
+        assert coordinator.get_state("box-1") == TransactionState.STOPPING
+        assert cp.data.get.ocpp.tag_accepted is False
+        assert cp.data.get.ocpp.rfid_stop is True
+        connection.cp._stop_transaction.assert_not_awaited()
+        current[0] = copy.deepcopy(cp)
+        current[0].data.get.imported = 125.9
+        current[0].data.get.charge_state = False
+        monkeypatch.setattr(ocpp_transaction_coordinator, "_get_formatted_time", lambda: final_time)
+
+    connection.cp._authorize.side_effect = authorize
+    monkeypatch.setattr(ocpp_transaction_coordinator.asyncio, "sleep", hardware_tick)
+    assert asyncio.run(coordinator.stop("box-1", 100, "TAG", "Local", authorize_stop=True)) is True
+    connection.cp._stop_transaction.assert_awaited_once_with(
+        meter_stop=125, transaction_id=42, reason="Local", id_tag="TAG", timestamp=final_time,
+    )
+
+
+@pytest.mark.parametrize("failure", ["charging", "fault", "read_error", "invalid_meter"])
+def test_stop_meter_timeout_uses_last_valid_value_and_keeps_local_block(
+    transaction_setup, mock_pub, monkeypatch, caplog, failure
+):
+    coordinator, connection, cp = transaction_setup
+    cp.data.get.ocpp.transaction_id = 42
+    cp.data.get.ocpp.transaction_id_tag = "TAG"
+    cp.data.get.ocpp.remote_stop = True
+    cp.data.get.charge_state = failure == "charging"
+    cp.data.get.fault_state = 2 if failure == "fault" else 0
+    cp.data.get.error_timestamp = 123 if failure == "read_error" else None
+    cp.data.get.imported = float("nan") if failure == "invalid_meter" else 110
+    clock = [0.0]
+    sleeps = []
+    monkeypatch.setattr(ocpp_transaction_coordinator, "monotonic", lambda: clock[0])
+    monkeypatch.setattr(ocpp_transaction_coordinator, "_get_formatted_time", lambda: f"time-{clock[0]}")
+
+    async def tick(interval):
+        sleeps.append(interval)
+        clock[0] += interval
+        assert cp.data.get.ocpp.tag_accepted is False
+        connection.cp._stop_transaction.assert_not_awaited()
+        if failure != "invalid_meter":
+            cp.data.get.imported = 120 if clock[0] < 30 else float("nan")
+
+    monkeypatch.setattr(ocpp_transaction_coordinator.asyncio, "sleep", tick)
+    assert asyncio.run(coordinator.stop("box-1", 100, "TAG", "Remote")) is True
+    assert clock[0] == 30
+    assert len(sleeps) == 60
+    connection.cp._stop_transaction.assert_awaited_once_with(
+        meter_stop=100 if failure == "invalid_meter" else 120,
+        transaction_id=42, reason="Remote", id_tag="TAG", timestamp="time-30.0",
+    )
+    assert "Ladestopp nach 30 s nicht zuverlässig bestätigt" in caplog.text
+    assert cp.data.get.ocpp.remote_stop is True
+    assert cp.data.get.ocpp.tag_accepted is False
+
+
+def test_paused_transaction_stop_uses_current_meter_without_waiting(transaction_setup, mock_pub, monkeypatch):
+    coordinator, connection, cp = transaction_setup
+    cp.data.get.ocpp.transaction_id = 42
+    cp.data.get.imported = 140
+    sleep = AsyncMock()
+    monkeypatch.setattr(ocpp_transaction_coordinator.asyncio, "sleep", sleep)
+
+    assert asyncio.run(coordinator.stop("box-1", 100, "TAG", "Local")) is True
+    sleep.assert_not_awaited()
+    assert connection.cp._stop_transaction.await_args.kwargs["meter_stop"] == 140
+
+
+def test_offline_stop_finalizes_meter_once_and_replay_does_not_wait(transaction_setup, mock_pub, monkeypatch):
+    coordinator, connection, cp = transaction_setup
+    cp.data.get.ocpp.transaction_id = 42
+    cp.data.get.ocpp.transaction_id_tag = "TAG"
+    cp.data.get.charge_state = True
+    coordinator._ensure_connected.return_value = None
+    final_time = "2026-10-23T12:00:30Z"
+
+    async def tick(_):
+        cp.data.get.charge_state = False
+        cp.data.get.imported = 135
+        monkeypatch.setattr(ocpp_transaction_coordinator, "_get_formatted_time", lambda: final_time)
+
+    monkeypatch.setattr(ocpp_transaction_coordinator.asyncio, "sleep", tick)
+
+    async def check():
+        assert await coordinator.stop("box-1", 100, "TAG", "Local", authorize_stop=True) is True
+        assert cp.data.get.ocpp.pending_transactions[0]["imported"] == 135
+        assert cp.data.get.ocpp.pending_transactions[0]["timestamp"] == final_time
+        connection.cp._stop_transaction.assert_not_awaited()
+        cp.data.get.imported = 999
+        cp.data.get.charge_state = True
+        sleep = AsyncMock()
+        monkeypatch.setattr(ocpp_transaction_coordinator.asyncio, "sleep", sleep)
+        assert await coordinator._replay_persisted_stop_once("box-1", connection) is True
+        sleep.assert_not_awaited()
+
+    asyncio.run(check())
+    connection.cp._stop_transaction.assert_awaited_once_with(
+        meter_stop=135, transaction_id=42, reason="Local", id_tag="TAG", timestamp=final_time,
+    )
+
+
+def test_direct_stop_retry_keeps_final_meter_and_timestamp(transaction_setup, mock_pub, monkeypatch):
+    coordinator, connection, cp = transaction_setup
+    cp.data.get.ocpp.transaction_id = 42
+    cp.data.get.imported = 140
+    connection.cp._stop_transaction.side_effect = [ConnectionError("Antwort fehlt"), SimpleNamespace()]
+    monkeypatch.setattr(coordinator, "_schedule_replay_retry", lambda *_: None)
+    monkeypatch.setattr(ocpp_transaction_coordinator, "_get_formatted_time", lambda: "first-stop-time")
+
+    async def check():
+        assert await coordinator.stop("box-1", 100, "TAG", "Remote") is False
+        cp.data.get.imported = 999
+        cp.data.get.charge_state = True
+        monkeypatch.setattr(ocpp_transaction_coordinator, "_get_formatted_time", lambda: "later-time")
+        sleep = AsyncMock()
+        monkeypatch.setattr(ocpp_transaction_coordinator.asyncio, "sleep", sleep)
+        assert await coordinator.stop("box-1", 999, "OTHER", "Other") is True
+        sleep.assert_not_awaited()
+
+    asyncio.run(check())
+    assert connection.cp._stop_transaction.await_args_list == [call(
+        meter_stop=140, transaction_id=42, reason="Remote", id_tag="TAG", timestamp="first-stop-time",
+    )] * 2
 
 
 @pytest.mark.parametrize("status", ["Accepted", "Blocked", None])
@@ -605,7 +744,8 @@ def test_stop_during_start_is_not_lost(transaction_setup, mock_pub, monkeypatch,
             connection.cp._authorize.assert_not_awaited()
     else:
         connection.cp._stop_transaction.assert_awaited_once_with(
-            meter_stop=150, transaction_id=42, reason="EVDisconnected", id_tag="TAG", timestamp=event_time,
+            meter_stop=150, transaction_id=42, reason="EVDisconnected", id_tag="TAG",
+            timestamp="2026-10-23T12:01:00Z",
         )
     assert coordinator.get_state("box-1") == TransactionState.IDLE
     assert openwb_cp.data.get.ocpp.transaction_id is None
