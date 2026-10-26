@@ -1,8 +1,10 @@
 import asyncio
 import logging
+import math
 from dataclasses import dataclass
 from enum import Enum
 from typing import Awaitable, Callable, Optional
+from time import monotonic
 
 from helpermodules.pub import Pub
 
@@ -405,6 +407,8 @@ class TransactionCoordinator:
         if transaction.pending_stop is not None:
             pending_stop = transaction.pending_stop
 
+            self._transition(chargebox_id, transaction, TransactionState.STOPPING)
+            await self._finalize_stop_meter(chargebox_id, transaction.transaction_id, pending_stop)
             transaction.pending_stop = None
 
             stop_successful = await self._stop_active(
@@ -535,15 +539,13 @@ class TransactionCoordinator:
             openwb_cp.data.get.ocpp.rfid_stop = True
             Pub().pub(f"openWB/set/chargepoint/{openwb_cp.num}/get/ocpp/rfid_stop", True)
 
-        stop_request = PendingStop(
+        # Bei einer Wiederholung den bereits endgültigen Stopdatensatz erhalten.
+        retrying_stop = transaction.state == TransactionState.ERROR and transaction.pending_stop is not None
+        stop_request = transaction.pending_stop if retrying_stop else PendingStop(
             meter_stop=int(imported),
-            id_tag=(
-                id_tag
-                or transaction.id_tag
-                or ""
-            ),
+            id_tag=id_tag or transaction.id_tag or "",
             reason=reason,
-            timestamp=_get_formatted_time()
+            timestamp=_get_formatted_time(),
         )
 
         #
@@ -619,6 +621,9 @@ class TransactionCoordinator:
             TransactionState.STOPPING,
         )
 
+        if not retrying_stop:
+            await self._finalize_stop_meter(chargebox_id, transaction.transaction_id, stop_request)
+
         if offline_rfid_stop:
             self._persist_offline_stop(chargebox_id, transaction.transaction_id, stop_request)
             log.warning(
@@ -666,6 +671,52 @@ class TransactionCoordinator:
             self._schedule_replay_retry(chargebox_id, connection)
 
         return successful
+
+    async def _finalize_stop_meter(
+        self,
+        chargebox_id: str,
+        transaction_id: int,
+        request: PendingStop,
+    ) -> None:
+        """Nach lokaler Sperre den Endwert erfassen; gespeicherte Stops nie neu messen."""
+        deadline = monotonic() + 30.0
+        while True:
+            openwb_cp = get_cp_from_chargebox_id(chargebox_id)
+            if openwb_cp is None:
+                missing_confirmation = "Ladepunktmodell nicht verfügbar"
+            else:
+                measured = openwb_cp.data.get
+                imported = measured.imported
+                valid_meter = (isinstance(imported, (int, float)) and not isinstance(imported, bool)
+                               and imported >= 0 and (not isinstance(imported, float) or math.isfinite(imported)))
+                if valid_meter:
+                    # Einen bereits bekannten höheren Zählerstand nicht durch einen
+                    # möglicherweise veralteten Messwert ersetzen.
+                    request.meter_stop = max(request.meter_stop, int(imported))
+
+                read_failed = (getattr(measured, "fault_state", 0) >= 2
+                               or getattr(measured, "error_timestamp", None) is not None)
+                if read_failed:
+                    missing_confirmation = "Hardware-/Auslesefehler"
+                elif not valid_meter:
+                    missing_confirmation = "kein gültiger aktueller Zählerstand"
+                elif getattr(measured, "charge_state", False) is False:
+                    break
+                else:
+                    missing_confirmation = "Hardware meldet weiterhin aktive Ladung"
+
+            remaining = deadline - monotonic()
+            if remaining <= 0:
+                log.error(
+                    "OCPP %s: Ladestopp nach 30 s nicht zuverlässig bestätigt (%s). "
+                    "StopTransaction %s verwendet letzten verfügbaren Zählerstand %s Wh. "
+                    "Die lokale Ladefreigabe bleibt gesperrt.",
+                    chargebox_id, missing_confirmation, transaction_id, request.meter_stop,
+                )
+                break
+            await asyncio.sleep(min(0.5, remaining))
+
+        request.timestamp = _get_formatted_time()
 
     @staticmethod
     def _transport_connected(connection: Optional[OcppConnection]) -> bool:
