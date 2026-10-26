@@ -1,5 +1,3 @@
-from unittest.mock import call
-
 import pytest
 
 from modules.common.component_state import ConsumerState
