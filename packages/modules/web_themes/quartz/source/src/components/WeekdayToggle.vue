@@ -1,11 +1,13 @@
 <template>
-  <div class="weekday-group">
+  <div class="my-2.5 flex gap-1">
     <button
       v-for="(label, i) in dayLabels"
       :key="i"
       type="button"
-      class="weekday-btn"
-      :class="{ active: modelValue[i] }"
+      :class="[
+        'flex-1 rounded-lg border py-1.5 text-[11px]',
+        modelValue[i] ? 'border-text bg-text text-panel' : 'border-border bg-transparent text-text',
+      ]"
       :aria-pressed="modelValue[i]"
       @click="toggle(i)"
     >
@@ -27,27 +29,3 @@ function toggle(index: number): void {
   emit('update', next)
 }
 </script>
-
-<style scoped>
-.weekday-group {
-  display: flex;
-  gap: 4px;
-  margin: 10px 0;
-}
-
-.weekday-btn {
-  flex: 1;
-  font-size: 11px;
-  padding: 6px 0;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: transparent;
-  color: var(--text);
-}
-
-.weekday-btn.active {
-  background: var(--text);
-  color: var(--panel);
-  border-color: var(--text);
-}
-</style>

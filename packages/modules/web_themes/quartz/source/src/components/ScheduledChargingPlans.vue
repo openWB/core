@@ -1,7 +1,7 @@
 <template>
   <div>
     <template v-if="!editing">
-      <span class="field-label">Termine Zielladen</span>
+      <span class="field-label mt-3">Termine Zielladen</span>
       <p
         v-if="plans.length === 0"
         class="mode-note"
@@ -47,7 +47,7 @@
       </div>
 
       <label
-        class="field-label"
+        class="field-label mt-3"
         for="sp-name"
       >Name</label>
       <input
@@ -67,7 +67,7 @@
       </div>
 
       <label
-        class="field-label"
+        class="field-label mt-3"
         for="sp-time"
       >Zielzeit</label>
       <input
@@ -146,7 +146,7 @@
 
       <BaseButton
         variant="primary"
-        style="width: 100%; margin-top: 14px"
+        class="mt-3.5 w-full"
         @click="save"
       >
         Speichern
@@ -229,9 +229,3 @@ function remove(): void {
   editing.value = null
 }
 </script>
-
-<style scoped>
-.field-label {
-  margin-top: 12px;
-}
-</style>

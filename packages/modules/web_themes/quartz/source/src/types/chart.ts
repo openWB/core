@@ -1,4 +1,4 @@
-export type CategoryKey = 'pv' | 'grid' | 'house' | 'battery' | 'consumer' | 'chargepoint'
+export type CategoryKey = 'pv' | 'grid' | 'house' | 'battery' | 'consumer' | 'chargepoint' | 'counter'
 
 export interface InstancePoint {
   timestamp: number

@@ -1,3 +1,21 @@
+@import 'tailwindcss';
+
+@theme {
+  --color-bg: var(--bg);
+  --color-panel: var(--panel);
+  --color-border: var(--border);
+  --color-text: var(--text);
+  --color-muted: var(--muted);
+  --color-pv: var(--pv);
+  --color-grid: var(--grid);
+  --color-chargepoint: var(--chargepoint);
+  --color-battery: var(--battery);
+  --color-car: var(--car);
+  --color-consumption: var(--consumption);
+  --color-consumer: var(--consumer);
+  --color-accent: var(--accent);
+}
+
 :root {
   --bg: #f1f2f4;
   --panel: #ffffff;
@@ -30,185 +48,127 @@
   --consumer: #a78bfa;
 }
 
-* {
-  box-sizing: border-box;
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family:
+      -apple-system,
+      'Segoe UI',
+      Roboto,
+      sans-serif;
+    transition:
+      background 0.2s ease,
+      color 0.2s ease;
+  }
+
+  a {
+    color: var(--accent);
+    text-decoration: none;
+  }
+
+  a:hover {
+    text-decoration: underline;
+  }
+
+  button {
+    font-family: inherit;
+    cursor: pointer;
+  }
 }
 
-body {
-  margin: 0;
-  background: var(--bg);
-  color: var(--text);
-  font-family:
-    -apple-system,
-    'Segoe UI',
-    Roboto,
-    sans-serif;
-  transition:
-    background 0.2s ease,
-    color 0.2s ease;
-}
+@layer components {
+  .panel {
+    @apply rounded-[14px] border border-border bg-panel;
+  }
 
-a {
-  color: var(--accent);
-  text-decoration: none;
-}
+  .settings-group-label {
+    @apply text-[11px] font-bold tracking-[0.02em] text-muted uppercase;
+  }
 
-a:hover {
-  text-decoration: underline;
-}
+  .field-label {
+    @apply mb-1.5 block text-xs font-semibold text-muted;
+  }
 
-button {
-  font-family: inherit;
-  cursor: pointer;
-}
+  .field-select {
+    @apply w-full rounded-lg border border-border bg-bg px-2.5 py-2 text-[13px] text-text;
+  }
 
-.panel {
-  background: var(--panel);
-  border: 1px solid var(--border);
-  border-radius: 14px;
-}
+  .mode-note {
+    @apply mt-1 mb-3.5 text-xs text-muted;
+  }
 
-.settings-group-label {
-  font-size: 11px;
-  font-weight: 700;
-  color: var(--muted);
-  text-transform: uppercase;
-  letter-spacing: 0.02em;
-}
+  .toggle-row {
+    @apply mt-2 flex items-center justify-between border-t border-border py-2.5;
+  }
 
-.field-label {
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--muted);
-  display: block;
-  margin-bottom: 6px;
-}
+  .settings-divider {
+    @apply mt-4 mb-3 border-t border-border;
+  }
 
-.field-select {
-  width: 100%;
-  padding: 8px 10px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--bg);
-  color: var(--text);
-  font-size: 13px;
-}
+  .legend-dot {
+    @apply inline-block h-2.5 w-2.5 flex-none rounded-[3px];
+  }
 
-.mode-note {
-  font-size: 12px;
-  color: var(--muted);
-  margin: 4px 0 14px;
-}
+  .range-slider {
+    @apply w-full accent-accent;
+  }
 
-.toggle-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 10px 0;
-  border-top: 1px solid var(--border);
-  margin-top: 8px;
-}
+  .time-range-row {
+    @apply flex items-center gap-2 text-xs text-muted;
+  }
 
-.settings-divider {
-  border-top: 1px solid var(--border);
-  margin: 16px 0 12px;
-}
+  .time-range-row .field-select {
+    @apply flex-1;
+  }
 
-.legend-dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 3px;
-  display: inline-block;
-  flex: none;
-}
+  .plan-row {
+    @apply mb-2 flex cursor-pointer items-center justify-between rounded-lg bg-bg px-3 py-2.5 text-[13px];
+  }
 
-.range-slider {
-  width: 100%;
-  accent-color: var(--accent);
-}
+  .plan-inactive {
+    @apply text-[11px] text-muted;
+  }
 
-.time-range-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 12px;
-  color: var(--muted);
-}
+  .plan-frequency {
+    @apply text-[11px] text-muted;
+  }
 
-.time-range-row .field-select {
-  flex: 1;
-}
+  .add-plan-btn {
+    @apply w-full rounded-lg border border-dashed border-border bg-transparent p-2 text-[13px] text-accent;
+  }
 
-.plan-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 10px 12px;
-  background: var(--bg);
-  border-radius: 8px;
-  margin-bottom: 8px;
-  font-size: 13px;
-  cursor: pointer;
-}
+  .info-box {
+    @apply flex flex-col gap-1.5 rounded-[10px] bg-bg px-4 py-3;
+  }
 
-.plan-inactive {
-  color: var(--muted);
-  font-size: 11px;
-}
+  .info-row {
+    @apply flex gap-2.5 text-[13px];
+  }
 
-.plan-frequency {
-  font-size: 11px;
-  color: var(--muted);
-}
+  .info-label {
+    @apply min-w-[110px] text-muted;
+  }
 
-.add-plan-btn {
-  width: 100%;
-  font-size: 13px;
-  padding: 8px;
-  border: 1px dashed var(--border);
-  border-radius: 8px;
-  background: transparent;
-  color: var(--accent);
-}
+  .status-box {
+    @apply rounded-[10px] px-4 py-3 text-[13px];
+    background: color-mix(in srgb, var(--pv) 12%, transparent);
+  }
 
-.info-box {
-  background: var(--bg);
-  border-radius: 10px;
-  padding: 12px 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
+  .status-box p {
+    @apply mt-1 mb-0;
+  }
 
-.info-row {
-  display: flex;
-  gap: 10px;
-  font-size: 13px;
-}
+  .status-box-fault {
+    background: color-mix(in srgb, var(--grid) 12%, transparent);
+  }
 
-.info-label {
-  color: var(--muted);
-  min-width: 110px;
-}
-
-.status-box {
-  background: color-mix(in srgb, var(--pv) 12%, transparent);
-  border-radius: 10px;
-  padding: 12px 16px;
-  font-size: 13px;
-}
-
-.status-box p {
-  margin: 4px 0 0;
-}
-
-.status-box-fault {
-  background: color-mix(in srgb, var(--grid) 12%, transparent);
-}
-
-.plan-edit-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 8px;
+  .plan-edit-head {
+    @apply mb-2 flex items-center justify-between;
+  }
 }

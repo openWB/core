@@ -1,16 +1,18 @@
 <template>
   <div
     v-if="modelValue"
-    class="modal-backdrop"
+    class="fixed inset-0 z-[60] flex items-center justify-center bg-[rgba(10,12,16,0.5)] p-5"
     @click="close"
   >
     <div
-      class="panel modal-panel"
+      class="panel max-h-[90vh] overflow-y-auto px-7 py-6"
       :style="{ width: `min(${width}px, 100%)` }"
       @click.stop
     >
-      <div class="modal-head">
-        <h3>{{ title }}</h3>
+      <div class="mb-[18px] flex items-center justify-between">
+        <h3 class="m-0 text-[17px] font-bold">
+          {{ title }}
+        </h3>
         <BaseIconButton
           aria-label="Schließen"
           @click="close"
@@ -34,35 +36,3 @@ function close(): void {
   emit('update:modelValue', false)
 }
 </script>
-
-<style scoped>
-.modal-backdrop {
-  position: fixed;
-  inset: 0;
-  background: rgba(10, 12, 16, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 60;
-  padding: 20px;
-}
-
-.modal-panel {
-  max-height: 90vh;
-  overflow-y: auto;
-  padding: 24px 28px;
-}
-
-.modal-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 18px;
-}
-
-.modal-head h3 {
-  margin: 0;
-  font-size: 17px;
-  font-weight: 700;
-}
-</style>

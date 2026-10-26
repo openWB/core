@@ -1,14 +1,12 @@
 <template>
-  <div class="slider-row">
-    <div class="slider-row-head">
-      <span
-        class="field-label"
-        style="margin: 0"
-      >{{ label }}</span>
+  <div class="my-3">
+    <div class="mb-1.5 flex items-center justify-between text-[13px]">
+      <span class="field-label m-0">{{ label }}</span>
       <span>{{ displayValue }}&nbsp;{{ unit }}</span>
     </div>
     <input
       type="range"
+      class="w-full accent-accent"
       :min="min"
       :max="max"
       :step="step ?? 1"
@@ -71,29 +69,3 @@ function onChange(event: Event): void {
   emit('update', value)
 }
 </script>
-
-<style scoped>
-.field-label {
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--muted);
-  display: block;
-}
-
-.slider-row {
-  margin: 12px 0;
-}
-
-.slider-row-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 6px;
-  font-size: 13px;
-}
-
-.slider-row input[type='range'] {
-  width: 100%;
-  accent-color: var(--accent);
-}
-</style>

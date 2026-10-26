@@ -1,14 +1,11 @@
 <template>
-  <div
-    class="panel"
-    style="padding: 18px 20px"
-  >
-    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px">
-      <div style="display: flex; align-items: center; gap: 10px">
-        <IconBolt style="color: var(--chargepoint)" />
-        <span style="font-weight: 700; font-size: 15px">{{ name }}</span>
+  <div class="panel px-5 py-[18px]">
+    <div class="mb-3 flex items-center justify-between">
+      <div class="flex items-center gap-2.5">
+        <IconBolt class="text-chargepoint" />
+        <span class="text-[15px] font-bold">{{ name }}</span>
       </div>
-      <div style="display: flex; align-items: center; gap: 6px">
+      <div class="flex items-center gap-1.5">
         <BaseIconButton
           :active="locked"
           :aria-label="locked ? 'Ladepunkt entsperren' : 'Ladepunkt sperren'"
@@ -22,7 +19,7 @@
         >
           <IconGear />
         </BaseIconButton>
-        <span :class="['state-badge', stateBadgeClass]">{{ stateBadgeText }}</span>
+        <span :class="['whitespace-nowrap rounded-full px-[9px] py-[3px] text-[11px] font-bold', stateBadgeClass]">{{ stateBadgeText }}</span>
       </div>
     </div>
 
@@ -33,21 +30,21 @@
 
     <p
       v-if="faultState > 0 && faultMessage"
-      class="state-message state-message-fault"
+      class="mt-0 mb-2.5 text-xs text-grid"
     >
       {{ faultMessage }}
     </p>
     <p
       v-else-if="stateMessage"
-      class="state-message"
+      class="mt-0 mb-2.5 text-xs text-muted"
     >
       {{ stateMessage }}
     </p>
 
-    <div class="vehicle-row">
-      <IconCar style="color: var(--muted); flex: none" />
+    <div class="mb-3 flex items-center gap-2 rounded-lg bg-bg px-2.5 py-2">
+      <IconCar class="flex-none text-muted" />
       <select
-        class="veh-select"
+        class="flex-1 border-0 bg-transparent text-[13px] text-text"
         aria-label="Fahrzeug an diesem Ladepunkt"
         :value="vehicleInfo?.id"
         @change="onVehicleChange(($event.target as HTMLSelectElement).value)"
@@ -62,11 +59,11 @@
       </select>
       <span
         v-if="soc?.soc !== undefined"
-        style="font-size: 12px; color: var(--muted); white-space: nowrap"
+        class="whitespace-nowrap text-xs text-muted"
       >{{ Math.round(soc.soc) }}&nbsp;%</span>
       <div
         v-if="vehicleInfo"
-        style="position: relative"
+        class="relative"
       >
         <BaseIconButton
           size="sm"
@@ -77,17 +74,17 @@
         </BaseIconButton>
         <div
           v-if="showSocEditor"
-          class="soc-editor-backdrop"
+          class="fixed inset-0 z-10"
           @click="showSocEditor = false"
         />
         <div
           v-if="showSocEditor"
-          class="soc-editor panel"
+          class="panel absolute top-[calc(100%_+_8px)] right-0 z-[11] flex w-55 flex-col gap-2.5 p-3 shadow-[0_8px_24px_rgba(0,0,0,0.12)]"
         >
           <div class="settings-group-label">
             SoC {{ vehicleInfo.name }}
           </div>
-          <div class="soc-input-row">
+          <div class="flex items-center gap-2 text-[13px]">
             <BaseIconButton
               aria-label="SoC verringern"
               @click="socInputValue = Math.max(0, socInputValue - 1)"
@@ -99,7 +96,7 @@
               type="number"
               min="0"
               max="100"
-              class="soc-input"
+              class="w-14 rounded-[6px] border border-border bg-bg p-1 text-center text-text"
             >
             <span>%</span>
             <BaseIconButton
@@ -117,12 +114,12 @@
             class="range-slider"
           >
           <BaseButton
-            style="width: 100%"
+            class="w-full"
             @click="mqttStore.vehicleForceSocUpdate(vehicleInfo.id)"
           >
             SoC jetzt abrufen
           </BaseButton>
-          <div class="soc-editor-actions">
+          <div class="flex justify-end gap-2">
             <BaseButton @click="showSocEditor = false">
               Abbrechen
             </BaseButton>
@@ -143,36 +140,36 @@
       @update="mqttStore.setChargePointChargeMode(props.chargePointId, $event)"
     />
 
-    <div style="display: flex; gap: 24px; font-size: 13px; margin-top: 14px">
+    <div class="mt-3.5 flex gap-6 text-[13px]">
       <div>
-        <div style="color: var(--muted)">
+        <div class="text-muted">
           Leistung
         </div>
-        <div style="font-weight: 700; display: flex; align-items: center; gap: 6px">
+        <div class="flex items-center gap-1.5 font-bold">
           {{ formatKw(power) }}
           <span
             v-if="phasesInUse > 0"
-            class="phase-badge"
+            class="rounded-full px-[7px] py-px text-[11px] font-bold phase-badge"
           >{{ phasesInUse }}~</span>
           <span
             v-if="chargingCurrent > 0"
-            style="font-weight: 400; color: var(--muted); font-size: 12px"
+            class="text-xs font-normal text-muted"
           >{{ chargingCurrent.toLocaleString(undefined, { maximumFractionDigits: 1 }) }}&nbsp;A</span>
         </div>
       </div>
       <div>
-        <div style="color: var(--muted)">
+        <div class="text-muted">
           Geladen
         </div>
-        <div style="font-weight: 700">
+        <div class="font-bold">
           {{ formatKwh(energyCharged) }}
         </div>
       </div>
       <div v-if="soc?.range_charged">
-        <div style="color: var(--muted)">
+        <div class="text-muted">
           Reichweite
         </div>
-        <div style="font-weight: 700">
+        <div class="font-bold">
           +{{ Math.round(soc.range_charged) }}&nbsp;{{ soc.range_unit }}
         </div>
       </div>
@@ -263,32 +260,6 @@ function confirmSoc(): void {
 </script>
 
 <style scoped>
-.vehicle-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 10px;
-  background: var(--bg);
-  border-radius: 8px;
-  margin-bottom: 12px;
-}
-
-.veh-select {
-  flex: 1;
-  border: none;
-  background: transparent;
-  color: var(--text);
-  font-size: 13px;
-}
-
-.state-badge {
-  font-size: 11px;
-  font-weight: 700;
-  padding: 3px 9px;
-  border-radius: 999px;
-  white-space: nowrap;
-}
-
 .badge-ok {
   background: color-mix(in srgb, var(--pv) 18%, transparent);
   color: var(--pv);
@@ -304,64 +275,8 @@ function confirmSoc(): void {
   color: var(--muted);
 }
 
-.state-message {
-  font-size: 12px;
-  color: var(--muted);
-  margin: 0 0 10px;
-}
-
-.state-message-fault {
-  color: var(--grid);
-}
-
 .phase-badge {
-  font-size: 11px;
-  font-weight: 700;
-  padding: 1px 7px;
-  border-radius: 999px;
   background: color-mix(in srgb, var(--chargepoint) 18%, transparent);
   color: var(--chargepoint);
-}
-
-.soc-editor-backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: 10;
-}
-
-.soc-editor {
-  position: absolute;
-  top: calc(100% + 8px);
-  right: 0;
-  z-index: 11;
-  width: 220px;
-  padding: 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
-}
-
-.soc-input-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 13px;
-}
-
-.soc-input {
-  width: 56px;
-  text-align: center;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  background: var(--bg);
-  color: var(--text);
-  padding: 4px;
-}
-
-.soc-editor-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
 }
 </style>
