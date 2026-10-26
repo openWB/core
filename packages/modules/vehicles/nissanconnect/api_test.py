@@ -2,7 +2,7 @@
 import base64
 from concurrent.futures import ThreadPoolExecutor
 import hashlib
-from http.client import RemoteDisconnected
+from http.client import HTTPMessage, RemoteDisconnected
 import logging
 import re
 from socket import gaierror
@@ -359,7 +359,10 @@ def test_transport_logs_hide_private_urls_without_muting_other_requests(monkeypa
     instance = client()
     pool = HTTPSConnectionPool("example.invalid")
     connection = Mock(is_closed=False, is_verified=True)
-    connection.getresponse.return_value = HTTPResponse(status=200, headers={}, preload_content=False)
+    response = HTTPResponse(status=200, headers={}, preload_content=False)
+    response.length = 0
+    response.msg = HTTPMessage()
+    connection.getresponse.return_value = response
     monkeypatch.setattr(pool, "_validate_conn", lambda connection: None)
     transport_log = logging.getLogger("urllib3.connectionpool")
 
