@@ -4,12 +4,16 @@
       v-for="mode in batteryModes"
       :key="mode.value"
       :color="batMode.value === mode.value ? 'primary' : 'grey'"
-      :label="mode.label"
-      :icon="mode.icon"
       :outline="batMode.value !== mode.value"
       size="sm"
       @click="batMode.value = mode.value"
     >
+      <q-icon :name="mode.icon" />
+      <template v-if="mode.value === 'ev_mode'">
+        <span class="q-mx-xs">/</span>
+        <q-icon name="power" />
+      </template>
+      <span class="q-ml-xs">{{ mode.label }}</span>
       <q-tooltip class="bg-primary">{{ mode.tooltip }}</q-tooltip>
     </q-btn>
   </q-btn-group>

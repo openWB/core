@@ -18,6 +18,8 @@ export default {
     DashboardCard,
     ChargeModeModal,
     BatteryModeModal,
+    VehicleIcon,
+    ConsumerIcon,
   },
   props: {
     changesLocked: { required: false, type: Boolean, default: false },
@@ -944,8 +946,33 @@ export default {
                   opacity="1"
                   filter="url(#f-shadow)"
                 />
+                <g
+                  v-if="mqttStore.getBatteryMode === 'ev_mode'"
+                  :style="{ color: 'var(--color--warning)' }"
+                >
+                  <title>Verbraucher</title>
+                  <VehicleIcon
+                    :x="svgSize.circleRadius * 1.25"
+                    :y="-svgSize.circleRadius * 1.35"
+                    :height="svgSize.circleRadius * 0.6"
+                    :width="svgSize.circleRadius * 0.5"
+                  />
+                  <text
+                    :x="svgSize.circleRadius * 1.75"
+                    :y="-svgSize.circleRadius * 0.88"
+                    :font-size="svgSize.circleRadius * 0.5"
+                    fill="currentColor"
+                  >/</text>
+                  <ConsumerIcon
+                    :x="svgSize.circleRadius * 1.9"
+                    :y="-svgSize.circleRadius * 1.35"
+                    :height="svgSize.circleRadius * 0.6"
+                    :width="svgSize.circleRadius * 0.4"
+                  />
+                </g>
                 <component
                   :is="batteryModeIcon"
+                  v-else
                   :x="svgSize.circleRadius * 1.45"
                   :y="-svgSize.circleRadius * 1.35"
                   :height="svgSize.circleRadius * 0.6"

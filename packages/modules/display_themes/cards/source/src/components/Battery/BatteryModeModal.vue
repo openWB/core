@@ -21,6 +21,7 @@
             outline
             :color="mode.color != 'dark' ? mode.color : 'light'"
             :active="mode.value === mqttStore.getBatteryMode"
+            :title="mode.label"
             @click="
               setBatteryMode(mode.value)
             "
@@ -32,6 +33,13 @@
                   :icon="mode.symbol.icon"
                   :rotation="mode.symbol.rotation"
                 />
+                <template v-if="mode.value === 'ev_mode'">
+                  /
+                  <font-awesome-icon
+                    fixed-width
+                    :icon="['fas', 'plug']"
+                  />
+                </template>
               </i-column>
               <i-column>
                 {{ mode.label }}
@@ -53,10 +61,11 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import {
   faBatteryFull as fasBatteryFull,
   faBatteryHalf as fasBatteryHalf,
-  faCar as fasCar
+  faCar as fasCar,
+  faPlug as fasPlug
 } from "@fortawesome/free-solid-svg-icons";
 /* add icons to the library */
-library.add(fasBatteryFull, fasBatteryHalf, fasCar);
+library.add(fasBatteryFull, fasBatteryHalf, fasCar, fasPlug);
 
 export default {
   name: "BatteryModeModal",
@@ -71,7 +80,7 @@ export default {
       batteryModes: [
         {
           value: 'ev_mode',
-          label: 'Fahrzeuge',
+          label: 'Verbraucher',
           color: 'primary',
           symbol: { icon: ['fas', 'fa-car'], rotation: 0 },
         },

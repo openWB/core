@@ -40,6 +40,10 @@
         <div>Ladepriorität:</div>
         <div class="row items-center">
           <q-icon :name="batteryMode.icon" size="sm" color="primary" />
+          <template v-if="batteryMode.value === 'ev_mode'">
+            <span class="q-mx-xs">/</span>
+            <q-icon name="power" size="sm" color="primary" />
+          </template>
           <div>
             {{ batteryMode.label }}
           </div>
