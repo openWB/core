@@ -2,8 +2,11 @@
 import base64
 from concurrent.futures import ThreadPoolExecutor
 import hashlib
+from http.client import RemoteDisconnected
 import logging
 import re
+from socket import gaierror
+import traceback
 from unittest.mock import Mock
 from urllib.parse import parse_qs, urlsplit
 
@@ -11,6 +14,7 @@ import pytest
 import requests
 import requests_mock
 from urllib3.connectionpool import HTTPSConnectionPool
+from urllib3.exceptions import MaxRetryError, NewConnectionError, ProtocolError
 from urllib3.response import HTTPResponse
 from urllib3.util.retry import Retry
 
@@ -63,10 +67,10 @@ def test_login_selection_measurements_and_session_reuse(http, caplog):
     login(http)
     http.get(api.USERS_BASE_URL + "v1/users/current", json={"userId": "synthetic-user"})
     http.get(api.BFF_BASE_URL + "v5/users/synthetic-user/cars", json={"data": [{"vin": VIN}]})
-    http.get(BATTERY_URL, json=battery(rangeHvacOn=123.4))
+    http.get(BATTERY_URL, json=battery(batteryBarLevel=114, rangeHvacOn=123.4))
     http.get(COCKPIT_URL, json={"data": {"attributes": {"totalMileage": 12345.6}}})
     instance = api.NissanClient("synthetic@example.invalid", "synthetic-password")
-    assert instance.fetch_battery() == (47, 123.4, MEASUREMENT_UNIX_SECONDS, 12345.6)
+    assert instance.fetch_battery() == (47.5, 123.4, MEASUREMENT_UNIX_SECONDS, 12345.6)
     calls = list(http.request_history)
     authorize = parse_qs(urlsplit(calls[0].url).query)
     verifier = parse_qs(calls[2].text)["code_verifier"][0]
@@ -87,16 +91,37 @@ def test_valid_zero_and_old_measurement(soc):
     assert api.parse_battery(battery(soc, rangeHvacOn=0)) == (soc, 0, MEASUREMENT_UNIX_SECONDS)
 
 
+@pytest.mark.parametrize("soc,bar_units,expected_percent", [
+    (0, 0, 0), (0, 1, 0.4166667), (61, 148, 61.6666667),
+    (47.5, 114, 47.5), (99, 240, 100), (100, 240, 100),
+])
+def test_consistent_bar_level_preserves_precision_zero_and_measurement_time(soc, bar_units, expected_percent):
+    soc_percent, range_km, timestamp = api.parse_battery(battery(soc, batteryBarLevel=bar_units, rangeHvacOn=0))
+    assert soc_percent == pytest.approx(expected_percent)
+    assert range_km == 0
+    assert timestamp == MEASUREMENT_UNIX_SECONDS
+
+
+@pytest.mark.parametrize("bar_units", [None, False, -1, 241, "148", {}, [], float("nan"), float("inf")])
+def test_invalid_bar_level_retains_valid_battery_level(bar_units):
+    assert api.parse_battery(battery(61.25, batteryBarLevel=bar_units))[0] == 61.25
+
+
+@pytest.mark.parametrize("soc,bar_units", [(1, 0), (80, 12), (0, 240), (50, 122.5)])
+def test_inconsistent_bar_level_retains_battery_level(soc, bar_units):
+    assert api.parse_battery(battery(soc, batteryBarLevel=bar_units))[0] == soc
+
+
 @pytest.mark.parametrize("soc", [None, True, -1, 101, "47", float("nan"), float("inf")])
 def test_invalid_soc_never_becomes_zero(soc):
     with pytest.raises(api.NissanError):
-        api.parse_battery(battery(soc))
+        api.parse_battery(battery(soc, batteryBarLevel=114))
 
 
 @pytest.mark.parametrize("timestamp", [None, "bad", "2022-01-01T00:00:00", "2099-01-01T00:00:00Z"])
 def test_invalid_timestamp_never_becomes_now(timestamp):
     with pytest.raises(api.NissanError):
-        api.parse_battery(battery(timestamp=timestamp))
+        api.parse_battery(battery(timestamp=timestamp, batteryBarLevel=114))
 
 
 @pytest.mark.parametrize("odometer", [None, -1, True, "12345", float("inf")])
@@ -184,14 +209,133 @@ def test_vehicle_selection(http, configured_vin, vehicles, expected):
             instance._select_vehicle()
 
 
-def test_transport_and_json_errors_omit_private_data(http):
-    http.get(BATTERY_URL, exc=requests.Timeout("synthetic-private-url"))
+@pytest.mark.parametrize("exception_type,message", [
+    (requests.ConnectTimeout, "Nissan request timed out."),
+    (requests.ReadTimeout, "Nissan request timed out."),
+    (requests.exceptions.SSLError, "Nissan TLS connection failed."),
+    (requests.ConnectionError, "Nissan connection failed."),
+    (requests.RequestException, "Nissan could not be reached."),
+])
+def test_transport_errors_omit_private_data(http, caplog, exception_type, message):
+    caplog.set_level(logging.DEBUG)
+    http.get(BATTERY_URL, exc=exception_type("synthetic-private-url"))
+    with pytest.raises(api.NissanError) as failure:
+        client().fetch_battery()
+    assert str(failure.value) == message
+    assert failure.value.__suppress_context__
+    assert "synthetic-private-url" not in caplog.text
+    assert http.call_count == (2 if exception_type is requests.ConnectionError else 1)
+
+
+@pytest.mark.parametrize("cause_type,wrapper,message", [
+    (gaierror, "explicit", "Nissan name resolution failed."),
+    (gaierror, "implicit", "Nissan name resolution failed."),
+    (ConnectionRefusedError, "explicit", "Nissan connection was refused."),
+    (RemoteDisconnected, "protocol", "Nissan connection closed without a response."),
+    (ConnectionResetError, "protocol", "Nissan connection was interrupted."),
+    (ConnectionAbortedError, "protocol", "Nissan connection was interrupted."),
+    (BrokenPipeError, "protocol", "Nissan connection was interrupted."),
+])
+def test_wrapped_connection_causes_are_classified_without_private_text(http, caplog, cause_type, wrapper, message):
+    caplog.set_level(logging.DEBUG)
+    cause = cause_type("synthetic-private-url")
+    if wrapper == "protocol":
+        wrapped = ProtocolError("synthetic-private-url", cause)
+    else:
+        connection_error = NewConnectionError(None, "synthetic-private-url")
+        if wrapper == "explicit":
+            connection_error.__cause__ = cause
+        else:
+            connection_error.__context__ = cause  # Older urllib3 may use implicit chaining.
+        wrapped = MaxRetryError(None, "synthetic-private-url", reason=connection_error)
+    http.get(BATTERY_URL, exc=requests.ConnectionError(wrapped))
+    with pytest.raises(api.NissanError) as failure:
+        client().fetch_battery()
+    assert str(failure.value) == message
+    rendered = "".join(traceback.format_exception(type(failure.value), failure.value, failure.value.__traceback__))
+    assert "synthetic-private-url" not in rendered + caplog.text
+    assert not api._PRIVATE_HTTP_REQUEST.get()
+    assert http.call_count == 2
+
+
+@pytest.mark.parametrize("chain", ["cycle", "suppressed", "explicit"])
+def test_unknown_connection_cause_does_not_guess_from_text_or_unrelated_context(http, chain):
+    error = requests.ConnectionError("NameResolutionError: synthetic-private-url")
+    error.__context__ = gaierror("synthetic-private-url")
+    if chain == "suppressed":
+        error.__suppress_context__ = True
+    else:
+        error.__cause__ = error if chain == "cycle" else OSError("ConnectionRefusedError")
+    http.get(BATTERY_URL, exc=error)
+    with pytest.raises(api.NissanError, match="^Nissan connection failed[.]$"):
+        client().fetch_battery()
+    assert http.call_count == 2
+
+
+@pytest.mark.parametrize("target", [BATTERY_URL, COCKPIT_URL])
+def test_vehicle_connection_retry_preserves_session_and_measurements(http, caplog, target):
+    caplog.set_level(logging.DEBUG)
+    payloads = {BATTERY_URL: battery(batteryBarLevel=114),
+                COCKPIT_URL: {"data": {"attributes": {"totalMileage": 0}}}}
+    for url, payload in payloads.items():
+        http.get(url, json=payload)
+    error = requests.ConnectionError(ProtocolError("synthetic-private-url", ConnectionResetError()))
+    http.get(target, [{"exc": error}, {"json": payloads[target]}])
     instance = client()
-    with pytest.raises(api.NissanError, match="^Nissan could not be reached.$"):
-        instance.fetch_battery()
+    instance._session.cookies.set("synthetic", "retained")
+    manager = instance._session.get_adapter(target).poolmanager
+    previous_pool = manager.connection_from_url(target)
+    assert instance.fetch_battery() == (47.5, None, MEASUREMENT_UNIX_SECONDS, 0)
+    assert http.call_count == 3
+    assert manager.connection_from_url(target) is not previous_pool
+    assert instance._session.cookies.get("synthetic") == "retained"
+    assert instance._access_token == "synthetic-access"
+    assert instance._refresh_token == "synthetic-refresh"
+    assert instance._session.hooks["response"] == [] and not instance._session.trust_env
+    assert caplog.text.count("Nissan vehicle connection failed; retrying once.") == 1
+    assert "synthetic-private-url" not in caplog.text
+    assert not api._PRIVATE_HTTP_REQUEST.get()
+
+
+@pytest.mark.parametrize("method,url", [
+    ("POST", BATTERY_URL), ("GET", api.AUTH_BASE_URL + "oauth2/authorize"),
+    ("POST", REFRESH_URL), ("GET", api.USERS_BASE_URL + "v1/users/current"),
+])
+def test_connection_retry_is_limited_to_vehicle_gets(http, method, url):
+    http.register_uri(method, url, exc=requests.ConnectionError("synthetic-private-url"))
+    with pytest.raises(api.NissanError, match="^Nissan connection failed[.]$"):
+        client()._request(method, url)
+    assert http.call_count == 1
+
+
+@pytest.mark.parametrize("failure,message", [
+    (requests.Timeout, "Nissan request timed out."),
+    (requests.exceptions.SSLError, "Nissan TLS connection failed."),
+])
+def test_second_attempt_preserves_failure_diagnostic(http, failure, message):
+    http.get(BATTERY_URL, [{"exc": requests.ConnectionError("synthetic-private-url")},
+                           {"exc": failure("synthetic-private-url")}])
+    with pytest.raises(api.NissanError) as error:
+        client().fetch_battery()
+    assert str(error.value) == message
+    assert error.value.__suppress_context__
+    assert http.call_count == 2
+
+
+def test_connection_retry_does_not_repeat_authentication(http):
+    battery_request = http.get(BATTERY_URL, [{"exc": requests.ConnectionError("synthetic-private-url")},
+                                             {"status_code": 401}, {"json": battery()}])
+    refresh = http.post(REFRESH_URL, json={"access_token": "synthetic-new"})
+    http.get(COCKPIT_URL, json={})
+    assert client().fetch_battery()[0] == 47
+    assert battery_request.call_count == 3
+    assert refresh.call_count == 1
+
+
+def test_json_errors_omit_private_data(http):
     http.get(BATTERY_URL, text="synthetic-private-body")
     with pytest.raises(api.NissanError, match="^Nissan returned an invalid response.$"):
-        instance.fetch_battery()
+        client().fetch_battery()
 
 
 def test_native_configuration_roundtrip_and_private_repr():
@@ -232,7 +376,7 @@ def test_transport_logs_hide_private_urls_without_muting_other_requests(monkeypa
 
     monkeypatch.setattr(instance._session, "request", request)
     if fail:
-        with pytest.raises(api.NissanError, match="^Nissan could not be reached.$"):
+        with pytest.raises(api.NissanError, match="^Nissan request timed out.$"):
             instance._request("GET", "https://example.invalid" + path)
     else:
         assert instance._request("GET", "https://example.invalid" + path).status_code == 200
