@@ -548,8 +548,6 @@ class SetData:
             self._validate_value(msg, str)
         elif "/control_parameter/limit" in msg.topic:
             self._validate_value(msg, "json")
-        elif "/control_parameter/prio" in msg.topic:
-            self._validate_value(msg, bool)
         elif "/control_parameter/current_plan" in msg.topic:
             self._validate_value(msg, int)
         elif ("/control_parameter/min_current" in msg.topic or
