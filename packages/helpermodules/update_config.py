@@ -65,7 +65,7 @@ class UpdateConfig:
 
     DATASTORE_VERSION = 154
 
-    FILE_OPERATION_VERSION = 0
+    FILE_OPERATION_VERSION = 1
 
     valid_topic = [
         "^openWB/bat/config/bat_control_activated$",
@@ -995,6 +995,35 @@ class UpdateConfig:
         except Exception:
             _generate_totals_subprocess = None
             log.exception("Fehler beim Starten des generate_totals_subprocess.")
+
+    def upgrade_file_operation_1(self) -> None:
+        """Boolesche Fahrzeug-Priorität in historischen Ladeprotokollen in Rang 1/2 umwandeln."""
+        failed_files = []
+        for file_path in sorted((self.base_path / "data" / "charge_log").glob("*.json")):
+            try:
+                with file_path.open(encoding="utf-8") as file:
+                    entries = json.load(file)
+                if not isinstance(entries, list):
+                    raise ValueError("Das Ladeprotokoll enthält keine Liste.")
+                changed = False
+                for entry in entries:
+                    vehicle = entry.get("vehicle") if isinstance(entry, dict) else None
+                    if isinstance(vehicle, dict) and isinstance(vehicle.get("prio"), bool):
+                        vehicle["prio"] = 1 if vehicle["prio"] else 2
+                        changed = True
+                if changed:
+                    write_and_check(str(file_path), entries)
+                    with file_path.open(encoding="utf-8") as file:
+                        written_entries = json.load(file)
+                    # bool und int müssen unterschieden werden (True == 1 in Python).
+                    if json.dumps(written_entries, sort_keys=True) != json.dumps(entries, sort_keys=True):
+                        raise ValueError("Die Prioritäts-Migration wurde nicht vollständig gespeichert.")
+            except (OSError, ValueError):
+                log.exception("Fehler bei der Prioritäts-Migration des Ladeprotokolls %s", file_path)
+                failed_files.append(str(file_path))
+        if failed_files:
+            raise RuntimeError(f"Ladeprotokoll-Prioritäten konnten nicht migriert werden: {failed_files}")
+        self._append_file_operation_version(1)
 
     def _loop_all_received_topics(self, callback) -> None:
         modified_topics = {}
