@@ -5,8 +5,8 @@
     :width="880"
     @update:model-value="$emit('update:modelValue', $event)"
   >
-    <div class="info-and-tabs">
-      <div class="info-box">
+    <div class="flex items-start gap-4">
+      <div class="info-box flex-1">
         <div
           v-if="provider"
           class="info-row"
@@ -26,7 +26,7 @@
       />
     </div>
 
-    <div style="min-height: 320px; margin: 16px 0">
+    <div class="my-4 min-h-80">
       <ChartjsLine
         v-if="points.length > 0"
         :key="activeTab"
@@ -168,15 +168,3 @@ const chartOptions = computed<ChartOptions<'line'>>(() => {
   }
 })
 </script>
-
-<style scoped>
-.info-and-tabs {
-  display: flex;
-  align-items: flex-start;
-  gap: 16px;
-}
-
-.info-box {
-  flex: 1;
-}
-</style>

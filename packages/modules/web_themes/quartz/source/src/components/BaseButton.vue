@@ -1,7 +1,7 @@
 <template>
   <button
     type="button"
-    :class="['base-btn', variant]"
+    :class="['rounded-full border px-[11px] py-[5px] text-xs', variantClasses[variant]]"
     @click="$emit('click')"
   >
     <slot />
@@ -11,30 +11,10 @@
 <script setup lang="ts">
 withDefaults(defineProps<{ variant?: 'primary' | 'secondary' | 'danger' }>(), { variant: 'secondary' })
 defineEmits<{ click: [] }>()
+
+const variantClasses: Record<'primary' | 'secondary' | 'danger', string> = {
+  primary: 'bg-accent border-accent text-white',
+  secondary: 'bg-transparent border-border text-text',
+  danger: 'bg-transparent border-grid text-grid',
+}
 </script>
-
-<style scoped>
-.base-btn {
-  font-size: 12px;
-  padding: 5px 11px;
-  border-radius: 999px;
-  border: 1px solid var(--border);
-}
-
-.base-btn.primary {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: #fff;
-}
-
-.base-btn.secondary {
-  background: transparent;
-  color: var(--text);
-}
-
-.base-btn.danger {
-  background: transparent;
-  color: var(--grid);
-  border-color: var(--grid);
-}
-</style>

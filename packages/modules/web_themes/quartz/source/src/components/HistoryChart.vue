@@ -1,14 +1,11 @@
 <template>
-  <div
-    class="panel"
-    style="padding: 20px 24px 16px; margin-bottom: 24px"
-  >
-    <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-bottom: 12px">
-      <div style="display: flex; align-items: center; gap: 8px">
-        <h2 style="margin: 0; font-size: 16px; font-weight: 700">
+  <div class="panel mb-6 px-6 pt-5 pb-4">
+    <div class="mb-3 flex flex-wrap items-center justify-between gap-3">
+      <div class="flex items-center gap-2">
+        <h2 class="m-0 text-base font-bold">
           Verlauf &middot; {{ mode === 'day' ? 'Heute' : `Live · ${liveRangeMinutes} Min` }}
         </h2>
-        <div style="position: relative">
+        <div class="relative">
           <BaseIconButton
             aria-label="Diagramm-Einstellungen"
             @click="showSettings = !showSettings"
@@ -17,14 +14,14 @@
           </BaseIconButton>
           <div
             v-if="showSettings"
-            class="settings-backdrop"
+            class="fixed inset-0 z-10"
             @click="showSettings = false"
           />
           <div
             v-if="showSettings"
-            class="settings-panel panel"
+            class="panel absolute top-[calc(100%_+_8px)] left-0 z-[11] flex w-70 max-h-[85vh] flex-col gap-1.5 overflow-y-auto overflow-x-hidden p-3 shadow-[0_8px_24px_rgba(0,0,0,0.12)]"
           >
-            <div class="settings-group-label">
+            <div class="settings-group-label mt-2 first:mt-0">
               Ansicht
             </div>
             <BaseTabGroup
@@ -35,7 +32,7 @@
             />
 
             <template v-if="mode === 'live'">
-              <div class="settings-group-label">
+              <div class="settings-group-label mt-2 first:mt-0">
                 Zeitfenster &middot; {{ liveRangeMinutes }} Min
               </div>
               <input
@@ -48,15 +45,15 @@
               >
             </template>
 
-            <div class="settings-group-label">
+            <div class="settings-group-label mt-2 first:mt-0">
               Linien
             </div>
             <div
               v-for="cat in categoryDefs"
               :key="cat.key"
-              class="category-block"
+              class="border-t border-border py-1.5 first-of-type:border-t-0"
             >
-              <label class="series-toggle">
+              <label class="flex cursor-pointer items-center gap-[7px] text-[13px]">
                 <input
                   v-model="visibleSeries[cat.key]"
                   type="checkbox"
@@ -70,7 +67,7 @@
 
               <div
                 v-if="visibleSeries[cat.key] && categories[cat.key].individual.length > 0"
-                class="category-mode-row"
+                class="mt-1.5 mb-1 ml-[22px]"
               >
                 <BaseTabGroup
                   dense
@@ -82,12 +79,12 @@
 
               <div
                 v-if="visibleSeries[cat.key] && categoryMode[cat.key] === 'individual' && categories[cat.key].individual.length > 0"
-                class="instance-list"
+                class="ml-[22px] flex flex-col gap-1"
               >
                 <label
                   v-for="(inst, idx) in categories[cat.key].individual"
                   :key="inst.id"
-                  class="series-toggle instance-toggle"
+                  class="flex cursor-pointer items-center gap-[7px] text-xs text-muted"
                 >
                   <input
                     type="checkbox"
@@ -105,11 +102,11 @@
           </div>
         </div>
       </div>
-      <div style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap">
+      <div class="flex flex-wrap items-center gap-4">
         <span
           v-for="item in legend"
           :key="item.label"
-          class="legend-item"
+          class="flex items-center gap-1.5 text-xs text-muted"
         >
           <span
             class="legend-dot"
@@ -119,7 +116,7 @@
         </span>
         <button
           v-if="isZoomed"
-          class="reset-zoom-btn"
+          class="rounded-full border border-border bg-transparent px-2.5 py-[3px] text-xs text-accent"
           type="button"
           @click="resetZoom"
         >
@@ -128,7 +125,7 @@
       </div>
     </div>
 
-    <div style="min-height: 420px">
+    <div class="min-h-[420px]">
       <ChartjsLine
         v-if="hasData"
         ref="chartRef"
@@ -272,6 +269,7 @@ const categoryDefs: CategoryDef[] = [
   { key: 'pv', label: 'Erzeugung', colorVar: '--pv', fill: true },
   { key: 'house', label: 'Hausverbrauch', colorVar: '--consumption', fill: false },
   { key: 'grid', label: 'Netz', colorVar: '--grid', fill: false },
+  { key: 'counter', label: 'Zähler', colorVar: '--grid', fill: false },
   { key: 'battery', label: 'Speicher', colorVar: '--battery', fill: false },
   { key: 'chargepoint', label: 'Ladepunkte', colorVar: '--chargepoint', fill: false },
   { key: 'consumer', label: 'Verbraucher', colorVar: '--consumer', fill: false },
@@ -281,6 +279,7 @@ const visibleSeries = reactive<Record<CategoryKey, boolean>>({
   pv: true,
   house: true,
   grid: true,
+  counter: true,
   battery: true,
   chargepoint: true,
   consumer: true,
@@ -291,6 +290,7 @@ const categoryMode = reactive<Record<CategoryKey, 'combined' | 'individual'>>({
   pv: 'combined',
   house: 'combined',
   grid: 'combined',
+  counter: 'combined',
   battery: 'combined',
   chargepoint: 'combined',
   consumer: 'combined',
@@ -475,85 +475,3 @@ const chartOptions = computed<ChartOptions<'line'>>(() => {
   }
 })
 </script>
-
-<style scoped>
-.legend-item {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 12px;
-  color: var(--muted);
-}
-
-.reset-zoom-btn {
-  font-size: 12px;
-  color: var(--accent);
-  background: transparent;
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  padding: 3px 10px;
-}
-
-.settings-backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: 10;
-}
-
-.settings-panel {
-  position: absolute;
-  top: calc(100% + 8px);
-  left: 0;
-  z-index: 11;
-  width: 280px;
-  max-height: 85vh;
-  overflow-y: auto;
-  overflow-x: hidden;
-  padding: 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
-}
-
-.settings-group-label {
-  margin-top: 8px;
-}
-
-.settings-group-label:first-child {
-  margin-top: 0;
-}
-
-.series-toggle {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  font-size: 13px;
-  cursor: pointer;
-}
-
-.category-block {
-  padding: 6px 0;
-  border-top: 1px solid var(--border);
-}
-
-.category-block:first-of-type {
-  border-top: none;
-}
-
-.category-mode-row {
-  margin: 6px 0 4px 22px;
-}
-
-.instance-list {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  margin-left: 22px;
-}
-
-.instance-toggle {
-  font-size: 12px;
-  color: var(--muted);
-}
-</style>

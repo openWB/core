@@ -188,9 +188,3 @@ function setField(path: string, value: unknown): void {
   mqttStore.setChargePointChargeTemplateField(props.chargePointId, path, value)
 }
 </script>
-
-<style scoped>
-.mode-note {
-  margin: 4px 0 14px;
-}
-</style>

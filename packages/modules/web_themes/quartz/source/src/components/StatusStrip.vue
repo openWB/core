@@ -1,5 +1,5 @@
 <template>
-  <div style="display: flex; gap: 10px; padding: 16px 0; flex-wrap: wrap">
+  <div class="flex flex-wrap gap-2.5 py-4">
     <StatChip
       v-for="chip in chips"
       :key="chip.label"

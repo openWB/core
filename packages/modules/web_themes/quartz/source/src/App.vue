@@ -1,52 +1,45 @@
 <template>
-  <div style="max-width: 1280px; margin: 0 auto; padding: 0 24px 64px">
-    <nav
-      style="
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 20px 0;
-        border-bottom: 1px solid var(--border);
-        flex-wrap: wrap;
-        gap: 16px;
-      "
-    >
+  <div class="mx-auto max-w-7xl px-6 pb-16">
+    <nav class="flex flex-wrap items-center justify-between gap-4 border-b border-border py-5">
       <a
         href="/openWB/web/"
-        style="font-size: 18px; font-weight: 700; letter-spacing: -0.01em; color: var(--text); text-decoration: none"
+        class="text-[18px] font-bold tracking-[-0.01em] text-text no-underline"
       >openWB</a>
-      <div style="display: flex; align-items: center; gap: 28px">
+      <div class="flex items-center gap-7">
         <a
           href="/openWB/web/settings/#/Status"
-          style="font-size: 14px; font-weight: 500; border-bottom: 2px solid var(--accent); padding: 8px 4px; color: var(--text); text-decoration: none"
+          class="border-b-2 border-accent px-1 py-2 text-sm font-medium text-text no-underline"
         >Status</a>
         <a
           href="/openWB/web/settings/#/Logging/Chart"
-          style="font-size: 14px; font-weight: 500; color: var(--muted)"
+          class="text-sm font-medium text-muted"
         >
           Auswertungen
         </a>
         <a
           href="/openWB/web/settings/#/Logging/ChargeLog"
-          style="font-size: 14px; font-weight: 500; color: var(--muted)"
+          class="text-sm font-medium text-muted"
         >
           Ladeprotokoll
         </a>
         <a
           href="/openWB/web/settings/"
-          style="font-size: 14px; font-weight: 500; color: var(--muted)"
+          class="text-sm font-medium text-muted"
         >Einstellungen</a>
       </div>
-      <label style="display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--muted); cursor: pointer">
+      <label class="flex cursor-pointer items-center gap-2.5 text-[13px] text-muted">
         {{ dark ? 'Dunkel' : 'Hell' }}
         <button
-          class="theme-switch"
+          class="relative inline-flex h-6 w-11 items-center rounded-full border-0 bg-[#d1d5db] p-0.5"
           role="switch"
           :aria-checked="dark"
-          :class="{ active: dark }"
+          :class="{ 'bg-accent': dark }"
           @click="toggleDark"
         >
-          <span class="theme-switch-thumb" />
+          <span
+            class="block h-5 w-5 rounded-full bg-white shadow-[0_1px_2px_rgba(0,0,0,0.3)] transition-transform duration-150 [transition-timing-function:ease]"
+            :class="{ 'translate-x-5': dark }"
+          />
         </button>
       </label>
     </nav>
@@ -54,7 +47,7 @@
     <StatusStrip />
     <HistoryChart :theme="theme" />
 
-    <div style="margin-bottom: 16px">
+    <div class="mb-4">
       <BaseTabGroup
         :model-value="activeTab"
         :options="tabs"
@@ -64,7 +57,7 @@
 
     <div
       v-if="showChargePoints"
-      class="card-grid"
+      class="mb-6 grid grid-cols-1 gap-4 min-[721px]:grid-cols-2"
     >
       <ChargePointCard
         v-for="id in chargePointIds"
@@ -110,48 +103,3 @@ function toggleDark(): void {
   }
 }
 </script>
-
-<style scoped>
-.theme-switch {
-  position: relative;
-  width: 44px;
-  height: 24px;
-  border-radius: 999px;
-  border: none;
-  padding: 2px;
-  display: inline-flex;
-  align-items: center;
-  background: #d1d5db;
-}
-
-.theme-switch.active {
-  background: var(--accent);
-}
-
-.theme-switch-thumb {
-  display: block;
-  width: 20px;
-  height: 20px;
-  border-radius: 999px;
-  background: #fff;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
-  transition: transform 0.15s ease;
-}
-
-.theme-switch.active .theme-switch-thumb {
-  transform: translateX(20px);
-}
-
-.card-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 16px;
-  margin-bottom: 24px;
-}
-
-@media (max-width: 720px) {
-  .card-grid {
-    grid-template-columns: 1fr;
-  }
-}
-</style>

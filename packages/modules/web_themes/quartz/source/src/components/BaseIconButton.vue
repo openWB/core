@@ -1,7 +1,10 @@
 <template>
   <button
-    class="icon-btn"
-    :class="{ active, sm: size === 'sm' }"
+    :class="[
+      'flex items-center justify-center rounded-lg border border-border',
+      size === 'sm' ? 'h-[22px] w-[22px] flex-none' : 'h-[26px] w-[26px]',
+      active ? 'border-accent bg-accent text-white' : 'bg-transparent text-muted',
+    ]"
     :aria-pressed="active"
     type="button"
     @click="$emit('click')"
@@ -14,29 +17,3 @@
 withDefaults(defineProps<{ active?: boolean; size?: 'sm' | 'md' }>(), { size: 'md' })
 defineEmits<{ click: [] }>()
 </script>
-
-<style scoped>
-.icon-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 26px;
-  height: 26px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: transparent;
-  color: var(--muted);
-}
-
-.icon-btn.sm {
-  width: 22px;
-  height: 22px;
-  flex: none;
-}
-
-.icon-btn.active {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: #fff;
-}
-</style>

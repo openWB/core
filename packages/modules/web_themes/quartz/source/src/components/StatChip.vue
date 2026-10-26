@@ -1,7 +1,7 @@
 <template>
   <div
-    class="panel stat-chip"
-    :class="{ clickable }"
+    class="panel flex flex-1 items-center justify-center gap-[7px] whitespace-nowrap px-[11px] py-2"
+    :class="{ 'cursor-pointer hover:border-accent': clickable }"
     @click="clickable && $emit('click')"
   >
     <component
@@ -9,10 +9,10 @@
       :style="{ color: `var(--${color})` }"
     />
     <div>
-      <div class="stat-label">
+      <div class="text-[11px] text-muted">
         {{ label }}
       </div>
-      <div class="stat-value">
+      <div class="text-sm font-bold">
         {{ value }}
       </div>
     </div>
@@ -31,33 +31,3 @@ defineProps<{
 }>()
 defineEmits<{ click: [] }>()
 </script>
-
-<style scoped>
-.stat-chip {
-  flex: 1 1 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 7px;
-  padding: 8px 11px;
-  white-space: nowrap;
-}
-
-.stat-chip.clickable {
-  cursor: pointer;
-}
-
-.stat-chip.clickable:hover {
-  border-color: var(--accent);
-}
-
-.stat-label {
-  font-size: 11px;
-  color: var(--muted);
-}
-
-.stat-value {
-  font-size: 14px;
-  font-weight: 700;
-}
-</style>

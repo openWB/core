@@ -25,7 +25,7 @@
       </div>
     </div>
 
-    <div style="min-height: 320px; margin: 16px 0">
+    <div class="my-4 min-h-80">
       <ChartjsLine
         v-if="hasData"
         :data="chartData"

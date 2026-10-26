@@ -89,6 +89,37 @@ function gridPower(entry: DailyLogEntry): number {
   return imported - exported
 }
 
+/**
+ * Non-grid counters (sub-meters a user adds for monitoring - a wallbox circuit, a heat pump,
+ * etc.) have no 'all' aggregate key in the log (unlike pv/bat/cp/consumer), so their combined
+ * series is built by summing every counter entry except the one flagged 'grid' (already
+ * covered by gridPower/the 'grid' category).
+ */
+function buildCounterCategory(entries: DailyLogEntry[], names: Record<string, string>): CategoryData {
+  const all: InstancePoint[] = []
+  const instancePoints = new Map<string, InstancePoint[]>()
+
+  entries.forEach((entry) => {
+    const timestamp = entry.timestamp * 1000
+    let sum = 0
+    Object.entries(entry.counter ?? {}).forEach(([id, flow]) => {
+      if (flow.grid) return
+      const value = flowValue(flow, 'net')
+      sum += value
+      if (!instancePoints.has(id)) instancePoints.set(id, [])
+      instancePoints.get(id)?.push({ timestamp, power: value })
+    })
+    all.push({ timestamp, power: sum })
+  })
+
+  const individual: InstanceSeries[] = Array.from(instancePoints.entries()).map(([id, points]) => ({
+    id,
+    label: names[id] ?? `Zähler ${id.replace(/\D/g, '')}`,
+    points,
+  }))
+  return { all, individual }
+}
+
 /** Fetches and parses today's daily_log into per-category chart series, kept live via the getDailyLog command. */
 export function useDailyLog() {
   const mqttStore = useMqttStore()
@@ -108,6 +139,7 @@ export function useDailyLog() {
       house: buildCombinedOnly(
         entries.map((e) => ({ timestamp: e.timestamp * 1000, power: flowValue(e.hc?.all, 'import') })),
       ),
+      counter: buildCounterCategory(entries, names),
     }
   })
 
