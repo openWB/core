@@ -776,7 +776,8 @@ class TransactionCoordinator:
             ):
                 return True
 
-            if timeout is not None and transaction.state in (TransactionState.START_UNCONFIRMED, TransactionState.ERROR):
+            if timeout is not None and transaction.state in (
+                    TransactionState.START_UNCONFIRMED, TransactionState.ERROR):
                 return False
 
             await asyncio.sleep(0.1)

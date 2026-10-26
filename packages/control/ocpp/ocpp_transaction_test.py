@@ -41,17 +41,18 @@ def ocpp_config_for_test():
 def transaction_setup(monkeypatch):
     openwb_cp = SimpleNamespace(
         num=1,
-        data=SimpleNamespace(get=SimpleNamespace(plug_state=True, charge_state=False, imported=100, ocpp=SimpleNamespace(
-            transaction_id=None,
-            transaction_id_tag=None,
-            tag_accepted=False,
-            availability=[True, True],
-            pending_transactions=[],
-            pending_availability=[False, False],
-            unlock_stop=False,
-            remote_stop=False,
-            rfid_stop=False,
-        ))),
+        data=SimpleNamespace(
+            get=SimpleNamespace(plug_state=True, charge_state=False, imported=100, ocpp=SimpleNamespace(
+                transaction_id=None,
+                transaction_id_tag=None,
+                tag_accepted=False,
+                availability=[True, True],
+                pending_transactions=[],
+                pending_availability=[False, False],
+                unlock_stop=False,
+                remote_stop=False,
+                rfid_stop=False,
+            ))),
     )
     charge_point = SimpleNamespace(
         openwb_cp=openwb_cp,
@@ -754,7 +755,14 @@ def test_stop_during_start_is_not_lost(transaction_setup, mock_pub, monkeypatch,
 
 
 @pytest.mark.parametrize("waiting_for", ["connect", "authorize"])
-@pytest.mark.parametrize("abort", ["unplug", "block", "unavailable", "remote_stop", "rfid_stop", "reset", "unlock_stop"])
+@pytest.mark.parametrize("abort",
+                         ["unplug",
+                          "block",
+                          "unavailable",
+                          "remote_stop",
+                          "rfid_stop",
+                          "reset",
+                          "unlock_stop"])
 def test_start_rechecks_conditions_after_waiting(transaction_setup, mock_pub, waiting_for, abort):
     coordinator, connection, openwb_cp = transaction_setup
 
@@ -807,8 +815,8 @@ def test_start_rechecks_current_model_after_authorize(transaction_setup, monkeyp
 
 
 @pytest.mark.parametrize("abort,reason", [("unplug", "EVDisconnected"), ("block", "Other"),
-                                         ("unavailable", "Other"), ("unlock", "UnlockCommand"),
-                                         ("remote", "Remote"), ("rfid_stop", "Other"), ("reset", "Other")])
+                                          ("unavailable", "Other"), ("unlock", "UnlockCommand"),
+                                          ("remote", "Remote"), ("rfid_stop", "Other"), ("reset", "Other")])
 @pytest.mark.parametrize("stop_fails", [False, True])
 def test_abort_during_start_confirmation_stops_without_releasing_charging(
         transaction_setup, mock_pub, monkeypatch, abort, reason, stop_fails):
@@ -1465,7 +1473,7 @@ def test_inoperative_availability_is_scheduled_until_stop(handler_setup, mock_pu
 
 @pytest.mark.parametrize("connector_id", [0, 1])
 @pytest.mark.parametrize("outcome", ["accepted", "Blocked", "Expired", "Invalid", "ConcurrentTx",
-                                   "timeout", "missing_response"])
+                                     "timeout", "missing_response"])
 def test_availability_during_start_is_applied_after_transaction_or_explicit_rejection(
         transaction_setup, monkeypatch, connector_id, outcome):
     coordinator, connection, openwb_cp = transaction_setup
@@ -2037,7 +2045,8 @@ def test_id_change_retains_old_identity_in_mqtt_model(mock_pub, old_id):
     subscriber = object.__new__(SubData)
     chargepoints = {"cp1": SimpleNamespace(chargepoint=SimpleNamespace(
         data=SimpleNamespace(get=SimpleNamespace(ocpp=model))))}
-    subscriber.process_chargepoint_topic(chargepoints, SimpleNamespace(topic=topic, payload=json.dumps(old_id).encode()))
+    subscriber.process_chargepoint_topic(chargepoints,
+                                         SimpleNamespace(topic=topic, payload=json.dumps(old_id).encode()))
     assert asdict(model)["previous_chargebox_id"] == old_id
 
 
