@@ -16,7 +16,7 @@ from helpermodules.logging_context import ocpp_logging_context
 
 from modules.common.fault_state import FaultState
 from control import data
-from control.ocpp.helper import _get_formatted_time, get_cp_from_chargebox_id, _get_config
+from control.ocpp.helper import get_cp_from_chargebox_id, _get_config
 
 from control.ocpp.ocpp_chargepoint import OcppChargePoint, get_ocpp_error_code
 from control.ocpp.ocpp_connection import OcppConnection, RegistrationState
