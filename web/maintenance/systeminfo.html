@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="de">
 	<head>
 		<meta charset="UTF-8" />
@@ -101,12 +101,16 @@
 							for (const subKey in value) {
 								if (Object.hasOwn(value, subKey)) {
 									const v = value[subKey];
-									html += `<tr><th>${subKey}`;
+									const label =
+										key === "softwareInfo" && subKey === "php_version"
+											? "PHP-Version"
+											: subKey;
+									html += `<tr><th>${label}`;
 									// Falls "details" vorhanden, einen runden Info-Button anzeigen
 									if (v && typeof v === "object" && "details" in v) {
 										const infoBtnId = `info_${key}_${subKey}`.replace(
 											/\W/g,
-											"_"
+											"_",
 										);
 										html += ` <button class="details-button" data-details="${v.details}">i</button>`;
 									}
@@ -171,7 +175,7 @@
 										}, 2000);
 										alert(
 											"Fehler beim Neustart: " +
-												(result.message || result.output || "")
+												(result.message || result.output || ""),
 										);
 									}
 								} catch (err) {
@@ -291,7 +295,7 @@
 						const data = value.map((e) =>
 							typeof e.v === "object" && e.v !== null && "value" in e.v
 								? Number(e.v.value)
-								: Number(e.v)
+								: Number(e.v),
 						);
 						// Einheit für Achsenlabel holen
 						let unit = "";
@@ -347,7 +351,7 @@
 							const data = arr.map((e) =>
 								typeof e.v === "object" && e.v !== null && "value" in e.v
 									? Number(e.v.value)
-									: Number(e.v)
+									: Number(e.v),
 							);
 							const chartKey = `${key}_${subKey}`;
 							// Einheit für Achsenlabel holen
