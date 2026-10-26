@@ -245,19 +245,6 @@ export default {
                 {{
                   mqttStore.getChargePointConnectedVehicleChargeMode(chargePointId)?.label
                 }}
-                <font-awesome-icon
-                  fixed-width
-                  :icon="
-                    mqttStore.getChargePointConnectedVehiclePriority(chargePointId)
-                      ? ['fas', 'fa-star']
-                      : ['far', 'fa-star']
-                  "
-                  :class="
-                    mqttStore.getChargePointConnectedVehiclePriority(chargePointId)
-                      ? '_color:warning'
-                      : ''
-                  "
-                />
               </i-badge>
             </i-column>
             <i-column

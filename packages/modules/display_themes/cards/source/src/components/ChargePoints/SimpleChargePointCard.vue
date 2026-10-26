@@ -158,20 +158,6 @@ export default {
                     :style="{ color: mqttStore.getChargePointConnectedVehicleColor(chargePointId) }"
                   />
                   {{ mqttStore.getChargePointConnectedVehicleName(chargePointId) }}
-                  <font-awesome-icon
-                    class="_padding-left:1"
-                    fixed-width
-                    :icon="
-                      mqttStore.getChargePointConnectedVehiclePriority(chargePointId)
-                        ? ['fas', 'fa-star']
-                        : ['far', 'fa-star']
-                    "
-                    :class="
-                      mqttStore.getChargePointConnectedVehiclePriority(chargePointId)
-                        ? '_color:warning'
-                        : ''
-                    "
-                  />
                 </i-button>
                 <!-- SoC -->
                 <i-button
