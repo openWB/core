@@ -63,7 +63,7 @@ NO_MODULE = {"type": None, "configuration": {}}
 
 class UpdateConfig:
 
-    DATASTORE_VERSION = 154
+    DATASTORE_VERSION = 155
 
     FILE_OPERATION_VERSION = 0
 
@@ -4173,3 +4173,21 @@ class UpdateConfig:
 
         self._loop_all_received_topics(upgrade)
         self._append_datastore_version(154)
+
+    def upgrade_datastore_155(self) -> None:
+        """Veraltete Prioritätsfelder auch aus bereits migrierten Konfigurationen entfernen."""
+        def upgrade(topic: str, payload) -> Optional[dict]:
+            if re.fullmatch(r"openWB/vehicle/template/charge_template/[0-9]+", topic):
+                field = "prio"
+            elif re.fullmatch(r"openWB/chargepoint/[0-9]+/get/connected_vehicle/config", topic):
+                field = "priority"
+            else:
+                return None
+            config = decode_payload(payload)
+            if field in config:
+                del config[field]
+                return {topic: config}
+            return None
+
+        self._loop_all_received_topics(upgrade)
+        self._append_datastore_version(155)

@@ -401,7 +401,39 @@ def test_upgrade_datastore_142_ev_chargemode_conversion(ev0_prio: bool,
     # evaluation
     assert uc.all_received_topics["openWB/counter/get/loadmanagement_prios"] == expected
     assert uc.all_received_topics["openWB/system/datastore_version"] == [131, 132, 142]
-    assert mock_pub.pub.call_count == 2  # einmal publishen für Upgrade der Datastore-Version
+    assert mock_pub.pub.call_count == 2  # Rangfolge und Datastore-Version
+
+
+def test_upgrade_datastore_155_removes_only_obsolete_template_prio(mock_pub: Mock):
+    uc = UpdateConfig()
+    priorities = [{"type": "vehicle", "id": 4}]
+    uc.all_received_topics = {
+        "openWB/vehicle/template/charge_template/0": b'{"prio": true, "name": "A"}',
+        "openWB/vehicle/template/charge_template/1": b'{"prio": false, "name": "B"}',
+        "openWB/vehicle/template/charge_template/2": {"name": "C"},
+        "openWB/chargepoint/0/set/log": {"prio": True},
+        "openWB/chargepoint/0/get/connected_vehicle/config": b'{"priority": true, "charge_template": 0}',
+        "openWB/chargepoint/1/get/connected_vehicle/config": b'{"priority": false, "charge_template": 1}',
+        "openWB/chargepoint/2/get/connected_vehicle/config": {"charge_template": 2},
+        "openWB/counter/get/loadmanagement_prios": priorities,
+        "openWB/system/datastore_version": list(range(155)),
+    }
+
+    uc.upgrade_datastore_155()
+
+    for template_id, name in enumerate(("A", "B", "C")):
+        assert uc.all_received_topics[f"openWB/vehicle/template/charge_template/{template_id}"] == {"name": name}
+    assert uc.all_received_topics["openWB/chargepoint/0/set/log"] == {"prio": True}
+    for cp_id in range(3):
+        assert uc.all_received_topics[f"openWB/chargepoint/{cp_id}/get/connected_vehicle/config"] == {
+            "charge_template": cp_id}
+    assert uc.all_received_topics["openWB/counter/get/loadmanagement_prios"] == priorities
+    assert uc.all_received_topics["openWB/system/datastore_version"] == list(range(156))
+    assert mock_pub.pub.call_count == 5
+
+    mock_pub.reset_mock()
+    uc.upgrade_datastore_155()
+    mock_pub.pub.assert_not_called()
 
 
 def test_upgrade_datastore_149_removes_not_controlled_consumers(mock_pub: Mock):
