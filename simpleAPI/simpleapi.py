@@ -543,7 +543,8 @@ class SimpleMQTTDaemon:
     _CHARGE_TEMPLATE_READ_FIELDS: Tuple[Tuple[Tuple[str, ...], str, str, Optional[Callable[[Any], Any]]], ...] = (
         (('chargemode', 'pv_charging'), 'min_current', 'minimal_permanent_current', None),
         (('chargemode', 'pv_charging'), 'min_soc', 'minimal_pv_soc', None),
-        (('chargemode', 'eco_charging'), 'max_price', 'max_price_eco', None),
+        # max_price is stored internally in EUR/Wh - published in ct/kWh
+        (('chargemode', 'eco_charging'), 'max_price', 'max_price_eco', lambda v: v * 100000),
         (('chargemode', 'instant_charging', 'limit'), 'selected', 'instant_charging_limit', None),
         # amount is stored internally in Wh - published in kWh
         (('chargemode', 'instant_charging', 'limit'), 'amount', 'instant_charging_limit_amount', lambda v: v / 1000),
