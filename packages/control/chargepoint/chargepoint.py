@@ -31,6 +31,7 @@ from helpermodules import timecheck
 from helpermodules.utils import thread_handler
 from modules.chargepoints.openwb_pro.chargepoint_module import EvseSignaling
 from modules.common.abstract_chargepoint import AbstractChargepoint
+from modules.common.fault_state_level import FaultStateLevel
 from helpermodules.timecheck import check_timestamp, create_timestamp
 
 
@@ -1128,7 +1129,7 @@ class Chargepoint(ChargepointRfidMixin, Load):
 
     def get_ocpp_status(self):
         # Fehler haben Vorrang vor Nichtverfügbarkeit und Stop-Sperren.
-        if self.data.get.fault_state:
+        if self.data.get.fault_state >= FaultStateLevel.ERROR:
             return ChargePointStatus.faulted
 
         if not all(self.data.get.ocpp.availability):
@@ -1159,7 +1160,7 @@ class Chargepoint(ChargepointRfidMixin, Load):
         # Connector 0 kann nur die folgenden 3 Status annehmen
         # Available, Unavailable and Faulted.
 
-        if self.data.get.fault_state:
+        if self.data.get.fault_state >= FaultStateLevel.ERROR:
             return ChargePointStatus.faulted
 
         if not self.data.get.ocpp.availability[0]:
