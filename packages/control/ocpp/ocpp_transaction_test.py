@@ -346,18 +346,77 @@ def test_direct_stop_retry_keeps_final_meter_and_timestamp(transaction_setup, mo
 
     async def check():
         assert await coordinator.stop("box-1", 100, "TAG", "Remote") is False
+        assert cp.data.get.ocpp.pending_transactions[0]["transaction_id"] == 42
         cp.data.get.imported = 999
         cp.data.get.charge_state = True
         monkeypatch.setattr(ocpp_transaction_coordinator, "_get_formatted_time", lambda: "later-time")
         sleep = AsyncMock()
         monkeypatch.setattr(ocpp_transaction_coordinator.asyncio, "sleep", sleep)
-        assert await coordinator.stop("box-1", 999, "OTHER", "Other") is True
+        assert await coordinator.stop_and_wait("box-1", 999, "OTHER", "Other", timeout=0.1) is True
+        assert cp.data.get.ocpp.pending_transactions == []
         sleep.assert_not_awaited()
 
     asyncio.run(check())
     assert connection.cp._stop_transaction.await_args_list == [call(
         meter_stop=140, transaction_id=42, reason="Remote", id_tag="TAG", timestamp="first-stop-time",
     )] * 2
+
+
+@pytest.mark.parametrize("transaction_id", [1, 0, -42])
+@pytest.mark.parametrize("replace_model", [False, True])
+@pytest.mark.parametrize("response", ["confirmed", "missing", "error"])
+def test_stop_confirmation_only_removes_matching_saved_stop_from_current_model(
+    transaction_setup, mock_pub, monkeypatch, transaction_id, replace_model, response
+):
+    coordinator, connection, cp = transaction_setup
+    transaction = coordinator._get_transaction("box-1")
+    transaction.transaction_id = transaction_id
+    transaction.id_tag = "TAG"
+    transaction.state = TransactionState.ACTIVE
+    target = {"action": "stop", "transaction_id": transaction_id}
+    unrelated = [
+        {"action": "stop", "transaction_id": 99},
+        {"action": "start", "transaction_id": transaction_id},
+        {"action": "stop", "transaction_id": str(transaction_id)},
+        {"action": "stop", "transaction_id": float(transaction_id)},
+        {"action": "stop", "transaction_id": True},
+        {"action": "stop", "transaction_id": False},
+        {"action": "stop"},
+        "invalid-entry",
+    ]
+    cp.data.get.ocpp.pending_transactions = [target] + copy.deepcopy(unrelated)
+    current = copy.deepcopy(cp) if replace_model else cp
+
+    async def stop(**kwargs):
+        monkeypatch.setattr(ocpp_transaction_coordinator, "get_cp_from_chargebox_id", lambda _: current)
+        if response == "error":
+            raise ConnectionError("Antwort verloren")
+        return SimpleNamespace() if response == "confirmed" else None
+
+    connection.cp._stop_transaction.side_effect = stop
+    request = ocpp_transaction_coordinator.PendingStop(140, "TAG", "Remote", "2026-10-27T12:00:00Z")
+    result = asyncio.run(coordinator._stop_active("box-1", connection, transaction, request))
+
+    assert result is (response == "confirmed")
+    expected = unrelated if response == "confirmed" else [target] + unrelated
+    assert current.data.get.ocpp.pending_transactions == expected
+    updates = [c for c in mock_pub.pub.call_args_list if c.args[0].endswith("/pending_transactions")]
+    if response == "confirmed":
+        assert updates == [call("openWB/set/chargepoint/1/get/ocpp/pending_transactions", unrelated)]
+    else:
+        assert updates == []
+    if replace_model:
+        assert cp.data.get.ocpp.pending_transactions == [target] + unrelated
+
+
+def test_confirmed_stop_without_saved_match_does_not_publish_pending_list(transaction_setup, mock_pub):
+    coordinator, connection, cp = transaction_setup
+    cp.data.get.ocpp.transaction_id = 42
+    cp.data.get.ocpp.pending_transactions = [{"action": "stop", "transaction_id": 99}]
+
+    assert asyncio.run(coordinator.stop("box-1", 100)) is True
+    assert cp.data.get.ocpp.pending_transactions == [{"action": "stop", "transaction_id": 99}]
+    assert not any(c.args[0].endswith("/pending_transactions") for c in mock_pub.pub.call_args_list)
 
 
 @pytest.mark.parametrize("status", ["Accepted", "Blocked", None])
