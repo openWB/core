@@ -14,11 +14,12 @@ class InternalSocketConfiguration:
 
 @auto_str
 class InternalSocket(ConsumerSetup[InternalSocketConfiguration]):
-    def __init__(self, name: str = "Lokale Steckdose (SDM120)",
+    def __init__(self, name: str = "Steckdose in openWB-Ladepunkt",
                  type: str = "internal_socket",
                  id: int = 0,
                  configuration: Optional[InternalSocketConfiguration] = None,
                  usage: Tuple[ConsumerUsage, ...] = (ConsumerUsage.SUSPENDABLE_ONOFF,
+                                                     ConsumerUsage.CONTINUOUS,
                                                      ConsumerUsage.METER_ONLY), **kwargs):
         super().__init__(name, type, id, vendor=vendor_descriptor.configuration_factory().type,
                          configuration=configuration or InternalSocketConfiguration(), usage=usage, **kwargs)
