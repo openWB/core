@@ -74,4 +74,7 @@ def create_consumer(config: WallboxSocket):
     return consumer
 
 
-device_descriptor = DeviceDescriptor(configuration_factory=WallboxSocket)
+device_descriptor = DeviceDescriptor(
+    configuration_factory=WallboxSocket,
+    compatibility_device_note=("Eine gleichzeitige Verwendung von Freischaltung per RFID und separater Leistunsmessung "
+                               "ist nicht möglich."))

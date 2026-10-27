@@ -322,7 +322,8 @@ class GeneralInternalChargepointHandler:
                 fault_state = FaultState(ComponentInfo(None, "Wallbox-Steckdose", "wallbox_socket"))
                 if ClientHandler.find_meter_client(WALLBOX_SOCKET_METERS, client, fault_state) is not None:
                     pub.pub_single("openWB/internal_socket/data/detected", True)
-                    log.debug(f"Verbrauchszähler mit lokaler Auslesung nutzt Port {port}")
+                    with ModifyLoglevelContext(log, logging.DEBUG):
+                        log.debug(f"Wallbox-Steckdose verbaut.")
                     return
             with ModifyLoglevelContext(log, logging.DEBUG):
                 log.debug("Es konnte keine Wallbox-Steckdose erkannt werden.")
