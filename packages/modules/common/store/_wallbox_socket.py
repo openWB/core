@@ -3,7 +3,7 @@ from modules.common.store._api import LoggingValueStore, ValueStore
 from modules.common.store._broker import pub_to_broker
 
 
-class InternalSocketValueStore(ValueStore[ConsumerState]):
+class WallboxSocketValueStore(ValueStore[ConsumerState]):
     def set(self, state: ConsumerState) -> None:
         self.state = state
 
@@ -19,5 +19,5 @@ class InternalSocketValueStore(ValueStore[ConsumerState]):
         pub_to_broker(f"{topic_prefix}/rfid", self.state.rfid)
 
 
-def get_internal_socket_value_store() -> ValueStore[ConsumerState]:
-    return LoggingValueStore(InternalSocketValueStore())
+def get_wallbox_socket_value_store() -> ValueStore[ConsumerState]:
+    return LoggingValueStore(WallboxSocketValueStore())

@@ -39,7 +39,7 @@ class ClientHandlerProtocol(Protocol):
     @property
     def meter_client(self) -> Any: ...
     @property
-    def socket_meter_client(self) -> Any: ...
+    def wallbox_socket_meter_client(self) -> Any: ...
     @property
     def read_error(self) -> int: ...
     @property
@@ -47,7 +47,7 @@ class ClientHandlerProtocol(Protocol):
     @property
     def request_and_check_hardware(self, fault_state: FaultState) -> Tuple[EvseState, CounterState]: ...
     @property
-    def request_and_check_socket(self, fault_state: FaultState) -> CounterState: ...
+    def request_and_check_wallbox_socket(self, fault_state: FaultState) -> CounterState: ...
     @property
     def check_meter(self) -> Tuple[bool, Optional[str], CounterState]: ...
 
@@ -116,9 +116,10 @@ class SeriesHardwareCheckMixin:
         except Exception:
             return False, METER_PROBLEM, None
 
-    def request_and_check_socket(self: ClientHandlerProtocol, fault_state: FaultState) -> CounterState:
-        socket_meter_check_passed, socket_meter_error_msg, counter_state = self.check_meter(self.socket_meter_client)
-        if socket_meter_check_passed is False:
+    def request_and_check_wallbox_socket(self: ClientHandlerProtocol, fault_state: FaultState) -> CounterState:
+        wallbox_socket_meter_check_passed, wallbox_socket_meter_error_msg, counter_state = self.check_meter(
+            self.wallbox_socket_meter_client)
+        if wallbox_socket_meter_check_passed is False:
             meter_check_passed = self.check_meter(self.meter_client)[0]
             if meter_check_passed is False:
                 if isinstance(self.client, ModbusTcpClient_):
@@ -126,7 +127,7 @@ class SeriesHardwareCheckMixin:
                 else:
                     raise Exception(READ_USB_ADAPTER_AGAIN)
             else:
-                raise Exception(socket_meter_error_msg)
-        if socket_meter_check_passed and socket_meter_error_msg is not None:
-            fault_state.warning(socket_meter_error_msg)
+                raise Exception(wallbox_socket_meter_error_msg)
+        if wallbox_socket_meter_check_passed and wallbox_socket_meter_error_msg is not None:
+            fault_state.warning(wallbox_socket_meter_error_msg)
         return counter_state

@@ -103,7 +103,7 @@ class SetData:
             elif "openWB/set/internal_chargepoint/" in msg.topic:
                 self.process_internal_chargepoint_topic(msg)
             elif "openWB/set/internal_socket/" in msg.topic:
-                self.process_internal_socket_topic(msg)
+                self.process_wallbox_socket_topic(msg)
             elif "openWB/set/LegacySmartHome/" in msg.topic:
                 self.process_legacy_smart_home_topic(msg)
             elif "openWB/set/consumer/" in msg.topic:
@@ -1237,7 +1237,7 @@ class SetData:
         except Exception:
             log.exception(f"Fehler im setdata-Modul: Topic {msg.topic}, Value: {msg.payload}")
 
-    def process_internal_socket_topic(self, msg):
+    def process_wallbox_socket_topic(self, msg):
         try:
             suffix = msg.topic.removeprefix("openWB/set/internal_socket/")
             if suffix in ("data/set_state", "data/detected", "get/state"):

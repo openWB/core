@@ -6,14 +6,14 @@ from helpermodules.constants import NO_ERROR
 
 
 @dataclass
-class InternalSocketData:
+class WallboxSocketData:
     detected: bool = False
     set_state: bool = False
     last_tag: Optional[str] = None
 
 
 @dataclass
-class InternalSocketGet:
+class WallboxSocketGet:
     rfid: Optional[str] = None
     state: bool = False
     power: float = 0
@@ -28,6 +28,6 @@ class InternalSocketGet:
 
 
 @dataclass
-class InternalSocket:
-    data: InternalSocketData = field(default_factory=InternalSocketData)
-    get: InternalSocketGet = field(default_factory=InternalSocketGet)
+class WallboxSocket:
+    data: WallboxSocketData = field(default_factory=WallboxSocketData)
+    get: WallboxSocketGet = field(default_factory=WallboxSocketGet)
