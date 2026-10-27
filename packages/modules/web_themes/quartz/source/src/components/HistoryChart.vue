@@ -2,8 +2,15 @@
   <div class="panel mb-6 px-6 pt-5 pb-4">
     <div class="mb-3 flex flex-wrap items-center justify-between gap-3">
       <div class="flex items-center gap-2">
-        <h2 class="m-0 text-base font-bold">
-          Verlauf &middot; {{ mode === 'day' ? 'Heute' : `Live · ${liveRangeMinutes} Min` }}
+        <h2 class="m-0 flex items-center gap-2 text-base font-bold">
+          Verlauf ·
+          <button
+            type="button"
+            class="cursor-pointer rounded-full border-0 px-2.5 py-1 text-[13px] font-semibold badge-muted"
+            @click="mode = mode === 'day' ? 'live' : 'day'"
+          >
+            {{ mode === 'day' ? 'Heute' : `Live · ${liveRangeMinutes} Min` }}
+          </button>
         </h2>
         <div class="relative">
           <BaseIconButton
@@ -45,75 +52,73 @@
               >
             </template>
 
-            <div class="settings-group-label mt-2 first:mt-0">
-              Linien
-            </div>
-            <div
-              v-for="cat in categoryDefs"
-              :key="cat.key"
-              class="border-t border-border py-1.5 first-of-type:border-t-0"
-            >
-              <label class="flex cursor-pointer items-center gap-[7px] text-[13px]">
-                <input
-                  v-model="visibleSeries[cat.key]"
-                  type="checkbox"
-                >
-                <span
-                  class="legend-dot"
-                  :style="{ background: getCssColor(cat.colorVar) }"
-                />
-                {{ cat.label }}
-              </label>
-
-              <div
-                v-if="visibleSeries[cat.key] && categories[cat.key].individual.length > 0"
-                class="mt-1.5 mb-1 ml-[22px]"
-              >
-                <BaseTabGroup
-                  dense
-                  :model-value="categoryMode[cat.key]"
-                  :options="categoryModeOptions"
-                  @update="categoryMode[cat.key] = $event"
-                />
+            <template v-if="categoriesWithIndividualBreakdown.length > 0">
+              <div class="settings-group-label mt-2 first:mt-0">
+                Linien
               </div>
-
               <div
-                v-if="visibleSeries[cat.key] && categoryMode[cat.key] === 'individual' && categories[cat.key].individual.length > 0"
-                class="ml-[22px] flex flex-col gap-1"
+                v-for="cat in categoriesWithIndividualBreakdown"
+                :key="cat.key"
+                class="border-t border-border py-1.5 first-of-type:border-t-0"
               >
-                <label
-                  v-for="(inst, idx) in categories[cat.key].individual"
-                  :key="inst.id"
-                  class="flex cursor-pointer items-center gap-[7px] text-xs text-muted"
-                >
-                  <input
-                    type="checkbox"
-                    :checked="isInstanceVisible(cat.key, inst.id)"
-                    @change="setInstanceVisible(cat.key, inst.id, ($event.target as HTMLInputElement).checked)"
-                  >
+                <div class="flex items-center gap-[7px] text-[13px]">
                   <span
                     class="legend-dot"
-                    :style="{ background: instanceColor(getCssColor(cat.colorVar), idx) }"
+                    :style="{ background: getCssColor(cat.colorVar) }"
                   />
-                  {{ inst.label }}
-                </label>
+                  {{ cat.label }}
+                </div>
+
+                <div class="mt-1.5 mb-1">
+                  <BaseTabGroup
+                    dense
+                    :model-value="categoryMode[cat.key]"
+                    :options="categoryModeOptions"
+                    @update="categoryMode[cat.key] = $event"
+                  />
+                </div>
+
+                <div
+                  v-if="categoryMode[cat.key] === 'individual'"
+                  class="flex flex-col gap-1"
+                >
+                  <label
+                    v-for="(inst, idx) in categories[cat.key].individual"
+                    :key="inst.id"
+                    class="flex cursor-pointer items-center gap-[7px] text-xs text-muted"
+                  >
+                    <input
+                      type="checkbox"
+                      :checked="isInstanceVisible(cat.key, inst.id)"
+                      @change="setInstanceVisible(cat.key, inst.id, ($event.target as HTMLInputElement).checked)"
+                    >
+                    <span
+                      class="legend-dot"
+                      :style="{ background: instanceColor(getCssColor(cat.colorVar), idx) }"
+                    />
+                    {{ inst.label }}
+                  </label>
+                </div>
               </div>
-            </div>
+            </template>
           </div>
         </div>
       </div>
       <div class="flex flex-wrap items-center gap-4">
-        <span
+        <button
           v-for="item in legend"
-          :key="item.label"
-          class="flex items-center gap-1.5 text-xs text-muted"
+          :key="item.key"
+          type="button"
+          class="flex cursor-pointer items-center gap-1.5 border-0 bg-transparent p-0 text-xs text-muted"
+          :class="{ 'opacity-40': !item.visible }"
+          @click="item.key === 'forecast' ? (forecastVisible = !forecastVisible) : (visibleSeries[item.key] = !visibleSeries[item.key])"
         >
           <span
             class="legend-dot"
             :style="{ background: item.color }"
           />
           {{ item.label }}
-        </span>
+        </button>
         <button
           v-if="isZoomed"
           class="rounded-full border border-border bg-transparent px-2.5 py-[3px] text-xs text-accent"
@@ -214,6 +219,7 @@ interface PersistedChartSettings {
   visibleSeries?: Partial<Record<CategoryKey, boolean>>
   categoryMode?: Partial<Record<CategoryKey, 'combined' | 'individual'>>
   instanceVisibility?: Record<string, boolean>
+  forecastVisible?: boolean
 }
 
 const STORAGE_KEY = 'quartz-chart-settings'
@@ -262,17 +268,16 @@ interface CategoryDef {
   key: CategoryKey
   label: string
   colorVar: string
-  fill: boolean
 }
 
 const categoryDefs: CategoryDef[] = [
-  { key: 'pv', label: 'Erzeugung', colorVar: '--pv', fill: true },
-  { key: 'house', label: 'Hausverbrauch', colorVar: '--consumption', fill: false },
-  { key: 'grid', label: 'Netz', colorVar: '--grid', fill: false },
-  { key: 'counter', label: 'Zähler', colorVar: '--grid', fill: false },
-  { key: 'battery', label: 'Speicher', colorVar: '--battery', fill: false },
-  { key: 'chargepoint', label: 'Ladepunkte', colorVar: '--chargepoint', fill: false },
-  { key: 'consumer', label: 'Verbraucher', colorVar: '--consumer', fill: false },
+  { key: 'pv', label: 'Erzeugung', colorVar: '--pv' },
+  { key: 'house', label: 'Hausverbrauch', colorVar: '--consumption' },
+  { key: 'grid', label: 'Netz', colorVar: '--grid' },
+  { key: 'counter', label: 'Zähler', colorVar: '--grid' },
+  { key: 'battery', label: 'Speicher', colorVar: '--battery' },
+  { key: 'chargepoint', label: 'Ladepunkte', colorVar: '--chargepoint' },
+  { key: 'consumer', label: 'Verbraucher', colorVar: '--consumer' },
 ]
 
 const visibleSeries = reactive<Record<CategoryKey, boolean>>({
@@ -301,6 +306,10 @@ const categoryMode = reactive<Record<CategoryKey, 'combined' | 'individual'>>({
 // visible so a newly-appeared component shows up without the user having to opt it in
 const instanceVisibility = reactive<Record<string, boolean>>({ ...persisted.instanceVisibility })
 
+// independent of visibleSeries.pv on purpose - hiding the real Erzeugung line shouldn't also
+// hide the forecast (and vice versa), they're separate things a user may want toggled separately
+const forecastVisible = ref(persisted.forecastVisible ?? true)
+
 watchEffect(() => {
   const settings: PersistedChartSettings = {
     mode: mode.value,
@@ -308,6 +317,7 @@ watchEffect(() => {
     visibleSeries: { ...visibleSeries },
     categoryMode: { ...categoryMode },
     instanceVisibility: { ...instanceVisibility },
+    forecastVisible: forecastVisible.value,
   }
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(settings))
@@ -325,9 +335,11 @@ function setInstanceVisible(category: CategoryKey, id: string, visible: boolean)
 
 // whole-day forecast, independent of how much real history exists - history can be
 // flat/missing (component in error state, or just started) while the forecast for
-// today is already known in full; only meaningful next to the day view's combined PV line
-const forecastToday = computed(() => {
-  if (mode.value !== 'day' || !visibleSeries.pv || categoryMode.pv !== 'combined' || !mqttStore.forecastConfigured) {
+// today is already known in full; only meaningful next to the day view's combined PV line.
+// Split from forecastToday (the actually-drawn series) so the legend item can stay present and
+// clickable even while forecastVisible is off - otherwise toggling it hides the only way back on.
+const forecastSeriesToday = computed(() => {
+  if (mode.value !== 'day' || categoryMode.pv !== 'combined' || !mqttStore.forecastConfigured) {
     return []
   }
   const startOfToday = new Date().setHours(0, 0, 0, 0)
@@ -336,12 +348,48 @@ const forecastToday = computed(() => {
     .filter((entry) => entry.timestamp >= startOfToday && entry.timestamp <= endOfToday)
     .map((entry) => ({ x: entry.timestamp, y: entry.power }))
 })
+const forecastToday = computed(() => (forecastVisible.value ? forecastSeriesToday.value : []))
+
+// whether a category has any real component behind it at all - grid/house are always
+// meaningful (grid connection + derived house consumption always exist), the rest depend on
+// what's actually configured. 'counter' has no static hierarchy signal (grid vs. non-grid is a
+// runtime flag, not a hierarchy-level distinction), so it reads the live category data instead.
+function categoryHasComponent(key: CategoryKey): boolean {
+  switch (key) {
+    case 'grid':
+    case 'house':
+      return true
+    case 'pv':
+      return mqttStore.inverterIds.length > 0
+    case 'battery':
+      return mqttStore.batteryIds.length > 0
+    case 'chargepoint':
+      return mqttStore.chargePointIds.length > 0
+    case 'consumer':
+      return mqttStore.consumerIds.length > 0
+    case 'counter':
+      return categories.value.counter.individual.length > 0
+  }
+}
+
+const visibleCategoryDefs = computed(() => categoryDefs.filter((c) => categoryHasComponent(c.key)))
+
+// only categories that actually offer a Gesamt/Einzeln choice belong in the settings panel -
+// per-category show/hide itself now lives in the clickable legend, not duplicated here
+const categoriesWithIndividualBreakdown = computed(() =>
+  visibleCategoryDefs.value.filter((c) => categories.value[c.key].individual.length > 0),
+)
 
 const legend = computed(() => {
   void props.theme
-  const items = categoryDefs.filter((c) => visibleSeries[c.key]).map((c) => ({ label: c.label, color: getCssColor(c.colorVar) }))
-  if (forecastToday.value.length > 1) {
-    items.push({ label: 'Prognose', color: getCssColor('--pv') })
+  const items = visibleCategoryDefs.value.map((c) => ({
+    key: c.key as CategoryKey | 'forecast',
+    label: c.label,
+    color: getCssColor(c.colorVar),
+    visible: visibleSeries[c.key],
+  }))
+  if (forecastSeriesToday.value.length > 1) {
+    items.push({ key: 'forecast', label: 'Prognose', color: getCssColor('--pv'), visible: forecastVisible.value })
   }
   return items
 })
@@ -371,8 +419,9 @@ const chartData = computed<ChartData<'line', { x: number; y: number }[]>>(() => 
           label: inst.label,
           data: inst.points.map((p) => ({ x: p.timestamp, y: p.power })),
           borderColor: color,
-          backgroundColor: 'transparent',
-          fill: false,
+          // lighter than the combined-mode fill (0.18) since individual instances can overlap
+          backgroundColor: hexToRgba(color, 0.12),
+          fill: true,
           borderWidth: 1.25,
           pointRadius: 0,
           tension: 0.2,
@@ -384,9 +433,9 @@ const chartData = computed<ChartData<'line', { x: number; y: number }[]>>(() => 
         label: cat.label,
         data: data.all.map((p) => ({ x: p.timestamp, y: p.power })),
         borderColor: color,
-        backgroundColor: cat.fill ? hexToRgba(color, 0.18) : 'transparent',
-        fill: cat.fill,
-        borderWidth: cat.fill ? 2 : 1.25,
+        backgroundColor: hexToRgba(color, 0.18),
+        fill: true,
+        borderWidth: 1.25,
         pointRadius: 0,
         tension: 0.2,
       })

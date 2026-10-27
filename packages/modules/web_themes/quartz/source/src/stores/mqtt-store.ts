@@ -68,6 +68,18 @@ export interface FrequencyDate {
   once: string
   weekly: boolean[]
 }
+/** openWB/consumer/<id>/usage - a consumer's entire controllable state is this one JSON topic. */
+export interface ConsumerUsage {
+  type: string
+  chargemode: string
+  reset_chargemode: {
+    active: boolean
+    chargemode: string
+    time: string
+    frequency: FrequencyDate
+  }
+}
+
 export interface FrequencyPeriod {
   selected: 'daily' | 'weekly' | 'once'
   once: [string, string]
@@ -134,10 +146,37 @@ export interface VehicleListEntry {
   name: string
 }
 
+export interface VehicleInfo {
+  manufacturer?: string
+  model?: string
+}
+
+/** One chargepoint a vehicle is currently connected to (koala derives this the same way - no direct topic). */
+export interface VehicleConnectionState {
+  id: number
+  name: string
+  plugged: boolean
+  charging: boolean
+}
+
 /** One of the two components a variable electricity price can be made of - either may be unconfigured. */
 export interface TariffProvider {
   name: string
   type: string
+}
+
+/** The generic per-component config every component type publishes - name/manufacturer/model/color. */
+export interface ComponentConfiguration {
+  name: string
+  info?: { manufacturer?: string; model?: string }
+  color?: string
+}
+
+/** One entry of openWB/counter/get/loadmanagement_prios - see control/counter_all/loadmanagement_prio.py. */
+interface LoadmanagementPrioEntry {
+  type: string
+  id?: number
+  children?: LoadmanagementPrioEntry[]
 }
 
 export const useMqttStore = defineStore('mqtt', () => {
@@ -379,6 +418,12 @@ export const useMqttStore = defineStore('mqtt', () => {
     return result
   }
 
+  /** The single grid/EVU counter - by backend convention always the hierarchy's root node (see control/counter_all/counter_all.py::get_id_evu_counter). */
+  function gridCounterId(): number | undefined {
+    const hierarchy = getValue.value<Hierarchy[]>('openWB/counter/get/hierarchy', [])
+    return hierarchy[0]?.type === 'counter' ? hierarchy[0].id : undefined
+  }
+
   function subscribeChargePointList(): void {
     subscribe('openWB/counter/get/hierarchy')
   }
@@ -387,6 +432,18 @@ export const useMqttStore = defineStore('mqtt', () => {
   }
 
   const chargePointIds = computed(() => getObjectIds('cp'))
+  const batteryIds = computed(() => getObjectIds('bat'))
+  const inverterIds = computed(() => getObjectIds('inverter'))
+  const consumerIds = computed(() => getObjectIds('consumer'))
+  const counterIds = computed(() => getObjectIds('counter'))
+
+  /** The device id isn't known client-side, hence the wildcard; lazily subscribed like getValue (getWildcardValues itself never auto-subscribes). */
+  function getComponentConfiguration(id: number): ComponentConfiguration | undefined {
+    const topic = `openWB/system/device/+/component/${id}/config`
+    if (!(topic in subscriptions.value)) subscribe(topic)
+    const configs = getWildcardValues(topic)
+    return Object.values(configs)[0] as ComponentConfiguration | undefined
+  }
 
   function chargePointConfig(id: number): Record<string, unknown> {
     return getValue.value<Record<string, unknown>>(`openWB/chargepoint/${id}/config`, {})
@@ -424,6 +481,12 @@ export const useMqttStore = defineStore('mqtt', () => {
   }
   function chargePointFaultMessage(id: number): string {
     return getValue.value<string>(`openWB/chargepoint/${id}/get/fault_str`, '')
+  }
+  function chargePointFaultStateTotal(): number {
+    return getValue.value<number>('openWB/chargepoint/get/fault_state', 0)
+  }
+  function chargePointFaultMessageTotal(): string {
+    return getValue.value<string>('openWB/chargepoint/get/fault_str', '')
   }
 
   function chargePointManualLock(id: number): boolean {
@@ -487,9 +550,14 @@ export const useMqttStore = defineStore('mqtt', () => {
     const state = getValue.value<Record<string, unknown>>(`openWB/vehicle/${vehicleId}/soc_module/calculated_soc_state`, {})
     return (state.manual_soc as number | undefined) ?? (state.soc_start as number | undefined) ?? 0
   }
-  function setVehicleManualSoc(vehicleId: number, chargePointId: number, value: number): void {
+  /** chargePointId is only needed to also nudge that chargepoint's own cached soc display (ChargePointCard's use case). */
+  function setVehicleManualSoc(vehicleId: number, value: number, chargePointId?: number): void {
     doPublish(`openWB/set/vehicle/${vehicleId}/soc_module/calculated_soc_state/manual_soc`, value)
-    // also nudge the chargepoint's own displayed soc so the UI doesn't wait for the backend round-trip
+    const vehicleSocTopic = `openWB/vehicle/${vehicleId}/get/soc`
+    if (getValue.value<number | undefined>(vehicleSocTopic, undefined) !== undefined) {
+      updateTopic(vehicleSocTopic, value)
+    }
+    if (chargePointId === undefined) return
     const cpTopic = `openWB/chargepoint/${chargePointId}/get/connected_vehicle/soc`
     if ((getValue.value<{ soc?: number }>(cpTopic, {})).soc !== undefined) {
       updateTopic(cpTopic, value, 'soc')
@@ -497,6 +565,322 @@ export const useMqttStore = defineStore('mqtt', () => {
   }
   function vehicleForceSocUpdate(vehicleId: number): void {
     doPublish(`openWB/set/vehicle/${vehicleId}/get/force_soc_update`, 1, false)
+  }
+
+  function vehicleInfo(id: number): VehicleInfo | undefined {
+    return getValue.value<VehicleInfo | undefined>(`openWB/vehicle/${id}/info`, undefined)
+  }
+  function vehicleSocType(id: number): string | undefined {
+    return getValue.value<{ type?: string } | undefined>(`openWB/vehicle/${id}/soc_module/config`, undefined)?.type
+  }
+  function vehicleColor(id: number): string | undefined {
+    return getValue.value<string | undefined>(`openWB/vehicle/${id}/color`, undefined)
+  }
+  function vehicleSocValue(id: number): number | undefined {
+    return getValue.value<number | undefined>(`openWB/vehicle/${id}/get/soc`, undefined)
+  }
+  function vehicleFaultState(id: number): number {
+    return getValue.value<number>(`openWB/vehicle/${id}/get/fault_state`, 0)
+  }
+  function vehicleFaultMessage(id: number): string {
+    return getValue.value<string>(`openWB/vehicle/${id}/get/fault_str`, '')
+  }
+
+  function subscribeLoadmanagementPrios(): void {
+    subscribe('openWB/counter/get/loadmanagement_prios')
+  }
+  function unsubscribeLoadmanagementPrios(): void {
+    unsubscribe('openWB/counter/get/loadmanagement_prios')
+  }
+
+  /** 1-based rank in the load-management priority order (used by the real surplus-charging algorithm to
+   *  decide charging order) - a 'group' entry's children all share that group's rank, same as the colors
+   *  theme's own assignPriority() derives it. Shared by vehicles and consumers, the only two entry types
+   *  this list can contain (see control/counter_all/loadmanagement_prio.py). */
+  function loadmanagementPriority(type: 'vehicle' | 'consumer', id: number): number | undefined {
+    const entries = getValue.value<LoadmanagementPrioEntry[]>('openWB/counter/get/loadmanagement_prios', [])
+    for (let i = 0; i < entries.length; i++) {
+      const entry = entries[i]
+      if (entry.type === type && entry.id === id) return i + 1
+      if (entry.type === 'group' && entry.children?.some((child) => child.type === type && child.id === id)) {
+        return i + 1
+      }
+    }
+    return undefined
+  }
+  function vehiclePriority(vehicleId: number): number | undefined {
+    return loadmanagementPriority('vehicle', vehicleId)
+  }
+  function consumerPriority(consumerId: number): number | undefined {
+    return loadmanagementPriority('consumer', consumerId)
+  }
+
+  function subscribeVehicleConnectionState(): void {
+    subscribe('openWB/chargepoint/+/get/connected_vehicle/info')
+  }
+  function unsubscribeVehicleConnectionState(): void {
+    unsubscribe('openWB/chargepoint/+/get/connected_vehicle/info')
+  }
+
+  /** Every chargepoint this vehicle is currently connected to - no direct vehicle-side topic for this, derived the same way koala does it. */
+  function vehicleConnectionState(vehicleId: number): VehicleConnectionState[] {
+    const connected = getWildcardValues('openWB/chargepoint/')
+    return Object.entries(connected)
+      .filter(([topic]) => topic.endsWith('/get/connected_vehicle/info'))
+      .filter(([, info]) => (info as ChargePointConnectedVehicleInfo | undefined)?.id === vehicleId)
+      .map(([topic]) => {
+        const id = Number(topic.split('/')[2])
+        return {
+          id,
+          name: chargePointName(id),
+          plugged: chargePointPlugState(id),
+          charging: chargePointChargeState(id),
+        }
+      })
+  }
+
+  // --- batteries ---
+
+  function batteryName(id: number): string {
+    return getComponentConfiguration(id)?.name ?? `Speicher ${id}`
+  }
+  function batteryInstanceSoc(id: number): number | undefined {
+    return getValue.value<number | undefined>(`openWB/bat/${id}/get/soc`, undefined)
+  }
+  /** Current power in kW (the raw topic is in W). */
+  function batteryInstancePower(id: number): number {
+    return getValue.value<number>(`openWB/bat/${id}/get/power`, 0) / 1000
+  }
+  /** Energy today in kWh (the raw topics are in Wh). */
+  function batteryInstanceDailyImported(id: number): number {
+    return getValue.value<number>(`openWB/bat/${id}/get/daily_imported`, 0) / 1000
+  }
+  function batteryInstanceDailyExported(id: number): number {
+    return getValue.value<number>(`openWB/bat/${id}/get/daily_exported`, 0) / 1000
+  }
+  /** Lifetime energy in kWh (the raw topics are in Wh). */
+  function batteryInstanceImported(id: number): number {
+    return getValue.value<number>(`openWB/bat/${id}/get/imported`, 0) / 1000
+  }
+  function batteryInstanceExported(id: number): number {
+    return getValue.value<number>(`openWB/bat/${id}/get/exported`, 0) / 1000
+  }
+  function batteryInstanceCurrents(id: number): number[] {
+    return getValue.value<number[]>(`openWB/bat/${id}/get/currents`, [])
+  }
+  function batteryInstanceFaultState(id: number): number {
+    return getValue.value<number>(`openWB/bat/${id}/get/fault_state`, 0)
+  }
+  function batteryInstanceFaultMessage(id: number): string {
+    return getValue.value<string>(`openWB/bat/${id}/get/fault_str`, '')
+  }
+
+  /** System-wide totals - power/soc reuse the existing graph-snapshot-sourced batteryPower/batterySoc above, these cover what that snapshot doesn't. */
+  function batteryDailyImportedTotal(): number {
+    return getValue.value<number>('openWB/bat/get/daily_imported', 0) / 1000
+  }
+  function batteryDailyExportedTotal(): number {
+    return getValue.value<number>('openWB/bat/get/daily_exported', 0) / 1000
+  }
+  function batteryFaultStateTotal(): number {
+    return getValue.value<number>('openWB/bat/get/fault_state', 0)
+  }
+  function batteryFaultMessageTotal(): string {
+    return getValue.value<string>('openWB/bat/get/fault_str', '')
+  }
+
+  /** The global PV-surplus priority order (vehicles vs. battery vs. battery-SoC-gated) - not per-battery, same value regardless of which battery card edits it. */
+  function batteryMode(): string {
+    return getValue.value<string>('openWB/general/chargemode_config/bat/mode', 'ev_mode')
+  }
+  function setBatteryMode(mode: string): void {
+    updateTopic('openWB/general/chargemode_config/bat/mode', mode, undefined, true)
+  }
+  function batteryPrioritySocMin(): number {
+    return getValue.value<number>('openWB/general/chargemode_config/bat/min_soc', 0)
+  }
+  function batteryPrioritySocMax(): number {
+    return getValue.value<number>('openWB/general/chargemode_config/bat/max_soc', 100)
+  }
+  function setBatteryPrioritySoc(min: number, max: number): void {
+    updateTopic('openWB/general/chargemode_config/bat/min_soc', min, undefined, true)
+    updateTopic('openWB/general/chargemode_config/bat/max_soc', max, undefined, true)
+  }
+
+  /** Whether to reserve some charging power for the battery below min-SoC instead of giving it all to vehicles/consumers. */
+  function batteryPowerReserveActive(): boolean {
+    return getValue.value<boolean>('openWB/general/chargemode_config/bat/power_reserve_active', false)
+  }
+  function setBatteryPowerReserveActive(active: boolean): void {
+    updateTopic('openWB/general/chargemode_config/bat/power_reserve_active', active, undefined, true)
+  }
+  /** Reserved charging power in kW (the raw topic is in W). */
+  function batteryPowerReserve(): number {
+    return getValue.value<number>('openWB/general/chargemode_config/bat/power_reserve', 2000) / 1000
+  }
+  function setBatteryPowerReserve(kw: number): void {
+    updateTopic('openWB/general/chargemode_config/bat/power_reserve', Math.round(kw * 1000), undefined, true)
+  }
+
+  /** Whether to allow the battery to discharge above max-SoC instead of holding its charge there. */
+  function batteryPowerDischargeActive(): boolean {
+    return getValue.value<boolean>('openWB/general/chargemode_config/bat/power_discharge_active', false)
+  }
+  function setBatteryPowerDischargeActive(active: boolean): void {
+    updateTopic('openWB/general/chargemode_config/bat/power_discharge_active', active, undefined, true)
+  }
+  /** Allowed discharge power in kW (the raw topic is in W). */
+  function batteryPowerDischarge(): number {
+    return getValue.value<number>('openWB/general/chargemode_config/bat/power_discharge', 1500) / 1000
+  }
+  function setBatteryPowerDischarge(kw: number): void {
+    updateTopic('openWB/general/chargemode_config/bat/power_discharge', Math.round(kw * 1000), undefined, true)
+  }
+
+  // --- counters ---
+
+  function counterName(id: number): string {
+    return getComponentConfiguration(id)?.name ?? `Zähler ${id}`
+  }
+  /** Current power in kW (the raw topic is in W). */
+  function counterInstancePower(id: number): number {
+    return getValue.value<number>(`openWB/counter/${id}/get/power`, 0) / 1000
+  }
+  /** Energy today in kWh (the raw topics are in Wh). */
+  function counterInstanceDailyImported(id: number): number {
+    return getValue.value<number>(`openWB/counter/${id}/get/daily_imported`, 0) / 1000
+  }
+  function counterInstanceDailyExported(id: number): number {
+    return getValue.value<number>(`openWB/counter/${id}/get/daily_exported`, 0) / 1000
+  }
+  /** Lifetime energy in kWh (the raw topics are in Wh). */
+  function counterInstanceImported(id: number): number {
+    return getValue.value<number>(`openWB/counter/${id}/get/imported`, 0) / 1000
+  }
+  function counterInstanceExported(id: number): number {
+    return getValue.value<number>(`openWB/counter/${id}/get/exported`, 0) / 1000
+  }
+  function counterInstanceFrequency(id: number): number {
+    return getValue.value<number>(`openWB/counter/${id}/get/frequency`, 0)
+  }
+  function counterInstanceVoltages(id: number): number[] {
+    return getValue.value<number[]>(`openWB/counter/${id}/get/voltages`, [])
+  }
+  function counterInstanceCurrents(id: number): number[] {
+    return getValue.value<number[]>(`openWB/counter/${id}/get/currents`, [])
+  }
+  /** Per-phase power in kW (the raw topic is in W). */
+  function counterInstancePowers(id: number): number[] {
+    return getValue.value<number[]>(`openWB/counter/${id}/get/powers`, []).map((p) => p / 1000)
+  }
+  function counterInstancePowerFactors(id: number): number[] {
+    return getValue.value<number[]>(`openWB/counter/${id}/get/power_factors`, [])
+  }
+  function counterInstanceFaultState(id: number): number {
+    return getValue.value<number>(`openWB/counter/${id}/get/fault_state`, 0)
+  }
+  function counterInstanceFaultMessage(id: number): string {
+    return getValue.value<string>(`openWB/counter/${id}/get/fault_str`, '')
+  }
+
+  // --- inverters (pv) ---
+
+  function inverterName(id: number): string {
+    return getComponentConfiguration(id)?.name ?? `Wechselrichter ${id}`
+  }
+  /** Current power in kW (the raw topic is in W). */
+  function inverterInstancePower(id: number): number {
+    return getValue.value<number>(`openWB/pv/${id}/get/power`, 0) / 1000
+  }
+  /** Energy exported today in kWh (the raw topic is in Wh) - PV only ever exports, no imported counterpart exists. */
+  function inverterInstanceDailyExported(id: number): number {
+    return getValue.value<number>(`openWB/pv/${id}/get/daily_exported`, 0) / 1000
+  }
+  function inverterInstanceMonthlyExported(id: number): number {
+    return getValue.value<number>(`openWB/pv/${id}/get/monthly_exported`, 0) / 1000
+  }
+  function inverterInstanceYearlyExported(id: number): number {
+    return getValue.value<number>(`openWB/pv/${id}/get/yearly_exported`, 0) / 1000
+  }
+  /** Lifetime energy exported in kWh (the raw topic is in Wh) - the inverter's "Zählerstand". */
+  function inverterInstanceExported(id: number): number {
+    return getValue.value<number>(`openWB/pv/${id}/get/exported`, 0) / 1000
+  }
+  function inverterInstanceCurrents(id: number): number[] {
+    return getValue.value<number[]>(`openWB/pv/${id}/get/currents`, [])
+  }
+  function inverterInstanceFaultState(id: number): number {
+    return getValue.value<number>(`openWB/pv/${id}/get/fault_state`, 0)
+  }
+  function inverterInstanceFaultMessage(id: number): string {
+    return getValue.value<string>(`openWB/pv/${id}/get/fault_str`, '')
+  }
+  function pvFaultStateTotal(): number {
+    return getValue.value<number>('openWB/pv/get/fault_state', 0)
+  }
+  function pvFaultMessageTotal(): string {
+    return getValue.value<string>('openWB/pv/get/fault_str', '')
+  }
+
+  // --- consumers ---
+
+  function consumerName(id: number): string {
+    return getComponentConfiguration(id)?.name ?? `Verbraucher ${id}`
+  }
+  /** Current power in kW (the raw topic is in W). */
+  function consumerInstancePower(id: number): number {
+    return getValue.value<number>(`openWB/consumer/${id}/get/power`, 0) / 1000
+  }
+  /** Energy imported today in kWh (the raw topic is in Wh). */
+  function consumerInstanceDailyImported(id: number): number {
+    return getValue.value<number>(`openWB/consumer/${id}/get/daily_imported`, 0) / 1000
+  }
+  function consumerInstanceFaultState(id: number): number {
+    return getValue.value<number>(`openWB/consumer/${id}/get/fault_state`, 0)
+  }
+  function consumerInstanceFaultMessage(id: number): string {
+    return getValue.value<string>(`openWB/consumer/${id}/get/fault_str`, '')
+  }
+  function consumerFaultStateTotal(): number {
+    return getValue.value<number>('openWB/consumer/get/fault_state', 0)
+  }
+  function consumerFaultMessageTotal(): string {
+    return getValue.value<string>('openWB/consumer/get/fault_str', '')
+  }
+  function consumerInstanceStateMessage(id: number): string {
+    return getValue.value<string>(`openWB/consumer/${id}/get/state_str`, '')
+  }
+  function consumerPlugState(id: number): boolean {
+    return getValue.value<boolean>(`openWB/consumer/${id}/get/plug_state`, false)
+  }
+  function consumerChargeState(id: number): boolean {
+    return getValue.value<boolean>(`openWB/consumer/${id}/get/charge_state`, false)
+  }
+  /** Runtime since the last reset, in seconds - a 'set/' topic despite being read-only from the UI's
+   *  perspective, same convention as chargePointChargingCurrent's existing set/current read. */
+  function consumerOnTime(id: number): number {
+    return getValue.value<number>(`openWB/consumer/${id}/set/on_time`, 0)
+  }
+  /** Sensor readings in °C, if the configured module provides any (mostly heat-pump-ish modules). */
+  function consumerTemperatures(id: number): number[] {
+    return getValue.value<number[]>(`openWB/consumer/${id}/get/temperatures`, [])
+  }
+
+  function consumerUsage(id: number): ConsumerUsage | undefined {
+    return getValue.value<ConsumerUsage | undefined>(`openWB/consumer/${id}/usage`, undefined)
+  }
+  function consumerUsageType(id: number): string | undefined {
+    return consumerUsage(id)?.type
+  }
+  function consumerMode(id: number): string | undefined {
+    return consumerUsage(id)?.chargemode
+  }
+  function setConsumerMode(id: number, mode: string): void {
+    updateTopic(`openWB/consumer/${id}/usage`, mode, 'chargemode', true)
+  }
+  /** Patch one dot-path field of a consumer's reset_chargemode, e.g. 'frequency.selected'. */
+  function setConsumerResetChargemodeField(id: number, path: string, value: unknown): void {
+    updateTopic(`openWB/consumer/${id}/usage`, value, `reset_chargemode.${path}`, true)
   }
 
   // --- daily log (chart history) ---
@@ -562,6 +946,8 @@ export const useMqttStore = defineStore('mqtt', () => {
     chargePointStateMessage,
     chargePointFaultState,
     chargePointFaultMessage,
+    chargePointFaultStateTotal,
+    chargePointFaultMessageTotal,
     chargePointManualLock,
     setChargePointManualLock,
     chargePointConnectedVehicleInfo,
@@ -577,5 +963,92 @@ export const useMqttStore = defineStore('mqtt', () => {
     vehicleManualSoc,
     setVehicleManualSoc,
     vehicleForceSocUpdate,
+    vehicleInfo,
+    vehicleSocType,
+    vehicleColor,
+    vehicleSocValue,
+    vehicleFaultState,
+    vehicleFaultMessage,
+    subscribeVehicleConnectionState,
+    unsubscribeVehicleConnectionState,
+    vehicleConnectionState,
+    subscribeLoadmanagementPrios,
+    unsubscribeLoadmanagementPrios,
+    vehiclePriority,
+    consumerPriority,
+    batteryIds,
+    inverterIds,
+    consumerIds,
+    getComponentConfiguration,
+    batteryName,
+    batteryInstanceSoc,
+    batteryInstancePower,
+    batteryInstanceDailyImported,
+    batteryInstanceDailyExported,
+    batteryInstanceImported,
+    batteryInstanceExported,
+    batteryInstanceCurrents,
+    batteryInstanceFaultState,
+    batteryInstanceFaultMessage,
+    batteryDailyImportedTotal,
+    batteryDailyExportedTotal,
+    batteryFaultStateTotal,
+    batteryFaultMessageTotal,
+    batteryMode,
+    setBatteryMode,
+    batteryPrioritySocMin,
+    batteryPrioritySocMax,
+    setBatteryPrioritySoc,
+    batteryPowerReserveActive,
+    setBatteryPowerReserveActive,
+    batteryPowerReserve,
+    setBatteryPowerReserve,
+    batteryPowerDischargeActive,
+    setBatteryPowerDischargeActive,
+    batteryPowerDischarge,
+    setBatteryPowerDischarge,
+    counterIds,
+    gridCounterId,
+    counterName,
+    counterInstancePower,
+    counterInstanceDailyImported,
+    counterInstanceDailyExported,
+    counterInstanceImported,
+    counterInstanceExported,
+    counterInstanceFrequency,
+    counterInstanceVoltages,
+    counterInstanceCurrents,
+    counterInstancePowers,
+    counterInstancePowerFactors,
+    counterInstanceFaultState,
+    counterInstanceFaultMessage,
+    inverterName,
+    inverterInstancePower,
+    inverterInstanceDailyExported,
+    inverterInstanceMonthlyExported,
+    inverterInstanceYearlyExported,
+    inverterInstanceExported,
+    inverterInstanceCurrents,
+    inverterInstanceFaultState,
+    inverterInstanceFaultMessage,
+    pvFaultStateTotal,
+    pvFaultMessageTotal,
+    consumerName,
+    consumerInstancePower,
+    consumerInstanceDailyImported,
+    consumerInstanceFaultState,
+    consumerInstanceFaultMessage,
+    consumerFaultStateTotal,
+    consumerFaultMessageTotal,
+    consumerInstanceStateMessage,
+    consumerPlugState,
+    consumerChargeState,
+    consumerOnTime,
+    consumerTemperatures,
+    consumerUsage,
+    consumerUsageType,
+    consumerMode,
+    setConsumerMode,
+    setConsumerResetChargemodeField,
   }
 })

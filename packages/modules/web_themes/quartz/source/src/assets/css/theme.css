@@ -14,6 +14,8 @@
   --color-consumption: var(--consumption);
   --color-consumer: var(--consumer);
   --color-accent: var(--accent);
+  --color-warning: var(--warning);
+  --color-error: var(--error);
 }
 
 :root {
@@ -31,6 +33,8 @@
   --consumption: #475569;
   --consumer: #7c3aed;
   --accent: #2563eb;
+  --warning: #ea580c;
+  --error: #e11d48;
 }
 
 :root[data-theme='dark'] {
@@ -46,6 +50,8 @@
   --car: #2dd4bf;
   --consumption: #a7b0bf;
   --consumer: #a78bfa;
+  --warning: #fb923c;
+  --error: #fb7185;
 }
 
 @layer base {
@@ -164,11 +170,40 @@
     @apply mt-1 mb-0;
   }
 
+  .status-box-warning {
+    background: color-mix(in srgb, var(--warning) 12%, transparent);
+  }
+
   .status-box-fault {
-    background: color-mix(in srgb, var(--grid) 12%, transparent);
+    background: color-mix(in srgb, var(--error) 12%, transparent);
   }
 
   .plan-edit-head {
     @apply mb-2 flex items-center justify-between;
+  }
+
+  .badge-ok {
+    background: color-mix(in srgb, var(--pv) 18%, transparent);
+    color: var(--pv);
+  }
+
+  .badge-wait {
+    background: color-mix(in srgb, var(--chargepoint) 18%, transparent);
+    color: var(--chargepoint);
+  }
+
+  .badge-muted {
+    background: var(--bg);
+    color: var(--muted);
+  }
+
+  .chip-warning {
+    @apply border-warning;
+    background: color-mix(in srgb, var(--warning) 12%, transparent);
+  }
+
+  .chip-error {
+    @apply border-error;
+    background: color-mix(in srgb, var(--error) 12%, transparent);
   }
 }

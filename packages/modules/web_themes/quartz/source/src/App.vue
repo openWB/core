@@ -55,16 +55,101 @@
       />
     </div>
 
-    <div
-      v-if="showChargePoints"
-      class="mb-6 grid grid-cols-1 gap-4 min-[721px]:grid-cols-2"
-    >
-      <ChargePointCard
-        v-for="id in chargePointIds"
-        :key="id"
-        :charge-point-id="id"
-      />
-    </div>
+    <template v-if="showChargePoints && (activeTab !== 'alle' || chargePointIds.length > 0)">
+      <div
+        v-if="activeTab === 'alle'"
+        class="settings-group-label mb-2"
+      >
+        Ladepunkte
+      </div>
+      <div class="mb-6 grid grid-cols-[repeat(auto-fit,minmax(300px,1fr))] gap-4">
+        <ChargePointCard
+          v-for="id in chargePointIds"
+          :key="id"
+          :charge-point-id="id"
+        />
+      </div>
+    </template>
+
+    <template v-if="showVehicles && (activeTab !== 'alle' || vehicleIds.length > 0)">
+      <div
+        v-if="activeTab === 'alle'"
+        class="settings-group-label mb-2"
+      >
+        Fahrzeuge
+      </div>
+      <div class="mb-6 grid grid-cols-[repeat(auto-fit,minmax(300px,1fr))] gap-4">
+        <VehicleCard
+          v-for="id in vehicleIds"
+          :key="id"
+          :vehicle-id="id"
+        />
+      </div>
+    </template>
+
+    <template v-if="showBatteries && (activeTab !== 'alle' || batteryIds.length > 0)">
+      <div
+        v-if="activeTab === 'alle'"
+        class="settings-group-label mb-2"
+      >
+        Speicher
+      </div>
+      <div class="mb-6 grid grid-cols-[repeat(auto-fit,minmax(300px,1fr))] gap-4">
+        <BatteryCard
+          v-for="id in batteryIds"
+          :key="id"
+          :battery-id="id"
+        />
+      </div>
+    </template>
+
+    <template v-if="showCounters && (activeTab !== 'alle' || counterIds.length > 0)">
+      <div
+        v-if="activeTab === 'alle'"
+        class="settings-group-label mb-2"
+      >
+        Zähler
+      </div>
+      <div class="mb-6 grid grid-cols-[repeat(auto-fit,minmax(300px,1fr))] gap-4">
+        <CounterCard
+          v-for="id in counterIds"
+          :key="id"
+          :counter-id="id"
+        />
+      </div>
+    </template>
+
+    <template v-if="showInverters && (activeTab !== 'alle' || inverterIds.length > 0)">
+      <div
+        v-if="activeTab === 'alle'"
+        class="settings-group-label mb-2"
+      >
+        Wechselrichter
+      </div>
+      <div class="mb-6 grid grid-cols-[repeat(auto-fit,minmax(300px,1fr))] gap-4">
+        <InverterCard
+          v-for="id in inverterIds"
+          :key="id"
+          :inverter-id="id"
+        />
+      </div>
+    </template>
+
+    <template v-if="showConsumers && (activeTab !== 'alle' || consumerIds.length > 0)">
+      <div
+        v-if="activeTab === 'alle'"
+        class="settings-group-label mb-2"
+      >
+        Verbraucher
+      </div>
+      <div class="mb-6 grid grid-cols-[repeat(auto-fit,minmax(300px,1fr))] gap-4">
+        <ConsumerCard
+          v-for="id in consumerIds"
+          :key="id"
+          :consumer-id="id"
+        />
+      </div>
+    </template>
   </div>
 </template>
 
@@ -73,17 +158,42 @@ import { computed, ref, watchEffect } from 'vue'
 import StatusStrip from './components/StatusStrip.vue'
 import HistoryChart from './components/HistoryChart.vue'
 import ChargePointCard from './components/ChargePointCard.vue'
+import VehicleCard from './components/VehicleCard.vue'
+import BatteryCard from './components/BatteryCard.vue'
+import CounterCard from './components/CounterCard.vue'
+import InverterCard from './components/InverterCard.vue'
+import ConsumerCard from './components/ConsumerCard.vue'
 import BaseTabGroup from './components/BaseTabGroup.vue'
 import { useChargePoints } from './composables/useChargePoints'
+import { useVehicles } from './composables/useVehicles'
+import { useBatteries } from './composables/useBatteries'
+import { useCounters } from './composables/useCounters'
+import { useInverters } from './composables/useInverters'
+import { useConsumers } from './composables/useConsumers'
 
 const tabs = [
   { value: 'alle', label: 'Alles' },
   { value: 'ladepunkte', label: 'Ladepunkte' },
+  { value: 'fahrzeuge', label: 'Fahrzeuge' },
+  { value: 'speicher', label: 'Speicher' },
+  { value: 'zaehler', label: 'Zähler' },
+  { value: 'wechselrichter', label: 'Wechselrichter' },
+  { value: 'verbraucher', label: 'Verbraucher' },
 ]
 const activeTab = ref('alle')
 const showChargePoints = computed(() => activeTab.value === 'alle' || activeTab.value === 'ladepunkte')
+const showVehicles = computed(() => activeTab.value === 'alle' || activeTab.value === 'fahrzeuge')
+const showBatteries = computed(() => activeTab.value === 'alle' || activeTab.value === 'speicher')
+const showCounters = computed(() => activeTab.value === 'alle' || activeTab.value === 'zaehler')
+const showInverters = computed(() => activeTab.value === 'alle' || activeTab.value === 'wechselrichter')
+const showConsumers = computed(() => activeTab.value === 'alle' || activeTab.value === 'verbraucher')
 
 const { chargePointIds } = useChargePoints()
+const { vehicleIds } = useVehicles()
+const { batteryIds } = useBatteries()
+const { counterIds } = useCounters()
+const { inverterIds } = useInverters()
+const { consumerIds } = useConsumers()
 
 const STORAGE_KEY = 'quartz-dark-mode'
 const dark = ref(localStorage.getItem(STORAGE_KEY) === 'true')

@@ -17,3 +17,11 @@ export function formatKwh(kwh: number): string {
 export function formatTooltipTime(timestamp: number): string {
   return new Date(timestamp).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })
 }
+
+/** Format a runtime duration already in seconds, e.g. 5400 -> "1:30 h". */
+export function formatRuntime(seconds: number): string {
+  const totalMinutes = Math.floor(seconds / 60)
+  const hours = Math.floor(totalMinutes / 60)
+  const minutes = totalMinutes % 60
+  return `${hours}:${String(minutes).padStart(2, '0')} h`
+}
