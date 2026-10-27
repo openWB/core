@@ -369,7 +369,9 @@ class OcppChargePoint(cp):
             {
                 "key": k,
                 "readonly": v.get("readonly", False),
-                "value": str(v.get("value")),
+                "value": (
+                    "true" if v["value"] else "false"
+                ) if isinstance(v.get("value"), bool) else str(v.get("value")),
             }
             for k, v in configuration_values
         ]
