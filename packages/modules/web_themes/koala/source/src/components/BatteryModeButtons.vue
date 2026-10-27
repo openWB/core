@@ -8,10 +8,9 @@
       size="sm"
       @click="batMode.value = mode.value"
     >
-      <q-icon :name="mode.icon" />
-      <template v-if="mode.value === 'ev_mode'">
-        <span class="q-mx-xs">/</span>
-        <q-icon name="power" />
+      <template v-for="(icon, index) in mode.icons" :key="index">
+        <q-icon :name="icon" />
+        <span class="q-mx-xs" v-if="index < mode.icons.length - 1">/</span>
       </template>
       <span class="q-ml-xs">{{ mode.label }}</span>
       <q-tooltip class="bg-primary">{{ mode.tooltip }}</q-tooltip>

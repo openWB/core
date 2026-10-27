@@ -18,8 +18,6 @@ export default {
     DashboardCard,
     ChargeModeModal,
     BatteryModeModal,
-    VehicleIcon,
-    ConsumerIcon,
   },
   props: {
     changesLocked: { required: false, type: Boolean, default: false },
@@ -303,18 +301,32 @@ export default {
     chargePoint3Discharging() {
       return this.chargePoint3Power.value < 0;
     },
-    batteryModeIcon() {
+    batteryModeIcons() {
       const mode = this.mqttStore.getBatteryMode;
       switch (mode) {
         case "ev_mode":
-          return VehicleIcon;
+          return [VehicleIcon, ConsumerIcon];
         case "bat_mode":
-          return BatteryIcon;
+          return [BatteryIcon];
         case "min_soc_bat_mode":
-          return Battery40Icon;
+          return [Battery40Icon];
         default:
           return "---";
       }
+    },
+    batteryModeIconSize() {
+      return this.svgSize.circleRadius * (this.batteryModeIcons.length > 1 ? 0.45 : 0.6);
+    },
+    batteryModeIconSeparatorWidth() {
+      return this.svgSize.circleRadius * 0.15;
+    },
+    batteryModeIconStartX() {
+      const buttonX = this.svgSize.circleRadius * 1.2;
+      const buttonWidth = this.svgSize.circleRadius * 1.1;
+      const groupWidth =
+        this.batteryModeIcons.length * this.batteryModeIconSize +
+        (this.batteryModeIcons.length - 1) * this.batteryModeIconSeparatorWidth;
+      return buttonX + (buttonWidth - groupWidth) / 2;
     },
     svgComponents() {
       var components = [];
@@ -946,39 +958,29 @@ export default {
                   opacity="1"
                   filter="url(#f-shadow)"
                 />
-                <g
-                  v-if="mqttStore.getBatteryMode === 'ev_mode'"
-                  :style="{ color: 'var(--color--warning)' }"
+                <template
+                  v-for="(icon, index) in batteryModeIcons"
+                  :key="index"
                 >
-                  <title>Verbraucher</title>
-                  <VehicleIcon
-                    :x="svgSize.circleRadius * 1.25"
-                    :y="-svgSize.circleRadius * 1.35"
-                    :height="svgSize.circleRadius * 0.6"
-                    :width="svgSize.circleRadius * 0.5"
+                  <component
+                    :is="icon"
+                    :x="batteryModeIconStartX + index * (batteryModeIconSize + batteryModeIconSeparatorWidth)"
+                    :y="-svgSize.circleRadius * 1.4 + (svgSize.circleRadius * 0.7 - batteryModeIconSize) / 2"
+                    :height="batteryModeIconSize"
+                    :width="batteryModeIconSize"
+                    :style="{ color: 'var(--color--warning)' }"
                   />
                   <text
-                    :x="svgSize.circleRadius * 1.75"
-                    :y="-svgSize.circleRadius * 0.88"
-                    :font-size="svgSize.circleRadius * 0.5"
-                    fill="currentColor"
-                  >/</text>
-                  <ConsumerIcon
-                    :x="svgSize.circleRadius * 1.9"
-                    :y="-svgSize.circleRadius * 1.35"
-                    :height="svgSize.circleRadius * 0.6"
-                    :width="svgSize.circleRadius * 0.4"
-                  />
-                </g>
-                <component
-                  :is="batteryModeIcon"
-                  v-else
-                  :x="svgSize.circleRadius * 1.45"
-                  :y="-svgSize.circleRadius * 1.35"
-                  :height="svgSize.circleRadius * 0.6"
-                  :width="svgSize.circleRadius * 0.6"
-                  :style="{ color: 'var(--color--warning)' }"
-                />
+                    v-if="index < batteryModeIcons.length - 1"
+                    :x="batteryModeIconStartX + index * (batteryModeIconSize + batteryModeIconSeparatorWidth) + batteryModeIconSize + batteryModeIconSeparatorWidth / 2"
+                    :y="-svgSize.circleRadius * 1.4 + svgSize.circleRadius * 0.35"
+                    :font-size="batteryModeIconSize"
+                    text-anchor="middle"
+                    dominant-baseline="central"
+                  >
+                    /
+                  </text>
+                </template>
               </g>
             </g>
           </g>

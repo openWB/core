@@ -21,24 +21,24 @@
             outline
             :color="mode.color != 'dark' ? mode.color : 'light'"
             :active="mode.value === mqttStore.getBatteryMode"
-            :title="mode.label"
             @click="
               setBatteryMode(mode.value)
             "
           >
             <i-row>
               <i-column>
-                <font-awesome-icon
-                  fixed-width
-                  :icon="mode.symbol.icon"
-                  :rotation="mode.symbol.rotation"
-                />
-                <template v-if="mode.value === 'ev_mode'">
-                  /
+                <template
+                  v-for="(symbol, index) in mode.symbols"
+                  :key="index"
+                >
                   <font-awesome-icon
                     fixed-width
-                    :icon="['fas', 'plug']"
+                    :icon="symbol.icon"
+                    :rotation="symbol.rotation"
                   />
+                  <span v-if="index < mode.symbols.length - 1">
+                    /
+                  </span>
                 </template>
               </i-column>
               <i-column>
@@ -82,25 +82,28 @@ export default {
           value: 'ev_mode',
           label: 'Verbraucher',
           color: 'primary',
-          symbol: { icon: ['fas', 'fa-car'], rotation: 0 },
+          symbols: [
+            { icon: ['fas', 'car'], rotation: 0 },
+            { icon: ['fas', 'plug'], rotation: 0 }
+          ],
         },
         {
           value: 'bat_mode',
           label: 'Speicher',
           color: 'primary',
-          symbol: {
+          symbols: [{
             icon: ['fas', 'battery-full'],
             rotation: 270,
-          },
+          }],
         },
         {
           value: 'min_soc_bat_mode',
           label: 'Mindest-SoC',
           color: 'primary',
-          symbol: {
+          symbols: [{
             icon: ['fas', 'battery-half'],
             rotation: 270,
-          },
+          }],
         },
       ]
     };

@@ -39,10 +39,11 @@
       >
         <div>Ladepriorität:</div>
         <div class="row items-center">
-          <q-icon :name="batteryMode.icon" size="sm" color="primary" />
-          <template v-if="batteryMode.value === 'ev_mode'">
-            <span class="q-mx-xs">/</span>
-            <q-icon name="power" size="sm" color="primary" />
+          <template v-for="(icon, index) in batteryMode.icons" :key="index">
+            <q-icon :name="icon" size="sm" color="primary" />
+            <span class="q-mx-xs" v-if="index < batteryMode.icons.length - 1"
+              >/</span
+            >
           </template>
           <div>
             {{ batteryMode.label }}
