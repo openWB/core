@@ -86,6 +86,34 @@ def test_ocpp_fault_has_priority_over_availability_and_stop_flags(availability, 
     assert cp.get_ocpp_status() == ChargePointStatus.faulted
 
 
+@pytest.mark.parametrize("availability,plugged,transaction_id,charging,current,stop,expected", [
+    ([True, True], False, None, False, 0, False, ChargePointStatus.available),
+    ([True, True], True, None, False, 0, False, ChargePointStatus.preparing),
+    ([True, True], True, 42, True, 6, False, ChargePointStatus.charging),
+    ([True, True], True, 42, False, 0, False, ChargePointStatus.suspended_evse),
+    ([True, True], True, 42, False, 6, False, ChargePointStatus.suspended_ev),
+    ([True, True], True, None, False, 0, True, ChargePointStatus.finishing),
+    ([True, False], True, None, False, 0, False, ChargePointStatus.unavailable),
+    ([False, True], True, None, False, 0, False, ChargePointStatus.unavailable),
+])
+def test_ocpp_warning_preserves_operating_status(
+    availability, plugged, transaction_id, charging, current, stop, expected
+):
+    cp = Chargepoint(1, None)
+    cp.data.get.fault_state = 1
+    cp.data.get.ocpp.availability = availability
+    cp.data.get.plug_state = plugged
+    cp.data.get.ocpp.transaction_id = transaction_id
+    cp.data.get.charge_state = charging
+    cp.data.set.current = current
+    cp.data.get.ocpp.remote_stop = stop
+
+    assert cp.get_ocpp_status() == expected
+    assert cp.get_ocpp_status_connector_0() == (
+        ChargePointStatus.available if availability[0] else ChargePointStatus.unavailable
+    )
+
+
 def test_ocpp_freshly_plugged_vehicle_without_transaction_is_preparing():
     cp = Chargepoint(1, None)
     cp.data.get.plug_state = True
