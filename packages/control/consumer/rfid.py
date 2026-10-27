@@ -6,7 +6,7 @@ from control.consumer.usage import NOT_CONTROLLED
 from helpermodules import timecheck
 
 
-RFID_SUPPORTED_MODULE_TYPES = ("mqtt", "internal_socket")
+RFID_SUPPORTED_MODULE_TYPES = ("mqtt", "wallbox_socket")
 
 
 def rfid_supported(module) -> bool:

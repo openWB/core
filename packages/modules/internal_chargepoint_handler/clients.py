@@ -11,7 +11,7 @@ from modules.common import evse
 from modules.common.serial_modbus_devices import get_serial_modbus_devices, BUS_SOURCES
 from modules.internal_chargepoint_handler.hardware_definition import (
     CP0_METERS, CP1_METERS, EVSE_ID_CP0, EVSE_ID_ONE_BUS_CP1, EVSE_ID_ONE_BUS_SE_CP1,
-    EVSE_ID_SE_CP0, EVSE_ID_TWO_BUSSES_CP1, EVSE_MIN_FIRMWARE, SOCKET_METERS, MeterClient, meter_config)
+    EVSE_ID_SE_CP0, EVSE_ID_TWO_BUSSES_CP1, EVSE_MIN_FIRMWARE, WALLBOX_SOCKET_METERS, MeterClient, meter_config)
 from modules.internal_chargepoint_handler.internal_hardware_check import SeriesHardwareCheckMixin
 
 log = logging.getLogger(__name__)
@@ -28,7 +28,8 @@ class ClientHandler(SeriesHardwareCheckMixin):
         self.evse_client = self._evse_factory(client, evse_ids)
         self.meter_client = self.find_meter_client(CP0_METERS if self.local_charge_point_num == 0 else CP1_METERS,
                                                    client, fault_state)
-        self.socket_meter_client: Optional[sdm.Sdm120] = self.find_meter_client(SOCKET_METERS, client, fault_state)
+        self.wallbox_socket_meter_client: Optional[sdm.Sdm120] = self.find_meter_client(
+            WALLBOX_SOCKET_METERS, client, fault_state)
         self.request_and_check_hardware(fault_state)
         self.read_error = 0
 
@@ -85,7 +86,7 @@ class ClientHandler(SeriesHardwareCheckMixin):
         else:
             return 15
 
-    def get_pins_socket(self) -> Tuple[int, int]:
+    def get_pins_wallbox_socket(self) -> Tuple[int, int]:
         return 23, 26  # BOARD numbering: direction BCM 11, enable BCM 7
 
 

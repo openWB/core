@@ -7,19 +7,19 @@ from ..vendor import vendor_descriptor
 
 
 @auto_str
-class InternalSocketConfiguration:
+class WallboxSocketConfiguration:
     def __init__(self, chargepoint_id: Optional[int] = None):
         self.chargepoint_id = chargepoint_id
 
 
 @auto_str
-class InternalSocket(ConsumerSetup[InternalSocketConfiguration]):
-    def __init__(self, name: str = "Steckdose in openWB-Ladepunkt",
-                 type: str = "internal_socket",
+class WallboxSocket(ConsumerSetup[WallboxSocketConfiguration]):
+    def __init__(self, name: str = "Wallbox-Steckdose",
+                 type: str = "wallbox_socket",
                  id: int = 0,
-                 configuration: Optional[InternalSocketConfiguration] = None,
+                 configuration: Optional[WallboxSocketConfiguration] = None,
                  usage: Tuple[ConsumerUsage, ...] = (ConsumerUsage.SUSPENDABLE_ONOFF,
                                                      ConsumerUsage.CONTINUOUS,
                                                      ConsumerUsage.METER_ONLY), **kwargs):
         super().__init__(name, type, id, vendor=vendor_descriptor.configuration_factory().type,
-                         configuration=configuration or InternalSocketConfiguration(), usage=usage, **kwargs)
+                         configuration=configuration or WallboxSocketConfiguration(), usage=usage, **kwargs)

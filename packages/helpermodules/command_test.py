@@ -169,8 +169,8 @@ def test_get_max_id_hierarchy_by_topics(mock_pub, monkeypatch):
     mock_pub.pub.assert_any_call("openWB/set/command/max_id/hierarchy", 9)
 
 
-@pytest.mark.parametrize("consumer_type", ["internal_socket", "mqtt"])
-def test_remove_internal_socket_switches_off_before_removing_topics(consumer_type, mock_pub, monkeypatch):
+@pytest.mark.parametrize("consumer_type", ["wallbox_socket", "mqtt"])
+def test_remove_wallbox_socket_switches_off_before_removing_topics(consumer_type, mock_pub, monkeypatch):
     order = []
     consumer = SimpleNamespace(data=SimpleNamespace(module=SimpleNamespace(type=consumer_type)), module=Mock())
     consumer.module.switch_off.side_effect = lambda: order.append("off")
@@ -185,4 +185,4 @@ def test_remove_internal_socket_switches_off_before_removing_topics(consumer_typ
     instance = Command.__new__(Command)
     instance.max_id_hierarchy = 2
     instance.removeConsumer("test", {"data": {"consumer_id": 2}})
-    assert order == (["off", "remove"] if consumer_type == "internal_socket" else ["remove"])
+    assert order == (["off", "remove"] if consumer_type == "wallbox_socket" else ["remove"])
