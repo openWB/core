@@ -1597,6 +1597,7 @@ def test_availability_during_start_is_applied_after_transaction_or_explicit_reje
 
             openwb_cp.data.get.plug_state = False
             client = object.__new__(OcppClient)
+            client._unlock_in_progress = set()
             client.transactions = coordinator
             client.connection_manager = SimpleNamespace(get=lambda _: connection)
             await client._clear_start_block("box-1")

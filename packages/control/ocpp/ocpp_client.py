@@ -62,6 +62,8 @@ class OcppClient:
         ] = {}
 
         self._identity_change_jobs: dict[int, concurrent.futures.Future] = {}
+        # Laufzeitstatus unabhängig von den austauschbaren Ladepunktmodellen.
+        self._unlock_in_progress: set[str] = set()
 
         with OcppClient._ocpp_runtime_lock:
             if (OcppClient._ocpp_thread is None
@@ -900,6 +902,8 @@ class OcppClient:
         )
 
     async def _clear_start_block(self, chargebox_id: str) -> None:
+        if self.is_unlock_in_progress(chargebox_id):
+            return
         if self.transactions.clear_start_block(chargebox_id):
             # Nach dem lokalen Verwerfen eines unbestätigten Starts darf eine
             # vorgemerkte Nichtverfügbarkeit nicht bis zur nächsten Ladung warten.
@@ -931,6 +935,9 @@ class OcppClient:
             chargebox_id=chargebox_id,
         )
 
+    def is_unlock_in_progress(self, chargebox_id: str) -> bool:
+        return chargebox_id in self._unlock_in_progress
+
     async def _handle_unlock(self, chargebox_id: str) -> str:
         openwb_cp = get_cp_from_chargebox_id(chargebox_id)
         if openwb_cp is None:
@@ -939,16 +946,18 @@ class OcppClient:
         configuration = module.config.configuration
         if module.config.type != "internal_openwb" or getattr(configuration, "mode", None) != "socket":
             return "not_supported"
-        self.transactions.block_start(chargebox_id)
-        openwb_cp.data.get.ocpp.unlock_stop = True
-        openwb_cp.data.get.ocpp.unlock_in_progress = True
-        Pub().pub(f"openWB/set/chargepoint/{openwb_cp.num}/get/ocpp/unlock_stop", True)
+        if self.is_unlock_in_progress(chargebox_id):
+            return "failed"
+        self._unlock_in_progress.add(chargebox_id)
         try:
+            self.transactions.block_start(chargebox_id)
+            openwb_cp.data.get.ocpp.unlock_stop = True
+            Pub().pub(f"openWB/set/chargepoint/{openwb_cp.num}/get/ocpp/unlock_stop", True)
             from modules.common.connector_unlock import request_unlock
             return await request_unlock(configuration.duo_num)
 
         finally:
-            openwb_cp.data.get.ocpp.unlock_in_progress = False
+            self._unlock_in_progress.discard(chargebox_id)
 
     async def _handle_reset(
         self,
