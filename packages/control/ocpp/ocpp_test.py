@@ -1511,6 +1511,7 @@ def test_offline_stop_is_persisted(monkeypatch):
         "imported": 1234,
         "reason": "EVDisconnected",
         "timestamp": ANY,
+        "finalized": True,
     }]
 
 
@@ -1529,6 +1530,7 @@ def test_persisted_stop_is_sent_once(monkeypatch):
                 "imported": 1234,
                 "reason": "EVDisconnected",
                 "timestamp": "2025-01-01T00:00:00Z",
+                "finalized": True,
             }],
         ))),
     )

@@ -86,6 +86,8 @@ class TransactionCoordinator:
         self._replay_tasks: dict[str, asyncio.Task] = {}
         # Retry-Tasks gehören immer zu einer konkreten Transportverbindung.
         self._replay_task_connections: dict[str, OcppConnection] = {}
+        # Ein Reconnect darf einen laufenden Stop nicht parallel abspielen.
+        self._stops_in_progress: set[str] = set()
 
     async def authorize(
         self,
@@ -407,24 +409,30 @@ class TransactionCoordinator:
         if transaction.pending_stop is not None:
             pending_stop = transaction.pending_stop
 
-            self._transition(chargebox_id, transaction, TransactionState.STOPPING)
-            await self._finalize_stop_meter(chargebox_id, transaction.transaction_id, pending_stop)
-            transaction.pending_stop = None
+            self._stops_in_progress.add(chargebox_id)
+            try:
+                self._store_pending_stop(chargebox_id, transaction.transaction_id, pending_stop, False)
+                self._transition(chargebox_id, transaction, TransactionState.STOPPING)
+                await self._finalize_stop_meter(chargebox_id, transaction.transaction_id, pending_stop)
+                self._store_pending_stop(chargebox_id, transaction.transaction_id, pending_stop, True)
+                transaction.pending_stop = None
 
-            stop_successful = await self._stop_active(
-                chargebox_id,
-                connection,
-                transaction,
-                pending_stop,
-            )
-            # Fehlgeschlagenen Stop für die spätere Wiederholung sichern.
-            if not stop_successful and transaction.transaction_id is not None:
-                self._persist_offline_stop(
+                stop_successful = await self._stop_active(
                     chargebox_id,
-                    transaction.transaction_id,
+                    connection,
+                    transaction,
                     pending_stop,
                 )
-                self._schedule_replay_retry(chargebox_id, connection)
+                # Fehlgeschlagenen Stop für die spätere Wiederholung sichern.
+                if not stop_successful and transaction.transaction_id is not None:
+                    self._persist_offline_stop(
+                        chargebox_id,
+                        transaction.transaction_id,
+                        pending_stop,
+                    )
+                    self._schedule_replay_retry(chargebox_id, connection)
+            finally:
+                self._stops_in_progress.discard(chargebox_id)
 
             return False
 
@@ -539,14 +547,22 @@ class TransactionCoordinator:
             openwb_cp.data.get.ocpp.rfid_stop = True
             Pub().pub(f"openWB/set/chargepoint/{openwb_cp.num}/get/ocpp/rfid_stop", True)
 
+        stored = self._read_pending_stop(chargebox_id, get_cp_from_chargebox_id(chargebox_id))
+        if stored is not None and stored[0] != transaction.transaction_id:
+            stored = None
         # Bei einer Wiederholung den bereits endgültigen Stopdatensatz erhalten.
         retrying_stop = transaction.state == TransactionState.ERROR and transaction.pending_stop is not None
-        stop_request = transaction.pending_stop if retrying_stop else PendingStop(
-            meter_stop=int(imported),
-            id_tag=id_tag or transaction.id_tag or "",
-            reason=reason,
-            timestamp=_get_formatted_time(),
-        )
+        if stored is not None:
+            stop_request = stored[1]
+        elif retrying_stop:
+            stop_request = transaction.pending_stop
+        else:
+            stop_request = PendingStop(
+                meter_stop=int(imported),
+                id_tag=id_tag or transaction.id_tag or "",
+                reason=reason,
+                timestamp=_get_formatted_time(),
+            )
 
         #
         # START läuft gerade.
@@ -573,7 +589,8 @@ class TransactionCoordinator:
         #
 
         if transaction.state == TransactionState.STOPPING:
-            return False
+            if chargebox_id in self._stops_in_progress or stored is None:
+                return False
 
         #
         # Keine Transaction vorhanden.
@@ -604,73 +621,50 @@ class TransactionCoordinator:
         if transaction.transaction_id is None:
             return True
 
-        #
-        # Bereits VOR ensure_connected() auf STOPPING.
-        #
-        # Sonst könnten zwei parallele Stop-Aufrufe
-        # dieselbe Transaction zweimal stoppen.
-        #
+        # Vor dem ersten await speichern und parallelen Replay verhindern.
+        self._stops_in_progress.add(chargebox_id)
+        try:
+            transaction.pending_stop = stop_request
+            finalized = stored[2] if stored is not None else retrying_stop
+            self._store_pending_stop(chargebox_id, transaction.transaction_id, stop_request, finalized)
+            self._transition(chargebox_id, transaction, TransactionState.STOPPING)
 
-        transaction.pending_stop = (
-            stop_request
-        )
+            if not finalized:
+                await self._finalize_stop_meter(chargebox_id, transaction.transaction_id, stop_request)
+                self._store_pending_stop(chargebox_id, transaction.transaction_id, stop_request, True)
 
-        self._transition(
-            chargebox_id,
-            transaction,
-            TransactionState.STOPPING,
-        )
+            if offline_rfid_stop:
+                self._persist_offline_stop(chargebox_id, transaction.transaction_id, stop_request)
+                log.warning(
+                    "OCPP %s: RFID-Stop mit dem Transaktions-Tag offline lokal angenommen; "
+                    "StopTransaction %s wird nach Wiederverbindung übertragen.",
+                    chargebox_id, transaction.transaction_id,
+                )
+                return True
 
-        if not retrying_stop:
-            await self._finalize_stop_meter(chargebox_id, transaction.transaction_id, stop_request)
+            connection = await self._get_connection(chargebox_id, "StopTransaction")
+            if connection is None or not connection.boot_accepted:
+                self._persist_offline_stop(chargebox_id, transaction.transaction_id, stop_request)
+                log.info(
+                    "OCPP %s: Stop wegen fehlender oder nicht akzeptierter Verbindung vorgemerkt.",
+                    chargebox_id,
+                )
+                return False
 
-        if offline_rfid_stop:
-            self._persist_offline_stop(chargebox_id, transaction.transaction_id, stop_request)
-            log.warning(
-                "OCPP %s: RFID-Stop mit dem Transaktions-Tag offline lokal angenommen; "
-                "StopTransaction %s wird nach Wiederverbindung übertragen.",
-                chargebox_id, transaction.transaction_id,
-            )
-            return True
-
-        connection = await self._get_connection(
-            chargebox_id,
-            "StopTransaction",
-        )
-
-        if connection is None or not connection.boot_accepted:
-            self._persist_offline_stop(
+            transaction.pending_stop = None
+            successful = await self._stop_active(
                 chargebox_id,
-                transaction.transaction_id,
+                connection,
+                transaction,
                 stop_request,
             )
-
-            log.info(
-                f"OCPP {chargebox_id}: Stop wegen fehlender oder "
-                "nicht akzeptierter Verbindung vorgemerkt.",
-            )
-
-            return False
-
-        transaction.pending_stop = None
-
-        successful = await self._stop_active(
-            chargebox_id,
-            connection,
-            transaction,
-            stop_request,
-        )
-
-        # Fehlgeschlagenen Stop für die spätere Wiederholung sichern.
-        if not successful and transaction.transaction_id is not None:
-            self._persist_offline_stop(
-                chargebox_id,
-                transaction.transaction_id,
-                stop_request,
-            )
-            self._schedule_replay_retry(chargebox_id, connection)
-
-        return successful
+            # Fehlgeschlagenen Stop für die spätere Wiederholung sichern.
+            if not successful and transaction.transaction_id is not None:
+                self._persist_offline_stop(chargebox_id, transaction.transaction_id, stop_request)
+                self._schedule_replay_retry(chargebox_id, connection)
+            return successful
+        finally:
+            self._stops_in_progress.discard(chargebox_id)
 
     async def _finalize_stop_meter(
         self,
@@ -819,13 +813,47 @@ class TransactionCoordinator:
         chargebox_id: str,
         connection: OcppConnection,
     ) -> bool:
-        openwb_cp = get_cp_from_chargebox_id(chargebox_id)
-        if openwb_cp is None:
+        # Auch ensure_connected() kann diesen Callback innerhalb eines Stops auslösen.
+        if chargebox_id in self._stops_in_progress:
             return True
+        openwb_cp = get_cp_from_chargebox_id(chargebox_id)
+        stored = self._read_pending_stop(chargebox_id, openwb_cp)
+        if stored is None:
+            return True
+
+        transaction_id, stop_request, finalized = stored
+        transaction = self._get_transaction(chargebox_id)
+        transaction.transaction_id = transaction_id
+        transaction.id_tag = stop_request.id_tag
+        transaction.last_error = None
+
+        self._stops_in_progress.add(chargebox_id)
+        try:
+            if not finalized:
+                self._transition(chargebox_id, transaction, TransactionState.STOPPING)
+                await self._finalize_stop_meter(chargebox_id, transaction_id, stop_request)
+                self._store_pending_stop(chargebox_id, transaction_id, stop_request, True)
+            # Fertige Offline-Stops nicht erneut als lokale Transaktion veröffentlichen.
+            self._set_state(chargebox_id, transaction, TransactionState.STOPPING)
+            transaction.pending_stop = None
+            return await self._stop_active(
+                chargebox_id,
+                connection,
+                transaction,
+                stop_request,
+                publish_state=False,
+            )
+        finally:
+            self._stops_in_progress.discard(chargebox_id)
+
+    @staticmethod
+    def _read_pending_stop(chargebox_id: str, openwb_cp) -> Optional[tuple[int, PendingStop, bool]]:
+        if openwb_cp is None:
+            return None
 
         pending_transactions = openwb_cp.data.get.ocpp.pending_transactions or []
         if not pending_transactions:
-            return True
+            return None
         entry = pending_transactions[-1]
         if not isinstance(entry, dict):
             log.error(
@@ -834,7 +862,7 @@ class TransactionCoordinator:
                 chargebox_id,
                 entry,
             )
-            return True
+            return None
 
         action = entry.get("action")
         transaction_id = entry.get("transaction_id")
@@ -842,6 +870,7 @@ class TransactionCoordinator:
         id_tag = entry.get("id_tag", "")
         reason = entry.get("reason", "EVDisconnected")
         timestamp = entry.get("timestamp")
+        finalized = entry.get("finalized")
 
         valid = (
             action == "stop"
@@ -855,6 +884,7 @@ class TransactionCoordinator:
             and bool(reason)
             and isinstance(timestamp, str)
             and bool(timestamp)
+            and isinstance(finalized, bool)
         )
         if not valid:
             log.error(
@@ -863,22 +893,8 @@ class TransactionCoordinator:
                 chargebox_id,
                 entry,
             )
-            return True
+            return None
 
-        transaction = self._get_transaction(chargebox_id)
-        transaction.transaction_id = transaction_id
-        transaction.id_tag = id_tag
-        transaction.pending_stop = None
-        transaction.last_error = None
-
-        self._set_state(
-            chargebox_id,
-            transaction,
-            TransactionState.ACTIVE,
-        )
-
-        # Hier bewusst KEIN _commit(): Beim Offline-Stop wurde die lokale
-        # openWB-Transaction bereits freigegeben.
         stop_request = PendingStop(
             meter_stop=meter_stop,
             id_tag=id_tag,
@@ -886,15 +902,7 @@ class TransactionCoordinator:
             timestamp=timestamp,
         )
 
-        successful = await self._stop_active(
-            chargebox_id,
-            connection,
-            transaction,
-            stop_request,
-            publish_state=False,
-        )
-
-        return successful
+        return transaction_id, stop_request, finalized
 
     def _schedule_replay_retry(
         self,
@@ -1068,6 +1076,16 @@ class TransactionCoordinator:
                 elif flow_status == "start_unconfirmed":
                     transaction.state = TransactionState.START_UNCONFIRMED
                     transaction.last_error = "Startbestätigung fehlt; Abstecken erforderlich"
+            stored = self._read_pending_stop(chargebox_id, openwb_cp)
+            if stored is not None:
+                transaction.transaction_id, transaction.pending_stop, _ = stored
+                transaction.id_tag = transaction.pending_stop.id_tag
+                transaction.state = TransactionState.STOPPING
+                invalid_persisted_transaction = False
+                stale_start_phase = None
+                # Den gespeicherten Stop vor einer Wiederverbindung lokal sperren.
+                if not stored[2] or existing_id is not None:
+                    self._commit(chargebox_id, transaction)
         else:
             invalid_persisted_transaction = False
 
@@ -1282,11 +1300,12 @@ class TransactionCoordinator:
 
         return True
 
-    def _persist_offline_stop(
+    def _store_pending_stop(
         self,
         chargebox_id: str,
         transaction_id: int,
         request: PendingStop,
+        finalized: bool,
     ) -> None:
         openwb_cp = get_cp_from_chargebox_id(chargebox_id)
 
@@ -1294,6 +1313,16 @@ class TransactionCoordinator:
             return
 
         pending_transactions = [
+            entry for entry in (openwb_cp.data.get.ocpp.pending_transactions or [])
+            if not (
+                isinstance(entry, dict)
+                and entry.get("action") == "stop"
+                and isinstance(entry.get("transaction_id"), int)
+                and not isinstance(entry.get("transaction_id"), bool)
+                and entry["transaction_id"] == transaction_id
+            )
+        ]
+        pending_transactions.append(
             {
                 "action": "stop",
                 "transaction_id": int(transaction_id),
@@ -1301,8 +1330,9 @@ class TransactionCoordinator:
                 "imported": int(request.meter_stop),
                 "reason": str(request.reason),
                 "timestamp": str(request.timestamp),
+                "finalized": finalized,
             }
-        ]
+        )
 
         ocpp_data = openwb_cp.data.get.ocpp
 
@@ -1317,6 +1347,17 @@ class TransactionCoordinator:
             pending_transactions,
         )
 
+    def _persist_offline_stop(
+        self,
+        chargebox_id: str,
+        transaction_id: int,
+        request: PendingStop,
+    ) -> None:
+        self._store_pending_stop(chargebox_id, transaction_id, request, True)
+        openwb_cp = get_cp_from_chargebox_id(chargebox_id)
+        if openwb_cp is None:
+            return
+        ocpp_data = openwb_cp.data.get.ocpp
         #
         # openWB lokal freigeben.
         #
