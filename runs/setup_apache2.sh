@@ -74,6 +74,10 @@ echo "checking required apache modules..."
 enableModule headers
 enableModule ssl
 enableModule proxy_wstunnel
+# needed for the simpleAPI ProxyPass(Match) to the local Python HTTP server
+# (previously only enabled for the Pro+ branch below, which proxies to a
+# remote Pro+ device over the same module)
+enableModule proxy_http
 
 # default site (http and https)
 echo "apache default site..."
@@ -138,12 +142,10 @@ if lsusb | grep -Eq 'RTL8153|AX88179'; then
 	echo "second network for pro plus detected"
 	# enable pro+ specific configurations
 	enableSite apache-proplus
-	enableModule proxy_http
 else
 	echo "no second network for pro plus detected"
 	# disable all pro+ specific configurations
 	disableSite apache-proplus
-	disableModule proxy_http
 fi
 
 # restart apache if required
