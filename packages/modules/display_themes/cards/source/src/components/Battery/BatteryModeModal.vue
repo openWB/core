@@ -80,7 +80,7 @@ export default {
       batteryModes: [
         {
           value: 'ev_mode',
-          label: 'Verbraucher',
+          label: 'Fzg./Verbr.',
           color: 'primary',
           symbols: [
             { icon: ['fas', 'car'], rotation: 0 },

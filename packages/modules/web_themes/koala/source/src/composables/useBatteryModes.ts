@@ -2,10 +2,10 @@ export const useBatteryModes = () => {
   const batteryModes = [
     {
       value: 'ev_mode',
-      label: 'Verbraucher',
+      label: 'Fzg./Verbr.',
       color: 'primary',
       icons: ['directions_car', 'power'],
-      tooltip: 'Verbraucher',
+      tooltip: 'Fahrzeuge und Verbraucher',
     },
     {
       value: 'bat_mode',
