@@ -413,6 +413,16 @@ class Command:
                 payload, connection_id,
                 f'Ladepunkt mit ID \'{cp_id}\' existiert nicht.', MessageType.ERROR)
             return
+        for consumer in SubData.consumer_data.values():
+            module = consumer.data.module
+            if (getattr(module, "type", None) == "wallbox_socket" and
+                    module.configuration.chargepoint_id == cp_id):
+                pub_user_message(
+                    payload, connection_id,
+                    f'Ladepunkt mit ID \'{cp_id}\' kann nicht gelöscht werden, da er der Wallbox-Steckdose '
+                    f'\'{module.name}\' zugeordnet ist. Bitte zuerst die Zuordnung bei der Wallbox-Steckdose ändern.',
+                    MessageType.ERROR)
+                return
         cp_type = cp.chargepoint.data.config.type
         if cp_type == "external_openwb":
             cp_ip = cp.chargepoint.data.config.configuration.get("ip_address")
