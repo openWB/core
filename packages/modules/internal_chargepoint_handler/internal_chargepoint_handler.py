@@ -323,7 +323,7 @@ class GeneralInternalChargepointHandler:
                 if ClientHandler.find_meter_client(WALLBOX_SOCKET_METERS, client, fault_state) is not None:
                     pub.pub_single("openWB/internal_socket/data/detected", True)
                     with ModifyLoglevelContext(log, logging.DEBUG):
-                        log.debug(f"Wallbox-Steckdose verbaut.")
+                        log.debug("Wallbox-Steckdose verbaut.")
                     return
             with ModifyLoglevelContext(log, logging.DEBUG):
                 log.debug("Es konnte keine Wallbox-Steckdose erkannt werden.")
@@ -331,6 +331,7 @@ class GeneralInternalChargepointHandler:
             log.exception("Fehler bei der automatischen Erkennung einer Wallbox-Steckdose")
 
     def handler(self):
+        self.auto_detect_wallbox_socket()
         while True:
             try:
                 self.event_start.wait()
