@@ -5,8 +5,8 @@ from unittest.mock import Mock
 import pytest
 
 from control import data
-from modules.consumers.openwb.internal_socket import consumer as socket_consumer
-from modules.consumers.openwb.internal_socket.config import InternalSocket, InternalSocketConfiguration
+from modules.consumers.openwb.wallbox_socket import consumer as wallbox_socket_consumer
+from modules.consumers.openwb.wallbox_socket.config import WallboxSocket, WallboxSocketConfiguration
 
 
 @pytest.mark.parametrize("tag", ["0012345678", None])
@@ -14,7 +14,7 @@ from modules.consumers.openwb.internal_socket.config import InternalSocket, Inte
     ("internal_openwb", "localhost", 0),
     ("external_openwb", "192.168.1.40", 1),
 ])
-def test_socket_rfid_uses_selected_reader_and_clears_only_on_request(
+def test_wallbox_socket_rfid_uses_selected_reader_and_clears_only_on_request(
         tag, cp_type, host, duo_num, monkeypatch, mock_pub):
     cp_module = Mock(config=SimpleNamespace(
         type=cp_type, configuration=SimpleNamespace(ip_address=host, duo_num=duo_num)))
@@ -37,11 +37,12 @@ def test_socket_rfid_uses_selected_reader_and_clears_only_on_request(
         return Mock(start_finite_loop=receive)
 
     configurable = Mock()
-    monkeypatch.setattr(socket_consumer, "BrokerClient", broker_factory)
-    monkeypatch.setattr(socket_consumer, "ConfigurableConsumer", configurable)
+    monkeypatch.setattr(wallbox_socket_consumer, "BrokerClient", broker_factory)
+    monkeypatch.setattr(wallbox_socket_consumer, "ConfigurableConsumer", configurable)
     publisher = Mock()
-    monkeypatch.setattr(socket_consumer, "pub_single", publisher)
-    socket_consumer.create_consumer(InternalSocket(id=1, configuration=InternalSocketConfiguration(chargepoint_id=4)))
+    monkeypatch.setattr(wallbox_socket_consumer, "pub_single", publisher)
+    wallbox_socket_consumer.create_consumer(
+        WallboxSocket(id=1, configuration=WallboxSocketConfiguration(chargepoint_id=4)))
 
     mock_pub.reset_mock()
     state = configurable.call_args.kwargs["update"]()

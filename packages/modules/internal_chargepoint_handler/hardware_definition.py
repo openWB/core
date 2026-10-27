@@ -13,7 +13,7 @@ CP0_METERS = [meter_config(mpm3pm.Mpm3pm, modbus_id=5),
 
 CP1_METERS = [meter_config(mpm3pm.Mpm3pm, modbus_id=6), meter_config(sdm.Sdm630_72, modbus_id=106)]
 
-SOCKET_METERS = [meter_config(sdm.Sdm120, modbus_id=54)]
+WALLBOX_SOCKET_METERS = [meter_config(sdm.Sdm120, modbus_id=54)]
 
 EVSE_ID_CP0 = [1]
 EVSE_ID_SE_CP0 = [11]

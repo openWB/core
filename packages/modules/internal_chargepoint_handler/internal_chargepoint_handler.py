@@ -18,11 +18,11 @@ from modules.common.modbus import ModbusSerialClient_
 from modules.common.serial_modbus_devices import BUS_SOURCES, get_serial_modbus_devices
 from modules.internal_chargepoint_handler import chargepoint_module
 from modules.internal_chargepoint_handler.clients import ClientHandler, client_factory
-from modules.internal_chargepoint_handler.hardware_definition import SOCKET_METERS
+from modules.internal_chargepoint_handler.hardware_definition import WALLBOX_SOCKET_METERS
 from modules.internal_chargepoint_handler.pro_plus import ProPlus
 from modules.internal_chargepoint_handler.socket import Socket
-from modules.internal_chargepoint_handler.internal_socket import InternalSocketModule
-from modules.internal_chargepoint_handler.internal_socket_config import InternalSocket, InternalSocketData
+from modules.internal_chargepoint_handler.wallbox_socket import WallboxSocketModule
+from modules.internal_chargepoint_handler.wallbox_socket_config import WallboxSocket, WallboxSocketData
 from modules.internal_chargepoint_handler.internal_chargepoint_handler_config import (
     GlobalHandlerData, InternalChargepoint, InternalChargepointData, RfidData)
 log = logging.getLogger(__name__)
@@ -89,11 +89,11 @@ class UpdateState:
             f"openWB/internal_chargepoint/{self.cp_module.local_charge_point_num}/data/cp_interruption_duration", 0)
 
 
-class UpdateInternalSocketState:
-    def __init__(self, socket_module: InternalSocketModule) -> None:
-        self.module = socket_module
+class UpdateWallboxSocketState:
+    def __init__(self, wallbox_socket_module: WallboxSocketModule) -> None:
+        self.module = wallbox_socket_module
 
-    def update_state(self, data: InternalSocketData, heartbeat_expired: bool) -> None:
+    def update_state(self, data: WallboxSocketData, heartbeat_expired: bool) -> None:
         if not data.set_state or heartbeat_expired:
             self.module.set_state(False)
         else:
@@ -108,7 +108,7 @@ class InternalChargepointHandler:
                  hierarchy_id_cp0: int,
                  parent_cp1: Optional[InternalChargepoint],
                  hierarchy_id_cp1: Optional[int],
-                 parent_socket: InternalSocket,
+                 parent_wallbox_socket: WallboxSocket,
                  event_start: Event,
                  event_stop: Event) -> None:
         log.debug(f"Init internal chargepoint as {mode}")
@@ -117,28 +117,29 @@ class InternalChargepointHandler:
         self.heartbeat = False
         self.fault_state_info_cp0 = FaultState(
             ComponentInfo(0, "Interner Ladepunkt 0", "internal_chargepoint", hierarchy_id=hierarchy_id_cp0))
-        self.fault_state_info_socket = FaultState(ComponentInfo(None, "Interne Steckdose", "internal_socket"))
+        self.fault_state_info_wallbox_socket = FaultState(ComponentInfo(None, "Wallbox-Steckdose", "wallbox_socket"))
 
         with SingleComponentUpdateContext(self.fault_state_info_cp0, reraise=True):
             self.init_gpio(mode)
-        if parent_socket.data.detected:
+        if parent_wallbox_socket.data.detected:
             try:
                 with SingleComponentUpdateContext(self.fault_state_info_cp0, reraise=True):
-                    with SingleComponentUpdateContext(self.fault_state_info_socket, reraise=True):
+                    with SingleComponentUpdateContext(self.fault_state_info_wallbox_socket, reraise=True):
                         if mode == InternalChargepointMode.PRO_PLUS:
                             self.cp0_client_handler = None
-                            self.socket = None
+                            self.wallbox_socket = None
                         else:
                             self.cp0_client_handler = client_factory(mode, 0, self.fault_state_info_cp0)
-                            self.socket = HandlerInternalSocket(self.cp0_client_handler, global_data, parent_socket)
+                            self.wallbox_socket = HandlerWallboxSocket(
+                                self.cp0_client_handler, global_data, parent_wallbox_socket)
                     self.cp0 = HandlerChargepoint(self.cp0_client_handler, 0, mode,
                                                   global_data, parent_cp0, hierarchy_id_cp0)
             except Exception:
                 self.cp0_client_handler = None
                 self.cp0 = None
-                self.socket = None
+                self.wallbox_socket = None
         else:
-            self.socket = None
+            self.wallbox_socket = None
             try:
                 with SingleComponentUpdateContext(self.fault_state_info_cp0, reraise=True):
                     if mode == InternalChargepointMode.PRO_PLUS:
@@ -201,11 +202,11 @@ class InternalChargepointHandler:
                     heartbeat_cp0 = self.cp0.update(data["global_data"], data["cp0"].data, data["rfid_data"])
                 if self.cp1:
                     heartbeat_cp1 = self.cp1.update(data["global_data"], data["cp1"].data, data["rfid_data"])
-                if self.socket:
-                    socket_data = copy.deepcopy(SubData.internal_socket_data.data)
-                    heartbeat_socket = self.socket.update(data["global_data"], socket_data)
+                if self.wallbox_socket:
+                    wallbox_socket_data = copy.deepcopy(SubData.wallbox_socket_data.data)
+                    heartbeat_wallbox_socket = self.wallbox_socket.update(data["global_data"], wallbox_socket_data)
                 self.heartbeat = True if heartbeat_cp0 and heartbeat_cp1 and (
-                    self.socket is None or heartbeat_socket) else False
+                    self.wallbox_socket is None or heartbeat_wallbox_socket) else False
                 time.sleep(1.1)
         # Allgemeine Fehlermeldungen an LP 1
         with SingleComponentUpdateContext(self.fault_state_info_cp0, update_always=False):
@@ -280,17 +281,17 @@ class HandlerChargepoint:
             return False
 
 
-class HandlerInternalSocket:
+class HandlerWallboxSocket:
     def __init__(self,
                  client_handler: Optional[ClientHandler],
                  global_data: GlobalHandlerData,
-                 internal_socket: InternalSocket) -> None:
-        self.module = InternalSocketModule(client_handler, internal_socket)
+                 wallbox_socket: WallboxSocket) -> None:
+        self.module = WallboxSocketModule(client_handler, wallbox_socket)
         self.global_data = global_data
         with SingleComponentUpdateContext(self.module.fault_state):
-            self.update_state = UpdateInternalSocketState(self.module)
+            self.update_state = UpdateWallboxSocketState(self.module)
 
-    def update(self, global_data: GlobalHandlerData, data: InternalSocketData) -> bool:
+    def update(self, global_data: GlobalHandlerData, data: WallboxSocketData) -> bool:
         with SingleComponentUpdateContext(self.module.fault_state):
             self.module.get_values(data.last_tag)
             heartbeat_expired = self._check_heartbeat_expired(global_data.heartbeat)
@@ -312,21 +313,21 @@ class GeneralInternalChargepointHandler:
         self.event_stop = Event()
         self.event_start = Event()
 
-    def auto_detect_internal_socket(self):
+    def auto_detect_wallbox_socket(self):
         try:
             device, count = get_serial_modbus_devices()
             if count == 1 and device[0] in BUS_SOURCES:
                 port = device[0]
                 client = ModbusSerialClient_(port)
-                fault_state = FaultState(ComponentInfo(None, "Interne Steckdose", "internal_socket"))
-                if ClientHandler.find_meter_client(SOCKET_METERS, client, fault_state) is not None:
+                fault_state = FaultState(ComponentInfo(None, "Wallbox-Steckdose", "wallbox_socket"))
+                if ClientHandler.find_meter_client(WALLBOX_SOCKET_METERS, client, fault_state) is not None:
                     pub.pub_single("openWB/internal_socket/data/detected", True)
                     log.debug(f"Verbrauchszähler mit lokaler Auslesung nutzt Port {port}")
                     return
             with ModifyLoglevelContext(log, logging.DEBUG):
-                log.debug("Es konnte keine interne Steckdose erkannt werden.")
+                log.debug("Es konnte keine Wallbox-Steckdose erkannt werden.")
         except Exception:
-            log.exception("Fehler bei automatischen Erkennung einer internen Steckdose")
+            log.exception("Fehler bei der automatischen Erkennung einer Wallbox-Steckdose")
 
     def handler(self):
         while True:
@@ -355,7 +356,7 @@ class GeneralInternalChargepointHandler:
                         hierarchy_id_cp0,
                         data["cp1"],
                         hierarchy_id_cp1,
-                        copy.deepcopy(SubData.internal_socket_data),
+                        copy.deepcopy(SubData.wallbox_socket_data),
                         self.event_start,
                         self.event_stop)
                     self.internal_chargepoint_handler.loop()
