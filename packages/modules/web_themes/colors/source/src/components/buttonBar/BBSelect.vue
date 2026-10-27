@@ -54,12 +54,15 @@
 							type="button"
 							class="priorityModeBtn btn btn-secondary buttonTextSize"
 							:class="priorityButtonClass('ev_mode')"
+							title="Fahrzeuge und Verbraucher"
 							data-dismiss="modal"
 							priority="1"
 							@click="setBatteryPriority('ev_mode')"
 						>
-							EV
+							Fzg./Verbr.
 							<span class="fas fa-car ms-2">&nbsp;</span>
+							/
+							<span class="fas fa-plug ms-1">&nbsp;</span>
 						</button>
 					</div>
 				</div>
