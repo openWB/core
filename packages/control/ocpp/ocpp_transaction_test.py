@@ -74,6 +74,146 @@ def transaction_setup(monkeypatch):
     return coordinator, connection, openwb_cp
 
 
+@pytest.mark.parametrize("interrupted_at", ["preparation", "connection", "send"])
+def test_interrupted_stop_is_restored_and_completed(
+    transaction_setup, mock_pub, monkeypatch, interrupted_at
+):
+    coordinator, connection, cp = transaction_setup
+    cp.data.get.ocpp.transaction_id = 42
+    cp.data.get.ocpp.transaction_id_tag = "TAG"
+    cp.data.get.ocpp.tag_accepted = True
+    cp.data.get.ocpp.rfid_stop = True
+    cp.data.get.imported = 120
+    cp.data.get.charge_state = interrupted_at == "preparation"
+
+    async def check():
+        reached = asyncio.Event()
+
+        async def interrupt(*args, **kwargs):
+            entry = cp.data.get.ocpp.pending_transactions[-1]
+            assert entry["finalized"] is (interrupted_at != "preparation")
+            assert entry["id_tag"] == "TAG"
+            assert cp.data.get.ocpp.tag_accepted is False
+            assert cp.data.get.ocpp.transaction_id == 42
+            reached.set()
+            await asyncio.Event().wait()
+
+        if interrupted_at == "preparation":
+            monkeypatch.setattr(coordinator, "_finalize_stop_meter", interrupt)
+        elif interrupted_at == "connection":
+            coordinator._ensure_connected.side_effect = interrupt
+        else:
+            connection.cp._stop_transaction.side_effect = interrupt
+
+        task = asyncio.create_task(coordinator.stop("box-1", 100, "TAG", "Local"))
+        try:
+            await asyncio.wait_for(reached.wait(), 1)
+            saved = copy.deepcopy(cp.data.get.ocpp.pending_transactions[-1])
+            task.cancel()
+            with pytest.raises(asyncio.CancelledError):
+                await task
+            assert coordinator._stops_in_progress == set()
+
+            # Der neue Prozess hat nur das persistierte Modell.
+            restored = TransactionCoordinator(ensure_connected=AsyncMock(return_value=connection))
+            assert restored.get_state("box-1") == TransactionState.STOPPING
+            assert restored.get_id_tag("box-1") == "TAG"
+            assert cp.data.get.ocpp.tag_accepted is False
+            assert await restored.start("box-1", 1, "NEW", 200) is False
+            cp.data.get.charge_state = False
+            cp.data.get.imported = 150
+            connection.cp._stop_transaction.reset_mock(side_effect=True)
+
+            async def confirm(**kwargs):
+                entry = cp.data.get.ocpp.pending_transactions[-1]
+                assert entry["finalized"] is True
+                assert entry["imported"] == kwargs["meter_stop"]
+                assert entry["timestamp"] == kwargs["timestamp"]
+                return SimpleNamespace()
+
+            connection.cp._stop_transaction.side_effect = confirm
+            if interrupted_at != "preparation":
+                monkeypatch.setattr(restored, "_finalize_stop_meter", AsyncMock(
+                    side_effect=AssertionError("Fertigen Stop nicht erneut vermessen"),
+                ))
+            assert await restored._replay_persisted_stop_once("box-1", connection) is True
+            sent = connection.cp._stop_transaction.await_args.kwargs
+            assert sent["transaction_id"] == 42
+            assert sent["id_tag"] == "TAG"
+            assert sent["reason"] == "Local"
+            assert sent["meter_stop"] == (150 if interrupted_at == "preparation" else saved["imported"])
+            if interrupted_at != "preparation":
+                assert sent["timestamp"] == saved["timestamp"]
+            assert cp.data.get.ocpp.pending_transactions == []
+            assert cp.data.get.ocpp.transaction_id is None
+            assert restored.get_state("box-1") == TransactionState.IDLE
+        finally:
+            task.cancel()
+            await asyncio.gather(task, return_exceptions=True)
+
+    asyncio.run(check())
+
+
+def test_reconnect_does_not_duplicate_running_stop_preparation(transaction_setup, mock_pub, monkeypatch):
+    coordinator, connection, cp = transaction_setup
+    cp.data.get.ocpp.transaction_id = 42
+    cp.data.get.ocpp.transaction_id_tag = "TAG"
+
+    async def check():
+        entered = asyncio.Event()
+        release = asyncio.Event()
+
+        async def finalize(*args):
+            entered.set()
+            await release.wait()
+
+        monkeypatch.setattr(coordinator, "_finalize_stop_meter", finalize)
+        task = asyncio.create_task(coordinator.stop("box-1", 100, "TAG", "Local"))
+        try:
+            await asyncio.wait_for(entered.wait(), 1)
+            saved = copy.deepcopy(cp.data.get.ocpp.pending_transactions)
+            await coordinator.on_connected("box-1", connection)
+            assert await coordinator.stop("box-1", 999, "OTHER", "Remote") is False
+            assert cp.data.get.ocpp.pending_transactions == saved
+            connection.cp._stop_transaction.assert_not_awaited()
+
+            # Auch der Callback im Verbindungsaufbau darf nicht rekursiv senden.
+            async def connect(_):
+                await coordinator.on_connected("box-1", connection)
+                return connection
+
+            coordinator._ensure_connected.side_effect = connect
+            release.set()
+            assert await task is True
+            connection.cp._stop_transaction.assert_awaited_once()
+            assert cp.data.get.ocpp.pending_transactions == []
+        finally:
+            task.cancel()
+            await asyncio.gather(task, return_exceptions=True)
+
+    asyncio.run(check())
+
+
+@pytest.mark.parametrize("finalized", [None, 0, 1, "false", [], {}])
+def test_saved_stop_requires_boolean_finalized(transaction_setup, mock_pub, finalized):
+    coordinator, connection, cp = transaction_setup
+    entry = {
+        "action": "stop", "transaction_id": 42, "id_tag": "TAG", "imported": 100,
+        "reason": "Local", "timestamp": "2026-10-23T12:00:00Z",
+    }
+    if finalized is not None:
+        entry["finalized"] = finalized
+    cp.data.get.ocpp.pending_transactions = [entry]
+
+    async def check():
+        await coordinator.on_connected("box-1", connection)
+        assert await coordinator.start("box-1", 1, "NEW", 100) is False
+
+    asyncio.run(check())
+    connection.cp._stop_transaction.assert_not_awaited()
+    assert cp.data.get.ocpp.pending_transactions == [entry]
+
+
 @pytest.mark.parametrize("availability", [[True, False], [False, True], [False, False]])
 def test_transaction_start_rejects_unavailable_connector(transaction_setup, availability):
     coordinator, connection, openwb_cp = transaction_setup
@@ -101,6 +241,7 @@ def test_start_waits_for_persisted_stop_confirmation(transaction_setup, mock_pub
     cp.data.get.ocpp.pending_transactions = [{
         "action": "stop", "transaction_id": 17, "id_tag": "OLD", "imported": 90,
         "reason": "Local", "timestamp": "2026-10-23T12:00:00Z",
+        "finalized": True,
     }]
 
     async def check():
@@ -132,6 +273,7 @@ def test_start_preserves_replay_state_during_connection_setup(transaction_setup,
         cp.data.get.ocpp.pending_transactions = [{
             "action": "stop", "transaction_id": 17, "id_tag": "OLD", "imported": 90,
             "reason": "Local", "timestamp": "2026-10-23T12:00:00Z",
+            "finalized": True,
         }]
         connection.cp._stop_transaction.return_value = SimpleNamespace() if confirmed else None
         assert await coordinator._replay_persisted_stop_once("box-1", connection) is confirmed
@@ -414,7 +556,9 @@ def test_confirmed_stop_without_saved_match_does_not_publish_pending_list(transa
     cp.data.get.ocpp.transaction_id = 42
     cp.data.get.ocpp.pending_transactions = [{"action": "stop", "transaction_id": 99}]
 
-    assert asyncio.run(coordinator.stop("box-1", 100)) is True
+    transaction = coordinator._get_transaction("box-1")
+    request = ocpp_transaction_coordinator.PendingStop(100, "", "EVDisconnected", "2026-10-27T12:00:00Z")
+    assert asyncio.run(coordinator._stop_active("box-1", connection, transaction, request)) is True
     assert cp.data.get.ocpp.pending_transactions == [{"action": "stop", "transaction_id": 99}]
     assert not any(c.args[0].endswith("/pending_transactions") for c in mock_pub.pub.call_args_list)
 
@@ -926,6 +1070,7 @@ def test_abort_during_start_confirmation_stops_without_releasing_charging(
         assert openwb_cp.data.get.ocpp.pending_transactions == [{
             "action": "stop", "transaction_id": 42, "id_tag": "TAG", "imported": 175,
             "reason": reason, "timestamp": stop_time,
+            "finalized": True,
         }]
     else:
         assert coordinator.get_state("box-1") == TransactionState.IDLE
@@ -1236,12 +1381,22 @@ def test_stop_and_wait_replays_persisted_stop_after_restart(transaction_setup):
 
         connect = AsyncMock(return_value=connection)
         restored = TransactionCoordinator(ensure_connected=connect)
+        entered = asyncio.Event()
+        release = asyncio.Event()
+
+        async def confirm(**kwargs):
+            entered.set()
+            await release.wait()
+            return SimpleNamespace()
+
+        connection.cp._stop_transaction.side_effect = confirm
         wait = asyncio.create_task(restored.stop_and_wait("box-1", 150, timeout=None))
-        await asyncio.sleep(0)
+        await asyncio.wait_for(entered.wait(), 1)
         assert not wait.done()
         connect.assert_awaited_once_with("box-1")
-        # Wie bei erfolgreicher Verbindungsinitialisierung den Replay ausführen.
+        # Ein paralleler Replay darf den laufenden Versand nicht duplizieren.
         await restored.on_connected("box-1", connection)
+        release.set()
         assert await asyncio.wait_for(wait, 1) is True
         assert openwb_cp.data.get.ocpp.pending_transactions == []
 
@@ -1320,6 +1475,7 @@ def test_missing_stop_confirmation_preserves_pending_stop(transaction_setup):
     assert openwb_cp.data.get.ocpp.pending_transactions == [{
         "action": "stop", "transaction_id": 42, "id_tag": "TAG",
         "imported": 150, "reason": "EVDisconnected", "timestamp": ANY,
+        "finalized": True,
     }]
 
 
@@ -1340,6 +1496,7 @@ def test_failed_stop_keeps_internal_transaction_id_and_releases_local_state(tran
     assert openwb_cp.data.get.ocpp.pending_transactions == [{
         "action": "stop", "transaction_id": 42, "id_tag": "TAG",
         "imported": 150, "reason": "EVDisconnected", "timestamp": ANY,
+        "finalized": True,
     }]
 
 
@@ -1355,6 +1512,7 @@ def test_offline_stop_is_replayed_once_after_reconnect(transaction_setup, mock_p
         assert openwb_cp.data.get.ocpp.pending_transactions == [{
             "action": "stop", "transaction_id": transaction_id, "id_tag": "TAG",
             "imported": 150, "reason": "EVDisconnected", "timestamp": ANY,
+            "finalized": True,
         }]
         connection.cp._authorize.reset_mock()
         connection.cp._authorize.side_effect = RuntimeError("must not authorize replay")
