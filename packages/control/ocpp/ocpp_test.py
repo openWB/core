@@ -23,6 +23,7 @@ from control.ocpp.ocpp_connection import OcppConnection, RegistrationState
 from control.ocpp.ocpp_connection_manager import OcppConnectionManager
 from control.ocpp.ocpp_transaction_coordinator import AuthorizationResult, TransactionCoordinator
 from ocpp.v16.enums import (
+    ChargePointErrorCode,
     ChargePointStatus,
     MessageTrigger,
     RegistrationStatus,
@@ -32,6 +33,26 @@ from modules.chargepoints.mqtt.chargepoint_module import ChargepointModule
 from modules.chargepoints.mqtt.config import Mqtt
 from helpermodules.logger import FORMAT_STR_DETAILED, FORMAT_STR_OCPP
 from helpermodules.logging_context import OcppContextFilter, ocpp_logging_context
+
+
+@pytest.mark.parametrize("fault_state,error_code,status", [
+    (0, ChargePointErrorCode.no_error, ChargePointStatus.available),
+    (1, ChargePointErrorCode.no_error, ChargePointStatus.charging),
+    (2, ChargePointErrorCode.other_error, ChargePointStatus.faulted),
+])
+def test_status_notification_maps_fault_severity_and_keeps_info(monkeypatch, fault_state, error_code, status):
+    monkeypatch.setattr("control.ocpp.ocpp_chargepoint.get_cp_from_chargebox_id", lambda _: SimpleNamespace(num=1))
+
+    async def check():
+        cp = OcppChargePoint("box-1", AsyncMock())
+        cp.call = AsyncMock(return_value=SimpleNamespace())
+        await cp._status_notification(1, fault_state, "Hinweis zum Ladepunkt", status)
+        request = cp.call.await_args.args[0]
+        assert request.error_code == error_code
+        assert request.status == status
+        assert request.info == "Hinweis zum Ladepunkt"
+
+    asyncio.run(check())
 
 
 def test_ocpp_logging_context_is_task_local(monkeypatch):
