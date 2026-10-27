@@ -27,11 +27,19 @@
           >
             <i-row>
               <i-column>
-                <font-awesome-icon
-                  fixed-width
-                  :icon="mode.symbol.icon"
-                  :rotation="mode.symbol.rotation"
-                />
+                <template
+                  v-for="(symbol, index) in mode.symbols"
+                  :key="index"
+                >
+                  <font-awesome-icon
+                    fixed-width
+                    :icon="symbol.icon"
+                    :rotation="symbol.rotation"
+                  />
+                  <span v-if="index < mode.symbols.length - 1">
+                    /
+                  </span>
+                </template>
               </i-column>
               <i-column>
                 {{ mode.label }}
@@ -53,10 +61,11 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import {
   faBatteryFull as fasBatteryFull,
   faBatteryHalf as fasBatteryHalf,
-  faCar as fasCar
+  faCar as fasCar,
+  faPlug as fasPlug
 } from "@fortawesome/free-solid-svg-icons";
 /* add icons to the library */
-library.add(fasBatteryFull, fasBatteryHalf, fasCar);
+library.add(fasBatteryFull, fasBatteryHalf, fasCar, fasPlug);
 
 export default {
   name: "BatteryModeModal",
@@ -71,27 +80,30 @@ export default {
       batteryModes: [
         {
           value: 'ev_mode',
-          label: 'Fahrzeuge',
+          label: 'Fzg./Verbr.',
           color: 'primary',
-          symbol: { icon: ['fas', 'fa-car'], rotation: 0 },
+          symbols: [
+            { icon: ['fas', 'car'], rotation: 0 },
+            { icon: ['fas', 'plug'], rotation: 0 }
+          ],
         },
         {
           value: 'bat_mode',
           label: 'Speicher',
           color: 'primary',
-          symbol: {
+          symbols: [{
             icon: ['fas', 'battery-full'],
             rotation: 270,
-          },
+          }],
         },
         {
           value: 'min_soc_bat_mode',
           label: 'Mindest-SoC',
           color: 'primary',
-          symbol: {
+          symbols: [{
             icon: ['fas', 'battery-half'],
             rotation: 270,
-          },
+          }],
         },
       ]
     };

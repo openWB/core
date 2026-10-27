@@ -39,7 +39,12 @@ Hagen */
 							class="ps-1"
 						>
 							(
-							<i class="fa m-0" :class="priorityIcon" />)
+							<i class="fa m-0" :class="priorityIcon" />
+							<template v-if="globalData.pvBatteryPriority === 'ev_mode'">
+								/
+								<i class="fa fa-plug m-0" />
+							</template>
+							)
 						</span>
 					</span>
 				</div>
