@@ -1487,10 +1487,7 @@ def test_persisted_stop_is_sent_once(monkeypatch):
     assert openwb_cp.data.get.ocpp.pending_transactions == []
     assert cp.transaction_id is None
     assert openwb_cp.data.get.ocpp.transaction_id is None
-    assert pub.call_args_list[-1].args == (
-        "openWB/set/chargepoint/1/get/ocpp/pending_transactions",
-        [],
-    )
+    pub.assert_any_call("openWB/set/chargepoint/1/get/ocpp/pending_transactions", [])
 
 
 def _make_reset_test_client(monkeypatch, transaction_stopped):

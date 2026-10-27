@@ -894,9 +894,6 @@ class TransactionCoordinator:
             publish_state=False,
         )
 
-        if successful:
-            self._clear_pending_transactions(openwb_cp)
-
         return successful
 
     def _schedule_replay_retry(
@@ -1266,6 +1263,12 @@ class TransactionCoordinator:
             f"OCPP Transaction {transaction_id} für {chargebox_id} beendet.",
         )
 
+        # Auch direkte Wiederholungen müssen den bestätigten Stop entfernen.
+        # Während der Serveranfrage kann das Ladepunktmodell ersetzt worden sein.
+        openwb_cp = get_cp_from_chargebox_id(chargebox_id)
+        if openwb_cp is not None:
+            self._clear_pending_transactions(openwb_cp, transaction_id)
+
         transaction.reset()
         self._commit(chargebox_id, transaction)
 
@@ -1349,8 +1352,20 @@ class TransactionCoordinator:
     @staticmethod
     def _clear_pending_transactions(
         openwb_cp,
+        transaction_id: int,
     ) -> None:
-        openwb_cp.data.get.ocpp.pending_transactions = []
+        pending = openwb_cp.data.get.ocpp.pending_transactions or []
+        remaining = [entry for entry in pending if not (
+            isinstance(entry, dict)
+            and entry.get("action") == "stop"
+            and isinstance(entry.get("transaction_id"), int)
+            and not isinstance(entry.get("transaction_id"), bool)
+            and entry["transaction_id"] == transaction_id
+        )]
+        if len(remaining) == len(pending):
+            return
+
+        openwb_cp.data.get.ocpp.pending_transactions = remaining
 
         Pub().pub(
             (
@@ -1358,7 +1373,7 @@ class TransactionCoordinator:
                 f"{openwb_cp.num}/get/ocpp/"
                 "pending_transactions"
             ),
-            [],
+            remaining,
         )
 
 
