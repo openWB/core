@@ -1,7 +1,10 @@
 <template>
   <div
     class="panel flex flex-1 items-center justify-center gap-[7px] whitespace-nowrap px-[11px] py-2"
-    :class="{ 'cursor-pointer hover:border-accent': clickable }"
+    :class="[
+      { 'cursor-pointer hover:border-accent': clickable },
+      faultState === 1 ? 'chip-warning' : faultState !== undefined && faultState >= 2 ? 'chip-error' : '',
+    ]"
     @click="clickable && $emit('click')"
   >
     <component
@@ -28,6 +31,7 @@ defineProps<{
   value: string
   color: string
   clickable?: boolean
+  faultState?: number
 }>()
 defineEmits<{ click: [] }>()
 </script>
