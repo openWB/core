@@ -33,6 +33,7 @@ from helpermodules.pub import Pub
 
 from control import data
 from modules.common.fault_state import FaultState
+from modules.common.fault_state_level import FaultStateLevel
 from control.ocpp.helper import _get_formatted_time, get_cp_from_chargebox_id
 from control.ocpp.helper_diagnostics import create_diagnostics, upload_diagnostics
 
@@ -845,6 +846,6 @@ class OcppChargePoint(cp):
 
 
 def get_ocpp_error_code(fault_state: FaultState):
-    if fault_state:
+    if fault_state >= FaultStateLevel.ERROR:
         return ChargePointErrorCode.other_error
     return ChargePointErrorCode.no_error
