@@ -8,12 +8,12 @@ from helpermodules.utils.topic_parser import decode_payload
 from modules.common.abstract_device import DeviceDescriptor
 from modules.common.component_state import ConsumerState
 from modules.common.configurable_consumer import ConfigurableConsumer
-from modules.consumers.openwb.internal_socket.config import InternalSocket
+from modules.consumers.openwb.wallbox_socket.config import WallboxSocket
 
 log = logging.getLogger(__name__)
 
 
-def create_consumer(config: InternalSocket):
+def create_consumer(config: WallboxSocket):
     def clear_rfid():
         pub_single("openWB/set/internal_socket/data/last_tag", None, hostname=get_host())
 
@@ -38,7 +38,7 @@ def create_consumer(config: InternalSocket):
         def on_message(client, userdata, message):
             received_topics[message.topic] = decode_payload(message.payload)
 
-        BrokerClient(f"subscribeSocketConsumer{config.id}", on_connect, on_message,
+        BrokerClient(f"subscribeWallboxSocketConsumer{config.id}", on_connect, on_message,
                      host=get_host(), port=1886 if get_host() == "localhost" else 1883).start_finite_loop(timeout=2)
         prefix = "openWB/internal_socket/get/"
         log.debug(f"Empfange MQTT Daten für Verbraucher {config.id}: {received_topics}")
@@ -74,4 +74,4 @@ def create_consumer(config: InternalSocket):
     return consumer
 
 
-device_descriptor = DeviceDescriptor(configuration_factory=InternalSocket)
+device_descriptor = DeviceDescriptor(configuration_factory=WallboxSocket)

@@ -51,7 +51,7 @@ class FaultState(Exception):
             topic = component_type.type_to_topic_mapping(self.component_info.type)
             if (self.component_info.type == component_type.ComponentType.FLEXIBLE_TARIFF.value or
                     self.component_info.type == component_type.ComponentType.GRID_FEE.value or
-                    self.component_info.type == component_type.ComponentType.INTERNAL_SOCKET.value):
+                    self.component_info.type == component_type.ComponentType.WALLBOX_SOCKET.value):
                 topic_prefix = f"openWB/set/{topic}"
             else:
                 topic_prefix = f"openWB/set/{topic}/{self.component_info.id}"
