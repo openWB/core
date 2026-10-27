@@ -68,7 +68,7 @@
 
 <script setup lang="ts">
 import { useMqttStore } from 'src/stores/mqtt-store';
-import { computed, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 
 const mqttStore = useMqttStore();
 
@@ -95,6 +95,12 @@ const visible = computed({
 });
 
 const socValue = ref<number | undefined>(undefined);
+
+watch(visible, (isVisible) => {
+  if (isVisible) {
+    socValue.value = undefined;
+  }
+});
 
 const socInputValue = computed({
   get: () => {
