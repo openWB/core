@@ -92,21 +92,21 @@ class ConfigurableConsumer(Generic[T_CONSUMER]):
                 self.store.set(consumer_state)
 
     def set_power_limit(self, power_limit: float, data: SetLimitData) -> None:
-        with SingleComponentUpdateContext(self.fault_state):
+        with SingleComponentUpdateContext(self.fault_state, update_always=False):
             self.module_set_power_limit(power_limit, data)
 
     def switch_on(self) -> None:
-        with SingleComponentUpdateContext(self.fault_state):
+        with SingleComponentUpdateContext(self.fault_state, update_always=False):
             self.module_switch_on()
 
     def switch_off(self) -> None:
-        with SingleComponentUpdateContext(self.fault_state):
+        with SingleComponentUpdateContext(self.fault_state, update_always=False):
             self.module_switch_off()
 
     def send_values(self, values: CurrentValues) -> None:
-        with SingleComponentUpdateContext(self.fault_state):
+        with SingleComponentUpdateContext(self.fault_state, update_always=False):
             self.module_send_values(values)
 
     def clear_rfid(self) -> None:
-        with SingleComponentUpdateContext(self.fault_state):
+        with SingleComponentUpdateContext(self.fault_state, update_always=False):
             self.module_clear_rfid()
