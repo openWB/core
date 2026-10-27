@@ -960,12 +960,9 @@ class Chargepoint(ChargepointRfidMixin, Load):
                 or self.data.get.rfid
                 or self.data.get.vehicle_id
             )
-            # Wenn eine Transaktion aktiv ist, werden die aktuellen Zählerstände an den OCPP-Server übertragen
-            # werden in jedem update an den Client gesendet.
-            # Dieser sendet die Daten in einem eigenen Intervall an den OCPP-Server
-            if (data.data.optional_data.data.ocpp.config.active and
-                chargebox_id and
-                    self.data.get.ocpp.transaction_id is not None):
+            # Snapshots auch ohne Transaktion für Trigger aktuell halten.
+            # Periodisch sendet der Client nur während einer aktiven Transaktion.
+            if data.data.optional_data.data.ocpp.config.active and chargebox_id:
                 data.data.ocpp_client.transfer_values(chargebox_id,
                                                       1,
                                                       self.data.get.ocpp.transaction_id,

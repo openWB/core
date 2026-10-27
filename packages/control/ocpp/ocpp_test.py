@@ -647,35 +647,37 @@ def test_client_request_stop_forwards_authorization(monkeypatch, authorize_stop)
 
 
 @pytest.mark.parametrize("timestamp", ["2026-10-23T12:00:00+00:00", "2026-10-23T12:01:00+00:00"])
-def test_transfer_values_updates_meter_snapshot(timestamp):
+@pytest.mark.parametrize("transaction_id", [None, 123456])
+def test_transfer_values_updates_meter_snapshot(timestamp, transaction_id):
     client = object.__new__(OcppClient)
     client._meter_snapshots = {}
     loop = Mock()
     loop.call_soon_threadsafe.side_effect = lambda callback, *args: callback(*args)
     client.loop = loop
 
-    client.transfer_values("cp1", 1, 123456, 9876, timestamp)
+    client.transfer_values("cp1", 1, transaction_id, 9876, timestamp)
 
     loop.call_soon_threadsafe.assert_called_once_with(
         client._set_meter_snapshot,
         "cp1",
         1,
-        123456,
+        transaction_id,
         9876,
         timestamp,
     )
     snapshot = client._meter_snapshots["cp1"]
-    assert snapshot.transaction_id == 123456
+    assert snapshot.transaction_id == transaction_id
     assert snapshot.connector_id == 1
     assert snapshot.imported == 9876
     assert snapshot.timestamp == timestamp
 
 
-def test_chargepoint_passes_meter_update_timestamp_to_client(mock_data, monkeypatch):
+@pytest.mark.parametrize("transaction_id", [None, 42])
+def test_chargepoint_passes_meter_update_timestamp_to_client(mock_data, monkeypatch, transaction_id):
     cp = Chargepoint(1, None)
     cp.data.config.ev = 0
     cp.data.config.ocpp_chargebox_id = "cp1"
-    cp.data.get.ocpp.transaction_id = 42
+    cp.data.get.ocpp.transaction_id = transaction_id
     cp.data.get.ocpp.connected = True
     cp.data.get.plug_state = True
     cp.data.get.imported = 9876
@@ -692,7 +694,7 @@ def test_chargepoint_passes_meter_update_timestamp_to_client(mock_data, monkeypa
 
     cp.update({"ev0": Ev(0)})
 
-    transfer.assert_called_once_with("cp1", 1, 42, 9876, timestamp)
+    transfer.assert_called_once_with("cp1", 1, transaction_id, 9876, timestamp)
 
 
 @pytest.mark.parametrize(
@@ -1037,13 +1039,19 @@ def test_trigger_heartbeat_ignores_connector_and_rejects_unsupported(monkeypatch
     ]
 
 
-@pytest.mark.parametrize("has_snapshot", [True, False])
+@pytest.mark.parametrize("snapshot_state", ["matching", "previous_transaction", "missing"])
+@pytest.mark.parametrize("transaction_id", [None, 0, 42])
 @pytest.mark.parametrize("sample_interval", [0, 20])
-def test_trigger_meter_values_uses_snapshot_or_skips_when_missing(has_snapshot, sample_interval):
+def test_trigger_meter_values_sends_matching_snapshot_or_current_backend_values(
+    monkeypatch, snapshot_state, transaction_id, sample_interval
+):
+    snapshot_time = "2026-10-23T12:00:00+00:00"
+    current_time = "2026-10-23T12:01:00+00:00"
+    monkeypatch.setattr(ocpp_client, "_get_formatted_time", lambda: current_time)
     chargepoint = SimpleNamespace(
         chargebox_id="box-1",
         _meter_values=AsyncMock(),
-        openwb_cp=SimpleNamespace(data=SimpleNamespace(get=SimpleNamespace(ocpp=SimpleNamespace(
+        openwb_cp=SimpleNamespace(data=SimpleNamespace(get=SimpleNamespace(imported=10000, ocpp=SimpleNamespace(
             config=SimpleNamespace(
                 MeterValuesSampledData={"value": "Power.Active.Import"},
                 MeterValueSampleInterval={"value": sample_interval},
@@ -1055,11 +1063,14 @@ def test_trigger_meter_values_uses_snapshot_or_skips_when_missing(has_snapshot, 
         is_active_charge_point=Mock(return_value=True),
     )
     client._meter_snapshots = (
-        {"box-1": SimpleNamespace(connector_id=1, imported=9876, timestamp="2026-10-23T12:00:00+00:00")}
-        if has_snapshot else {}
+        {"box-1": ocpp_client.MeterSnapshot(
+            transaction_id=transaction_id if snapshot_state == "matching" else 17,
+            connector_id=1, imported=9876, timestamp=snapshot_time,
+        )}
+        if snapshot_state != "missing" else {}
     )
     client.transactions = SimpleNamespace(
-        get_transaction_id=Mock(return_value=42),
+        get_transaction_id=Mock(return_value=transaction_id),
     )
 
     asyncio.run(client.handler_trigger_msg(
@@ -1069,23 +1080,53 @@ def test_trigger_meter_values_uses_snapshot_or_skips_when_missing(has_snapshot, 
     ))
 
     client.connection_manager.is_active_charge_point.assert_called_once_with(chargepoint)
-    if has_snapshot:
-        client.transactions.get_transaction_id.assert_called_once_with("box-1")
-        chargepoint._meter_values.assert_awaited_once()
-        kwargs = chargepoint._meter_values.await_args.kwargs
-        assert kwargs["connector_id"] == 1
-        assert kwargs["transaction_id"] == 42
-        assert kwargs["meter_value"][0]["timestamp"] == "2026-10-23T12:00:00+00:00"
-        assert kwargs["meter_value"][0]["sampledValue"][0] == {
-            "value": "9876",
-            "context": "Trigger",
-            "format": "Raw",
-            "measurand": "Power.Active.Import",
-            "unit": "Wh",
-        }
+    client.transactions.get_transaction_id.assert_called_once_with("box-1")
+    chargepoint._meter_values.assert_awaited_once()
+    kwargs = chargepoint._meter_values.await_args.kwargs
+    assert kwargs["connector_id"] == 1
+    assert kwargs["transaction_id"] == transaction_id
+    assert kwargs["meter_value"][0]["timestamp"] == (
+        snapshot_time if snapshot_state == "matching" else current_time
+    )
+    assert kwargs["meter_value"][0]["sampledValue"][0] == {
+        "value": "9876" if snapshot_state == "matching" else "10000",
+        "context": "Trigger",
+        "format": "Raw",
+        "measurand": "Power.Active.Import",
+        "unit": "Wh",
+    }
+
+
+@pytest.mark.parametrize("transaction_id", [None, 0, -123, 42])
+def test_meter_values_wire_payload_omits_only_absent_transaction_id(monkeypatch, transaction_id):
+    openwb_cp = SimpleNamespace(num=1)
+    monkeypatch.setattr("control.ocpp.ocpp_chargepoint.get_cp_from_chargebox_id", lambda _: openwb_cp)
+    sent = []
+
+    async def check():
+        ws = SimpleNamespace(send=AsyncMock())
+        cp = OcppChargePoint("box-1", ws)
+
+        async def confirm(message):
+            request = json.loads(message)
+            sent.append(request)
+            await cp.route_message(json.dumps([3, request[1], {}]))
+
+        ws.send.side_effect = confirm
+        await asyncio.wait_for(cp._meter_values(1, transaction_id, [{
+            "timestamp": "2026-10-23T12:00:00+00:00",
+            "sampledValue": [{"value": "10000", "context": "Trigger"}],
+        }]), 1)
+
+    asyncio.run(check())
+    assert len(sent) == 1
+    assert sent[0][2] == "MeterValues"
+    payload = sent[0][3]
+    assert payload["connectorId"] == 1
+    if transaction_id is None:
+        assert "transactionId" not in payload
     else:
-        client.transactions.get_transaction_id.assert_called_once_with("box-1")
-        chargepoint._meter_values.assert_not_awaited()
+        assert payload["transactionId"] == transaction_id
 
 
 def test_trigger_diagnostics_status_sends_stored_status():
@@ -1579,8 +1620,10 @@ def test_handle_reset_aborts_when_transaction_cannot_be_stopped(monkeypatch, moc
 
 
 @pytest.mark.parametrize("transaction_state", list(ocpp_transaction_coordinator.TransactionState))
-@pytest.mark.parametrize("snapshot_id", [123, 999])
-def test_meter_loop_only_sends_for_active_matching_transaction(monkeypatch, transaction_state, snapshot_id):
+@pytest.mark.parametrize("transaction_id, snapshot_id", [(123, 123), (123, 999), (123, None), (None, None)])
+def test_meter_loop_only_sends_for_active_matching_transaction(
+    monkeypatch, transaction_state, transaction_id, snapshot_id
+):
     chargepoint = SimpleNamespace(
         openwb_cp=SimpleNamespace(data=SimpleNamespace(get=SimpleNamespace(ocpp=SimpleNamespace(
             config=SimpleNamespace(MeterValueSampleInterval={"value": "1"}),
@@ -1595,7 +1638,7 @@ def test_meter_loop_only_sends_for_active_matching_transaction(monkeypatch, tran
     )
     client = object.__new__(OcppClient)
     client.transactions = SimpleNamespace(
-        get_transaction_id=Mock(return_value=123),
+        get_transaction_id=Mock(return_value=transaction_id),
         get_state=Mock(return_value=transaction_state),
     )
     client._meter_snapshots = {
@@ -1620,7 +1663,8 @@ def test_meter_loop_only_sends_for_active_matching_transaction(monkeypatch, tran
         client.transactions.get_transaction_id.assert_called_once_with("box-1")
     else:
         client.transactions.get_transaction_id.assert_not_called()
-    if transaction_state == ocpp_transaction_coordinator.TransactionState.ACTIVE and snapshot_id == 123:
+    if (transaction_state == ocpp_transaction_coordinator.TransactionState.ACTIVE
+            and transaction_id is not None and snapshot_id == transaction_id):
         chargepoint._meter_values.assert_awaited_once()
         assert chargepoint._meter_values.await_args.kwargs["meter_value"][0]["timestamp"] == "2026-10-23T12:00:00+00:00"
     else:
