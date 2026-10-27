@@ -199,6 +199,41 @@ def test_update_blocks_start_until_unplug_clears_stop_flag(mock_data, monkeypatc
     )
 
 
+def test_update_keeps_stop_flags_and_start_block_until_unlock_finishes(mock_data, monkeypatch):
+    cp = Chargepoint(1, None)
+    cp.data.config.ev = 0
+    cp.data.config.ocpp_chargebox_id = "cp1"
+    cp.data.set.rfid = "TAG"
+    cp.data.get.plug_state = False
+    cp.data.get.ocpp.connected = True
+    stop_flags = ("remote_stop", "reset", "rfid_stop", "unlock_stop")
+    for flag in stop_flags:
+        setattr(cp.data.get.ocpp, flag, True)
+    cp.template = CpTemplate()
+    cp.chargepoint_module = ChargepointModule(Mqtt())
+    running = {"cp1"}
+    monkeypatch.setattr(data.data.ocpp_client, "_unlock_in_progress", running)
+    start = Mock()
+    clear = Mock()
+    monkeypatch.setattr(data.data.ocpp_client, "request_start", start)
+    monkeypatch.setattr(data.data.ocpp_client, "clear_start_block", clear)
+    monkeypatch.setattr(cp, "_process_charge_stop", Mock())
+    monkeypatch.setattr(cp, "_pub_configured_ev", Mock())
+
+    # Ein frisch kopiertes Modell darf den laufenden Auftrag nicht vergessen.
+    cp.data = copy.deepcopy(cp.data)
+    cp.update({"ev0": Ev(0)})
+    assert all(getattr(cp.data.get.ocpp, flag) for flag in stop_flags)
+    clear.assert_not_called()
+    start.assert_not_called()
+
+    running.clear()
+    cp.update({"ev0": Ev(0)})
+    assert not any(getattr(cp.data.get.ocpp, flag) for flag in stop_flags)
+    clear.assert_called_once_with("cp1")
+    start.assert_not_called()
+
+
 @pytest.mark.parametrize("transaction_id,flow_status", [
     (124, None), (None, "start_pending"), (None, "start_authorizing"), (None, "start_starting"),
     (None, None),

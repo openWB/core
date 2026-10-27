@@ -1,4 +1,5 @@
 import asyncio
+import copy
 from contextlib import asynccontextmanager
 import json
 from types import SimpleNamespace
@@ -167,15 +168,80 @@ def test_client_sets_unlock_stop_and_leaves_transaction_stop_to_chargepoint(monk
                                  ocpp=SimpleNamespace(unlock_stop=False), imported=123)))
     monkeypatch.setattr(ocpp_client, "get_cp_from_chargebox_id", lambda _: cp)
     client = object.__new__(OcppClient)
+    client._unlock_in_progress = set()
     client.transactions = Mock()
     client.transactions.get_id_tag.return_value = "tag"
     client.request_stop = Mock()
     assert asyncio.run(client._handle_unlock("box")) == "unlocked"
     assert cp.data.get.ocpp.unlock_stop
     client.transactions.block_start.assert_called_once_with("box")
-    assert not cp.data.get.ocpp.unlock_in_progress
+    assert not client.is_unlock_in_progress("box")
     request.assert_awaited_once_with(0)
     client.request_stop.assert_not_called()
+
+
+@pytest.mark.parametrize("outcome", ["unlocked", "failed", "error", "cancelled"])
+def test_unlock_runtime_state_survives_model_replacement_and_is_always_cleared(monkeypatch, outcome):
+    module = SimpleNamespace(
+        config=SimpleNamespace(type="internal_openwb", configuration=SimpleNamespace(mode="socket", duo_num=0)))
+    current = [SimpleNamespace(num=1, chargepoint_module=module,
+                               data=SimpleNamespace(get=SimpleNamespace(ocpp=SimpleNamespace(unlock_stop=False))))]
+    monkeypatch.setattr(ocpp_client, "get_cp_from_chargebox_id", lambda _: current[0])
+    client = object.__new__(OcppClient)
+    client._unlock_in_progress = set()
+    client.transactions = Mock()
+
+    async def check():
+        entered = asyncio.Event()
+        release = asyncio.Event()
+
+        async def unlock(_):
+            entered.set()
+            await release.wait()
+            if outcome == "error":
+                raise RuntimeError("Hardwarefehler")
+            return outcome
+
+        request = AsyncMock(side_effect=unlock)
+        monkeypatch.setattr(connector_unlock, "request_unlock", request)
+        task = asyncio.create_task(client._handle_unlock("box"))
+        try:
+            await asyncio.wait_for(entered.wait(), 1)
+            assert client.is_unlock_in_progress("box")
+            assert not client.is_unlock_in_progress("other-box")
+            current[0] = copy.deepcopy(current[0])
+            assert client.is_unlock_in_progress("box")
+            # Auch ein zweiter Callback darf den Zustand des ersten nicht entfernen.
+            assert await client._handle_unlock("box") == "failed"
+            assert client.is_unlock_in_progress("box")
+            request.assert_awaited_once_with(0)
+            # Ein zuvor vom Backend eingereihter Rücksetzauftrag darf während
+            # der Entriegelung auch im OCPP-Loop keine Startsperre löschen.
+            await client._clear_start_block("box")
+            client.transactions.clear_start_block.assert_not_called()
+
+            if outcome == "cancelled":
+                task.cancel()
+                with pytest.raises(asyncio.CancelledError):
+                    await task
+            else:
+                release.set()
+                if outcome == "error":
+                    with pytest.raises(RuntimeError, match="Hardwarefehler"):
+                        await task
+                else:
+                    assert await task == outcome
+            assert not client.is_unlock_in_progress("box")
+            client.transactions.clear_start_block.return_value = False
+            await client._clear_start_block("box")
+            client.transactions.clear_start_block.assert_called_once_with("box")
+            # Die Stop-Sperre bleibt bis zum anschließenden Absteck-Update bestehen.
+            assert current[0].data.get.ocpp.unlock_stop is True
+        finally:
+            task.cancel()
+            await asyncio.gather(task, return_exceptions=True)
+
+    asyncio.run(check())
 
 
 @pytest.mark.parametrize("configuration",
