@@ -16,7 +16,7 @@ from helpermodules.logging_context import ocpp_logging_context
 
 from modules.common.fault_state import FaultState
 from control import data
-from control.ocpp.helper import get_cp_from_chargebox_id, _get_config
+from control.ocpp.helper import get_cp_from_chargebox_id, _get_config, _get_formatted_time
 
 from control.ocpp.ocpp_chargepoint import OcppChargePoint, get_ocpp_error_code
 from control.ocpp.ocpp_connection import OcppConnection, RegistrationState
@@ -28,7 +28,7 @@ log = logging.getLogger(__name__)
 
 @dataclass
 class MeterSnapshot:
-    transaction_id: int
+    transaction_id: Optional[int]
     connector_id: int
     imported: int
     timestamp: str
@@ -757,7 +757,7 @@ class OcppClient:
         self,
         chargebox_id: str,
         connector_id: int,
-        transaction_id: int,
+        transaction_id: Optional[int],
         imported: int,
         timestamp: str,
     ) -> None:
@@ -775,7 +775,7 @@ class OcppClient:
         self,
         chargebox_id: str,
         connector_id: int,
-        transaction_id: int,
+        transaction_id: Optional[int],
         imported: int,
         timestamp: str,
     ):
@@ -1117,15 +1117,20 @@ class OcppClient:
         if trigger_type == MessageTrigger.meter_values:
             snapshot = self._meter_snapshots.get(cp.chargebox_id)
             transaction_id = self.transactions.get_transaction_id(cp.chargebox_id)
+            openwb_cp = cp.openwb_cp
 
-            # Hier wird nicht auf eine Transaktion geprüft,
-            # MessageTrigger.meter_values schickt immer den letzen vorhanden Zählerstand
-
-            if snapshot is None:
-                log.debug(
-                    f"Triggering meter_values: Kein Meterwert-Snapshot vorhanden für chargebox_id {cp.chargebox_id}"
+            # Trigger auch ohne Transaktion bedienen. Beim Wechsel niemals einen
+            # alten Snapshot mit der neuen ID kombinieren; aktuelle Backendwerte nutzen.
+            if snapshot is None or snapshot.transaction_id != transaction_id:
+                if openwb_cp is None:
+                    log.debug("Triggering meter_values: Ladepunkt %s nicht vorhanden", cp.chargebox_id)
+                    return
+                snapshot = MeterSnapshot(
+                    transaction_id=transaction_id,
+                    connector_id=1,
+                    imported=int(openwb_cp.data.get.imported),
+                    timestamp=_get_formatted_time(),
                 )
-                return
 
             await cp._meter_values(
                 connector_id=1 if connector_id is None else connector_id,
@@ -1139,7 +1144,7 @@ class OcppClient:
                                 "context": "Trigger",
                                 "format": "Raw",
                                 "measurand":
-                                    _get_config(cp.openwb_cp, "MeterValuesSampledData",
+                                    _get_config(openwb_cp, "MeterValuesSampledData",
                                                 default="Energy.Active.Import.Register"),
                                 "unit": "Wh",
                             }

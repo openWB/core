@@ -190,7 +190,7 @@ class OcppChargePoint(cp):
 
     async def _meter_values(self,
                             connector_id: int,
-                            transaction_id: int,
+                            transaction_id: Optional[int],
                             meter_value: list) -> Optional[object]:
         print(f"# METER_VALUES            CP_Nr: {self.openwb_num}  OCPP_Nr: {self.chargebox_id}")
         log.debug(
