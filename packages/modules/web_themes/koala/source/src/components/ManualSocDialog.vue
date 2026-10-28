@@ -68,7 +68,7 @@
 
 <script setup lang="ts">
 import { useMqttStore } from 'src/stores/mqtt-store';
-import { computed, ref, watch } from 'vue';
+import { computed, ref } from 'vue';
 
 const mqttStore = useMqttStore();
 
@@ -96,12 +96,6 @@ const visible = computed({
 
 const socValue = ref<number | undefined>(undefined);
 
-watch(visible, (isVisible) => {
-  if (isVisible) {
-    socValue.value = undefined;
-  }
-});
-
 const socInputValue = computed({
   get: () => {
     return (
@@ -122,13 +116,18 @@ const socSliderMarker = {
   100: '100%',
 };
 
+const reset = () => {
+  // Reset temporary soc value
+  socValue.value = undefined;
+};
+
 const confirmChanges = () => {
   mqttStore.vehicleSocManualValue(props.vehicleId, props.chargePointId).value =
     socInputValue.value;
+  reset();
 };
 
 const cancelChanges = () => {
-  // Reset temporary soc value
-  socValue.value = undefined;
+  reset();
 };
 </script>
