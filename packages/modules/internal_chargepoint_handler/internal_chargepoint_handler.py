@@ -17,7 +17,7 @@ from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.modbus import ModbusSerialClient_
 from modules.common.serial_modbus_devices import BUS_SOURCES, get_serial_modbus_devices
 from modules.internal_chargepoint_handler import chargepoint_module
-from modules.internal_chargepoint_handler.clients import ClientHandler, client_factory
+from modules.internal_chargepoint_handler.clients import ClientHandler, client_factory, get_modbus_client
 from modules.internal_chargepoint_handler.hardware_definition import WALLBOX_SOCKET_METERS
 from modules.internal_chargepoint_handler.pro_plus import ProPlus
 from modules.internal_chargepoint_handler.socket import Socket
@@ -121,36 +121,25 @@ class InternalChargepointHandler:
 
         with SingleComponentUpdateContext(self.fault_state_info_cp0, reraise=True):
             self.init_gpio(mode)
-        if parent_wallbox_socket.data.detected:
-            try:
-                with SingleComponentUpdateContext(self.fault_state_info_cp0, reraise=True):
-                    with SingleComponentUpdateContext(self.fault_state_info_wallbox_socket, reraise=True):
-                        if mode == InternalChargepointMode.PRO_PLUS:
-                            self.cp0_client_handler = None
-                            self.wallbox_socket = None
-                        else:
-                            self.cp0_client_handler = client_factory(mode, 0, self.fault_state_info_cp0)
-                            self.wallbox_socket = HandlerWallboxSocket(
-                                self.cp0_client_handler, global_data, parent_wallbox_socket)
-                    self.cp0 = HandlerChargepoint(self.cp0_client_handler, 0, mode,
-                                                  global_data, parent_cp0, hierarchy_id_cp0)
-            except Exception:
-                self.cp0_client_handler = None
-                self.cp0 = None
-                self.wallbox_socket = None
-        else:
-            self.wallbox_socket = None
-            try:
-                with SingleComponentUpdateContext(self.fault_state_info_cp0, reraise=True):
-                    if mode == InternalChargepointMode.PRO_PLUS:
-                        self.cp0_client_handler = None
-                    else:
-                        self.cp0_client_handler = client_factory(mode, 0, self.fault_state_info_cp0)
-                    self.cp0 = HandlerChargepoint(self.cp0_client_handler, 0, mode,
-                                                  global_data, parent_cp0, hierarchy_id_cp0)
-            except Exception:
-                self.cp0_client_handler = None
-                self.cp0 = None
+        self.cp0_client_handler = None
+        self.cp0_modbus_client = None
+        self.cp0 = None
+        self.wallbox_socket = None
+        if mode != InternalChargepointMode.PRO_PLUS:
+            with SingleComponentUpdateContext(self.fault_state_info_cp0):
+                self.cp0_modbus_client, evse_ids = get_modbus_client(
+                    mode, 0, fault_state=self.fault_state_info_cp0)
+        if parent_wallbox_socket.data.detected and self.cp0_modbus_client is not None:
+            with SingleComponentUpdateContext(self.fault_state_info_wallbox_socket):
+                self.wallbox_socket = HandlerWallboxSocket(
+                    self.cp0_modbus_client, global_data, parent_wallbox_socket)
+        if self.cp0_modbus_client is not None or mode == InternalChargepointMode.PRO_PLUS:
+            with SingleComponentUpdateContext(self.fault_state_info_cp0):
+                if self.cp0_modbus_client is not None:
+                    self.cp0_client_handler = ClientHandler(
+                        0, self.cp0_modbus_client, evse_ids, self.fault_state_info_cp0)
+                self.cp0 = HandlerChargepoint(self.cp0_client_handler, 0, mode,
+                                              global_data, parent_cp0, hierarchy_id_cp0)
         try:
             if ((mode == InternalChargepointMode.DUO or mode == InternalChargepointMode.SE) and
                     hierarchy_id_cp1 is not None):
@@ -158,7 +147,7 @@ class InternalChargepointHandler:
                     ComponentInfo(1, "Interner Ladepunkt 1", "internal_chargepoint", hierarchy_id=hierarchy_id_cp1))
                 with SingleComponentUpdateContext(fault_state_info_cp1, reraise=True):
                     log.debug("Zweiter Ladepunkt für Duo konfiguriert.")
-                    self.cp1_client_handler = client_factory(mode, 1, fault_state_info_cp1, self.cp0_client_handler)
+                    self.cp1_client_handler = client_factory(mode, 1, fault_state_info_cp1, self.cp0_modbus_client)
                     self.cp1 = HandlerChargepoint(self.cp1_client_handler, 1, mode,
                                                   global_data, parent_cp1, hierarchy_id_cp1)
             else:
@@ -197,7 +186,7 @@ class InternalChargepointHandler:
                 data = copy.deepcopy(SubData.internal_chargepoint_data)
                 log.debug(data)
                 log.setLevel(SubData.system_data["system"].data["debug_level"])
-                heartbeat_cp0, heartbeat_cp1 = True, True
+                heartbeat_cp0, heartbeat_cp1 = self.cp0 is not None, True
                 if self.cp0:
                     heartbeat_cp0 = self.cp0.update(data["global_data"], data["cp0"].data, data["rfid_data"])
                 if self.cp1:
@@ -213,11 +202,13 @@ class InternalChargepointHandler:
             clients = []
             is_pro_plus = self.cp0 is not None and self.cp0.mode == InternalChargepointMode.PRO_PLUS
             if not is_pro_plus:
+                if self.cp0_modbus_client is not None:
+                    clients.append(self.cp0_modbus_client)
                 for handler in (self.cp0_client_handler, self.cp1_client_handler):
                     if handler is not None and handler.client not in clients:
                         clients.append(handler.client)
                 if not clients:
-                    log.error("Kein ClientHandler vorhanden. Beende.")
+                    log.error("Kein Modbus-Client vorhanden. Beende.")
                     return
 
             with ExitStack() as stack:
@@ -283,10 +274,10 @@ class HandlerChargepoint:
 
 class HandlerWallboxSocket:
     def __init__(self,
-                 client_handler: Optional[ClientHandler],
+                 client: ModbusSerialClient_,
                  global_data: GlobalHandlerData,
                  wallbox_socket: WallboxSocket) -> None:
-        self.module = WallboxSocketModule(client_handler, wallbox_socket)
+        self.module = WallboxSocketModule(client, wallbox_socket)
         self.global_data = global_data
         with SingleComponentUpdateContext(self.module.fault_state):
             self.update_state = UpdateWallboxSocketState(self.module)
