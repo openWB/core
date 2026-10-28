@@ -68,6 +68,7 @@ export class Consumer implements PowerItem {
 	statusText = ''
 	faultState = 0
 	faultText = ''
+	temp = []
 	now: EnergyData = {
 		energy: 0,
 		energyPv: 0,
@@ -80,6 +81,7 @@ export class Consumer implements PowerItem {
 		energyBat: 0,
 		pvPercentage: 0,
 	}
+
 	constructor(index: number, showInList = true) {
 		this.id = index
 		this.showInList = showInList

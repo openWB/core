@@ -66,6 +66,8 @@ function processConsumerDeviceMessages(topic: string, message: string) {
 		dev.faultState = JSON.parse(message)
 	} else if (topic.match(/^openWB\/consumer\/[0-9]+\/get\/fault_str$/i)) {
 		dev.faultText = JSON.parse(message)
+	} else if (topic.match(/^openWB\/consumer\/[0-9]+\/get\/temperatures$/i)) {
+		dev.temp = JSON.parse(message)
 	}
 }
 
