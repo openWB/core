@@ -14,7 +14,7 @@ class ChargepointRfidMixin:
     def _rfid_target(self: ChargepointProtocol, cp2_data, rfid_timestamp=None):
         """Nur unzugeordnete Duo-LP ohne begonnenen Ladevorgang berücksichtigen."""
         candidates = [cp for cp in (self, cp2_data)
-                      if cp.data.set.rfid is None and cp.data.get.plug_state and
+                      if cp.data.set.rfid is None and cp.data.get.plug_state and not cp.data.get.charge_state and
                       (cp.data.set.log.imported_at_plugtime == 0 or
                        cp.data.set.log.imported_at_plugtime == cp.data.get.imported)]
         if len(candidates) == 1:
@@ -86,16 +86,18 @@ class ChargepointRfidMixin:
                     return
 
                 # Beide Ladepunkte sind bereits zugeordnet oder laden. Es wird kein weiterer ID-Tag akzeptiert.
-                if all(cp.data.set.rfid is not None or cp.data.get.charge_state for cp in (self, cp2_data)):
+                if all(cp.data.get.plug_state and
+                       (cp.data.set.rfid is not None or cp.data.get.charge_state) for cp in (self, cp2_data)):
                     self._clear_pending_rfid(rfid, cp2_data)
                     for cp in (self, cp2_data):
                         cp.set_state_and_log("Beide Ladepunkte sind bereits zugeordnet oder laden."
                                              " Es wird kein weiterer ID-Tag akzeptiert.")
                     return
                 allowed_cps = [cp for cp in (self, cp2_data)
-                               if cp.data.set.rfid is None and
-                               (not cp.data.get.plug_state or cp.data.set.log.imported_at_plugtime == 0 or
-                                cp.data.set.log.imported_at_plugtime == cp.data.get.imported)]
+                               if not cp.data.get.plug_state or
+                               (cp.data.set.rfid is None and not cp.data.get.charge_state and
+                                (cp.data.set.log.imported_at_plugtime == 0 or
+                                 cp.data.set.log.imported_at_plugtime == cp.data.get.imported))]
                 # Beide Eingänge verwenden den frühesten vorhandenen Scanzeitpunkt.
                 timestamps = [cp.data.get.rfid_timestamp for cp in (self, cp2_data)
                               if cp.data.get.rfid is not None and cp.data.get.rfid_timestamp is not None]
