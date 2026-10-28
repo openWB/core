@@ -14,6 +14,7 @@ from control import data
 from control.ocpp.helper import get_cp_from_chargebox_id
 from control.ocpp.ocpp_chargepoint import OcppChargePoint
 from control.ocpp.ocpp_connection import OcppConnection
+from helpermodules.pub import Pub
 
 log = logging.getLogger(__name__)
 
@@ -43,9 +44,6 @@ class OcppConnectionManager:
         self._reconnect_tasks: dict[str, asyncio.Task] = {}
         self._connect_locks: dict[str, asyncio.Lock] = {}
         self._connection_lost_task: set[asyncio.Task] = set()
-        # Bei Transportverlust bis zum Abschluss des Vorgangs am bisherigen
-        # Server bleiben, auch wenn die globale Konfiguration geändert wurde.
-        self._last_connection_settings: dict[str, tuple[str, str]] = {}
         self._deferred_config_changes: set[str] = set()
 
     async def connect(self, chargebox_id: str) -> Optional[OcppConnection]:
@@ -244,11 +242,29 @@ class OcppConnectionManager:
     def _get_connection_settings(self, chargebox_id: str, openwb_cp) -> tuple[str, str]:
         config = data.data.optional_data.data.ocpp.config
         requested = ((config.url or "").rstrip("/"), config.version)
-        previous = self._last_connection_settings.get(chargebox_id)
         ocpp = openwb_cp.data.get.ocpp
+        saved = getattr(ocpp, "last_connection_settings", None)
+        if saved is None:
+            # Eine noch vorhandene Verbindung liefert eine bekannte Herkunft.
+            existing = self._connections.get(chargebox_id)
+            if existing is not None:
+                self._store_connection_settings(openwb_cp, existing.server_url, existing.subprotocol)
+                saved = ocpp.last_connection_settings
+        previous = (saved["url"], saved["subprotocol"]) if saved is not None else None
+        flow_status = getattr(ocpp, "authorization_flow_status", None)
+        if previous is None and (
+            ocpp.transaction_id is not None
+            or flow_status in ("start_starting", "start_unconfirmed")
+            or bool(getattr(ocpp, "pending_transactions", None))
+        ):
+            # Eine alte Transaktions-ID nie an einen möglicherweise anderen Server senden.
+            raise ValueError(
+                f"OCPP {chargebox_id}: Serverbindung des offenen Vorgangs unbekannt; "
+                "Verbindungsaufbau ohne gesicherte Herkunft abgebrochen"
+            )
         busy = (
             ocpp.transaction_id is not None
-            or getattr(ocpp, "authorization_flow_status", None) in (
+            or flow_status in (
                 "init", "start_pending", "start_authorizing", "start_starting", "start_unconfirmed",
             )
             or bool(getattr(ocpp, "pending_transactions", None))
@@ -267,6 +283,17 @@ class OcppConnectionManager:
             log.info("OCPP %s: Zurückstellung der Verbindungskonfiguration aufgehoben.", chargebox_id)
             self._deferred_config_changes.discard(chargebox_id)
         return requested
+
+    @staticmethod
+    def _store_connection_settings(openwb_cp, url: str, subprotocol: str) -> None:
+        settings = {"url": url, "subprotocol": subprotocol}
+        if getattr(openwb_cp.data.get.ocpp, "last_connection_settings", None) == settings:
+            return
+        openwb_cp.data.get.ocpp.last_connection_settings = settings
+        Pub().pub(
+            f"openWB/set/chargepoint/{openwb_cp.num}/get/ocpp/last_connection_settings",
+            settings,
+        )
 
     async def _open_connection(
         self,
@@ -314,7 +341,7 @@ class OcppConnectionManager:
             )
             connection.server_url = url
             connection.subprotocol = version
-            self._last_connection_settings[chargebox_id] = (url, version)
+            self._store_connection_settings(get_cp_from_chargebox_id(chargebox_id), url, version)
 
             self._connections[chargebox_id] = connection
             connection.start_task = asyncio.create_task(

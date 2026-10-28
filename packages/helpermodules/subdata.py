@@ -480,6 +480,9 @@ class SubData:
                         elif re.search("/chargepoint/[0-9]+/get/ocpp/config$", msg.topic) is not None:
                             self.set_json_payload_class(
                                 var["cp"+index].chargepoint.data.get.ocpp.config, msg)
+                        elif msg.topic.endswith("/get/ocpp/last_connection_settings"):
+                            var["cp"+index].chargepoint.data.get.ocpp.last_connection_settings = (
+                                decode_payload(msg.payload))
                         elif re.search("/chargepoint/[0-9]+/get/ocpp/", msg.topic) is not None:
                             self.set_json_payload_class(var["cp"+index].chargepoint.data.get.ocpp, msg)
                         elif (re.search("/chargepoint/[0-9]+/get/soc$", msg.topic) is not None and

@@ -41,6 +41,22 @@ def test_remove_invalid_topics(mock_pub):
     assert mock_pub.method_calls[1][1][0] == 'openWB/optional/int_display/theme'
 
 
+def test_startup_cleanup_keeps_ocpp_server_binding(mock_pub):
+    updater = UpdateConfig()
+    settings = {"url": "wss://old.example/ocpp", "subprotocol": "ocpp1.6"}
+    topic = "openWB/chargepoint/1/get/ocpp/last_connection_settings"
+    updater.all_received_topics = {
+        "openWB/chargepoint/1/config": b'{}',
+        topic: json.dumps(settings).encode(),
+    }
+
+    updater._UpdateConfig__remove_outdated_topics()
+    updater._remove_invalid_topics()
+
+    assert json.loads(updater.all_received_topics[topic]) == settings
+    mock_pub.pub.assert_not_called()
+
+
 def test_pub_missing_defaults_expands_chargepoint_topics(mock_pub, monkeypatch):
     update_con = UpdateConfig()
     update_con.all_received_topics = {
