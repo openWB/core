@@ -19,7 +19,6 @@ class WallboxSocket(ConsumerSetup[WallboxSocketConfiguration]):
                  id: int = 0,
                  configuration: Optional[WallboxSocketConfiguration] = None,
                  usage: Tuple[ConsumerUsage, ...] = (ConsumerUsage.SUSPENDABLE_ONOFF,
-                                                     ConsumerUsage.CONTINUOUS,
-                                                     ConsumerUsage.METER_ONLY), **kwargs):
+                                                     ConsumerUsage.CONTINUOUS), **kwargs):
         super().__init__(name, type, id, vendor=vendor_descriptor.configuration_factory().type,
                          configuration=configuration or WallboxSocketConfiguration(), usage=usage, **kwargs)
