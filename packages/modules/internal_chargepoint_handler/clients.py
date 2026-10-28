@@ -5,13 +5,12 @@ from modules.chargepoints.internal_openwb.config import InternalChargepointMode
 from modules.common.fault_state import FaultState
 
 from modules.common.modbus import ModbusSerialClient_, ModbusTcpClient_
-from modules.common import sdm
 from modules.common import evse
 
 from modules.common.serial_modbus_devices import get_serial_modbus_devices, BUS_SOURCES
 from modules.internal_chargepoint_handler.hardware_definition import (
     CP0_METERS, CP1_METERS, EVSE_ID_CP0, EVSE_ID_ONE_BUS_CP1, EVSE_ID_ONE_BUS_SE_CP1,
-    EVSE_ID_SE_CP0, EVSE_ID_TWO_BUSSES_CP1, EVSE_MIN_FIRMWARE, WALLBOX_SOCKET_METERS, MeterClient, meter_config)
+    EVSE_ID_SE_CP0, EVSE_ID_TWO_BUSSES_CP1, EVSE_MIN_FIRMWARE, MeterClient, meter_config)
 from modules.internal_chargepoint_handler.internal_hardware_check import SeriesHardwareCheckMixin
 
 log = logging.getLogger(__name__)
@@ -28,8 +27,6 @@ class ClientHandler(SeriesHardwareCheckMixin):
         self.evse_client = self._evse_factory(client, evse_ids)
         self.meter_client = self.find_meter_client(CP0_METERS if self.local_charge_point_num == 0 else CP1_METERS,
                                                    client, fault_state)
-        self.wallbox_socket_meter_client: Optional[sdm.Sdm120] = self.find_meter_client(
-            WALLBOX_SOCKET_METERS, client, fault_state)
         self.request_and_check_hardware(fault_state)
         self.read_error = 0
 
@@ -86,29 +83,29 @@ class ClientHandler(SeriesHardwareCheckMixin):
         else:
             return 15
 
-    def get_pins_wallbox_socket(self) -> Tuple[int, int]:
-        return 23, 26  # BOARD numbering: direction BCM 11, enable BCM 7
-
 
 def client_factory(mode: InternalChargepointMode,
                    local_charge_point_num: int,
                    fault_state: FaultState,
-                   created_client_handler: Optional[ClientHandler] = None) -> ClientHandler:
+                   created_client: Optional[Union[ModbusSerialClient_, ModbusTcpClient_]] = None) -> ClientHandler:
     serial_client, evse_ids = get_modbus_client(
-        mode, local_charge_point_num, created_client_handler, fault_state)
+        mode, local_charge_point_num, created_client, fault_state)
     return ClientHandler(local_charge_point_num, serial_client, evse_ids, fault_state)
 
 
 def get_modbus_client(mode: InternalChargepointMode,
                       local_charge_point_num: int,
-                      created_client_handler: Optional[ClientHandler] = None,
+                      created_client: Optional[Union[ModbusSerialClient_, ModbusTcpClient_]] = None,
                       fault_state: Optional[FaultState] = None) -> Tuple[Union[ModbusSerialClient_, ModbusTcpClient_],
                                                                          List[int]]:
     resolved_devices, counter = get_serial_modbus_devices()
 
     if counter == 0:
         # Wenn kein USB-Gerät gefunden wird, wird der Modbus-Anschluss der AddOn-Platine genutzt (/dev/serial0)
-        serial_client = ModbusSerialClient_("/dev/serial0")
+        if local_charge_point_num == 1 and created_client is not None:
+            serial_client = created_client
+        else:
+            serial_client = ModbusSerialClient_("/dev/serial0")
         if local_charge_point_num == 0:
             evse_ids = EVSE_ID_CP0
         else:
@@ -126,8 +123,8 @@ def get_modbus_client(mode: InternalChargepointMode,
             # Don't create two clients for one source!
             with ModifyLoglevelContext(log, logging.DEBUG):
                 log.debug("LP1 gleiches Device wie LP0")
-            if created_client_handler:
-                serial_client = created_client_handler.client
+            if created_client is not None:
+                serial_client = created_client
             else:
                 serial_client = ModbusSerialClient_(resolved_devices[0])
             if mode == InternalChargepointMode.SE:

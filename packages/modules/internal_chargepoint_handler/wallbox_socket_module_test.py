@@ -14,7 +14,9 @@ def test_wallbox_socket_measurement_publishes_current_rfid_and_clears_previous_t
     monkeypatch.setattr(wallbox_socket.time, "sleep", Mock())
     module = wallbox_socket.WallboxSocketModule.__new__(wallbox_socket.WallboxSocketModule)
     module._client = Mock()
-    module._client.request_and_check_wallbox_socket.return_value = CounterState(
+    module._client = MagicMock()
+    module.meter_client = Mock()
+    module.meter_client.get_counter_state.return_value = CounterState(
         power=100, imported=20, exported=0, currents=[1, 0, 0], voltages=[230, 0, 0])
     module.client_error_context = MagicMock()
     module.client_error_context.error_counter_exceeded.return_value = False
