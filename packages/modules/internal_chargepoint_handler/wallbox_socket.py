@@ -11,7 +11,7 @@ from modules.common.modbus import ModbusSerialClient_, ModbusTcpClient_
 from modules.common.store import get_wallbox_socket_value_store
 from modules.internal_chargepoint_handler.hardware_definition import CP0_METERS, WALLBOX_SOCKET_METERS, MeterClient
 from modules.internal_chargepoint_handler.internal_hardware_check import (
-    METER_NO_SERIAL_NUMBER, METER_PROBLEM, READ_LAN_ADAPTER_AGAIN, READ_USB_ADAPTER_AGAIN)
+    METER_NO_SERIAL_NUMBER, METER_PROBLEM, READ_USB_ADAPTER_AGAIN)
 from modules.internal_chargepoint_handler.wallbox_socket_config import WallboxSocket
 
 log = logging.getLogger(__name__)
@@ -31,8 +31,8 @@ class WallboxSocketModule:
             hide_exception=True)
         self.client_error_context.error_timestamp = wallbox_socket.get.error_timestamp
         self._client = client
-        meter_type, modbus_id = WALLBOX_SOCKET_METERS[0]
-        self.meter_client = meter_type(modbus_id, client, self.fault_state)
+        self.meter_client: Optional[MeterClient] = None
+        self.request_and_check_wallbox_socket()
         self.current_state = False
         self.old_wallbox_socket_state = ConsumerState(power=0, currents=[0]*3, powers=[0]*3, state=False)
 
@@ -47,11 +47,20 @@ class WallboxSocketModule:
             return False, METER_PROBLEM, None
 
     def request_and_check_wallbox_socket(self) -> CounterState:
-        meter_check_passed, meter_error_msg, counter_state = self.check_meter(self.meter_client)
+        try:
+            if self.meter_client is None:
+                meter_type, modbus_id = WALLBOX_SOCKET_METERS[0]
+                self.meter_client = meter_type(modbus_id, self._client, self.fault_state)
+            meter_check_passed, meter_error_msg, counter_state = self.check_meter(self.meter_client)
+        except Exception:
+            meter_check_passed, meter_error_msg, counter_state = False, METER_PROBLEM, None
         if meter_check_passed is False:
             # Probe the chargepoint meter only to distinguish a meter failure from a bus failure.
             for meter_type, modbus_id in CP0_METERS:
-                diagnostic_meter = meter_type(modbus_id, self._client, self.fault_state)
+                try:
+                    diagnostic_meter = meter_type(modbus_id, self._client, self.fault_state)
+                except Exception:
+                    continue
                 if self.check_meter(diagnostic_meter)[0]:
                     raise Exception(meter_error_msg)
             raise Exception(READ_USB_ADAPTER_AGAIN)
