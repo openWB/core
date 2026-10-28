@@ -66,7 +66,7 @@ class ConsumerConfig:
     rfid_enabled: bool = False
     valid_tags: List[str] = field(default_factory=empty_list_factory)
     rfid_reset: RfidReset = RfidReset.AFTER_TIME
-    rfid_timeout: int = 300
+    rfid_timeout: int = 3600
 
 
 @dataclass
