@@ -39,15 +39,11 @@ class ClientHandlerProtocol(Protocol):
     @property
     def meter_client(self) -> Any: ...
     @property
-    def wallbox_socket_meter_client(self) -> Any: ...
-    @property
     def read_error(self) -> int: ...
     @property
     def handle_exception(self, exception: Exception) -> bool: ...
     @property
     def request_and_check_hardware(self, fault_state: FaultState) -> Tuple[EvseState, CounterState]: ...
-    @property
-    def request_and_check_wallbox_socket(self, fault_state: FaultState) -> CounterState: ...
     @property
     def check_meter(self) -> Tuple[bool, Optional[str], CounterState]: ...
 
@@ -115,19 +111,3 @@ class SeriesHardwareCheckMixin:
             return True, check_meter(counter_state), counter_state
         except Exception:
             return False, METER_PROBLEM, None
-
-    def request_and_check_wallbox_socket(self: ClientHandlerProtocol, fault_state: FaultState) -> CounterState:
-        wallbox_socket_meter_check_passed, wallbox_socket_meter_error_msg, counter_state = self.check_meter(
-            self.wallbox_socket_meter_client)
-        if wallbox_socket_meter_check_passed is False:
-            meter_check_passed = self.check_meter(self.meter_client)[0]
-            if meter_check_passed is False:
-                if isinstance(self.client, ModbusTcpClient_):
-                    raise Exception(READ_LAN_ADAPTER_AGAIN)
-                else:
-                    raise Exception(READ_USB_ADAPTER_AGAIN)
-            else:
-                raise Exception(wallbox_socket_meter_error_msg)
-        if wallbox_socket_meter_check_passed and wallbox_socket_meter_error_msg is not None:
-            fault_state.warning(wallbox_socket_meter_error_msg)
-        return counter_state
