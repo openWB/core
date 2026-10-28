@@ -478,6 +478,55 @@ def test_duo_energiepruefung_verwendet_ziel_statt_aufrufenden_ladepunkt(
     assert all(point.data.get.rfid is None for point in duo.chargepoints)
 
 
+@pytest.mark.parametrize("running_index", [0, 1])
+@pytest.mark.parametrize("reverse_order", [False, True])
+@pytest.mark.parametrize("meter", [0, 1000], ids=["Zaehler-null", "Zaehler-unveraendert"])
+def test_duo_ladender_lp_ohne_zaehlerfortschritt_scan_wartet_am_freien_partner(
+        duo, rfid_tag, running_index, reverse_order, meter):
+    running = duo.chargepoints[running_index]
+    free = duo.chargepoints[1 - running_index]
+    running.data.get.plug_state = True
+    running.data.get.charge_state = True
+    running.data.set.plug_time = duo.clock.return_value - 60
+    running.data.set.log.imported_at_plugtime = meter
+    running.data.get.imported = meter
+    running.data.set.manual_lock = False
+    running.data.get.state_str = "Lädt bereits"
+    order = list(reversed(duo.chargepoints)) if reverse_order else duo.chargepoints
+    duo.reader.scan(rfid_tag)
+
+    for cp in order:
+        cp._validate_rfid()
+        if cp.data.get.rfid is not None and cp.data.get.plug_state:
+            cp._link_rfid_to_cp()
+
+    assert running.data.set.rfid is None
+    assert running.data.get.rfid is None
+    assert running.data.get.rfid_timestamp is None
+    assert running.data.get.state_str == "Lädt bereits"
+    assert running.data.set.manual_lock is False
+    assert free.data.set.rfid is None
+    assert free.data.get.rfid == rfid_tag
+    assert free.data.get.rfid_timestamp == duo.clock.return_value
+    assert "5 Minuten" in free.data.get.state_str
+    assert all(cp.chargepoint_module.clear_rfid.call_count == 0 for cp in duo.chargepoints)
+
+    duo.clock.return_value += 60
+    free.data.get.plug_state = True
+    free.data.set.plug_time = duo.clock.return_value
+    for cp in order:
+        cp._validate_rfid()
+        if cp.data.get.rfid is not None and cp.data.get.plug_state:
+            cp._link_rfid_to_cp()
+
+    assert free.data.set.rfid == rfid_tag
+    assert running.data.set.rfid is None
+    assert running.data.get.state_str == "Lädt bereits"
+    assert running.data.get.charge_state is True
+    assert all(cp.data.get.rfid is None for cp in duo.chargepoints)
+    assert sum(cp.chargepoint_module.clear_rfid.call_count for cp in duo.chargepoints) == 1
+
+
 @pytest.mark.parametrize("duo_mode", [False, True], ids=["Einzel-LP", "Duo"])
 @pytest.mark.parametrize("charge_state", [False, True], ids=["Laedt-nicht", "Ladesignal-aktiv"])
 @pytest.mark.parametrize("energy_delivered", [False, True], ids=["Vor-Energiebezug", "Nach-Energiebezug"])
@@ -782,6 +831,66 @@ def test_autolock_duo_nur_mit_zugeordnetem_tag(duo, rfid_tag, duo_mode, committe
     assert possible is (committed or not duo_mode)
     if duo_mode and not committed:
         assert "Sperren nach Uhrzeit" in message
+
+
+@pytest.mark.parametrize("unplugged_index", [0, 1])
+@pytest.mark.parametrize("reverse_order", [False, True])
+@pytest.mark.parametrize("stale_charge_state", [False, True])
+def test_duo_scan_im_absteckzyklus_bleibt_erhalten_und_ocpp_behaelt_alten_tag(
+        duo, rfid_tag, unplugged_index, reverse_order, stale_charge_state, monkeypatch, caplog):
+    unplugged = duo.chargepoints[unplugged_index]
+    partner = duo.chargepoints[1 - unplugged_index]
+    general = data.data.general_data.data
+    general.grid_protection_configured = True
+    general.grid_protection_active = True
+    general.grid_protection_timestamp = None
+    monkeypatch.setattr(chargepoint_module, "Pub", Mock(return_value=duo.mqtt))
+    monkeypatch.setattr(data.data.counter_all_data, "get_evu_counter", Mock(return_value=Mock()))
+    monkeypatch.setattr(chargepoint_module.chargelog, "save_and_reset_data",
+                        Mock(side_effect=lambda cp, ev: cp.reset_log_data()))
+    stop_transaction = Mock()
+    monkeypatch.setattr(data.data.optional_data, "stop_transaction", stop_transaction)
+    for cp in duo.chargepoints:
+        cp.data.get.plug_state = True
+        cp.data.set.plug_state_prev = True
+        cp.data.set.rfid = rfid_tag
+        cp.data.set.manual_lock = False
+        cp.data.set.plug_time = duo.clock.return_value - 60
+        cp.data.set.log.imported_at_plugtime = 1000
+        cp.data.get.imported = 1100
+    unplugged.data.get.plug_state = False
+    unplugged.data.get.charge_state = stale_charge_state
+    unplugged.data.set.ocpp_transaction_id = 42
+    unplugged.chargepoint_module.fault_state = 0
+    duo.reader.scan("ABC")
+    order = list(reversed(duo.chargepoints)) if reverse_order else duo.chargepoints
+
+    for cp in order:
+        cp.update(data.data.ev_data)
+
+    stop_transaction.assert_called_once_with(
+        unplugged.data.config.ocpp_chargebox_id, 0, 1100, 42, rfid_tag)
+    assert unplugged.data.set.ocpp_transaction_id is None
+    assert unplugged.data.set.rfid is None
+    assert unplugged.data.get.rfid == "ABC"
+    assert unplugged.data.get.rfid_timestamp == duo.clock.return_value
+    assert partner.data.set.rfid == rfid_tag
+    assert partner.data.get.rfid is None
+    assert all(cp.chargepoint_module.clear_rfid.call_count == 0 for cp in duo.chargepoints)
+    assert not [record for record in caplog.records if record.levelno >= 40]
+
+    duo.clock.return_value += 60
+    unplugged.data.get.charge_state = False
+    unplugged.data.get.plug_state = True
+    unplugged.data.set.plug_time = duo.clock.return_value
+    for cp in order:
+        cp._validate_rfid()
+        if cp.data.get.rfid is not None and cp.data.get.plug_state:
+            cp._link_rfid_to_cp()
+    assert unplugged.data.set.rfid == "ABC"
+    assert partner.data.set.rfid == rfid_tag
+    assert all(cp.data.get.rfid is None for cp in duo.chargepoints)
+    assert sum(cp.chargepoint_module.clear_rfid.call_count for cp in duo.chargepoints) == 1
 
 
 @pytest.mark.parametrize("unplugged_index", [0, 1])
