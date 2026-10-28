@@ -236,7 +236,6 @@ class Chargepoint(ChargepointRfidMixin, Load):
                 "start_error": "Keine Ladung: Fehler beim OCPP-Transaktionstart.",
             }.get(self.data.get.ocpp.authorization_flow_status,
                   "Keine Ladung: RFID fehlt oder wurde vom OCPP-Server nicht akzeptiert.")
-            # message = "Keine Ladung: RFID fehlt oder wurde vom OCPP-Server nicht akzeptiert."
             state = False
         else:
             message = None
@@ -942,11 +941,8 @@ class Chargepoint(ChargepointRfidMixin, Load):
             except Exception:
                 log.exception(f"Fehler bei Ladestop,cp{self.num}")
 
-            # OCPP-STUFF
-            ##############
-            # CP sendet Statusmeldungen an den OCPP-Server
-            # bei jeden update-zyklus
-            # Client sendet Statusmeldungen nur wenn sich der Status ändert an den OCPP-Server
+            # Status bei jedem Backendupdate an den OCPP-Client übergeben.
+            # Der Client filtert unveränderte Statusmeldungen vor dem Versand.
             if data.data.optional_data.data.ocpp.config.active and get_chargebox_id(self):
                 print(
                     f"                                                             "
@@ -971,7 +967,7 @@ class Chargepoint(ChargepointRfidMixin, Load):
                                                       int(self.data.get.imported),
                                                       _get_formatted_time())
 
-            # als ocpp Chargepoint konfiguriert?
+            # OCPP-Startanforderungen und das Zurücksetzen der Startsperre verarbeiten.
             if data.data.optional_data.data.ocpp.config.active and chargebox_id:
                 if (self.data.get.plug_state is False and
                         not data.data.ocpp_client.is_unlock_in_progress(chargebox_id)):
@@ -980,7 +976,6 @@ class Chargepoint(ChargepointRfidMixin, Load):
                         and self.data.get.plug_state and id_tag
                         and not (self.data.get.ocpp.remote_stop or self.data.get.ocpp.rfid_stop or
                                  self.data.get.ocpp.reset or self.data.get.ocpp.unlock_stop)
-                        # and self.data.get.ocpp.authorization_flow_status != "init"):
                         and self.data.get.ocpp.authorization_flow_status not in (
                             "init", "start_pending", "start_starting", "start_authorizing", "start_unconfirmed"
                         )):
@@ -991,15 +986,13 @@ class Chargepoint(ChargepointRfidMixin, Load):
                         imported=self.data.get.imported,
                     )
                 elif (self.data.get.plug_state and id_tag and
-                      # self.data.get.ocpp.authorization_flow_status == "init"):
                       self.data.get.ocpp.authorization_flow_status in (
                           "init", "start_pending", "start_starting", "start_authorizing", "start_unconfirmed"
                       )):
                     log.debug("OCPP %s: Start wartet auf RFID-Autorisierung/StartTransaktion", chargebox_id)
                 elif self.data.get.plug_state and id_tag and not self.data.get.ocpp.connected:
-                    log.info(f"OCPP {chargebox_id} kein Start ohne Verbindung zum OCPP-Server.")
+                    log.debug("OCPP %s: Kein Start ohne Verbindung zum OCPP-Server.", chargebox_id)
 
-            ######################################################
             if self.data.get.plug_state and self.data.set.plug_state_prev is False:
                 self.data.control_parameter.timestamp_chargemode_changed = create_timestamp()
             # SoC nach Anstecken aktualisieren

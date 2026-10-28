@@ -62,10 +62,9 @@ class ChargepointRfidMixin:
             if data.data.optional_data.data.rfid.active:
                 if (rfid in self.template.data.valid_tags or
                         any(rfid in v.data.tag_id for v in data.data.ev_data.values())):
-                    # <-bei aktiv OCPP dürfen tags weiter hin gescannt werden
                     ocpp_active = (data.data.optional_data.data.ocpp.config.active and
                                    get_chargebox_id(self))
-                    # Sobalt ocpp aktice ist, dürfen tags auch währedn dem laden gescannt werden
+                    # Bei aktivem OCPP auch während einer Ladung weitere RFID-Scans verarbeiten.
                     if (ocpp_active or (self.data.set.log.imported_at_plugtime == 0 or
                                         self.data.set.log.imported_at_plugtime == self.data.get.imported)):
 
@@ -85,8 +84,8 @@ class ChargepointRfidMixin:
 
                         if (ocpp_active and self.data.get.ocpp.authorization_flow_status is not None and
                                 self.data.get.ocpp.authorization_flow_status != "accepted"):
-                            pass
                             # OCPP-Ablehnung wird in chargepoint.py ausgewertet und bereinigt.
+                            pass
 
                         elif self.data.get.rfid_timestamp is None:
                             self.data.get.rfid_timestamp = timecheck.create_timestamp()

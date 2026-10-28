@@ -14,7 +14,6 @@ from typing import Optional
 from helpermodules.pub import Pub, pub_single
 from helpermodules.logging_context import ocpp_logging_context
 
-from modules.common.fault_state import FaultState
 from control import data
 from control.ocpp.helper import get_cp_from_chargebox_id, _get_config, _get_formatted_time
 
@@ -534,7 +533,7 @@ class OcppClient:
 
                 await connection.cp._heartbeat()
 
-                log.info(f"Heartbeat für {chargebox_id} gesendet")
+                log.debug("Heartbeat für %s gesendet", chargebox_id)
 
         except asyncio.CancelledError:
             raise
@@ -668,7 +667,7 @@ class OcppClient:
         self,
         chargebox_id: str,
         connector_id: int,
-        fault_state: FaultState,
+        fault_state: int,
         fault_state_str: str,
         status: ChargePointStatus,
         force: bool = False,
@@ -694,7 +693,7 @@ class OcppClient:
         self,
         chargebox_id: str,
         connector_id: int,
-        fault_state: FaultState,
+        fault_state: int,
         fault_state_str: str,
         status: ChargePointStatus,
         force: bool,
@@ -969,7 +968,8 @@ class OcppClient:
         self.transactions.block_start(chargebox_id)
 
         log.info(
-            "Führe OCPP Soft Reset für %s aus",
+            "Führe OCPP %s Reset für %s aus",
+            reset_type.value,
             chargebox_id,
         )
 

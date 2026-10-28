@@ -672,7 +672,11 @@ class TransactionCoordinator:
         transaction_id: int,
         request: PendingStop,
     ) -> None:
-        """Nach lokaler Sperre den Endwert erfassen; gespeicherte Stops nie neu messen."""
+        """Endzählerstand nach lokaler Sperre für einen noch nicht finalisierten Stop bestimmen.
+
+        Bereits finalisierte Stopdaten bei Wiederholungen unverändert verwenden
+        und diese Methode dafür nicht erneut aufrufen.
+        """
         deadline = monotonic() + 30.0
         while True:
             openwb_cp = get_cp_from_chargebox_id(chargebox_id)
@@ -732,9 +736,13 @@ class TransactionCoordinator:
         Stoppt eine Transaction und wartet darauf,
         dass sie vollständig abgeschlossen ist.
 
-        Einschließlich persistierter Offline-Stops. Für Reset begrenzt warten;
-        timeout=None wartet auch bei Fehlern bis zum Abschluss oder Abstecken
-        eines unbestätigten Starts (für den Wechsel der Chargebox-ID).
+        Schließt persistierte Stopaufträge ein. timeout begrenzt nur die zusätzliche
+        Warteschleife nach dem Stopversuch und einem gegebenenfalls angestoßenen
+        Replay-Verbindungsaufbau. Hardwarewartezeit, Stopversand und vorheriger
+        Verbindungsaufbau zählen nicht dazu; es ist kein Gesamtzeitlimit.
+
+        timeout=None wartet auch bei Fehlern bis zum Abschluss oder Abstecken eines
+        unbestätigten Starts (für den Wechsel der Chargebox-ID).
         """
 
         await self.stop(
@@ -783,7 +791,7 @@ class TransactionCoordinator:
         chargebox_id: str,
         connection: OcppConnection,
     ) -> None:
-        """Spielt einen persistent gespeicherten Offline-Stop nach Reconnect ab."""
+        """Setzt einen gespeicherten Stop nach Reconnect fort oder sendet ihn erneut."""
         successful = await self._replay_persisted_stop_once(chargebox_id, connection)
         if successful is False:
             self._schedule_replay_retry(chargebox_id, connection)
