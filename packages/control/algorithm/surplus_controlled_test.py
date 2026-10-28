@@ -98,6 +98,16 @@ def test_limit_adjust_current(new_current: float, expected_current: float, monke
     assert current == expected_current
 
 
+@pytest.mark.parametrize("new_current, expected_current", [(0.3, 0.3), (6, 5.25)])
+def test_limit_adjust_current_uses_small_consumer_current(new_current, expected_current):
+    consumer = Consumer(1)
+    consumer.data.get.currents = [0.25, 0, 0]
+    consumer.data.get.charge_state = True
+    consumer.data.control_parameter.min_current = 0.25
+
+    assert limit_adjust_current(consumer, new_current) == pytest.approx(expected_current)
+
+
 @pytest.mark.parametrize("phases, required_currents, expected_currents",
                          [
                              pytest.param(1, [10, 0, 0], [16, 0, 0]),

@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from typing import List, Optional, Protocol
 
+from control.algorithm.utils import get_medium_charging_current
 from control.chargepoint.control_parameter import ControlParameter
 from helpermodules.timecheck import create_timestamp
 
@@ -42,10 +43,16 @@ class LoadData:
 
 
 class Load(Protocol):
+    STANDBY_THRESHOLD = 0.5
+
     num: int
     chargemode_changed: bool
     submode_changed: bool
     data: LoadData
+
+    def get_mean_current(self) -> float:
+        """Mittlerer Ist-Strom aktiver Phasen mit der Schwelle des jeweiligen Lasttyps."""
+        return get_medium_charging_current(self.data.get.currents, threshold=self.STANDBY_THRESHOLD)
 
     def set_timestamp_charge_start(self) -> None:
         # Beim Ladestart Timer laufen lassen, manche Fahrzeuge brauchen sehr lange.

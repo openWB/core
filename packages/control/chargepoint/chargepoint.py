@@ -4,7 +4,6 @@ import traceback
 from typing import Dict, Optional, Tuple
 from fnmatch import fnmatch
 
-from control.algorithm.utils import get_medium_charging_current
 from control.chargelog import chargelog
 from control import data
 from control.chargemode import Chargemode
@@ -695,7 +694,7 @@ class Chargepoint(ChargepointRfidMixin, Load):
                             f"{self.data.set.charge_template.data.chargemode.selected}, Submodus: "
                             f"{self.data.control_parameter.submode}, Phasen: "
                             f"{self.data.control_parameter.phases}"
-                            f", mittlerer Ist-Strom: {get_medium_charging_current(self.data.get.currents)}")
+                            f", mittlerer Ist-Strom: {self.get_mean_current()}")
                 except Exception:
                     log.exception("Fehler im Prepare-Modul für Ladepunkt "+str(self.num))
                     self.data.control_parameter.submode = Chargemode.STOP
