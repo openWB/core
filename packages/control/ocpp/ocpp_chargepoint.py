@@ -32,7 +32,6 @@ from helpermodules.pub import Pub
 
 
 from control import data
-from modules.common.fault_state import FaultState
 from modules.common.fault_state_level import FaultStateLevel
 from control.ocpp.helper import _get_formatted_time, get_cp_from_chargebox_id
 from control.ocpp.helper_diagnostics import create_diagnostics, upload_diagnostics
@@ -209,7 +208,7 @@ class OcppChargePoint(cp):
 
     async def _status_notification(self,
                                    connector_id: int,
-                                   fault_state: FaultState,
+                                   fault_state: int,
                                    fault_state_str: str,
                                    status: ChargePointStatus,
                                    force: bool = False) -> Optional[object]:
@@ -845,7 +844,7 @@ class OcppChargePoint(cp):
             log.exception("Weiterleitung der TriggerMessage für %s ist fehlgeschlagen", self.chargebox_id)
 
 
-def get_ocpp_error_code(fault_state: FaultState):
+def get_ocpp_error_code(fault_state: int) -> ChargePointErrorCode:
     if fault_state >= FaultStateLevel.ERROR:
         return ChargePointErrorCode.other_error
     return ChargePointErrorCode.no_error
