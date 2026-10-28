@@ -116,13 +116,18 @@ const socSliderMarker = {
   100: '100%',
 };
 
+const reset = () => {
+  // Reset temporary soc value
+  socValue.value = undefined;
+};
+
 const confirmChanges = () => {
   mqttStore.vehicleSocManualValue(props.vehicleId, props.chargePointId).value =
     socInputValue.value;
+  reset();
 };
 
 const cancelChanges = () => {
-  // Reset temporary soc value
-  socValue.value = undefined;
+  reset();
 };
 </script>

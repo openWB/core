@@ -208,9 +208,8 @@ export interface VehicleChargeTarget {
 }
 
 export interface CalculatedSocState {
-  imported_start: number;
-  manual_soc?: number;
-  soc_start: number;
+  last_imported?: number;
+  manual_soc?: number | null;
 }
 
 export interface GraphDataPoint {
