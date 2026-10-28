@@ -8,7 +8,6 @@ from control.algorithm.chargemodes import (CONSIDERED_CHARGE_MODES_BIDI_DISCHARG
 from control.algorithm.filter_chargepoints import (filter_grouped_loads_by_mode_and_counter,
                                                    filter_loads_by_chargemodes, filtered_loads_to_str,
                                                    get_loads_by_chargemodes, get_preferenced_load_charging)
-from control.algorithm.utils import get_medium_charging_current
 from control.chargepoint.charging_type import ChargingType
 from control.chargepoint.chargepoint import Chargepoint
 from control.chargepoint.chargepoint_state import ChargepointState, CHARGING_STATES
@@ -123,7 +122,7 @@ class SurplusControlled:
         Wenn die Soll-Stromstärke nicht angepasst worden ist, nicht den ungenutzten EVSE-Strom aufschlagen."""
         evse_current = chargepoint.data.get.evse_current
         if evse_current is not None and chargepoint.data.set.current != chargepoint.data.set.current_prev:
-            offset = evse_current - get_medium_charging_current(chargepoint.data.get.currents)
+            offset = evse_current - chargepoint.get_mean_current()
             offset = min(offset, MAX_EVSE_CURRENT_CHANGE)
             current_with_offset = chargepoint.data.set.current + offset
             current = min(current_with_offset, chargepoint.data.control_parameter.required_current)
@@ -211,15 +210,15 @@ def limit_adjust_current(load: Load, new_current: float) -> float:
     else:
         # Um max. +/- 5A pro Zyklus regeln
         if (-MAX_CURRENT-nominal_difference
-                < new_current - get_medium_charging_current(load.data.get.currents)
+                < new_current - load.get_mean_current()
                 < MAX_CURRENT+nominal_difference):
             current = new_current
         else:
-            if new_current < get_medium_charging_current(load.data.get.currents):
-                current = get_medium_charging_current(load.data.get.currents) - MAX_CURRENT
+            if new_current < load.get_mean_current():
+                current = load.get_mean_current() - MAX_CURRENT
 
             else:
-                current = get_medium_charging_current(load.data.get.currents) + MAX_CURRENT
+                current = load.get_mean_current() + MAX_CURRENT
         load.set_state_and_log(msg)
         return max(current,
                    load.data.control_parameter.min_current,

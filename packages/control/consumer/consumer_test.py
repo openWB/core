@@ -90,6 +90,40 @@ def test_set_plug_state_for_controlled_consumers(
     assert consumer.data.get.plug_state is expected_plug_state
 
 
+@pytest.mark.parametrize("usage_type", [ConsumerUsage.CONTINUOUS, ConsumerUsage.SUSPENDABLE_ONOFF])
+@pytest.mark.parametrize("chargemode", [Chargemode.INSTANT_CHARGING, Chargemode.PV_CHARGING])
+@pytest.mark.parametrize(
+    "currents, expected_current",
+    [
+        pytest.param([0.25, 0, 0], 0.25, id="shelly-small-load"),
+        pytest.param([0, 0.16, 0], 0.16, id="just-above-standby"),
+        pytest.param([0.25, 0.35, 0], 0.3, id="two-small-phases"),
+        pytest.param([0.25, 0.75, 0], 0.5, id="mixed-small-and-large-phases"),
+        pytest.param([1, 0, 0], 1, id="larger-load"),
+    ],
+)
+def test_running_onoff_consumer_keeps_small_load_enabled(
+        consumer: Consumer,
+        usage_type: ConsumerUsage,
+        chargemode: Chargemode,
+        currents: List[float],
+        expected_current: float):
+    consumer.data.usage.type = usage_type
+    consumer.data.usage.chargemode = chargemode
+    consumer.data.get.currents = currents
+    consumer.data.get.charge_state = True
+
+    # Wiederholte Regelungen nach Ablauf des Mindestintervalls dürfen den
+    # laufenden Verbraucher nicht wegen der 0,5-A-Ladepunktschwelle abschalten.
+    for _ in range(3):
+        consumer.data.set.switch_interval_elapsed = True
+        required_current, _, mode, submode = consumer.get_parameter()
+        assert required_current == pytest.approx(expected_current)
+        assert consumer._get_min_current() == pytest.approx(expected_current)
+        assert mode == chargemode
+        assert submode == chargemode
+
+
 def test_get_parameter_clears_previous_state_string_when_switch_interval_is_active(consumer: Consumer):
     # setup
     consumer.data.set.switch_interval_elapsed = False
