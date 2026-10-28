@@ -2018,7 +2018,9 @@ def connection_config_setup(handler_setup, monkeypatch):
         start_task=SimpleNamespace(done=lambda: False), ws=SimpleNamespace(closed=False),
     )
     manager._connections["box-1"] = old
-    manager._last_connection_settings["box-1"] = (old.server_url, old.subprotocol)
+    openwb_cp.data.get.ocpp.last_connection_settings = {
+        "url": old.server_url, "subprotocol": old.subprotocol,
+    }
     return manager, old, config, openwb_cp
 
 
@@ -2345,7 +2347,9 @@ def test_reconnect_uses_pinned_config_until_transaction_completed(connection_con
         connection = await manager.ensure_connected("box-1")
         assert connection.server_url == expected_url
         assert connection.subprotocol == expected_version
-        assert manager._last_connection_settings["box-1"] == (expected_url, expected_version)
+        assert openwb_cp.data.get.ocpp.last_connection_settings == {
+            "url": expected_url, "subprotocol": expected_version,
+        }
         connect.assert_awaited_once_with(
             expected_url + "/box-1", subprotocols=[expected_version],
             extra_headers=manager.build_custom_headers("box-1", "secret"),
@@ -2353,6 +2357,151 @@ def test_reconnect_uses_pinned_config_until_transaction_completed(connection_con
         await connection.start_task
 
     asyncio.run(check())
+
+
+@pytest.mark.parametrize("stage", ["active", "offline_stop", "start_unconfirmed"])
+def test_server_binding_survives_restart_until_completion(connection_config_setup, monkeypatch, mock_pub, stage):
+    original, old, config, cp = connection_config_setup
+    # Nur das JSON-Modell überlebt; der neue Manager hat keinerlei Laufzeitwissen.
+    cp.data.get.ocpp = Ocpp(
+        last_connection_settings=json.loads(json.dumps(cp.data.get.ocpp.last_connection_settings)),
+        transaction_id=42 if stage == "active" else None,
+        pending_transactions=[{"transaction_id": 42}] if stage == "offline_stop" else [],
+        authorization_flow_status="start_unconfirmed" if stage == "start_unconfirmed" else None,
+    )
+    config.url = "wss://new.example/ocpp"
+    config.version = "new-subprotocol"
+    manager = OcppConnectionManager(original._chargepoint_factory, AsyncMock(return_value=True), AsyncMock())
+    manager._run_charge_point = AsyncMock()
+    manager._cleanup_connection = AsyncMock()
+    sockets = [SimpleNamespace(subprotocol=version, closed=False) for version in (old.subprotocol, config.version)]
+    connect = AsyncMock(side_effect=sockets)
+    monkeypatch.setattr(ocpp_connection_manager.websockets, "connect", connect)
+
+    async def check():
+        connection = await manager.ensure_connected("box-1")
+        await connection.start_task
+        assert connection.server_url == old.server_url
+        assert connection.subprotocol == old.subprotocol
+        assert cp.data.get.ocpp.last_connection_settings["url"] == old.server_url
+        cp.data.get.ocpp.transaction_id = None
+        cp.data.get.ocpp.pending_transactions = []
+        cp.data.get.ocpp.authorization_flow_status = None
+        connection = await manager.ensure_connected("box-1")
+        await connection.start_task
+        assert connection.server_url == config.url
+        assert cp.data.get.ocpp.last_connection_settings == {"url": config.url, "subprotocol": config.version}
+
+    asyncio.run(check())
+    assert [item.args[0] for item in connect.await_args_list] == [old.server_url + "/box-1", config.url + "/box-1"]
+    mock_pub.pub.assert_any_call("openWB/set/chargepoint/1/get/ocpp/last_connection_settings",
+                                 {"url": config.url, "subprotocol": config.version})
+
+
+def test_restored_offline_stop_is_confirmed_on_origin_before_server_change(transaction_setup, monkeypatch, mock_pub):
+    _, previous_connection, cp = transaction_setup
+    cp.data.config = SimpleNamespace(ocpp_chargebox_password="secret")
+    cp.data.get.ocpp = Ocpp(
+        last_connection_settings={"url": "wss://old.example/ocpp", "subprotocol": "ocpp1.6"},
+        pending_transactions=[{
+            "action": "stop", "transaction_id": 42, "imported": 120, "id_tag": "TAG",
+            "reason": "Local", "timestamp": "2026-10-28T10:00:00+00:00", "finalized": True,
+        }],
+    )
+    config = SimpleNamespace(active=True, url="wss://new.example/ocpp", version="ocpp1.6")
+    monkeypatch.setattr(data, "data", SimpleNamespace(
+        optional_data=SimpleNamespace(data=SimpleNamespace(ocpp=SimpleNamespace(config=config))), cp_data={"cp1": cp},
+    ))
+    monkeypatch.setattr(ocpp_connection_manager, "get_cp_from_chargebox_id", lambda _: cp)
+    coordinator = TransactionCoordinator(AsyncMock())
+
+    async def initialize(connection):
+        connection.boot_accepted = True
+        await coordinator.on_connected("box-1", connection)
+        return True
+
+    manager = OcppConnectionManager(lambda *_: previous_connection.cp, initialize, AsyncMock())
+    manager._run_charge_point = AsyncMock()
+    manager._cleanup_connection = AsyncMock()
+    connect = AsyncMock(side_effect=[SimpleNamespace(subprotocol="ocpp1.6", closed=False) for _ in range(2)])
+    monkeypatch.setattr(ocpp_connection_manager.websockets, "connect", connect)
+
+    async def check():
+        entered, confirmed = asyncio.Event(), asyncio.Event()
+
+        async def stop(**kwargs):
+            assert connect.await_args.args[0] == "wss://old.example/ocpp/box-1"
+            assert kwargs["transaction_id"] == 42
+            assert kwargs["meter_stop"] == 120
+            entered.set()
+            await confirmed.wait()
+            return SimpleNamespace()
+
+        previous_connection.cp._stop_transaction.side_effect = stop
+        opening = asyncio.create_task(manager.ensure_connected("box-1"))
+        await asyncio.wait_for(entered.wait(), 2)
+        assert cp.data.get.ocpp.pending_transactions
+        assert connect.await_count == 1
+        confirmed.set()
+        connection = await opening
+        await connection.start_task
+        assert cp.data.get.ocpp.pending_transactions == []
+        connection = await manager.ensure_connected("box-1")
+        await connection.start_task
+        assert connection.server_url == config.url
+
+    asyncio.run(check())
+    previous_connection.cp._stop_transaction.assert_awaited_once()
+
+
+@pytest.mark.parametrize("stage", ["active", "offline_stop", "start_starting", "start_unconfirmed"])
+def test_unknown_origin_never_sends_existing_transaction_to_configured_server(connection_config_setup, stage):
+    manager, _, _, cp = connection_config_setup
+    manager._connections.clear()
+    ocpp = cp.data.get.ocpp
+    ocpp.last_connection_settings = None
+    ocpp.transaction_id = 42 if stage == "active" else None
+    ocpp.pending_transactions = [{"transaction_id": 42}] if stage == "offline_stop" else []
+    ocpp.authorization_flow_status = stage if stage.startswith("start_") else None
+    manager._open_connection = AsyncMock()
+    with pytest.raises(ValueError, match="Serverbindung des offenen Vorgangs unbekannt"):
+        asyncio.run(manager.ensure_connected("box-1"))
+    manager._open_connection.assert_not_awaited()
+
+
+@pytest.mark.parametrize("stage", [None, "init", "start_pending", "start_authorizing"])
+def test_first_connection_before_transaction_send_needs_no_previous_binding(connection_config_setup, stage):
+    manager, _, config, cp = connection_config_setup
+    manager._connections.clear()
+    cp.data.get.ocpp.last_connection_settings = None
+    cp.data.get.ocpp.authorization_flow_status = stage
+    assert manager._get_connection_settings("box-1", cp) == (config.url.rstrip("/"), config.version)
+
+
+def test_live_connection_can_supply_missing_origin(connection_config_setup, mock_pub):
+    manager, old, config, cp = connection_config_setup
+    cp.data.get.ocpp.last_connection_settings = None
+    cp.data.get.ocpp.transaction_id = 42
+    config.url = "wss://new.example/ocpp"
+    assert manager._get_connection_settings("box-1", cp) == (old.server_url, old.subprotocol)
+    mock_pub.pub.assert_any_call("openWB/set/chargepoint/1/get/ocpp/last_connection_settings",
+                                 {"url": old.server_url, "subprotocol": old.subprotocol})
+
+
+@pytest.mark.parametrize("settings", [None, {"url": "wss://old.example/ocpp/", "subprotocol": "ocpp1.6"}])
+def test_connection_settings_mqtt_roundtrip(mock_pub, settings):
+    topic = "openWB/set/chargepoint/1/get/ocpp/last_connection_settings"
+    SetData(Event(), Event(), Event(), Event()).process_chargepoint_get_topics(
+        SimpleNamespace(topic=topic, payload=json.dumps(settings).encode()))
+    expected = settings
+    retained_topic = topic.replace("openWB/set/", "openWB/", 1)
+    mock_pub.pub.assert_any_call(retained_topic, expected, retain=True)
+    model = Ocpp()
+    subscriber = object.__new__(SubData)
+    subscriber.process_chargepoint_topic({"cp1": SimpleNamespace(chargepoint=SimpleNamespace(
+        data=SimpleNamespace(get=SimpleNamespace(ocpp=model))))},
+        SimpleNamespace(topic=retained_topic, payload=json.dumps(expected).encode()))
+    assert model.last_connection_settings == expected
 
 
 def test_pending_availability_without_request_is_not_applied(handler_setup, mock_pub):

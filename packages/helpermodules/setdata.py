@@ -638,7 +638,8 @@ class SetData:
               "/get/connected_vehicle/config" in msg.topic or
               "/get/connected_vehicle/info" in msg.topic or
               "/get/connected_vehicle/soc" in msg.topic or
-              "/get/ocpp/pending_transactions" in msg.topic):
+              "/get/ocpp/pending_transactions" in msg.topic or
+              msg.topic.endswith("/get/ocpp/last_connection_settings")):
             self._validate_value(msg, "json")
         elif (msg.topic.endswith("/get/ocpp/transaction_id_tag") or
               msg.topic.endswith("/get/ocpp/previous_chargebox_id")):

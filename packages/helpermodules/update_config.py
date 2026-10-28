@@ -672,6 +672,7 @@ class UpdateConfig:
         # Die Folgenden Topics müssen unbedingt hier stehen, damit die Daten auch nach einem Neustart
         # noch verfübar sind und nicht verloren gehen
         "^openWB/chargepoint/[0-9]+/get/ocpp/config$",
+        "^openWB/chargepoint/[0-9]+/get/ocpp/last_connection_settings$",
 
         "^openWB/chargepoint/[0-9]+/get/ocpp/availability$",
         "^openWB/chargepoint/[0-9]+/get/ocpp/pending_availability$",
@@ -684,6 +685,12 @@ class UpdateConfig:
         "^openWB/chargepoint/[0-9]+/get/ocpp/remote_stop$",
         "^openWB/chargepoint/[0-9]+/get/ocpp/reset$",
         "^openWB/chargepoint/[0-9]+/get/ocpp/rfid_stop$",
+
+
+        "^openWB/chargepoint/[0-9]+/get/ocpp/authorization_flow_status$",
+        "^openWB/chargepoint/[0-9]+/get/ocpp/previous_chargebox_id$",
+        "^openWB/chargepoint/[0-9]+/get/ocpp/unlock_stop$",
+        "^openWB/internal_chargepoint/[0-9]+/get/unlock_blocked$",
 
 
     ]
