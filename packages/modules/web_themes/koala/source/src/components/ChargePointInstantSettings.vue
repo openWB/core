@@ -70,7 +70,9 @@ const acChargingEnabled = computed(
 const DC_POWER_FALLBACK = 300; // entspricht dc_max_current-Default 435 A
 
 const dcMaxPower = computed(
-() => mqttStore.chargePointDcMaxPower(props.chargePointId).value ?? DC_POWER_FALLBACK,
+  () =>
+    mqttStore.chargePointDcMaxPower(props.chargePointId).value ??
+    DC_POWER_FALLBACK,
 );
 
 const dcMinPower = computed(() => -dcMaxPower.value);

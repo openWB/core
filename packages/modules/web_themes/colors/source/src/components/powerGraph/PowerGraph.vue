@@ -3,7 +3,7 @@
 		<template #title>
 			{{ heading }}
 			<span
-				v-if="graphData.errors.length > 0"
+				v-if="graphData.errors.length > 0 && graphData.errors[0] != ''"
 				@click="showErrors = !showErrors"
 				class="fa-solid fa-triangle-exclamation ms-2"
 			/>
@@ -35,7 +35,10 @@
 		</template>
 		<div v-if="showErrors" class="errormessage d-flex flex-column mt-2 mb-2">
 			{{ graphData.errors[0] }}
-			<span class="morebutton" @click="showErrorModal"
+			<span
+				v-if="graphData.errors.length > 1"
+				class="morebutton"
+				@click="showErrorModal"
 				>({{ graphData.errors.length - 1 }} weitere Fehlermeldungen)
 			</span>
 		</div>

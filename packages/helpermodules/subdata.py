@@ -1316,6 +1316,9 @@ class SubData:
                         self.set_json_payload_class(var[f"consumer{index}"].data, msg)
                         if self.event_subdata_initialized.is_set() and old_extra_meter != var[
                                 f"consumer{index}"].data.extra_meter:
+                            # Only restore the previous meter if its configuration still exists.
+                            if f"counter{old_extra_meter}" not in self.counter_data:
+                                old_extra_meter = None
                             if self.counter_all_data.update_linked_counter_hierarchy(
                                     int(index),
                                     old_extra_meter,

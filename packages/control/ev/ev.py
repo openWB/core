@@ -1,7 +1,7 @@
 """ EV-Logik
 ermittelt, den Ladestrom, den das EV gerne zur Verfügung hätte.
 
-In den control Parametern wird sich der Lademodus, Submodus, Priorität, Phasen und Stromstärke gemerkt,
+In den control Parametern werden Lademodus, Submodus, Phasen und Stromstärke gemerkt,
 mit denen das EV aktuell in der Regelung berücksichtigt wird. Bei der Ermittlung der benötigten Strom-
 stärke wird auch geprüft, ob sich an diesen Parametern etwas geändert hat. Falls ja, muss das EV
 in der Regelung neu priorisiert werden und eine neue Zuteilung des Stroms erhalten.

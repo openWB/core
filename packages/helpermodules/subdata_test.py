@@ -130,7 +130,9 @@ def test_process_consumer_extra_meter_removes_linked_counter_from_hierarchy(monk
     mock_pub.pub.assert_called_once_with("openWB/set/counter/get/hierarchy", counter_all_data.data.get.hierarchy)
 
 
-def test_process_consumer_extra_meter_adds_unlinked_counter_to_hierarchy(monkeypatch: pytest.MonkeyPatch,
+@pytest.mark.parametrize("counter_exists", [True, False])
+def test_process_consumer_extra_meter_adds_unlinked_counter_to_hierarchy(counter_exists: bool,
+                                                                         monkeypatch: pytest.MonkeyPatch,
                                                                          mock_pub: Mock):
     subdata = SubData.__new__(SubData)
     subdata.event_subdata_initialized = Mock()
@@ -145,6 +147,7 @@ def test_process_consumer_extra_meter_adds_unlinked_counter_to_hierarchy(monkeyp
     consumers = {"consumer2": Consumer(2)}
     consumers["consumer2"].data.extra_meter = 5
     msg = Mock(topic="openWB/consumer/2/extra_meter", payload=b"null")
+    monkeypatch.setattr(SubData, "counter_data", {"counter5": Mock()} if counter_exists else {})
 
     subdata.process_consumer_topic(Mock(), consumers, msg)
 
@@ -154,13 +157,17 @@ def test_process_consumer_extra_meter_adds_unlinked_counter_to_hierarchy(monkeyp
         "type": "counter",
         "children": [
             {"id": 2, "type": "consumer", "children": []},
-            {"id": 5, "type": "counter", "children": []},
-        ],
+        ] + ([{"id": 5, "type": "counter", "children": []}] if counter_exists else []),
     }]
-    mock_pub.pub.assert_called_once_with("openWB/set/counter/get/hierarchy", counter_all_data.data.get.hierarchy)
+    if counter_exists:
+        mock_pub.pub.assert_called_once_with("openWB/set/counter/get/hierarchy", counter_all_data.data.get.hierarchy)
+    else:
+        mock_pub.pub.assert_not_called()
 
 
-def test_process_consumer_extra_meter_switches_linked_counter_in_hierarchy(monkeypatch: pytest.MonkeyPatch,
+@pytest.mark.parametrize("counter_exists", [True, False])
+def test_process_consumer_extra_meter_switches_linked_counter_in_hierarchy(counter_exists: bool,
+                                                                           monkeypatch: pytest.MonkeyPatch,
                                                                            mock_pub: Mock):
     subdata = SubData.__new__(SubData)
     subdata.event_subdata_initialized = Mock()
@@ -178,6 +185,9 @@ def test_process_consumer_extra_meter_switches_linked_counter_in_hierarchy(monke
     consumers = {"consumer2": Consumer(2)}
     consumers["consumer2"].data.extra_meter = 5
     msg = Mock(topic="openWB/consumer/2/extra_meter", payload=b"6")
+    monkeypatch.setattr(SubData, "counter_data", {
+        "counter6": Mock(), **({"counter5": Mock()} if counter_exists else {}),
+    })
 
     subdata.process_consumer_topic(Mock(), consumers, msg)
 
@@ -187,8 +197,7 @@ def test_process_consumer_extra_meter_switches_linked_counter_in_hierarchy(monke
         "type": "counter",
         "children": [
             {"id": 2, "type": "consumer", "children": []},
-            {"id": 5, "type": "counter", "children": []},
-        ],
+        ] + ([{"id": 5, "type": "counter", "children": []}] if counter_exists else []),
     }]
     mock_pub.pub.assert_called_once_with("openWB/set/counter/get/hierarchy", counter_all_data.data.get.hierarchy)
 

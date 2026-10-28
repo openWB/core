@@ -26,7 +26,8 @@ export function processDayGraphMessages(topic: string, message: string) {
 		totals: energyValues,
 		message: errorTextBlock,
 	} = JSON.parse(message)
-	graphData.errors = errorTextBlock.split('\n')
+	const errorTextBlockTemp = ''
+	graphData.errors = errorTextBlockTemp.split('\n')
 	itemNames.value = new Map(Object.entries(itemNames2))
 	resetHistoricData()
 	gridCounters = []

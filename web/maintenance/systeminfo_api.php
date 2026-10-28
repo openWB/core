@@ -154,6 +154,16 @@ function getSoftwareInfo()
 	$version = 'unbekannt';
 	// $branch = 'unbekannt';
 	$commit = 'unbekannt';
+	$phpVersion = 'unbekannt';
+	$phpPackage = 'php' . PHP_MAJOR_VERSION . '.' . PHP_MINOR_VERSION . '-cli';
+	$phpPackageInfo = trim((string)@shell_exec(
+		"dpkg-query -W -f='\${db:Status-Status}|\${Version}' " .
+		escapeshellarg($phpPackage) .
+		" 2>/dev/null"
+	));
+	if (strpos($phpPackageInfo, 'installed|') === 0) {
+		$phpVersion = substr($phpPackageInfo, strlen('installed|'));
+	}
 
 	// Git-Verzeichnis bestimmen (eine Ebene höher als "web")
 	$repoDir = dirname(__DIR__, 2);
@@ -188,6 +198,10 @@ function getSoftwareInfo()
 		// ],
 		'git_commit' => [
 			'value' => $commit,
+			'unit' => ''
+		],
+		'php_version' => [
+			'value' => $phpVersion,
 			'unit' => ''
 		]
 	];

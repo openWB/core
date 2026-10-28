@@ -35,7 +35,10 @@
 				</div>
 			</transition>
 			<transition name="status-fade">
-				<div v-if="showFault" class="faulttext status-entry p-2">
+				<div
+					v-if="showFault && device && device.faultText"
+					class="faulttext status-entry p-2"
+				>
 					{{ device.faultText }}
 				</div>
 			</transition>

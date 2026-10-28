@@ -326,7 +326,7 @@ def test_delete_obsolete_entries(hierarchy, data_):
     counter_all.data.get.hierarchy = hierarchy
 
     # execution
-    counter_all._delete_obsolete_entries()
+    counter_all._delete_obsolete_entries(set())
 
     # evaluation
     assert counter_all.data.get.hierarchy == hierarchy_nested().data.get.hierarchy
@@ -398,10 +398,39 @@ def test_add_missing_entries(hierarchy, expected_hierarchy, data_, monkeypatch):
     monkeypatch.setattr(CounterAll, "get_evu_counter", mock_get_evu_counter)
 
     # execution
-    counter_all._add_missing_entries()
+    counter_all._add_missing_entries(set())
 
     # evaluation
     assert counter_all.data.get.hierarchy == expected_hierarchy
+
+
+@pytest.mark.parametrize("linked_meter_in_hierarchy", [False, True])
+def test_validate_hierarchy_removes_linked_counter_and_keeps_children(linked_meter_in_hierarchy, monkeypatch):
+    data.data_init(Mock())
+    counters = {f"counter{i}": Mock(spec=Counter, num=i) for i in (0, 6, 8)}
+    consumers = {"consumer7": Mock(spec=Consumer, data=Mock(spec=ConsumerData, extra_meter=6))}
+    data.data.counter_data = counters
+    data.data.consumer_data = consumers
+    data.data.bat_data = {}
+    data.data.cp_data = {}
+    data.data.pv_data = {}
+    children = [
+        {"id": 7, "type": "consumer", "children": []},
+        {"id": 8, "type": "counter", "children": []},
+    ]
+    counter_all = CounterAll()
+    counter_all.data.get.hierarchy = [{
+        "id": 0, "type": "counter", "children": (
+            [{"id": 6, "type": "counter", "children": children}] if linked_meter_in_hierarchy else children),
+    }]
+    monkeypatch.setattr(CounterAll, "get_evu_counter", Mock(return_value=counters["counter0"]))
+
+    counter_all.validate_hierarchy()
+    counter_all.validate_hierarchy()
+
+    assert counter_all.data.get.hierarchy == [{"id": 0, "type": "counter", "children": children}]
+    assert data.data.counter_data == counters
+    assert data.data.consumer_data["consumer7"].data.extra_meter == 6
 
 
 def test_add_missing_entries_re_adds_removed_linked_counter(monkeypatch):
@@ -429,7 +458,7 @@ def test_add_missing_entries_re_adds_removed_linked_counter(monkeypatch):
     monkeypatch.setattr(CounterAll, "get_evu_counter", Mock(return_value=c))
 
     # execution
-    counter_all._add_missing_entries()
+    counter_all._add_missing_entries({6})
 
     # evaluation
     assert counter_all.data.get.hierarchy == [{

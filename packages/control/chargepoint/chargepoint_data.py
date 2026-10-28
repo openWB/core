@@ -43,7 +43,6 @@ class ConnectedConfig:
     chargemode: Chargemode = Chargemode.STOP
     current_plan: Optional[int] = 0
     ev_template: int = 0
-    priority: bool = False
     time_charging_in_use: bool = False
 
 

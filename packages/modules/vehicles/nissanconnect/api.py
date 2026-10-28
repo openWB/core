@@ -27,15 +27,18 @@ from datetime import datetime
 import hashlib
 from html.parser import HTMLParser
 from http import HTTPStatus
+from http.client import RemoteDisconnected
 import logging
 import math
 import re
 import secrets
+from socket import gaierror
 import time
 from typing import Optional, Tuple
 from urllib.parse import parse_qs, quote, urlencode, urljoin, urlsplit
 
-from requests import RequestException
+from requests import ConnectionError, RequestException, Timeout
+from requests.exceptions import SSLError
 from modules.common.req import get_http_session
 
 log = logging.getLogger(__name__)
@@ -48,14 +51,23 @@ OAUTH_CLIENT_ID = "ZM3WK7ax1OtQKYQ8Qqzcv5VgiA8a"  # Public application identifie
 OAUTH_LOGIN_SCOPE = "openid name profile email offline_access"
 JSON_API_CONTENT_TYPE = "application/vnd.api+json"
 REQUEST_TIMEOUT_SECONDS = 10
+MAX_VEHICLE_CONNECTION_RETRIES = 1
 DEFAULT_TOKEN_LIFETIME_SECONDS = 3600
 TOKEN_REFRESH_MARGIN_SECONDS = 30
 MAX_MEASUREMENT_FUTURE_SKEW_SECONDS = 300
 MAX_SOC_PERCENT = 100
+FULL_BATTERY_BAR_UNITS = 240
+MAX_SOC_DIFFERENCE_PERCENT_POINTS = 1
 MAX_LOGIN_REDIRECTS = 10
 PKCE_VERIFIER_RANDOM_BYTES = 64
 OAUTH_STATE_RANDOM_BYTES = 32
 VIN_PATTERN = r"[A-HJ-NPR-Z0-9]{17}"
+CONNECTION_ERROR_MESSAGES = (
+    (gaierror, "Nissan name resolution failed."),
+    (ConnectionRefusedError, "Nissan connection was refused."),
+    (RemoteDisconnected, "Nissan connection closed without a response."),
+    ((ConnectionResetError, ConnectionAbortedError, BrokenPipeError), "Nissan connection was interrupted."),
+)
 _PRIVATE_HTTP_REQUEST = ContextVar("nissan_private_http_request", default=False)
 
 
@@ -76,6 +88,26 @@ class NissanError(Exception):
 
 class AuthenticationError(NissanError):
     pass
+
+
+def _connection_error_message(error):
+    """Classify wrapped transport causes without exposing exception text or request data."""
+    pending = [error]
+    seen = set()
+    while pending:
+        cause = pending.pop()
+        if not isinstance(cause, Exception) or id(cause) in seen:
+            continue
+        seen.add(id(cause))
+        for error_types, message in CONNECTION_ERROR_MESSAGES:
+            if isinstance(cause, error_types):
+                return message
+        # Requests/urllib3 wrap causes in args, MaxRetryError.reason and Python chains.
+        chained = cause.__cause__
+        if chained is None and not cause.__suppress_context__:
+            chained = cause.__context__
+        pending.extend((*cause.args, getattr(cause, "reason", None), chained))
+    return "Nissan connection failed."
 
 
 class _LoginForm(HTMLParser):
@@ -114,11 +146,26 @@ def _number(value, maximum=math.inf):
         raise NissanError("Nissan returned an invalid vehicle measurement.") from None
 
 
+def _soc_percent(attributes):
+    """Prefer the Leaf's finer 0-240 scale when it agrees with the required percent value."""
+    soc_percent = _number(attributes["batteryLevel"], MAX_SOC_PERCENT)
+    try:
+        bar_units = _number(attributes.get("batteryBarLevel"), FULL_BATTERY_BAR_UNITS)
+    except NissanError:
+        return soc_percent
+    bar_soc_percent = bar_units / FULL_BATTERY_BAR_UNITS * MAX_SOC_PERCENT
+    # Allow integer-percent quantization, but reject a zero placeholder for a positive SoC.
+    if ((bar_units > 0 or soc_percent == 0)
+            and abs(bar_soc_percent - soc_percent) <= MAX_SOC_DIFFERENCE_PERCENT_POINTS):
+        return bar_soc_percent
+    return soc_percent
+
+
 def parse_battery(body) -> Tuple[float, Optional[float], float]:
     """Preserve the actual measurement time and valid zero values; never invent a SoC."""
     try:
         attributes = body["data"]["attributes"]
-        soc_percent = _number(attributes["batteryLevel"], MAX_SOC_PERCENT)
+        soc_percent = _soc_percent(attributes)
         measured = datetime.fromisoformat(attributes["lastUpdateTime"].replace("Z", "+00:00"))
         measurement_unix_seconds = measured.timestamp()
         if (measured.tzinfo is None
@@ -152,8 +199,24 @@ class NissanClient:
     def _request(self, method, url, auth_request=False, **kwargs):
         log_context = _PRIVATE_HTTP_REQUEST.set(True)
         try:
-            response = self._session.request(method, url, timeout=REQUEST_TIMEOUT_SECONDS,
-                                             allow_redirects=False, **kwargs)
+            for retry_count in range(MAX_VEHICLE_CONNECTION_RETRIES + 1):
+                try:
+                    response = self._session.request(method, url, timeout=REQUEST_TIMEOUT_SECONDS,
+                                                     allow_redirects=False, **kwargs)
+                    break
+                except ConnectionError as error:
+                    if (retry_count == MAX_VEHICLE_CONNECTION_RETRIES or isinstance(error, (Timeout, SSLError))
+                            or method != "GET" or not url.startswith(CARS_BASE_URL)):
+                        raise
+                    # Discard pooled connections, retaining cookies, tokens and privacy settings.
+                    self._session.close()
+                    log.debug("Nissan vehicle connection failed; retrying once.")
+        except Timeout:
+            raise NissanError("Nissan request timed out.") from None
+        except SSLError:
+            raise NissanError("Nissan TLS connection failed.") from None
+        except ConnectionError as error:
+            raise NissanError(_connection_error_message(error)) from None
         except RequestException:
             raise NissanError("Nissan could not be reached.") from None
         finally:

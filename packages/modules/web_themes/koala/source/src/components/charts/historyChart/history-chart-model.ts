@@ -12,11 +12,7 @@ export interface ChartComponentRef {
 }
 
 export type Category =
-  | 'chargepoint'
-  | 'vehicle'
-  | 'battery'
-  | 'consumer'
-  | 'component';
+  'chargepoint' | 'vehicle' | 'battery' | 'consumer' | 'component';
 
 export const CONSUMER_TOTAL_LABEL = 'Verbraucher ges.';
 

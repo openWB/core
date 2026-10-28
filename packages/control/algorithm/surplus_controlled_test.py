@@ -14,6 +14,8 @@ from control.chargepoint.chargepoint_template import CpTemplate
 from control.chargepoint.control_parameter import ControlParameter
 from control.counter_all.counter_all import CounterAll
 from control.ev.ev import Ev
+from control.consumer.consumer import Consumer
+from control.limiting_value import LimitingValue, LoadmanagementLimit
 
 
 @pytest.fixture(autouse=True)
@@ -40,6 +42,41 @@ def mock_cp3() -> Chargepoint:
 def mock_data() -> None:
     data.data_init(Mock())
     data.data.counter_all_data = CounterAll()
+
+
+@pytest.mark.parametrize(
+    "current, set_current, required_current, limit, expected_message",
+    [
+        pytest.param(13.04, 6, 13.043478260869565,
+                     LoadmanagementLimit(None, None), None, id="reported-consumer-rounding"),
+        pytest.param(12, 6, 13.04, LoadmanagementLimit(None, None), None,
+                     id="no-limit-reason"),
+        pytest.param(13.04, 6, 13.043478260869565,
+                     LoadmanagementLimit(" current limit", LimitingValue.CURRENT), None,
+                     id="rounded-required-current"),
+        pytest.param(13.04, 13.043478260869565, 16,
+                     LoadmanagementLimit(" current limit", LimitingValue.CURRENT), None,
+                     id="rounded-unchanged-current"),
+        pytest.param(12, 6, 13.04,
+                     LoadmanagementLimit(" power limit", LimitingValue.POWER), None,
+                     id="normal-pv-power-limit"),
+        pytest.param(12, 6, 13.04,
+                     LoadmanagementLimit(" current limit", LimitingValue.CURRENT),
+                     "Es kann nicht mit der vorgegebenen Stromstärke geladen werden current limit",
+                     id="actual-current-limit"),
+        pytest.param(12, None, 13.04,
+                     LoadmanagementLimit(" current limit", LimitingValue.CURRENT),
+                     "Es kann nicht mit der vorgegebenen Stromstärke geladen werden current limit",
+                     id="no-previous-set-current"),
+    ])
+def test_set_loadmanagement_message(current, set_current, required_current, limit, expected_message):
+    consumer = Consumer(27)
+    consumer.data.set.current = set_current
+    consumer.data.control_parameter.required_currents = [required_current, 0, 0]
+
+    SurplusControlled()._set_loadmangement_message(current, limit, consumer)
+
+    assert consumer.data.get.state_str == expected_message
 
 
 @pytest.mark.parametrize("new_current, expected_current",

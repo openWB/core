@@ -30,14 +30,6 @@
             />
           </div>
         </div>
-        <div class="row items-center justify-between q-mt-sm">
-          <div class="text-subtitle2">Priorität</div>
-          <ChargePointPriority
-            :charge-point-id="props.chargePointId"
-            :readonly="false"
-            dense
-          />
-        </div>
         <q-separator class="q-mt-sm" />
         <div class="row items-center no-wrap">
           <ChargePointModeButtons :charge-point-id="props.chargePointId" />
@@ -81,7 +73,6 @@ import ChargePointPvSettings from './ChargePointPvSettings.vue';
 import ChargePointEcoSettings from './ChargePointEcoSettings.vue';
 import ChargePointScheduledSettings from './ChargePointScheduledSettings.vue';
 import ChargePointTimeChargingSettings from './ChargePointTimeChargingSettings.vue';
-import ChargePointPriority from './ChargePointPriority.vue';
 import ChargePointLock from './ChargePointLock.vue';
 import ChargePointModeButtons from './ChargePointModeButtons.vue';
 import ChargePointVehicleSelect from './ChargePointVehicleSelect.vue';

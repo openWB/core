@@ -127,17 +127,15 @@
 			v-if="etData.active"
 			heading="Strompreis:"
 			class="grid-col-4 grid-left"
+			@click="showRawPrice = !showRawPrice"
 		>
-			<span :style="currentPriceStyle">{{ etData.etCurrentPriceString }} </span>
+			<span :style="currentPriceStyle">
+				{{ currentPriceToShow }}
+			</span>
 		</InfoItem>
 		<InfoItem v-if="cp.etActive" heading="max. Preis:" class="grid-col-4">
 			<span type="button" @click="editPrice = !editPrice"
-				>{{
-					props.chargepoint.etActive
-						? (Math.round(props.chargepoint.etMaxPrice * 10) / 10).toFixed(1) +
-							priceUnit
-						: '-'
-				}}
+				>{{ maxPriceToShow }}
 				<i
 					v-if="props.chargepoint.etActive"
 					class="fa-solid fa-sm fas fa-edit ms-2"
@@ -193,6 +191,7 @@ const cp = props.chargepoint
 const editSoc = ref(false)
 const editPrice = ref(false)
 const changeCar = ref(false)
+const showRawPrice = ref(false)
 
 // computed
 const chargeMode = computed({
@@ -256,6 +255,17 @@ const modePillStyle = computed(() => {
 })
 const priceUnit = computed(() => {
 	return globalData.country === 'ch' ? ' Rp' : ' ct'
+})
+const currentPriceToShow = computed(() => {
+	return showRawPrice.value
+		? etData.etCurrentPriceStringDetailed
+		: etData.etCurrentPriceString
+})
+const maxPriceToShow = computed(() => {
+	return showRawPrice.value
+		? props.chargepoint.etMaxPrice + priceUnit.value
+		: (Math.round(props.chargepoint.etMaxPrice * 10) / 10).toFixed(1) +
+				priceUnit.value
 })
 //methods
 function loadSoc() {

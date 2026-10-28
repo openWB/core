@@ -154,11 +154,6 @@ export default {
         this.updateChargePointChargeTemplate(id, event, "chargemode.selected");
       }
     },
-    setChargePointConnectedVehiclePriority(id, event) {
-      if (event != this.mqttStore.getChargePointConnectedVehiclePriority(id)) {
-        this.updateChargePointChargeTemplate(id, event, "prio");
-      }
-    },
     setChargePointConnectedVehicleTimeChargingActive(id, event) {
       if (
         event !=

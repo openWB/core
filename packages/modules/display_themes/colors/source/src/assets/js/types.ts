@@ -97,7 +97,7 @@ export interface MarginType {
 	bottom: number
 }
 export const evPriorityModes: [string, string][] = [
-	['EV', 'ev_mode'],
+	['Fzg./Verbr.', 'ev_mode'],
 	['Speicher', 'bat_mode'],
 	['MinSoc', 'min_soc_bat_mode'],
 ]
