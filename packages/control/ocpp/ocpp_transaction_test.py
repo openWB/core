@@ -4,7 +4,7 @@ import json
 from dataclasses import asdict
 from threading import Event
 from types import SimpleNamespace
-from unittest.mock import ANY, AsyncMock, call
+from unittest.mock import ANY, AsyncMock, Mock, call
 
 import pytest
 import websockets
@@ -2006,7 +2006,7 @@ def connection_config_setup(handler_setup, monkeypatch):
     monkeypatch.setattr(data, "data", SimpleNamespace(
         optional_data=SimpleNamespace(data=SimpleNamespace(ocpp=SimpleNamespace(config=config))),
         cp_data={"cp1": openwb_cp},
-    ))
+    ), raising=False)
     monkeypatch.setattr(ocpp_connection_manager, "get_cp_from_chargebox_id", lambda _: openwb_cp)
     manager = OcppConnectionManager(
         chargepoint_factory=lambda *_: SimpleNamespace(),
@@ -2268,6 +2268,80 @@ def test_id_change_retains_old_identity_in_mqtt_model(mock_pub, old_id):
     subscriber.process_chargepoint_topic(chargepoints,
                                          SimpleNamespace(topic=topic, payload=json.dumps(old_id).encode()))
     assert asdict(model)["previous_chargebox_id"] == old_id
+
+
+def test_open_connection_waits_when_model_is_missing_before_handshake(connection_config_setup, monkeypatch, mock_pub):
+    manager, _, _, _ = connection_config_setup
+    monkeypatch.setattr(ocpp_connection_manager, "get_cp_from_chargebox_id", lambda _: None)
+    connect = AsyncMock()
+    monkeypatch.setattr(ocpp_connection_manager.websockets, "connect", connect)
+
+    assert asyncio.run(manager._open_connection("box-1")) is None
+
+    connect.assert_not_awaited()
+    manager._on_connected.assert_not_awaited()
+    mock_pub.pub.assert_not_called()
+
+
+def test_missing_model_after_handshake_closes_socket_and_schedules_retry(
+    connection_config_setup, monkeypatch, mock_pub
+):
+    manager, _, _, cp = connection_config_setup
+    manager._connections.clear()
+    manager._schedule_reconnect = Mock()
+    manager._chargepoint_factory = Mock()
+    saved = copy.deepcopy(cp.data.get.ocpp.last_connection_settings)
+    websocket = SimpleNamespace(subprotocol="ocpp1.6", closed=False, close=AsyncMock())
+
+    async def handshake(*args, **kwargs):
+        monkeypatch.setattr(ocpp_connection_manager, "get_cp_from_chargebox_id", lambda _: None)
+        return websocket
+
+    monkeypatch.setattr(ocpp_connection_manager.websockets, "connect", AsyncMock(side_effect=handshake))
+
+    assert asyncio.run(manager.connect("box-1")) is None
+
+    websocket.close.assert_awaited_once_with()
+    manager._schedule_reconnect.assert_called_once_with("box-1")
+    manager._chargepoint_factory.assert_not_called()
+    manager._on_connected.assert_not_awaited()
+    assert manager._connections == {}
+    assert cp.data.get.ocpp.last_connection_settings == saved
+    mock_pub.pub.assert_not_called()
+
+
+def test_connection_binding_is_saved_on_model_replaced_during_handshake(
+    connection_config_setup, monkeypatch, mock_pub
+):
+    manager, _, config, cp = connection_config_setup
+    manager._connections.clear()
+    replacement = copy.deepcopy(cp)
+    replacement.data.get.ocpp.last_connection_settings = None
+    manager._run_charge_point = AsyncMock()
+    websocket = SimpleNamespace(subprotocol="ocpp1.6", closed=False, close=AsyncMock())
+
+    async def handshake(*args, **kwargs):
+        # Auch die Passwortermittlung darf keinen zweiten Zugriff auf cp_data benötigen.
+        data.data.cp_data.clear()
+        monkeypatch.setattr(ocpp_connection_manager, "get_cp_from_chargebox_id", lambda _: replacement)
+        return websocket
+
+    connect = AsyncMock(side_effect=handshake)
+    monkeypatch.setattr(ocpp_connection_manager.websockets, "connect", connect)
+
+    async def check():
+        connection = await manager.connect("box-1")
+        assert connection is not None
+        await connection.start_task
+
+    asyncio.run(check())
+
+    assert replacement.data.get.ocpp.last_connection_settings == {
+        "url": config.url.rstrip("/"), "subprotocol": config.version,
+    }
+    mock_pub.pub.assert_any_call("openWB/set/chargepoint/1/get/ocpp/last_connection_settings",
+                                 replacement.data.get.ocpp.last_connection_settings)
+    websocket.close.assert_not_awaited()
 
 
 @pytest.mark.parametrize("change", ["none", "trailing_slash", "url", "version"])

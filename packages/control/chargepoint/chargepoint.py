@@ -215,8 +215,12 @@ class Chargepoint(ChargepointRfidMixin, Load):
                 "start_starting": "RFID akzeptiert. OCPP-Transaktion wird gestartet.",
                 "start_rejected": "Keine Ladung: OCPP Authorisierung abgelehnt.",
                 "start_error": "Keine Ladung: Fehler beim OCPP-Transaktionstart.",
-            }.get(self.data.get.ocpp.authorization_flow_status,
-                  "Keine Ladung: RFID fehlt oder wurde vom OCPP-Server nicht akzeptiert.")
+            }.get(self.data.get.ocpp.authorization_flow_status)
+            if message is None and self.data.get.plug_state:
+                if self.data.set.rfid or self.data.get.rfid or self.data.get.vehicle_id:
+                    message = "Warte auf OCPP-Transaktionsfreigabe."
+                else:
+                    message = "Keine Ladung: RFID zur OCPP-Freigabe erforderlich."
             state = False
         else:
             message = None
@@ -232,8 +236,10 @@ class Chargepoint(ChargepointRfidMixin, Load):
                     charging_possible, message = self._is_ev_plugged()
                     if charging_possible:
                         charging_possible, message = self._is_autolock_inactive()
-                        if charging_possible:
-                            charging_possible, message = self._is_ocpp()
+            # OCPP-Hinweise auch bei einer bereits bestehenden lokalen Sperre anzeigen.
+            ocpp_possible, ocpp_message = self._is_ocpp()
+            charging_possible = charging_possible and ocpp_possible
+            message = " ".join(text for text in (message, ocpp_message) if text) or None
 
         except Exception:
             log.exception("Fehler in der Ladepunkt-Klasse von "+str(self.num))
@@ -780,9 +786,7 @@ class Chargepoint(ChargepointRfidMixin, Load):
                     )
                     response = self.data.get.ocpp.authorization_flow_status
 
-                if response == "init":
-                    self.set_state_and_log("RFID-Autorisierung am OCPP-Server läuft.")
-                elif response == "rejected":
+                if response == "rejected":
                     self._clear_scanned_rfid()
                     self.set_state_and_log(f"ID-Tag {rfid} wurde vom OCPP-Server abgelehnt.")
                 elif response == "accepted":

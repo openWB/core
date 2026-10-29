@@ -1767,6 +1767,50 @@ def test_meter_loop_disables_and_resumes_periodic_samples(
     assert cp._meter_values.await_count == expected_sends
 
 
+@pytest.mark.parametrize("missing_during_wait", [False, True])
+def test_meter_loop_waits_for_model_and_resumes_without_disconnect(monkeypatch, missing_during_wait):
+    def model(interval):
+        return SimpleNamespace(data=SimpleNamespace(get=SimpleNamespace(ocpp=SimpleNamespace(
+            config=SimpleNamespace(MeterValueSampleInterval={"value": interval}),
+        ))))
+
+    chargepoint = SimpleNamespace(openwb_cp=model(7) if missing_during_wait else None, _meter_values=AsyncMock())
+    websocket = SimpleNamespace(closed=False, close=AsyncMock())
+    connection = SimpleNamespace(chargebox_id="box-1", closing=False, boot_accepted=True,
+                                 cp=chargepoint, ws=websocket)
+    client = object.__new__(OcppClient)
+    client.transactions = SimpleNamespace(
+        get_transaction_id=Mock(return_value=123),
+        get_state=Mock(return_value=ocpp_transaction_coordinator.TransactionState.ACTIVE),
+    )
+    client._meter_snapshots = {}
+    client._set_meter_snapshot("box-1", 1, 123, 9876, "2026-10-29T12:00:00+00:00")
+    sleeps = []
+
+    async def tick(interval):
+        sleeps.append(interval)
+        chargepoint._meter_values.assert_not_awaited()
+        websocket.close.assert_not_awaited()
+        if missing_during_wait and len(sleeps) == 1:
+            chargepoint.openwb_cp = None
+        elif interval == 1:
+            chargepoint.openwb_cp = model(11)
+
+    async def sent(**kwargs):
+        connection.closing = True
+
+    chargepoint._meter_values.side_effect = sent
+    monkeypatch.setattr(ocpp_client.asyncio, "sleep", tick)
+
+    asyncio.run(client._meter_loop(connection))
+
+    assert sleeps == ([7, 1, 11] if missing_during_wait else [1, 11])
+    chargepoint._meter_values.assert_awaited_once()
+    assert chargepoint._meter_values.await_args.kwargs["transaction_id"] == 123
+    assert chargepoint._meter_values.await_args.kwargs["meter_value"][0]["sampledValue"][0]["value"] == "9876"
+    websocket.close.assert_not_awaited()
+
+
 def test_meter_loop_keeps_sending_and_only_updates_timestamp_with_new_snapshot(monkeypatch):
     chargepoint = SimpleNamespace(
         openwb_cp=SimpleNamespace(data=SimpleNamespace(get=SimpleNamespace(ocpp=SimpleNamespace(
@@ -1801,6 +1845,36 @@ def test_meter_loop_keeps_sending_and_only_updates_timestamp_with_new_snapshot(m
     values = [c.kwargs["meter_value"][0] for c in chargepoint._meter_values.await_args_list]
     assert [v["timestamp"] for v in values] == [first, first, second]
     assert [v["sampledValue"][0]["value"] for v in values] == ["9876"] * 3
+
+
+def test_heartbeat_waits_for_missing_model_and_resumes_without_disconnect(monkeypatch):
+    chargepoint = SimpleNamespace(openwb_cp=None, _heartbeat=AsyncMock())
+    websocket = SimpleNamespace(closed=False, close=AsyncMock())
+    connection = SimpleNamespace(chargebox_id="box-1", closing=False, boot_accepted=True,
+                                 cp=chargepoint, ws=websocket)
+    client = object.__new__(OcppClient)
+    intervals = []
+
+    async def tick(interval):
+        intervals.append(interval)
+        if len(intervals) == 1:
+            chargepoint._heartbeat.assert_not_awaited()
+            websocket.close.assert_not_awaited()
+            chargepoint.openwb_cp = SimpleNamespace(data=SimpleNamespace(get=SimpleNamespace(ocpp=SimpleNamespace(
+                config=SimpleNamespace(HeartbeatInterval={"value": 7}),
+            ))))
+
+    async def heartbeat():
+        connection.closing = True
+
+    chargepoint._heartbeat.side_effect = heartbeat
+    monkeypatch.setattr(ocpp_client.asyncio, "sleep", tick)
+
+    asyncio.run(client._heartbeat_loop(connection))
+
+    assert intervals == [1, 7]
+    chargepoint._heartbeat.assert_awaited_once_with()
+    websocket.close.assert_not_awaited()
 
 
 def test_heartbeat_loop_closes_connection_after_heartbeat_error(monkeypatch):

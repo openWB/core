@@ -298,7 +298,12 @@ class OcppConnectionManager:
         self,
         chargebox_id: str,
     ) -> Optional[OcppConnection]:
-        url, version = self._get_connection_settings(chargebox_id, get_cp_from_chargebox_id(chargebox_id))
+        openwb_cp = get_cp_from_chargebox_id(chargebox_id)
+        if openwb_cp is None:
+            log.debug("OCPP %s: Ladepunktmodell momentan nicht verfügbar; Verbindungsaufbau zurückgestellt.",
+                      chargebox_id)
+            return None
+        url, version = self._get_connection_settings(chargebox_id, openwb_cp)
 
         if not url:
             raise ValueError("OCPP-Server-URL ist nicht konfiguriert")
@@ -317,8 +322,7 @@ class OcppConnectionManager:
             ws_url,
             subprotocols=[version],
             extra_headers=self.build_custom_headers(
-                chargebox_id, data.data.cp_data[
-                    f"cp{get_cp_from_chargebox_id(chargebox_id).num}"].data.config.ocpp_chargebox_password
+                chargebox_id, openwb_cp.data.config.ocpp_chargebox_password
             ),
         )
 
@@ -332,6 +336,13 @@ class OcppConnectionManager:
         connection: Optional[OcppConnection] = None
 
         try:
+            # Während des Handshakes kann das Backend die Ladepunktmodelle ersetzen.
+            openwb_cp = get_cp_from_chargebox_id(chargebox_id)
+            if openwb_cp is None:
+                log.debug("OCPP %s: Ladepunktmodell nach Handshake nicht verfügbar; Verbindung wird wiederholt.",
+                          chargebox_id)
+                await ws.close()
+                return None
             cp = self._chargepoint_factory(chargebox_id, ws)
             connection = OcppConnection(
                 chargebox_id=chargebox_id,
@@ -340,7 +351,7 @@ class OcppConnectionManager:
             )
             connection.server_url = url
             connection.subprotocol = version
-            self._store_connection_settings(get_cp_from_chargebox_id(chargebox_id), url, version)
+            self._store_connection_settings(openwb_cp, url, version)
 
             self._connections[chargebox_id] = connection
             connection.start_task = asyncio.create_task(
