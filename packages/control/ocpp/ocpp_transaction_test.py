@@ -1501,11 +1501,13 @@ def test_failed_stop_keeps_internal_transaction_id_and_releases_local_state(tran
 
 
 @pytest.mark.parametrize("transaction_id", [42, 0, -123])
-def test_offline_stop_is_replayed_once_after_reconnect(transaction_setup, mock_pub, transaction_id):
+@pytest.mark.parametrize("restarted", [False, True])
+def test_offline_stop_is_replayed_once_after_reconnect(transaction_setup, mock_pub, transaction_id, restarted):
     coordinator, connection, openwb_cp = transaction_setup
     connection.cp._start_transaction.return_value.transaction_id = transaction_id
 
     async def check():
+        nonlocal coordinator
         await coordinator.start("box-1", 1, "TAG", 100)
         coordinator._ensure_connected.return_value = None
         assert await coordinator.stop("box-1", 150, "", "EVDisconnected") is False
@@ -1514,6 +1516,12 @@ def test_offline_stop_is_replayed_once_after_reconnect(transaction_setup, mock_p
             "imported": 150, "reason": "EVDisconnected", "timestamp": ANY,
             "finalized": True,
         }]
+        assert openwb_cp.data.get.ocpp.transaction_id is None
+        assert openwb_cp.data.get.ocpp.transaction_id_tag is None
+        assert openwb_cp.data.get.ocpp.tag_accepted is False
+        if restarted:
+            # Nach Neustart steht nur noch das persistierte Modell zur Verfügung.
+            coordinator = TransactionCoordinator(ensure_connected=AsyncMock(return_value=connection))
         connection.cp._authorize.reset_mock()
         connection.cp._authorize.side_effect = RuntimeError("must not authorize replay")
         coordinator._ensure_connected.return_value = connection
@@ -1533,6 +1541,10 @@ def test_offline_stop_is_replayed_once_after_reconnect(transaction_setup, mock_p
     )
     assert openwb_cp.data.get.ocpp.pending_transactions == []
     assert coordinator.get_state("box-1") == TransactionState.IDLE
+    assert connection.cp.transaction_id is None
+    assert openwb_cp.data.get.ocpp.transaction_id is None
+    assert openwb_cp.data.get.ocpp.transaction_id_tag is None
+    assert openwb_cp.data.get.ocpp.tag_accepted is False
     assert mock_pub.pub.call_args_list.count(
         call("openWB/set/chargepoint/1/get/ocpp/pending_transactions", [])
     ) == 1
@@ -1938,7 +1950,7 @@ def test_remote_start_checks_both_connector_availabilities(handler_setup, monkey
     monkeypatch.setattr(data, "data", SimpleNamespace(
         optional_data=SimpleNamespace(data=SimpleNamespace(rfid=SimpleNamespace(active=True))),
         ev_data={},
-    ))
+    ), raising=False)
 
     async def check():
         return await make_charge_point().remote_start_transaction("TAG", 1)
@@ -1964,7 +1976,7 @@ def test_remote_start_requires_local_rfid_permission(
     monkeypatch.setattr(data, "data", SimpleNamespace(
         optional_data=SimpleNamespace(data=SimpleNamespace(rfid=SimpleNamespace(active=rfid_active))),
         ev_data={"ev1": SimpleNamespace(data=SimpleNamespace(tag_id=vehicle_tags))},
-    ))
+    ), raising=False)
 
     async def check():
         return await make_charge_point().remote_start_transaction("TAG", 1)
@@ -1987,7 +1999,7 @@ def test_remote_start_rejects_stop_flags_without_forwarding_tag(handler_setup, m
     monkeypatch.setattr(data, "data", SimpleNamespace(
         optional_data=SimpleNamespace(data=SimpleNamespace(rfid=SimpleNamespace(active=True))),
         ev_data={},
-    ))
+    ), raising=False)
 
     async def check():
         response = await make_charge_point().remote_start_transaction("TAG", 1)
@@ -2037,7 +2049,7 @@ def identity_change_setup(monkeypatch):
         optional_data=SimpleNamespace(data=SimpleNamespace(ocpp=SimpleNamespace(
             config=SimpleNamespace(active=True),
         ))),
-    ))
+    ), raising=False)
     connection = SimpleNamespace(boot_accepted=True, cp=SimpleNamespace(
         openwb_cp=cp, _stop_transaction=AsyncMock(return_value=SimpleNamespace()),
         _authorize=AsyncMock(return_value=SimpleNamespace(id_tag_info={"status": "Accepted"})),
@@ -2485,7 +2497,7 @@ def test_restored_offline_stop_is_confirmed_on_origin_before_server_change(trans
     config = SimpleNamespace(active=True, url="wss://new.example/ocpp", version="ocpp1.6")
     monkeypatch.setattr(data, "data", SimpleNamespace(
         optional_data=SimpleNamespace(data=SimpleNamespace(ocpp=SimpleNamespace(config=config))), cp_data={"cp1": cp},
-    ))
+    ), raising=False)
     monkeypatch.setattr(ocpp_connection_manager, "get_cp_from_chargebox_id", lambda _: cp)
     coordinator = TransactionCoordinator(AsyncMock())
 
