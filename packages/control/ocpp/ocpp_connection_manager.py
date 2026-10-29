@@ -174,8 +174,7 @@ class OcppConnectionManager:
         chargebox_id: str,
     ) -> Optional[OcppConnection]:
         """
-        Sofortige Wiederverbindung erzwingen.
-        -> Für reset des Ladepunkts
+        Eine sofortige Wiederverbindung erzwingen, sofern die Ladebox aktiv ist.
         """
         if not self.is_wanted(chargebox_id):
             return None
@@ -490,7 +489,7 @@ class OcppConnectionManager:
     ) -> None:
         chargebox_id = connection.chargebox_id
 
-        # Mit connect/disconnect serialiseren. Ohne Lock könnte das Cleanup
+        # Mit connect/disconnect serialisieren. Ohne Lock könnte das Cleanup
         # einer alten Verbindung nach dem Aufbau ihrer Nachfolgerin laufen
         lock = self._get_connect_lock(chargebox_id)
         async with lock:

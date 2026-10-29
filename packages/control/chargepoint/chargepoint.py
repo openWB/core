@@ -186,21 +186,12 @@ class Chargepoint(ChargepointRfidMixin, Load):
                       "Stecker abziehen und erneut verbinden."
             state = False
         elif not self.data.get.ocpp.connected and self.data.get.ocpp.transaction_id is None:
-            print("#####################################")
-            print("OCPP NO CONN")
-            print("#####################################")
             message = "Keine Ladung: Verbindung zum OCPP-Server fehlt."
             state = False
         elif not state:
-            print("#####################################")
-            print("OCPP nicht verfügbar")
-            print("#####################################")
             message = "Keine Ladung: Ladepunkt ist OCPP-seitig nicht verfügbar."
             state = False
         elif self.data.get.ocpp.reset:
-            print("#####################################")
-            print("OCPP Reset aktiv")
-            print("#####################################")
             message = "Keine Ladung: Transaktion vom OCPP-Server durch ein Reset gestoppt. " \
                       "Stecker abziehen und erneut verbinden."
             state = False
@@ -209,24 +200,14 @@ class Chargepoint(ChargepointRfidMixin, Load):
             message = "Keine Ladung: Buchsenentriegelung angefordert. Stecker abziehen und erneut verbinden."
             state = False
         elif self.data.get.ocpp.remote_stop:
-            print("#####################################")
-            print("OCPP Remote Stop aktiv")
-            print("#####################################")
             message = "Keine Ladung: Transaktion vom OCPP-Server gestoppt. " \
                       "Stecker abziehen und erneut verbinden."
             state = False
         elif self.data.get.ocpp.rfid_stop:
-            print("#####################################")
-            print("OCPP RFID Stop aktiv")
-            print("#####################################")
             message = "Keine Ladung: Transaktion per RFID gestoppt. " \
                       "Stecker abziehen und erneut verbinden."
             state = False
         elif not self.data.get.ocpp.tag_accepted:
-            print("#####################################")
-            print("OCPP Tag nicht akzeptiert")
-            print("#####################################")
-
             message = {
                 "init": "RFID-Autorisierung am OCPP-Server läuft.",
                 "start_pending": "OCPP-Transaktionstart wird vorbereitet.",
@@ -944,12 +925,6 @@ class Chargepoint(ChargepointRfidMixin, Load):
             # Status bei jedem Backendupdate an den OCPP-Client übergeben.
             # Der Client filtert unveränderte Statusmeldungen vor dem Versand.
             if data.data.optional_data.data.ocpp.config.active and get_chargebox_id(self):
-                print(
-                    f"                                                             "
-                    f"                                           {self.get_ocpp_status()}")
-                print(
-                    f"                                                             "
-                    f"                                           {self.get_ocpp_status_connector_0()}")
                 self.ocpp_send_status_notification()
 
             chargebox_id = get_chargebox_id(self)

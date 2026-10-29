@@ -146,7 +146,6 @@ class OcppClient:
         )
 
     def disconnect(self, chargebox_id: str) -> None:
-        print(f"# Client___Disconnecting chargebox {chargebox_id}")
         self._submit(
             self.connection_manager.disconnect(chargebox_id),
             f"disconnect {chargebox_id}",
@@ -433,8 +432,9 @@ class OcppClient:
         fault_state = openwb_cp.data.get.fault_state
         fault_state_str = openwb_cp.data.get.fault_str
 
-        # Wir müssen hier die breits aufgebaute Verbindung nutzen,
-        # damit wir nicht in einen Deadlock geraten.
+        # Die Verbindung wurde bereits aufgebaut. Sie muss hier explizit
+        # übergeben werden, damit kein erneuter Verbindungsaufbau und dadurch
+        # während der Initialisierung kein Deadlock entsteht.
         await self._send_status_notification(
             connection.chargebox_id,
             0,
@@ -721,8 +721,9 @@ class OcppClient:
         if not force and self._last_update.get(key) == current_status:
             return
 
-        # Sicherstellen, das das Status_Notificarion aus dem CP Update-Loop nicht
-        # in die Status_Notification von Boot dazwischen funkt
+        # Statusmeldungen pro Ladepunkt und Connector serialisieren, damit
+        # Meldungen aus dem CP-Update-Loop nicht gleichzeitig mit den initialen
+        # Statusmeldungen nach BootNotification gesendet werden.
         if connection is None:
             connection = await self.connection_manager.connect(chargebox_id)
             if connection is None:
@@ -734,9 +735,6 @@ class OcppClient:
         async with lock:
             if not force and self._last_update.get(key) == current_status:
                 return
-            print(
-                f"# Sending status notification for chargebox_id={chargebox_id}, connector_id={connector_id}, "
-                f"status={status}, fault_state={fault_state}, fault_state_str={fault_state_str}")
             log.debug(
                 f"Sending status notification for chargebox_id={chargebox_id}, connector_id={connector_id}, "
                 f"status={status}, fault_state={fault_state}, fault_state_str={fault_state_str}"

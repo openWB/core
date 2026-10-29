@@ -107,8 +107,7 @@ class OcppChargePoint(cp):
                                  id_tag: str,
                                  imported: int) -> Optional[object]:
 
-        print(f"# START_TRANSACTION        CP {self.openwb_num} OCPP_Nr: {self.chargebox_id}")
-        log.debug(f"Start Transaktion für CP {self.openwb_num} mit OCPP_Nr: {self.chargebox_id}")
+        log.debug(f"Start Transaktion für CP_Nr: {self.openwb_num} mit OCPP_Nr: {self.chargebox_id}")
         request = call.StartTransaction(
             connector_id=connector_id,
             id_tag=id_tag if id_tag else "",
@@ -117,15 +116,13 @@ class OcppChargePoint(cp):
         )
 
         response: call_result.StartTransaction = await self.call(request)
-        print(f"# StartTransaction response: {response}")
         log.debug(f"StartTransaction response: {response}")
 
         return response
 
     async def _boot_notification(self):
         try:
-            print(f"# BOOT_NOTIFICATION        CP {self.openwb_num} OCPP_Nr: {self.chargebox_id}")
-            log.debug(f"Boot Notification für CP {self.openwb_num} mit OCPP_Nr: {self.chargebox_id}")
+            log.debug(f"Boot Notification für CP_Nr: {self.openwb_num} mit OCPP_Nr: {self.chargebox_id}")
             request = call.BootNotification(
                 charge_point_model=self.openwb_cp.chargepoint_module.config.type,
                 charge_point_vendor="openWB",
@@ -133,12 +130,10 @@ class OcppChargePoint(cp):
                 meter_serial_number=self.openwb_cp.data.get.serial_number
             )
             response: call_result.BootNotification = await self.call(request)
-            print(f"# BootNotification response: {response}")
             log.debug(f"BootNotification response: {response}")
             return response
 
         except Exception as e:
-            print(f"# Exception occurred: {e}")
             log.exception(
                 f"Exception occurred during Boot Notification for CP Nr: {self.openwb_num} "
                 f"OCPP_Nr: {self.chargebox_id}: {e}")
@@ -147,14 +142,12 @@ class OcppChargePoint(cp):
     async def _authorize(self,
                          id_tag: str) -> Optional[object]:
 
-        print(f"# AUTHORIZE        CP_Nr: {self.openwb_num}  OCPP_Nr: {self.chargebox_id}")
-        log.debug("Authorize request for CP %s OCPP_Nr: %s", self.openwb_num, self.chargebox_id)
+        log.debug("Authorize request for CP_Nr: %s OCPP_Nr: %s", self.openwb_num, self.chargebox_id)
         request = call.Authorize(
             id_tag=id_tag if id_tag else ""
         )
 
         response: call_result.Authorize = await self.call(request)
-        print(f"# AUTHORIZE response: {response}")
         log.debug(f"Authorize response: {response}")
 
         return response
@@ -165,8 +158,7 @@ class OcppChargePoint(cp):
                                 id_tag: str,
                                 meter_stop: int, timestamp: str) -> Optional[object]:
 
-        print(f"# STOP_TRANSACTION        CP_Nr: {self.openwb_num}  OCPP_Nr: {self.chargebox_id}")
-        log.debug(f"Stop Transaction for CP {self.openwb_num} OCPP_Nr: {self.chargebox_id}")
+        log.debug(f"Stop Transaction for CP_Nr: {self.openwb_num} OCPP_Nr: {self.chargebox_id}")
         request = call.StopTransaction(
             meter_stop=int(meter_stop),
             transaction_id=transaction_id,
@@ -175,16 +167,13 @@ class OcppChargePoint(cp):
             timestamp=timestamp,
         )
         response: call_result.StopTransaction = await self.call(request)
-        print(f"# StopTransaction response: {response}")
         log.debug(f"StopTransaction response: {response}")
         return response
 
     async def _heartbeat(self) -> Optional[object]:
-        print(f"# HEART_BEAT              CP_Nr: {self.openwb_num}  OCPP_Nr: {self.chargebox_id}")
-        log.debug(f"Heartbeat for CP {self.openwb_num} OCPP_Nr: {self.chargebox_id}")
+        log.debug(f"Heartbeat for CP_Nr: {self.openwb_num} OCPP_Nr: {self.chargebox_id}")
         request = call.Heartbeat()
         response: call_result.Heartbeat = await self.call(request)
-        print(f"# Heartbeat response: {response}")
         log.debug(f"Heartbeat response: {response}")
         return response
 
@@ -192,9 +181,8 @@ class OcppChargePoint(cp):
                             connector_id: int,
                             transaction_id: Optional[int],
                             meter_value: list) -> Optional[object]:
-        print(f"# METER_VALUES            CP_Nr: {self.openwb_num}  OCPP_Nr: {self.chargebox_id}")
         log.debug(
-            f"Send MeterValues for CP {self.openwb_num} OCPP_Nr: {self.chargebox_id} "
+            f"Send MeterValues for CP_Nr: {self.openwb_num} OCPP_Nr: {self.chargebox_id} "
             f"transaction_id: {transaction_id}, meter_value: {meter_value}")
         request = call.MeterValues(
             connector_id=connector_id,
@@ -202,7 +190,6 @@ class OcppChargePoint(cp):
             meter_value=meter_value
         )
         response: call_result.MeterValues = await self.call(request)
-        print(f"# MeterValues response: {response}")
         log.debug(f"MeterValues response: {response}")
         return response
 
@@ -213,9 +200,7 @@ class OcppChargePoint(cp):
                                    status: ChargePointStatus,
                                    force: bool = False) -> Optional[object]:
 
-        print(f"# STATUS_NOTIFICATION     CP_Nr: {self.openwb_num}  OCPP_Nr: {self.chargebox_id}")
-        print(f"# --------- Status notification requested for connector: {connector_id}")
-        log.debug(f"Status change detected for CP {self.openwb_num} mit OCPP_Nr: {self.chargebox_id} "
+        log.debug(f"Status change detected for CP_Nr: {self.openwb_num} mit OCPP_Nr: {self.chargebox_id} "
                   f"New Status: {(status, get_ocpp_error_code(fault_state))} "
                   f"for connector: {connector_id}")
 
@@ -230,7 +215,6 @@ class OcppChargePoint(cp):
 
         )
         response: call_result.StatusNotification = await self.call(request)
-        print(f"# StatusNotification response: {response}")
         log.debug(f"StatusNotification response: {response}")
 
         return response
@@ -244,11 +228,7 @@ class OcppChargePoint(cp):
     ):
         try:
             availability_type = type
-            print(
-                f"# CHANGE_AVAILABILITY     CP_Nr: {self.openwb_num} "
-                f"OCPP_Nr: {self.chargebox_id}"
-            )
-            log.debug(f"ChangeAvailability request for CP {self.openwb_num} mit OCPP_Nr: {self.chargebox_id} "
+            log.debug(f"ChangeAvailability request for CP_Nr: {self.openwb_num} mit OCPP_Nr: {self.chargebox_id} "
                       f"Connector: {connector_id} Type: {availability_type}")
 
             if connector_id not in (0, 1):
@@ -341,11 +321,6 @@ class OcppChargePoint(cp):
 
     @on(Action.get_configuration)
     async def get_configuration(self, key=None, **kwargs):
-        print(
-            f"# GET_CONFIGURATION     CP_Nr: {self.openwb_num} "
-            f"OCPP_Nr: {self.chargebox_id} "
-            f"Key: {key}"
-        )
         log.debug("GetConfiguration called for CP_Nr: %s, OCPP_Nr: %s, Key: %s",
                   self.openwb_num, self.chargebox_id, key)
         unknown_keys = []
@@ -383,12 +358,6 @@ class OcppChargePoint(cp):
 
     @on(Action.change_configuration)
     async def change_configuration(self, key, value, **kwargs):
-        print(
-            f"# CHANGE_CONFIGURATION  CP_Nr: {self.openwb_num} "
-            f"OCPP_Nr: {self.chargebox_id} "
-            f"Key: {key} "
-            f"Value: {value}"
-        )
         log.debug("ChangeConfiguration called for CP_Nr: %s, OCPP_Nr: %s, Key: %s, Value: %s",
                   self.openwb_num, self.chargebox_id, key, value)
         configuration = self.openwb_cp.data.get.ocpp.config
@@ -472,13 +441,9 @@ class OcppChargePoint(cp):
             return call_result.RemoteStartTransaction(
                 status=RemoteStartStopStatus.rejected
             )
-        print(
-            f"# REMOTE_START_TRANSACTION  CP_Nr: {self.openwb_num} "
-            f"OCPP_Nr: {self.chargebox_id} "
-        )
 
         log.debug(
-            "RemoteStartTransaction für CP %s / OCPP %s / Connector %s",
+            "RemoteStartTransaction für CP_Nr: %s OCPP_Nr: %s Connector %s",
             self.openwb_num,
             self.chargebox_id,
             connector_id,
@@ -532,16 +497,8 @@ class OcppChargePoint(cp):
             return call_result.RemoteStopTransaction(
                 status=RemoteStartStopStatus.rejected
             )
-
-        print(
-            f"# REMOTE_STOP_TRANSACTION  CP_Nr: {self.openwb_num} "
-            f"OCPP_Nr: {self.chargebox_id} "
-            f"\nTransaction ID: {transaction_id} "
-            f"\nKwargs: {kwargs}"
-        )
-
         log.debug(
-            "RemoteStartTransaction für CP %s / OCPP %s / Transaction ID %s",
+            "RemoteStopTransaction für CP_Nr: %s OCPP_Nr: %s  Transaction ID %s",
             self.openwb_num,
             self.chargebox_id,
             transaction_id,
@@ -563,9 +520,8 @@ class OcppChargePoint(cp):
 
     @on(Action.unlock_connector)
     async def unlock_connector(self, connector_id: int, **kwargs):
-        print(f"# UNLOCK_CONNECTOR  CP_Nr: {self.openwb_num} OCPP_Nr: {self.chargebox_id} Connector ID: {connector_id}")
         log.debug(
-            "UnlockConnector request for CP %s / OCPP %s / Connector ID %s",
+            "UnlockConnector request für CP_Nr: %s OCPP_Nr: %s Connector ID %s",
             self.openwb_num,
             self.chargebox_id,
             connector_id,
@@ -581,11 +537,9 @@ class OcppChargePoint(cp):
                 result = await self.unlock_callback(self.chargebox_id)
                 status = {"unlocked": UnlockStatus.unlocked,
                           "not_supported": UnlockStatus.not_supported}.get(result, UnlockStatus.unlock_failed)
-                print(f"# UNLOCK_CONNECTOR  Await result: {status}")
                 return call_result.UnlockConnector(status=status)
             except Exception:
                 log.exception("UnlockConnector failed for %s", self.chargebox_id)
-                print("# UNLOCK_CONNECTOR Exception occurred")
                 return call_result.UnlockConnector(status=UnlockStatus.unlock_failed)
 
     @on(Action.clear_cache)
@@ -603,7 +557,6 @@ class OcppChargePoint(cp):
         call_unique_id: Optional[str] = None,
         **kwargs,
     ):
-        print(f"# RESET  CP_Nr: {self.openwb_num} OCPP_Nr: {self.chargebox_id} Type: {type}")
         log.debug(
             "OCPP Reset angefordert für CP_Nr: %s OCPP_Nr: %s Type: %s",
             self.openwb_num,
@@ -668,11 +621,6 @@ class OcppChargePoint(cp):
                               start_time: Optional[str] = None,
                               stop_time: Optional[str] = None,
                               **kwargs):
-        print(
-            f"# GET_DIAGNOSTICS  CP_Nr: {self.openwb_num} "
-            f"OCPP_Nr: {self.chargebox_id} "
-            f"Kwargs: {kwargs}"
-        )
         parsed_location = urlsplit(location)
         log.debug(
             "Get Diagnostics called for CP_Nr: %s, OCPP_Nr: %s, Scheme: %s, Host: %s,"
@@ -780,7 +728,6 @@ class OcppChargePoint(cp):
             # speichere den neuen Status
             self._diagnostics_status_stored = status
 
-        print(f"# Setting diagnostics status: {status}")
         log.debug("Sending DiagnosticsStatusNotification with status: %s", status)
         request = call.DiagnosticsStatusNotification(
             status=status

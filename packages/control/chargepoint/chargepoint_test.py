@@ -52,6 +52,46 @@ def test_ocpp_availability_status_and_permission(
         controller_status, connector_status]
 
 
+@pytest.mark.parametrize("local_block,local_message", [
+    (None, None),
+    ("manual", "Keine Ladung, da der Ladepunkt gesperrt ist."),
+    ("grid", "Ladepunkt gesperrt, da der Netzschutz aktiv ist."),
+    ("unplugged", "Keine Ladung, da kein Auto angesteckt ist."),
+    ("autolock", "Keine Ladung, da Sperren nach Uhrzeit aktiv ist."),
+])
+@pytest.mark.parametrize("ocpp_state,ocpp_message", [
+    ("ready", None),
+    ("disabled", None),
+    ("disconnected", "Keine Ladung: Verbindung zum OCPP-Server fehlt."),
+    ("unconfirmed", "Keine Ladung: Startbestätigung vom OCPP-Server fehlt. "
+                    "Stecker abziehen und erneut verbinden."),
+])
+def test_charging_permission_combines_local_and_ocpp_messages(
+    mock_data, monkeypatch, local_block, local_message, ocpp_state, ocpp_message
+):
+    cp = Chargepoint(1, None)
+    cp.template = CpTemplate()
+    cp.data.config.ocpp_chargebox_id = "box-1"
+    cp.data.get.plug_state = local_block != "unplugged"
+    cp.data.set.manual_lock = local_block == "manual"
+    general = data.data.general_data.data
+    general.grid_protection_configured = local_block == "grid"
+    general.grid_protection_active = local_block == "grid"
+    general.grid_protection_timestamp = None
+    data.data.optional_data.data.rfid.active = False
+    monkeypatch.setattr(cp.template, "is_locked_by_autolock", lambda _: local_block == "autolock")
+    data.data.optional_data.data.ocpp.config.active = ocpp_state != "disabled"
+    cp.data.get.ocpp.connected = ocpp_state != "disconnected"
+    cp.data.get.ocpp.tag_accepted = True
+    if ocpp_state == "unconfirmed":
+        cp.data.get.ocpp.authorization_flow_status = "start_unconfirmed"
+
+    possible, message = cp.is_charging_possible()
+
+    assert possible is (local_block is None and ocpp_message is None)
+    assert message == (" ".join(text for text in (local_message, ocpp_message) if text) or None)
+
+
 @pytest.mark.parametrize("stop_flag", ["remote_stop", "reset", "unlock_stop", "rfid_stop"])
 @pytest.mark.parametrize("plugged,transaction_id,charging,current,expected", [
     (True, None, False, 0, ChargePointStatus.finishing),

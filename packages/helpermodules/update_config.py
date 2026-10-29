@@ -166,6 +166,20 @@ class UpdateConfig:
         "^openWB/chargepoint/[0-9]+/get/connected_vehicle/config$",
         "^openWB/chargepoint/[0-9]+/get/rfid$",
         "^openWB/chargepoint/[0-9]+/get/rfid_timestamp$",
+        "^openWB/chargepoint/[0-9]+/get/ocpp/availability$",
+        "^openWB/chargepoint/[0-9]+/get/ocpp/authorization_flow_status$",
+        "^openWB/chargepoint/[0-9]+/get/ocpp/config$",
+        "^openWB/chargepoint/[0-9]+/get/ocpp/last_connection_settings$",
+        "^openWB/chargepoint/[0-9]+/get/ocpp/pending_availability$",
+        "^openWB/chargepoint/[0-9]+/get/ocpp/pending_transactions$",
+        "^openWB/chargepoint/[0-9]+/get/ocpp/previous_chargebox_id$",
+        "^openWB/chargepoint/[0-9]+/get/ocpp/remote_stop$",
+        "^openWB/chargepoint/[0-9]+/get/ocpp/reset$",
+        "^openWB/chargepoint/[0-9]+/get/ocpp/rfid_stop$",
+        "^openWB/chargepoint/[0-9]+/get/ocpp/tag_accepted$",
+        "^openWB/chargepoint/[0-9]+/get/ocpp/transaction_id$",
+        "^openWB/chargepoint/[0-9]+/get/ocpp/transaction_id_tag$",
+        "^openWB/chargepoint/[0-9]+/get/ocpp/unlock_stop$",
         "^openWB/chargepoint/[0-9]+/set/charge_template$",
         "^openWB/chargepoint/[0-9]+/set/current$",
         "^openWB/chargepoint/[0-9]+/set/manual_lock$",
@@ -357,6 +371,7 @@ class UpdateConfig:
         "^openWB/internal_chargepoint/[0-1]/get/state_str$",
         "^openWB/internal_chargepoint/[0-1]/get/rfid$",
         "^openWB/internal_chargepoint/[0-1]/get/rfid_timestamp$",
+        "^openWB/internal_chargepoint/[0-1]/get/unlock_blocked$",
 
         "^openWB/io/action/[0-9]+/config$",
         "^openWB/io/action/[0-9]+/timestamp$",
@@ -665,34 +680,6 @@ class UpdateConfig:
         "^openWB/system/update_in_progress$",
         "^openWB/system/usage_terms_acknowledged$",
         "^openWB/system/version$",
-
-
-        # todo
-        # oben einsortieren
-        # Die Folgenden Topics müssen unbedingt hier stehen, damit die Daten auch nach einem Neustart
-        # noch verfübar sind und nicht verloren gehen
-        "^openWB/chargepoint/[0-9]+/get/ocpp/config$",
-        "^openWB/chargepoint/[0-9]+/get/ocpp/last_connection_settings$",
-
-        "^openWB/chargepoint/[0-9]+/get/ocpp/availability$",
-        "^openWB/chargepoint/[0-9]+/get/ocpp/pending_availability$",
-
-        "^openWB/chargepoint/[0-9]+/get/ocpp/pending_transactions$",
-        "^openWB/chargepoint/[0-9]+/get/ocpp/tag_accepted$",
-        "^openWB/chargepoint/[0-9]+/get/ocpp/transaction_id_tag$",
-        "^openWB/chargepoint/[0-9]+/get/ocpp/transaction_id$",
-
-        "^openWB/chargepoint/[0-9]+/get/ocpp/remote_stop$",
-        "^openWB/chargepoint/[0-9]+/get/ocpp/reset$",
-        "^openWB/chargepoint/[0-9]+/get/ocpp/rfid_stop$",
-
-
-        "^openWB/chargepoint/[0-9]+/get/ocpp/authorization_flow_status$",
-        "^openWB/chargepoint/[0-9]+/get/ocpp/previous_chargebox_id$",
-        "^openWB/chargepoint/[0-9]+/get/ocpp/unlock_stop$",
-        "^openWB/internal_chargepoint/[0-9]+/get/unlock_blocked$",
-
-
     ]
 
     default_topics_with_wildcards = (
