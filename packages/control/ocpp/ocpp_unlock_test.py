@@ -44,7 +44,8 @@ def test_unlock_keeps_receiving_call_results_until_hardware_finishes(monkeypatch
             await release.wait()
             return result
 
-        async with _receiving_charge_point(monkeypatch, unlock) as (cp, incoming, outgoing):
+        callback = AsyncMock(side_effect=unlock)
+        async with _receiving_charge_point(monkeypatch, callback) as (cp, incoming, outgoing):
             heartbeat = asyncio.create_task(cp._heartbeat())
             try:
                 request = json.loads(await asyncio.wait_for(outgoing.get(), 1))
@@ -61,6 +62,7 @@ def test_unlock_keeps_receiving_call_results_until_hardware_finishes(monkeypatch
                 release.set()
                 response = json.loads(await asyncio.wait_for(outgoing.get(), 1))
                 assert response == [3, "unlock-1", {"status": status}]
+                callback.assert_awaited_once_with("box")
             finally:
                 heartbeat.cancel()
                 await asyncio.gather(heartbeat, return_exceptions=True)
@@ -130,20 +132,6 @@ def test_connection_cleanup_cancels_waiting_unlock_request(monkeypatch):
             assert outgoing.empty()
 
     asyncio.run(run())
-
-
-@pytest.mark.parametrize("result,status", [("unlocked", UnlockStatus.unlocked),
-                                           ("failed", UnlockStatus.unlock_failed),
-                                           ("not_supported", UnlockStatus.not_supported)])
-def test_ocpp_reports_actual_hardware_result(monkeypatch, result, status):
-    monkeypatch.setattr(ocpp_chargepoint, "get_cp_from_chargebox_id", lambda _: SimpleNamespace(num=1))
-    callback = AsyncMock(return_value=result)
-
-    async def run():
-        cp = OcppChargePoint("box", Mock(), unlock_callback=callback)
-        return await cp.unlock_connector(1)
-    assert asyncio.run(run()).status == status
-    callback.assert_awaited_once_with("box")
 
 
 def test_invalid_connector_does_not_trigger_hardware(monkeypatch):
