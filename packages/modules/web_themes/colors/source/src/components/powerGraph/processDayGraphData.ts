@@ -171,7 +171,7 @@ function transformRow(currentRow: RawDayGraphDataItem): GraphDataItem {
 	// Consumers
 	currentItem.consumers = 0
 	Object.entries(currentRow.consumer).forEach(([id, values]) => {
-		if (id != 'all') {
+		if (id != 'all' && !consumers.get(+id.slice(8))?.countAsHouse) {
 			currentItem[id] = values.power_imported ?? 0
 			if (!registry.keys().includes(id)) {
 				const consumer = consumers.get(+id.slice(8))
