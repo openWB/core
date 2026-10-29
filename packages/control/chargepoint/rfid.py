@@ -58,6 +58,12 @@ class ChargepointRfidMixin:
         """
         msg = ""
         if self.data.get.rfid is not None:
+            if (data.data.optional_data.data.ocpp.config.active and get_chargebox_id(self)
+                    and not all(self.data.get.ocpp.availability)
+                    and self.data.get.ocpp.transaction_id is None):
+                # Auch beim Aufruf aus update_ev() keine Wartephase für gesperrte Ladepunkte beginnen.
+                self._clear_scanned_rfid()
+                return
             rfid = self.data.get.rfid
             if data.data.optional_data.data.rfid.active:
                 if (rfid in self.template.data.valid_tags or

@@ -741,6 +741,13 @@ class Chargepoint(ChargepointRfidMixin, Load):
                     f"openWB/set/chargepoint/{self.num}/get/ocpp/authorization_flow_status", None)
             return
 
+        if (not all(self.data.get.ocpp.availability)
+                and self.data.get.ocpp.transaction_id is None):
+            # Neue Scans verwerfen; RFID-Stops bestehender Transaktionen bleiben möglich.
+            if self.data.get.rfid is not None:
+                self._clear_scanned_rfid()
+            return
+
         data.data.ocpp_client.finish_rfid_authorization(
             chargebox_id,
             self,
