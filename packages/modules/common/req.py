@@ -1,6 +1,6 @@
 import copy
 import logging
-from requests import Session
+from requests import Response, Session
 import urllib3
 from functools import wraps
 import warnings
@@ -47,8 +47,22 @@ class CustomSession(Session):
         return new_copy
 
 
+def _log_response(response: Response, *args, **kwargs) -> None:
+    if not log.isEnabledFor(logging.DEBUG):
+        return
+    content_type = response.headers.get('Content-Type', '').split(';', 1)[0].strip().lower()
+    binary = (content_type.startswith(('image/', 'audio/', 'video/', 'font/')) or
+              content_type in ('application/zip', 'application/x-zip-compressed',
+                               'application/octet-stream', 'application/pdf', 'application/gzip'))
+    # The portal can omit/mislabel the content type of ZIP downloads.
+    if binary or response.content.startswith((b'PK\x03\x04', b'PK\x05\x06', b'PK\x07\x08')):
+        log.debug("Get-Response: binary data (%s, %s bytes)", content_type or 'unknown type', len(response.content))
+    else:
+        log.debug("Get-Response: %s", response.text)
+
+
 def get_http_session() -> CustomSession:
     session = CustomSession()
     session.hooks['response'].append(lambda r, *args, **kwargs: r.raise_for_status())
-    session.hooks['response'].append(lambda r, *args, **kwargs: log.debug("Get-Response: " + r.text))
+    session.hooks['response'].append(_log_response)
     return session
