@@ -10,6 +10,7 @@ class ComponentType(Enum):
     COUNTER = "counter"
     FLEXIBLE_TARIFF = "dynamic_tariff"
     GRID_FEE = "grid_tariff"
+    WALLBOX_SOCKET = "wallbox_socket"
     INVERTER = "inverter"
     IO = "io"
     VEHICLE = "vehicle"
@@ -37,6 +38,8 @@ def type_to_topic_mapping(component_type: str) -> str:
         return "consumer"
     elif "counter" in component_type:
         return "counter"
+    elif "wallbox_socket" in component_type:
+        return "internal_socket"
     elif "inverter" in component_type:
         return "pv"
     elif ComponentType.FLEXIBLE_TARIFF.value in component_type:

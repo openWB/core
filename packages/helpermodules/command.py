@@ -413,6 +413,16 @@ class Command:
                 payload, connection_id,
                 f'Ladepunkt mit ID \'{cp_id}\' existiert nicht.', MessageType.ERROR)
             return
+        for consumer in SubData.consumer_data.values():
+            module = consumer.data.module
+            if (getattr(module, "type", None) == "wallbox_socket" and
+                    module.configuration.chargepoint_id == cp_id):
+                pub_user_message(
+                    payload, connection_id,
+                    f'Ladepunkt mit ID \'{cp_id}\' kann nicht gelöscht werden, da er der Wallbox-Steckdose '
+                    f'\'{module.name}\' zugeordnet ist. Bitte zuerst die Zuordnung bei der Wallbox-Steckdose ändern.',
+                    MessageType.ERROR)
+                return
         cp_type = cp.chargepoint.data.config.type
         if cp_type == "external_openwb":
             cp_ip = cp.chargepoint.data.config.configuration.get("ip_address")
@@ -1251,6 +1261,9 @@ class Command:
                 payload, connection_id,
                 f'Die ID \'{payload["data"]["consumer_id"]}\' ist größer als die maximal vergebene '
                 f'ID \'{self.max_id_hierarchy}\'.', MessageType.ERROR)
+        consumer = SubData.consumer_data.get(f'consumer{payload["data"]["consumer_id"]}')
+        if consumer is not None and getattr(consumer.data.module, "type", None) == "wallbox_socket":
+            consumer.module.switch_off()
         ProcessBrokerBranch(f'consumer/{payload["data"]["consumer_id"]}/').remove_topics()
         SubData.counter_all_data.hierarchy_remove_item(payload["data"]["consumer_id"])
         Pub().pub("openWB/set/counter/get/hierarchy", SubData.counter_all_data.data.get.hierarchy)
