@@ -92,6 +92,57 @@ def test_charging_permission_combines_local_and_ocpp_messages(
     assert message == (" ".join(text for text in (local_message, ocpp_message) if text) or None)
 
 
+@pytest.mark.parametrize("plugged,tag_source,expected", [
+    (False, None, None),
+    (False, "scan", None),
+    (True, None, "Keine Ladung: RFID zur OCPP-Freigabe erforderlich."),
+    (True, "scan", "Warte auf OCPP-Transaktionsfreigabe."),
+    (True, "assigned", "Warte auf OCPP-Transaktionsfreigabe."),
+    (True, "vehicle", "Warte auf OCPP-Transaktionsfreigabe."),
+])
+@pytest.mark.parametrize("flow_status", [None, "accepted"])
+def test_ocpp_wait_message_preserves_charging_block(mock_data, plugged, tag_source, expected, flow_status):
+    cp = Chargepoint(1, None)
+    cp.template = CpTemplate()
+    cp.data.config.ocpp_chargebox_id = "box-1"
+    data.data.optional_data.data.ocpp.config.active = True
+    cp.data.get.ocpp.connected = True
+    cp.data.get.ocpp.authorization_flow_status = flow_status
+    cp.data.get.plug_state = plugged
+    if tag_source == "scan":
+        cp.data.get.rfid = "TAG"
+    elif tag_source == "assigned":
+        cp.data.set.rfid = "TAG"
+    elif tag_source == "vehicle":
+        cp.data.get.vehicle_id = "TAG"
+
+    assert cp._is_ocpp() == (False, expected)
+    possible, message = cp.is_charging_possible()
+    assert possible is False
+    assert message == (expected if plugged else "Keine Ladung, da kein Auto angesteckt ist.")
+
+
+@pytest.mark.parametrize("plugged", [False, True])
+@pytest.mark.parametrize("flow_status,expected", [
+    ("init", "RFID-Autorisierung am OCPP-Server läuft."),
+    ("start_pending", "OCPP-Transaktionstart wird vorbereitet."),
+    ("start_authorizing", "RFID-Autorisierung am OCPP-Server läuft."),
+    ("start_starting", "RFID akzeptiert. OCPP-Transaktion wird gestartet."),
+    ("start_rejected", "Keine Ladung: OCPP Authorisierung abgelehnt."),
+    ("start_error", "Keine Ladung: Fehler beim OCPP-Transaktionstart."),
+])
+def test_ocpp_specific_message_takes_priority_over_wait_message(mock_data, plugged, flow_status, expected):
+    cp = Chargepoint(1, None)
+    cp.data.config.ocpp_chargebox_id = "box-1"
+    data.data.optional_data.data.ocpp.config.active = True
+    cp.data.get.ocpp.connected = True
+    cp.data.get.ocpp.authorization_flow_status = flow_status
+    cp.data.get.plug_state = plugged
+    cp.data.get.rfid = "TAG"
+
+    assert cp._is_ocpp() == (False, expected)
+
+
 @pytest.mark.parametrize("stop_flag", ["remote_stop", "reset", "unlock_stop", "rfid_stop"])
 @pytest.mark.parametrize("plugged,transaction_id,charging,current,expected", [
     (True, None, False, 0, ChargePointStatus.finishing),
