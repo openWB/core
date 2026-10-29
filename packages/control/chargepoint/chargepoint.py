@@ -6,7 +6,6 @@ from fnmatch import fnmatch
 
 from ocpp.v16.enums import ChargePointStatus
 
-from control.algorithm.utils import get_medium_charging_current
 from control.chargelog import chargelog
 from control import data
 from control.chargemode import Chargemode
