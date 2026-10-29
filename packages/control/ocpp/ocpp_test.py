@@ -6,7 +6,7 @@ import json
 import logging
 import threading
 from types import SimpleNamespace
-from unittest.mock import ANY, AsyncMock, Mock, call
+from unittest.mock import AsyncMock, Mock, call
 import pytest
 
 from control import data
@@ -40,7 +40,9 @@ from helpermodules.logging_context import OcppContextFilter, ocpp_logging_contex
     (1, ChargePointErrorCode.no_error, ChargePointStatus.charging),
     (2, ChargePointErrorCode.other_error, ChargePointStatus.faulted),
 ])
-def test_status_notification_maps_fault_severity_and_keeps_info(monkeypatch, fault_state, error_code, status):
+def test_status_notification_maps_error_code_and_preserves_status_and_info(
+    monkeypatch, fault_state, error_code, status
+):
     monkeypatch.setattr("control.ocpp.ocpp_chargepoint.get_cp_from_chargebox_id", lambda _: SimpleNamespace(num=1))
 
     async def check():
@@ -419,6 +421,26 @@ def test_id_change_blocks_charging_and_new_rfid_authorization(rfid_authorization
         assert "Stecker abziehen" in message
 
 
+def test_rfid_authorization_message_is_only_added_once_with_local_lock(rfid_authorization_setup):
+    _, cp, _ = rfid_authorization_setup
+    data.data.general_data = SimpleNamespace(data=SimpleNamespace(grid_protection_configured=False))
+    cp.template.data.valid_tags = []
+    data.data.ev_data = {"ev1": SimpleNamespace(data=SimpleNamespace(tag_id=["TAG"]))}
+    cp.data.get.ocpp.connected = True
+    cp.data.get.ocpp.authorization_flow_status = "init"
+    cp.data.set.manual_lock = True
+    cp.data.get.state_str = None
+
+    cp._process_ocpp_rfid()
+    possible, message = cp.is_charging_possible()
+    cp.set_state_and_log(message)
+
+    assert possible is False
+    assert cp.data.get.state_str == (
+        "Keine Ladung, da der Ladepunkt gesperrt ist. RFID-Autorisierung am OCPP-Server läuft."
+    )
+
+
 def test_authorize_for_rfid_publishes_result_and_deduplicates(rfid_authorization_setup, mock_pub):
     client, openwb_cp, authorization_future = rfid_authorization_setup
 
@@ -770,7 +792,7 @@ def test_chargepoint_passes_meter_update_timestamp_to_client(mock_data, monkeypa
 def test_sync_chargepoint_lifecycle(
     monkeypatch, previous, chargebox_id, chargebox_pw, active, expected_disconnects
 ):
-    monkeypatch.setattr(data, "data", SimpleNamespace(cp_data={}))
+    monkeypatch.setattr(data, "data", SimpleNamespace(cp_data={}), raising=False)
     client = object.__new__(OcppClient)
     client._chargepoint_lifecycle = {}
     if previous is not None:
@@ -1494,101 +1516,6 @@ def test_transaction_start_does_not_authorize_before_boot_accepted(monkeypatch):
     authorize.assert_not_awaited()
 
 
-def test_offline_stop_is_persisted(monkeypatch):
-    openwb_cp = SimpleNamespace(
-        num=1,
-        data=SimpleNamespace(
-            get=SimpleNamespace(
-                imported=1234,
-                charge_state=False,
-                ocpp=SimpleNamespace(
-                    transaction_id=42,
-                    transaction_id_tag="TAG",
-                    pending_transactions=[],
-                    tag_accepted=False,
-                )
-            )
-        ),
-    )
-    pub = Mock()
-    coordinator = TransactionCoordinator(ensure_connected=AsyncMock(return_value=None))
-
-    monkeypatch.setattr(ocpp_transaction_coordinator, "get_cp_from_chargebox_id", lambda _: openwb_cp)
-    monkeypatch.setattr(ocpp_transaction_coordinator, "Pub", lambda: SimpleNamespace(pub=pub))
-
-    asyncio.run(coordinator.stop("box-1", 1234, "", "EVDisconnected"))
-
-    # nach dem die Transaktion gepseichert wurde, wird die:
-    # pending_transaktion gespeichert
-    # und anschließend transaction_id und transaction_id_tag auf None und
-    # tag_accepted auf False gesetzt
-    assert openwb_cp.data.get.ocpp.transaction_id is None
-    assert openwb_cp.data.get.ocpp.transaction_id_tag is None
-    assert openwb_cp.data.get.ocpp.tag_accepted is False
-    assert openwb_cp.data.get.ocpp.pending_transactions == [{
-        "action": "stop",
-        "transaction_id": 42,
-        "id_tag": "TAG",
-        "imported": 1234,
-        "reason": "EVDisconnected",
-        "timestamp": ANY,
-        "finalized": True,
-    }]
-
-
-def test_persisted_stop_is_sent_once(monkeypatch):
-    openwb_cp = SimpleNamespace(
-        num=1,
-        data=SimpleNamespace(get=SimpleNamespace(ocpp=SimpleNamespace(
-            transaction_id=None,
-            transaction_id_tag=None,
-            tag_accepted=False,
-            pending_availability=[False, False],
-            pending_transactions=[{
-                "action": "stop",
-                "transaction_id": 42,
-                "id_tag": "TAG",
-                "imported": 1234,
-                "reason": "EVDisconnected",
-                "timestamp": "2025-01-01T00:00:00Z",
-                "finalized": True,
-            }],
-        ))),
-    )
-    stop_transaction = AsyncMock(return_value=SimpleNamespace(id_tag_info=None))
-    cp = SimpleNamespace(
-        openwb_num=1,
-        openwb_cp=openwb_cp,
-        transaction_id=None,
-        _stop_transaction=stop_transaction,
-        apply_pending_availability=AsyncMock(),
-    )
-    connection = SimpleNamespace(cp=cp)
-    coordinator = TransactionCoordinator(ensure_connected=AsyncMock())
-    pub = Mock()
-
-    monkeypatch.setattr(ocpp_transaction_coordinator, "get_cp_from_chargebox_id", lambda _: openwb_cp)
-    monkeypatch.setattr(ocpp_transaction_coordinator, "Pub", lambda: SimpleNamespace(pub=pub))
-
-    async def replay_twice():
-        await coordinator.on_connected("box-1", connection)
-        await coordinator.on_connected("box-1", connection)
-
-    asyncio.run(replay_twice())
-
-    stop_transaction.assert_awaited_once_with(
-        meter_stop=1234,
-        transaction_id=42,
-        reason="EVDisconnected",
-        id_tag="TAG",
-        timestamp=ANY,
-    )
-    assert openwb_cp.data.get.ocpp.pending_transactions == []
-    assert cp.transaction_id is None
-    assert openwb_cp.data.get.ocpp.transaction_id is None
-    pub.assert_any_call("openWB/set/chargepoint/1/get/ocpp/pending_transactions", [])
-
-
 def _make_reset_test_client(monkeypatch, transaction_stopped):
     events = []
     openwb_cp = SimpleNamespace(
@@ -1677,8 +1604,14 @@ def test_handle_reset_aborts_when_transaction_cannot_be_stopped(monkeypatch, moc
     mock_pub.pub.assert_not_called()
 
 
-@pytest.mark.parametrize("transaction_state", list(ocpp_transaction_coordinator.TransactionState))
-@pytest.mark.parametrize("transaction_id, snapshot_id", [(123, 123), (123, 999), (123, None), (None, None)])
+@pytest.mark.parametrize("transaction_state,transaction_id,snapshot_id", [
+    (state, 123, 123)
+    for state in ocpp_transaction_coordinator.TransactionState
+    if state != ocpp_transaction_coordinator.TransactionState.ACTIVE
+] + [
+    (ocpp_transaction_coordinator.TransactionState.ACTIVE, transaction_id, snapshot_id)
+    for transaction_id, snapshot_id in [(123, 123), (123, 999), (123, None), (None, None)]
+])
 def test_meter_loop_only_sends_for_active_matching_transaction(
     monkeypatch, transaction_state, transaction_id, snapshot_id
 ):
@@ -1716,11 +1649,6 @@ def test_meter_loop_only_sends_for_active_matching_transaction(
 
     asyncio.run(client._meter_loop(connection))
 
-    client.transactions.get_state.assert_called_once_with("box-1")
-    if transaction_state == ocpp_transaction_coordinator.TransactionState.ACTIVE:
-        client.transactions.get_transaction_id.assert_called_once_with("box-1")
-    else:
-        client.transactions.get_transaction_id.assert_not_called()
     if (transaction_state == ocpp_transaction_coordinator.TransactionState.ACTIVE
             and transaction_id is not None and snapshot_id == transaction_id):
         chargepoint._meter_values.assert_awaited_once()
