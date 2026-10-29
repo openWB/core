@@ -126,6 +126,7 @@ export function processVehicleMessages(topic: string, message: string) {
 			const v = new Vehicle(index)
 			vehicles[index] = v
 			v.priority = globalConfig.priorities.get(index) ?? 0
+			v.showSoc = globalConfig.vehiclesWithSocToShow.includes(index)
 			// console.info('New vehicle created: ' + index)
 		}
 		if (topic.match(/^openwb\/vehicle\/[0-9]+\/name$/i)) {
