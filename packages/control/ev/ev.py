@@ -112,6 +112,9 @@ class Ev:
                     interval = self.soc_module.general_config.request_interval_charging
                 else:
                     interval = self.soc_module.general_config.request_interval_not_charging
+                override = self.soc_module.get_request_interval_override()
+                if override is not None:
+                    interval = min(interval, override)
                 # Zeitstempel prüfen, ob wieder abgefragt werden muss.
                 if timecheck.check_timestamp(self.data.get.soc_request_timestamp, interval-5) is False:
                     # Zeit ist abgelaufen
