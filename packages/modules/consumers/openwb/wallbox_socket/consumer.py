@@ -49,12 +49,8 @@ def create_consumer(config: WallboxSocket):
         elif fault_state == 1:
             consumer.fault_state.warning(received_topics.get(
                 f"{prefix}fault_str", "Warnung vom internen Ladepunkt"))
-        try:
-            power = received_topics[f"{prefix}power"]
-        except KeyError:
-            raise KeyError("Es wurden nicht alle notwendigen Daten empfangen.")
         return ConsumerState(
-            power=parse_received_topics("power"),
+            power=received_topics[f"{prefix}power"],
             imported=parse_received_topics("imported"),
             exported=parse_received_topics("exported"),
             powers=parse_received_topics("powers"),
