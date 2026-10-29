@@ -354,7 +354,8 @@ class TransactionCoordinator:
                 TransactionState.REJECTED,
             )
 
-            # Wenn Start abgebrochen wurde, wende change availaibilty an
+            # Nach der Ablehnung des Transaktionsstarts die zurückgestellte
+            # ChangeAvailability-Anfrage anwenden.
             await cp.apply_pending_availability()
 
             return False
