@@ -116,8 +116,6 @@ def _parse_ftp_location(location: str) -> SplitResult:
 
 def _upload_ftp_sync(file_path: str, location: SplitResult) -> None:
     use_tls = location.scheme.lower() == "ftps"
-    # Zum testen
-    # ftp = (ftplib.FTP_TLS(context=ssl.create_default_context(cafile="/var/www/html/openWB/server.crt"))
     ftp = (ftplib.FTP_TLS(context=ssl.create_default_context())
            if use_tls else ftplib.FTP())
     try:
