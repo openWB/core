@@ -33,6 +33,7 @@ from modules.chargepoints.mqtt.chargepoint_module import ChargepointModule
 from modules.chargepoints.mqtt.config import Mqtt
 from helpermodules.logger import FORMAT_STR_DETAILED, FORMAT_STR_OCPP
 from helpermodules.logging_context import OcppContextFilter, ocpp_logging_context
+from helpermodules.timecheck import create_timestamp
 
 
 @pytest.mark.parametrize("fault_state,error_code,status", [
@@ -419,6 +420,80 @@ def test_id_change_blocks_charging_and_new_rfid_authorization(rfid_authorization
     assert "OCPP-ID" in message
     if flow_status == "start_unconfirmed":
         assert "Stecker abziehen" in message
+
+
+@pytest.mark.parametrize("availability", [[False, True], [True, False], [False, False]])
+@pytest.mark.parametrize("method", ["_process_ocpp_rfid", "_validate_rfid"])
+@pytest.mark.parametrize("stage", ["scan", "waiting", "authorizing"])
+def test_unavailable_chargepoint_discards_rfid_without_waiting(
+    rfid_authorization_setup, availability, method, stage
+):
+    client, cp, future = rfid_authorization_setup
+    cp.template.data.valid_tags = ["TAG"]
+    cp.data.get.ocpp.connected = True
+    cp.data.get.state_str = None
+    if stage == "waiting":
+        cp.data.get.rfid_timestamp = create_timestamp()
+    elif stage == "authorizing":
+        client.authorize_for_rfid("box-1", "TAG")
+        client.authorize.reset_mock()
+    cp.data.get.ocpp.availability = availability
+
+    getattr(cp, method)()
+
+    client.authorize.assert_not_called()
+    assert cp.data.get.rfid is None
+    assert cp.data.get.rfid_timestamp is None
+    assert cp.data.get.ocpp.authorization_flow_status is None
+    assert client._rfid_authorize_pending == {}
+    cp.chargepoint_module.clear_rfid.assert_called_once_with()
+    # Eine später eintreffende Antwort darf den verworfenen Scan nicht wieder aktivieren.
+    future.set_result(AuthorizationResult(status="Accepted"))
+    client.finish_rfid_authorization("box-1", cp)
+    cp._validate_rfid()
+    assert cp.data.get.ocpp.authorization_flow_status is None
+    assert cp.data.get.state_str is None
+    assert cp._is_ocpp() == (False, "Keine Ladung: Ladepunkt ist OCPP-seitig nicht verfügbar.")
+    cp.data.get.ocpp.availability = [True, True]
+    cp._process_ocpp_rfid()
+    client.authorize.assert_not_called()
+    assert cp.data.get.rfid is None
+
+
+@pytest.mark.parametrize("availability", [[False, True], [True, False], [False, False]])
+def test_unavailable_chargepoint_still_processes_rfid_stop(rfid_authorization_setup, availability):
+    client, cp, _ = rfid_authorization_setup
+    cp.template.data.valid_tags = ["TAG"]
+    cp.data.get.ocpp.availability = availability
+    cp.data.get.ocpp.transaction_id = 42
+    cp.data.get.ocpp.transaction_id_tag = "TAG"
+    client.request_stop = Mock(return_value=None)
+
+    cp._validate_rfid()
+    assert cp.data.get.rfid == "TAG"
+    cp.chargepoint_module.clear_rfid.assert_not_called()
+    cp._process_ocpp_rfid()
+
+    client.request_stop.assert_called_once_with(
+        chargebox_id="box-1", imported=cp.data.get.imported, id_tag="TAG", reason="Local", authorize_stop=True,
+    )
+    client.authorize.assert_not_called()
+    assert cp.data.get.rfid is None
+
+
+@pytest.mark.parametrize("ocpp_active,chargebox_id", [(False, "box-1"), (True, None)])
+def test_rfid_wait_without_ocpp_ignores_ocpp_availability(rfid_authorization_setup, ocpp_active, chargebox_id):
+    _, cp, _ = rfid_authorization_setup
+    cp.template.data.valid_tags = ["TAG"]
+    data.data.optional_data.data.ocpp.config.active = ocpp_active
+    cp.data.config.ocpp_chargebox_id = chargebox_id
+    cp.data.get.ocpp.availability = [False, False]
+
+    cp._validate_rfid()
+
+    assert cp.data.get.rfid == "TAG"
+    assert cp.data.get.rfid_timestamp is not None
+    cp.chargepoint_module.clear_rfid.assert_not_called()
 
 
 def test_rfid_authorization_message_is_only_added_once_with_local_lock(rfid_authorization_setup):
