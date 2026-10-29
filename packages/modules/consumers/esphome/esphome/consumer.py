@@ -27,11 +27,11 @@ def create_consumer(config: EspHome):
         sensor_name = quote(config.configuration.power_sensor_name)
         power = float(session.get(f"http://{ip_address}/sensor/{sensor_name}", timeout=5).json()["value"])
 
-        kwargs = {}
+        state = False
         if config.configuration.switch_name:
             switch_name = quote(config.configuration.switch_name)
-            kwargs["state"] = bool(session.get(f"http://{ip_address}/switch/{switch_name}", timeout=5).json()["value"])
-        return ConsumerState(power=power, **kwargs)
+            state = bool(session.get(f"http://{ip_address}/switch/{switch_name}", timeout=5).json()["value"])
+        return ConsumerState(power=power, state=state)
 
     def switch_on() -> None:
         switch_name = quote(config.configuration.switch_name)
