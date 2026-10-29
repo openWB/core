@@ -518,9 +518,12 @@ class OcppClient:
                 if not connection.boot_accepted:
                     break
 
-                interval = int(
-                    connection.cp.openwb_cp.data.get.ocpp.config.HeartbeatInterval["value"]
-                )
+                openwb_cp = connection.cp.openwb_cp
+                if openwb_cp is None:
+                    # Eine laufende Backend-Modellkopie darf keinen Reconnect auslösen.
+                    await asyncio.sleep(1)
+                    continue
+                interval = int(openwb_cp.data.get.ocpp.config.HeartbeatInterval["value"])
 
                 interval = max(interval, 1)
 
@@ -557,9 +560,12 @@ class OcppClient:
                 if not connection.boot_accepted:
                     break
 
-                interval = int(
-                    connection.cp.openwb_cp.data.get.ocpp.config.MeterValueSampleInterval["value"]
-                )
+                openwb_cp = connection.cp.openwb_cp
+                if openwb_cp is None:
+                    # Eine laufende Backend-Modellkopie darf keinen Reconnect auslösen.
+                    await asyncio.sleep(1)
+                    continue
+                interval = int(openwb_cp.data.get.ocpp.config.MeterValueSampleInterval["value"])
 
                 if interval <= 0:
                     # 0 deaktiviert periodische Samples. Den Task am Leben halten,
@@ -573,8 +579,12 @@ class OcppClient:
                     break
                 if not connection.boot_accepted:
                     break
+                # Nach der Wartephase das aktuelle Modell verwenden.
+                openwb_cp = connection.cp.openwb_cp
+                if openwb_cp is None:
+                    continue
                 # Das CSMS kann während der Wartephase auf 0 umgestellt haben.
-                if int(connection.cp.openwb_cp.data.get.ocpp.config.MeterValueSampleInterval["value"]) <= 0:
+                if int(openwb_cp.data.get.ocpp.config.MeterValueSampleInterval["value"]) <= 0:
                     continue
                 # Meter Values nur senden, wenn auch eine aktive Transaktion läuft
                 if self.transactions.get_state(chargebox_id) != TransactionState.ACTIVE:
@@ -608,7 +618,7 @@ class OcppClient:
                                     "context": "Sample.Periodic",
                                     "format": "Raw",
                                     "measurand":
-                                        _get_config(connection.cp.openwb_cp, "MeterValuesSampledData",
+                                        _get_config(openwb_cp, "MeterValuesSampledData",
                                                     default="Energy.Active.Import.Register"),
                                     "unit": "Wh",
                                 }
