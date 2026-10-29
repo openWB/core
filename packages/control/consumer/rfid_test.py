@@ -24,6 +24,7 @@ def consumer(monkeypatch, request):
     consumer.module = Mock()
     consumer.data.module = Mock(type=request.param)
     consumer.data.config.rfid_enabled = True
+    consumer.data.config.rfid_timeout = 300
     consumer.data.config.valid_tags = ["AB??", "1234"]
     consumer.data.usage.type = ConsumerUsage.SUSPENDABLE_ONOFF
     consumer.data.get.voltages = [230] * 3
