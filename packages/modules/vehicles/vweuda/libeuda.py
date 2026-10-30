@@ -323,6 +323,11 @@ def _login_fields(html: str) -> tuple[dict[str, str], str | None]:
     return fields, form.action
 
 
+def _is_universal_login(fields: dict[str, str]) -> bool:
+    """True for the Auth0 Universal Login page (state + username + password in one form)."""
+    return {"state", "username", "password"} <= fields.keys() and "hmac" not in fields
+
+
 def _login_error(html: str) -> str | None:
     """Return a human-readable login error from the page, if present."""
     model = _extract_template_model(html)
@@ -394,14 +399,11 @@ class EudaApiClient:
             headers={"User-Agent": USER_AGENT, "Referer": referer},
             allow_redirects=False,
         )
-        for redirects in range(_MAX_LOGIN_REDIRECTS + 1):
+        for _ in range(_MAX_LOGIN_REDIRECTS):
             if _is_portal_callback(str(resp.url)):
                 return resp
             if resp.status not in _LOGIN_REDIRECT_STATUSES:
                 return resp
-            if redirects == _MAX_LOGIN_REDIRECTS:
-                resp.release()
-                raise ApiError(f"Login redirect chain exceeded {_MAX_LOGIN_REDIRECTS} hops")
             location = resp.headers.get("Location")
             if not location:
                 return resp
@@ -414,6 +416,9 @@ class EudaApiClient:
                 headers={"Referer": previous_url},
                 allow_redirects=False,
             )
+
+        resp.release()
+        raise ApiError(f"Login redirect chain exceeded {_MAX_LOGIN_REDIRECTS} hops")
 
     # -- authentication ----------------------------------------------------
 
@@ -446,6 +451,14 @@ class EudaApiClient:
         #    and/or the JS templateModel (hmac, _csrf, relayState).
         fields, action = _login_fields(signin_html)
         _LOGGER.debug("login step2: action=%s fields=%s", action, sorted(fields))
+        if _is_universal_login(fields):
+            # SEAT/CUPRA moved to an Auth0 Universal Login page in October 2026:
+            # one form with state, username and password. It has no action, so
+            # the browser posts it back to its own URL (which carries ?state=).
+            fields.update(username=self._email, password=self._password, action="default")
+            _LOGGER.debug("login step2: universal login page, POST credentials")
+            await self._finish_login(urljoin(signin_url, action or ""), fields, signin_url)
+            return
         if "hmac" not in fields or "_csrf" not in fields:
             raise AuthError(
                 f"Could not parse the sign-in form (fields found: {sorted(fields)})"
@@ -490,13 +503,15 @@ class EudaApiClient:
         else:
             authenticate_action = authenticate_url.split("?", 1)[0]
         _LOGGER.debug("login step4: POST credentials to %s", authenticate_action)
+        await self._finish_login(authenticate_action, fields2, authenticate_url)
 
+    async def _finish_login(self, url: str, data: dict[str, str], referer: str) -> None:
         # 4. POST credentials; follow the redirect chain back to the portal
         #    and stop at /services/callbacklogin, which sets the session cookie.
         async with await self._post_login_form(
-            authenticate_action,
-            data=fields2,
-            referer=authenticate_url,
+            url,
+            data=data,
+            referer=referer
         ) as resp:
             landing = str(resp.url)
             if _is_portal_callback(landing) and resp.status < 400:
@@ -527,13 +542,16 @@ class EudaApiClient:
                         status=resp.status,
                     )
                 err = _login_error(landing_html)
+                if not err and "/u/login" in landing:
+                    err = "Login failed - check email and password"
                 raise AuthError(err or f"Login rejected (HTTP {resp.status})")
         _LOGGER.debug("login step4: landed on %s", landing)
 
         # A completed flow returns above from the portal callback. Anything else
         # that ended the chain is a failure: bad credentials re-render the
-        # identity sign-in page (URL still on identity.vwgroup.io/signin-service).
-        if "signin-service" in landing or "/error" in landing:
+        # identity sign-in page (URL still on identity.vwgroup.io/signin-service,
+        # or /u/login for the universal login page).
+        if "signin-service" in landing or "/u/login" in landing or "/error" in landing:
             raise AuthError("Login failed - check email and password")
         raise AuthError(f"Login did not complete (ended at {_redact_query(landing)})")
 
@@ -765,8 +783,7 @@ def get_field_timestamp_by_key(D: dict, key: str) -> str:
     return ret
 
 
-CAR_TIMESTAMP1 = "car_captured_time"
-CAR_TIMESTAMP2 = "timestamp"
+CAR_TIMESTAMP = "car_captured_time"
 
 
 def get_max_value_by_fieldname(D: dict, field: str) -> str:
@@ -811,11 +828,9 @@ def parse_vehicle_data(payload: dict) -> dict:
         _ts = get_field_timestamp_by_key(data, 'ae0294b4-1286-3e98-a818-1485b8d88430')
         soc_timestamp_str = re.sub(r'\....Z', 'Z', _ts)
 
-    # try to get soc_timestamp as max of all car_captured_time or timestamp fields
+    # try to get soc_timestamp as max of all car_captured_time fields
     if soc_timestamp_str is None:
-        soc_timestamp_str = get_max_value_by_fieldname(data, CAR_TIMESTAMP1)
-    if soc_timestamp_str is None:
-        soc_timestamp_str = get_max_value_by_fieldname(data, CAR_TIMESTAMP2)
+        soc_timestamp_str = get_max_value_by_fieldname(data, CAR_TIMESTAMP)
 
     # if soc is None, try sveral other fields
     if soc is None:
