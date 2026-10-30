@@ -60,12 +60,24 @@ function processConsumerDeviceMessages(topic: string, message: string) {
 		} catch (e) {
 			console.warn('Error parsing consumer usage data: ' + e)
 		}
+	} else if (topic.match(/^openWB\/consumer\/[0-9]+\/config$/i)) {
+		const config = JSON.parse(message)
+		dev.countAsHouse = config.is_home_consumption_consumer == 'home_consumption'
 	} else if (topic.match(/^openWB\/consumer\/[0-9]+\/get\/state_str$/i)) {
 		dev.statusText = JSON.parse(message)
 	} else if (topic.match(/^openWB\/consumer\/[0-9]+\/get\/fault_state$/i)) {
 		dev.faultState = JSON.parse(message)
 	} else if (topic.match(/^openWB\/consumer\/[0-9]+\/get\/fault_str$/i)) {
 		dev.faultText = JSON.parse(message)
+	} else if (topic.match(/^openWB\/consumer\/[0-9]+\/get\/temperatures$/i)) {
+		dev.temp = JSON.parse(message)
+	} else if (
+		topic.match(
+			/^openWB\/consumer\/[0-9]+\/get\/is_home_consumption_consumer$/i,
+		)
+	) {
+		console.log(message)
+		dev.countAsHouse = JSON.parse(message) != 'no_home_consumption'
 	}
 }
 

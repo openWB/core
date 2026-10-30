@@ -17,7 +17,8 @@ const mqttConnection = {
 	protocol: (location.protocol == 'https:' ? 'wss' : 'ws') as mqtt.MqttProtocol,
 	connectTimeout: 4000,
 	reconnectPeriod: 4000,
-	clean: false,
+	// clean: false,
+	resubscribe: true,
 	clientId: Math.random()
 		.toString(36)
 		.replace(/[^a-z]+/g, '')

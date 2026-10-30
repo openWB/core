@@ -20,6 +20,11 @@
 			</div>
 		</template>
 		<template #buttons>
+			<span v-for="(temp, idx) in device.temp" :key="idx">
+				<WbBadge v-if="temp < 300" :small="true" bgcolor="var(--color-battery)">
+					<span>{{ formatTemp(temp) }} </span>
+				</WbBadge>
+			</span>
 			<WbBadge
 				v-if="device.priority > 0"
 				:small="true"
@@ -74,7 +79,7 @@
 <script setup lang="ts">
 import WbSubwidget from '@/components/shared/WbSubwidget.vue'
 import type { Consumer } from './model.ts'
-import { formatWatt, formatTime } from '@/assets/js/helpers'
+import { formatWatt, formatTime, formatTemp } from '@/assets/js/helpers'
 import { chargemodes } from '@/assets/js/themeConfig'
 import WbBadge from '@/components/shared/WbBadge.vue'
 import InfoItem from '@/components/shared/InfoItem.vue'
