@@ -1,8 +1,8 @@
 from dataclasses import dataclass, field
 from threading import Event
-from typing import Dict, List, Optional, Protocol
 from control.chargemode import Chargemode
 from control.chargepoint.chargepoint_state import ChargepointState
+from typing import Dict, List, Optional, Protocol, Union
 from control.chargepoint.chargepoint_template import CpTemplate
 
 from control.chargepoint.control_parameter import ControlParameter, control_parameter_factory
@@ -67,6 +67,93 @@ class ConnectedVehicle:
     soc: ConnectedSoc = field(default_factory=connected_soc_factory, metadata={"topic": "get/connected_vehicle/soc"})
 
 
+OcppConfigKey = Dict[str, Union[bool, int, float, str]]
+
+
+def ocpp_config_key_factory(
+        value: Union[bool, int, float, str] = 0,
+        readonly: bool = False,
+        value_type: str = "int") -> OcppConfigKey:
+    return {"value": value, "readonly": readonly, "type": value_type}
+
+
+@dataclass
+class OcppConfig:
+    HeartbeatInterval: OcppConfigKey = field(
+        default_factory=lambda: ocpp_config_key_factory(value=10, readonly=False, value_type="int")
+    )
+    MeterValueSampleInterval: OcppConfigKey = field(
+        default_factory=lambda: ocpp_config_key_factory(value=20, readonly=False, value_type="int")
+    )
+    NumberOfConnectors: OcppConfigKey = field(
+        default_factory=lambda: ocpp_config_key_factory(value=1, readonly=True, value_type="int")
+    )
+    SupportedFeatureProfiles: OcppConfigKey = field(
+        default_factory=lambda: ocpp_config_key_factory(
+            value="Core,RemoteTrigger", readonly=True, value_type="str"
+        )
+    )
+    # Remote Reqest werden bei uns auch immer erst Authorize (siehe Remote_Start)
+    AuthorizeRemoteTxRequests: OcppConfigKey = field(
+        default_factory=lambda: ocpp_config_key_factory(value=True, readonly=True, value_type="bool")
+    )
+
+    MeterValuesSampledData: OcppConfigKey = field(
+        default_factory=lambda: ocpp_config_key_factory(
+            value="Energy.Active.Import.Register", readonly=True, value_type="str"
+        )
+    )
+    TransactionMessageAttempts: OcppConfigKey = field(
+        default_factory=lambda: ocpp_config_key_factory(value=3, readonly=False, value_type="int")
+    )
+    TransactionMessageRetryInterval: OcppConfigKey = field(
+        default_factory=lambda: ocpp_config_key_factory(value=60, readonly=False, value_type="int")
+    )
+
+
+def ocpp_config_factory() -> OcppConfig:
+    return OcppConfig()
+
+
+def normalize_ocpp_connector_values(value: List[bool]) -> List[bool]:
+    if not isinstance(value, list) or len(value) != 2 or not all(isinstance(item, bool) for item in value):
+        raise ValueError("Expected two boolean connector values")
+    return value.copy()
+
+
+@dataclass
+class Ocpp:
+    connected: bool = False
+    # Herkunft offener Vorgänge auch nach Backend-Neustart erhalten.
+    last_connection_settings: Optional[Dict[str, str]] = None
+    # neu erzeugte CPs sind per default erstmal available
+    availability: List[bool] = field(default_factory=lambda: [True, True])
+    transaction_id: Optional[int] = None
+    # Bei ID-Wechsel alte Identität bis zum bestätigten Transaktionsende behalten.
+    previous_chargebox_id: Optional[str] = None
+    tag_accepted: bool = False
+    remote_stop: bool = False
+    unlock_stop: bool = False
+    # RFID/IdTag der laufenden OCPP-Transaction.
+    transaction_id_tag: Optional[str] = None
+
+    # Stop-Events, die während einer Offline-Phase aufgetreten sind.
+    # Nach einem erfolgreichen Reconnect wird stop gesendet
+    pending_transactions: list = field(default_factory=list,
+                                       metadata={"topic": "get/ocpp/pending_transactions"})
+
+    pending_availability: List[bool] = field(default_factory=lambda: [False, False])
+    reset: bool = False
+
+    # Status der Autorisierung und des Transaktionsstarts.
+    authorization_flow_status: Optional[str] = None
+
+    rfid_stop: bool = False
+
+    config: OcppConfig = field(default_factory=ocpp_config_factory,
+                               metadata={"topic": "get/ocpp/config"})
+
+
 def empty_enery_source_dict_factory():
     return {'bat': 0, 'cp': 0, 'grid': 0, 'pv': 0}
 
@@ -104,6 +191,10 @@ def connected_vehicle_factory() -> ConnectedVehicle:
     return ConnectedVehicle()
 
 
+def ocpp_factory() -> Ocpp:
+    return Ocpp()
+
+
 @dataclass
 class Get:
     charge_state: bool = False
@@ -128,6 +219,7 @@ class Get:
     max_charge_power: Optional[float] = None
     max_discharge_power: Optional[float] = None
     max_evse_current: Optional[int] = None
+    ocpp: Ocpp = field(default_factory=ocpp_factory)
     phases_in_use: int = 0
     plug_state: bool = False
     power: float = 0
@@ -172,7 +264,6 @@ class Set:
     current_prev: float = field(default=0.0, metadata={"topic": "set/current_prev"})
     target_current: float = field(default=0)  # Zwischenergebnis vom Algorithmus
     charging_ev_data: Ev = field(default_factory=ev_factory)
-    ocpp_transaction_id: Optional[int] = field(default=None, metadata={"topic": "set/ocpp_transaction_id"})
     charge_state_prev: bool = field(default=False, metadata={"topic": "set/charge_state_prev"})
     # control_parameter.state aus dem vorherigen Zyklus, um eine Control-Pilot-Unterbrechung beim
     # Ladestart von einer, die direkt nach einer echten Phasenumschaltung erfolgt, zu unterscheiden
@@ -202,6 +293,7 @@ class Config:
     control_pilot_interruption_hw: bool = False
     id: int = 0
     ocpp_chargebox_id: Optional[str] = None
+    ocpp_chargebox_password: Optional[str] = None
 
     def __post_init__(self):
         self.event_update_state: Event

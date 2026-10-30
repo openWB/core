@@ -3,18 +3,16 @@
 from dataclasses import asdict
 import logging
 from math import ceil
-from threading import Thread
 from typing import Dict, List, Optional as TypingOptional, Union
 from datetime import datetime
 
 from control import data
-from control.ocpp import OcppMixin
 from control.optional_data import FlexibleTariff, ForecastGet, GridFee, OptionalData, PricingGet
+from control.ocpp.ocpp_client import OcppClient
 from helpermodules import hardware_configuration
 from helpermodules.constants import NO_ERROR
 from helpermodules.pub import Pub
 from helpermodules import timecheck
-from helpermodules.utils import thread_handler
 from modules.common.configurable_forecast import ConfigurableForecast
 from modules.common.configurable_tariff import ConfigurableFlexibleTariff, ConfigurableGridFee
 from modules.common.configurable_monitoring import ConfigurableMonitoring
@@ -24,9 +22,11 @@ AS_EURO_PER_KWH = 1000.0  # Umrechnung von €/Wh in €/kWh
 MQTT_PREFIX = "openWB/set/optional/ep"
 
 
-class Optional(OcppMixin):
-    def __init__(self):
+class Optional:
+    def __init__(self, ocpp_client: TypingOptional[OcppClient] = None):
         try:
+            if ocpp_client is not None:
+                data.data.ocpp_client = ocpp_client
             self.data = OptionalData()
             self._flexible_tariff_module: TypingOptional[ConfigurableFlexibleTariff] = None
             self._grid_fee_module: TypingOptional[ConfigurableGridFee] = None
@@ -303,30 +303,3 @@ class Optional(OcppMixin):
                 self._is_et_price_update_required_for_module(self.data.electricity_pricing.flexible_tariff)) or
                 (self._grid_fee_module is not None and
                 self._is_et_price_update_required_for_module(self.data.electricity_pricing.grid_fee)))
-
-    def ocpp_transfer_meter_values(self):
-        try:
-            if self.data.ocpp.config.active:
-                thread_handler(Thread(target=self._transfer_meter_values, args=(), name="OCPP Client"))
-        except Exception as e:
-            log.exception("Fehler im OCPP-Optional-Modul: %s", e)
-
-    def _transfer_meter_values(self):
-        for cp in data.data.cp_data.values():
-            try:
-                if self.data.ocpp.boot_notification_sent is False:
-                    self.data.ocpp.boot_notification_sent = True
-                    # Boot-Notification nicht in der init-Funktion aufrufen, da noch nicht alles initialisiert ist
-                    self.boot_notification(cp.data.config.ocpp_chargebox_id,
-                                           cp.chargepoint_module.fault_state,
-                                           cp.chargepoint_module.config.type,
-                                           cp.data.get.serial_number)
-                if cp.data.set.ocpp_transaction_id is not None:
-                    self.send_heart_beat(cp.data.config.ocpp_chargebox_id, cp.chargepoint_module.fault_state)
-                    self.transfer_values(cp.data.config.ocpp_chargebox_id,
-                                         cp.chargepoint_module.fault_state,
-                                         cp.num,
-                                         cp.data.set.ocpp_transaction_id,
-                                         int(cp.data.get.imported))
-            except Exception:
-                log.exception("Fehler im OCPP-Optional-Modul")

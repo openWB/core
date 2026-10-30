@@ -10,6 +10,7 @@ import paho.mqtt.client as mqtt
 
 import logging
 from control import data
+from control.chargepoint.chargepoint_data import normalize_ocpp_connector_values
 from helpermodules import hardware_configuration, subdata
 from helpermodules.broker import BrokerClient
 from helpermodules.pub import Pub
@@ -584,10 +585,29 @@ class SetData:
             self._validate_value(msg, float, [(float("-inf"), 0)])
         elif "/get/power" in msg.topic:
             self._validate_value(msg, float)
+        elif msg.topic.endswith("/get/ocpp/transaction_id"):
+            self._validate_value(msg, int)
         elif "/get/phases_in_use" in msg.topic:
             self._validate_value(msg, int, [(0, 3)])
+        elif (msg.topic.endswith("/get/ocpp/availability") or
+              msg.topic.endswith("/get/ocpp/pending_availability")):
+            try:
+                value = normalize_ocpp_connector_values(decode_payload(msg.payload))
+            except ValueError:
+                log.error("Invalid OCPP connector values: Topic %s, Payload %s", msg.topic, msg.payload)
+            else:
+                Pub().pub(msg.topic.replace('set/', '', 1), value, retain=True)
+            finally:
+                Pub().pub(msg.topic, "")
         elif ("/get/charge_state" in msg.topic or
-                "/get/plug_state" in msg.topic):
+                "/get/unlock_blocked" in msg.topic or
+                "/get/plug_state" in msg.topic or
+                "/get/ocpp/remote_stop" in msg.topic or
+                "/get/ocpp/unlock_stop" in msg.topic or
+                "/get/ocpp/tag_accepted" in msg.topic or
+                "/get/ocpp/connected" in msg.topic or
+                "/get/ocpp/reset" in msg.topic or
+                "/get/ocpp/rfid_stop" in msg.topic):
             self._validate_value(msg, bool)
         elif "/get/fault_state" in msg.topic:
             self._validate_value(msg, int, [(0, 2)])
@@ -597,7 +617,8 @@ class SetData:
             self._validate_value(msg, float, [(-3200, 3200)])
         elif ("/get/version" in msg.topic or
               "/get/current_branch" in msg.topic or
-              "/get/current_commit" in msg.topic):
+              "/get/current_commit" in msg.topic or
+              "/get/ocpp/authorization_flow_status" in msg.topic):
             self._validate_value(msg, str)
         elif ("/get/error_timestamp" in msg.topic or
                 "/get/rfid_timestamp" in msg.topic):
@@ -615,7 +636,14 @@ class SetData:
         elif ("/get/simulation" in msg.topic or
               "/get/connected_vehicle/config" in msg.topic or
               "/get/connected_vehicle/info" in msg.topic or
-              "/get/connected_vehicle/soc" in msg.topic):
+              "/get/connected_vehicle/soc" in msg.topic or
+              "/get/ocpp/pending_transactions" in msg.topic or
+              msg.topic.endswith("/get/ocpp/last_connection_settings")):
+            self._validate_value(msg, "json")
+        elif (msg.topic.endswith("/get/ocpp/transaction_id_tag") or
+              msg.topic.endswith("/get/ocpp/previous_chargebox_id")):
+            self._validate_value(msg, str)
+        elif "/get/ocpp/config" in msg.topic:
             self._validate_value(msg, "json")
         else:
             self.__unknown_topic(msg)

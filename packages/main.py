@@ -190,7 +190,6 @@ class HandlerAlgorithm:
                 for cp in data.data.cp_data.values():
                     calc_energy_costs(cp)
                 data.data.general_data.grid_protection()
-                data.data.optional_data.ocpp_transfer_meter_values()
                 data.data.counter_all_data.validate_hierarchy()
                 data.data.optional_data.remove_outdated_prices()
             loadvars_.ep_get_prices()

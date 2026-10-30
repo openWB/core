@@ -1,0 +1,596 @@
+import asyncio
+import logging
+from typing import Awaitable, Callable, Optional, Any
+from urllib.parse import quote
+
+from helpermodules.utils.error_handling import ImportErrorContext
+
+with ImportErrorContext():
+    import websockets
+    import base64
+    from websockets.exceptions import InvalidStatusCode
+
+from control import data
+from control.ocpp.helper import get_cp_from_chargebox_id
+from control.ocpp.ocpp_chargepoint import OcppChargePoint
+from control.ocpp.ocpp_connection import OcppConnection
+from helpermodules.pub import Pub
+
+log = logging.getLogger(__name__)
+
+
+ConnectionCallback = Callable[[OcppConnection], Awaitable[Optional[bool]]]
+ChargePointFactory = Callable[[str, Any], OcppChargePoint]
+
+
+class OcppConnectionManager:
+    """
+    Die Klasse kümmert sich um Aufbau, Wiederverbindung und
+    sauberen Abbau der OCPP-Transportverbindungen.
+    """
+
+    def __init__(
+        self,
+        chargepoint_factory: ChargePointFactory,
+        on_connected: ConnectionCallback,
+        on_disconnected: ConnectionCallback,
+    ) -> None:
+        self._chargepoint_factory = chargepoint_factory
+        self._on_connected = on_connected
+        self._on_disconnected = on_disconnected
+
+        self._connections: dict[str, OcppConnection] = {}
+        self._wanted_connections: set[str] = set()
+        self._reconnect_tasks: dict[str, asyncio.Task] = {}
+        self._connect_locks: dict[str, asyncio.Lock] = {}
+        self._connection_lost_task: set[asyncio.Task] = set()
+        self._deferred_config_changes: set[str] = set()
+
+    async def connect(self, chargebox_id: str) -> Optional[OcppConnection]:
+        """
+        Verbindung dauerhaft anfordern und sofort eine Verbindung herstellen.
+        Schlägt die direkte Verbindung fehl, wird ein Wiederverbindungsversuch geplant.
+        """
+
+        if not chargebox_id:
+            return None
+
+        if not data.data.optional_data.data.ocpp.config.active:
+            await self.disconnect(chargebox_id)
+            return None
+
+        self.want(chargebox_id)
+
+        try:
+            connection = await self.ensure_connected(chargebox_id)
+            if connection is None:
+                self._schedule_reconnect(chargebox_id)
+            return connection
+        except asyncio.CancelledError:
+            raise
+        except InvalidStatusCode as error:
+            if error.status_code == 401:
+                log.error(
+                    "OCPP-Authentifizierung für %s abgelehnt (HTTP 401); "
+                    "Chargebox-ID und Passwort prüfen",
+                    chargebox_id,
+                )
+            elif error.status_code == 403:
+                log.error(
+                    "OCPP-Zugriff für %s verweigert (HTTP 403); "
+                    "Zugangsdaten oder Serverfreigabe prüfen",
+                    chargebox_id,
+                )
+            else:
+                log.error(
+                    "OCPP-Verbindung zu %s mit HTTP-Status %s abgelehnt",
+                    chargebox_id,
+                    error.status_code,
+                )
+            self._schedule_reconnect(chargebox_id)
+            return None
+        except Exception:
+            log.exception(
+                "OCPP-Verbindung zu %s konnte nicht aufgebaut werden",
+                chargebox_id,
+            )
+            self._schedule_reconnect(chargebox_id)
+            return None
+
+    async def disconnect(self, chargebox_id: str) -> None:
+        """Verbindung explizit trennen und automatisches Wiederverbinden deaktivieren."""
+
+        if not chargebox_id:
+            return
+        log.debug("Disconnecting chargebox_id: %s", chargebox_id)
+        # Zuerst die Verbindung als nicht mehr gewollt markieren
+        # damit kein neuer Reconnect versuch gestartet wird
+        self._wanted_connections.discard(chargebox_id)
+
+        await self._cancel_reconnect(chargebox_id)
+
+        lock = self._get_connect_lock(chargebox_id)
+        async with lock:
+            connection = self._connections.get(chargebox_id)
+            if connection is not None:
+                await self._cleanup_connection(connection)
+
+    async def ensure_connected(
+        self,
+        chargebox_id: str,
+        force: bool = False,
+    ) -> Optional[OcppConnection]:
+        """
+        Verwendbare Verbindung zurückgeben, eine neue Verbindung erstellen, falls erforderlich.
+        """
+        if not chargebox_id:
+            return None
+
+        if not data.data.optional_data.data.ocpp.config.active:
+            self._wanted_connections.discard(chargebox_id)
+            lock = self._get_connect_lock(chargebox_id)
+            async with lock:
+                existing = self._connections.get(chargebox_id)
+                if existing is not None:
+                    await self._cleanup_connection(existing)
+            return None
+
+        openwb_cp = get_cp_from_chargebox_id(chargebox_id)
+        if openwb_cp is None:
+            log.warning(
+                "OCPP-Ladepunkt %s ist ungültig oder nicht konfiguriert; "
+                "keine Verbindung wird aufgebaut.",
+                chargebox_id,
+            )
+            self._wanted_connections.discard(chargebox_id)
+            return None
+
+        lock = self._get_connect_lock(chargebox_id)
+        async with lock:  # Sicherstellen, dass jeweils nur ein Verbindungsversuch läuft
+            existing = self._connections.get(chargebox_id)
+
+            settings = self._get_connection_settings(chargebox_id, openwb_cp)
+            if (not force and self._is_usable(existing) and
+                    (existing.server_url, existing.subprotocol) == settings):
+                return existing
+
+            if existing is not None:
+                if (existing.server_url, existing.subprotocol) != settings:
+                    log.info(
+                        "OCPP %s: Geänderte Server-URL oder Subprotocol wird übernommen; "
+                        "Verbindung wird neu aufgebaut.",
+                        chargebox_id,
+                    )
+                await self._cleanup_connection(existing)
+
+            return await self._open_connection(chargebox_id)
+
+    async def reconnect_now(
+        self,
+        chargebox_id: str,
+    ) -> Optional[OcppConnection]:
+        """
+        Eine sofortige Wiederverbindung erzwingen, sofern die Ladebox aktiv ist.
+        """
+        if not self.is_wanted(chargebox_id):
+            return None
+
+        await self._cancel_reconnect(chargebox_id)
+
+        try:
+            connection = await self.ensure_connected(
+                chargebox_id,
+                force=True,
+            )
+        except asyncio.CancelledError:
+            raise
+        except Exception:
+            self._schedule_reconnect(chargebox_id)
+            raise
+
+        if connection is None:
+            self._schedule_reconnect(chargebox_id)
+
+        return connection
+
+    def want(self, chargebox_id: str) -> None:
+        """Automatische Wiederverbindung für diese Ladebox aktivieren."""
+        if chargebox_id:
+            self._wanted_connections.add(chargebox_id)
+
+    def is_wanted(self, chargebox_id: str) -> bool:
+        return chargebox_id in self._wanted_connections
+
+    def get(self, chargebox_id: str) -> Optional[OcppConnection]:
+        return self._connections.get(chargebox_id)
+
+    def is_active_charge_point(self, cp: OcppChargePoint) -> bool:
+        """Nur dann True zurückgeben, wenn *cp* zur aktuell verwendbaren Verbindung gehört."""
+        connection = self._connections.get(cp.chargebox_id)
+        return (
+            connection is not None
+            and connection.cp is cp
+            and connection.boot_accepted
+            and self._is_usable(connection)
+        )
+
+    def build_custom_headers(
+        self,
+        charge_point_id: str,
+        auth_key: Optional[str],
+    ) -> dict:
+        if not auth_key:
+            return {}
+        credentials = f"{charge_point_id}:{auth_key}"
+        encoded_credentials = base64.b64encode(credentials.encode("utf-8")).decode("utf-8")
+        return {
+            "Authorization": f"Basic {encoded_credentials}"
+        }
+
+    def needs_configuration_refresh(self, chargebox_id: str) -> bool:
+        connection = self._connections.get(chargebox_id)
+        openwb_cp = get_cp_from_chargebox_id(chargebox_id)
+        if connection is None or openwb_cp is None:
+            return False
+        return (connection.server_url, connection.subprotocol) != self._get_connection_settings(
+            chargebox_id, openwb_cp,
+        )
+
+    def _get_connection_settings(self, chargebox_id: str, openwb_cp) -> tuple[str, str]:
+        config = data.data.optional_data.data.ocpp.config
+        requested = ((config.url or "").rstrip("/"), config.version)
+        ocpp = openwb_cp.data.get.ocpp
+        saved = getattr(ocpp, "last_connection_settings", None)
+        if saved is None:
+            # Eine noch vorhandene Verbindung liefert eine bekannte Herkunft.
+            existing = self._connections.get(chargebox_id)
+            if existing is not None:
+                self._store_connection_settings(openwb_cp, existing.server_url, existing.subprotocol)
+                saved = ocpp.last_connection_settings
+        previous = (saved["url"], saved["subprotocol"]) if saved is not None else None
+        flow_status = getattr(ocpp, "authorization_flow_status", None)
+        if previous is None and (
+            ocpp.transaction_id is not None
+            or flow_status in ("start_starting", "start_unconfirmed")
+            or bool(getattr(ocpp, "pending_transactions", None))
+        ):
+            # Eine alte Transaktions-ID nie an einen möglicherweise anderen Server senden.
+            raise ValueError(
+                f"OCPP {chargebox_id}: Serverbindung des offenen Vorgangs unbekannt; "
+                "Verbindungsaufbau ohne gesicherte Herkunft abgebrochen"
+            )
+        busy = (
+            ocpp.transaction_id is not None
+            or flow_status in (
+                "init", "start_pending", "start_authorizing", "start_starting", "start_unconfirmed",
+            )
+            or bool(getattr(ocpp, "pending_transactions", None))
+        )
+        if previous is not None and previous != requested and busy:
+            if chargebox_id not in self._deferred_config_changes:
+                log.warning(
+                    "OCPP %s: Änderung von Server-URL oder Subprotocol zurückgestellt; "
+                    "laufenden/ungeklärten Vorgang und ausstehende Stops zuerst am bisherigen Server abschließen.",
+                    chargebox_id,
+                )
+                self._deferred_config_changes.add(chargebox_id)
+            return previous
+
+        if chargebox_id in self._deferred_config_changes:
+            log.info("OCPP %s: Zurückstellung der Verbindungskonfiguration aufgehoben.", chargebox_id)
+            self._deferred_config_changes.discard(chargebox_id)
+        return requested
+
+    @staticmethod
+    def _store_connection_settings(openwb_cp, url: str, subprotocol: str) -> None:
+        settings = {"url": url, "subprotocol": subprotocol}
+        if getattr(openwb_cp.data.get.ocpp, "last_connection_settings", None) == settings:
+            return
+        openwb_cp.data.get.ocpp.last_connection_settings = settings
+        Pub().pub(
+            f"openWB/set/chargepoint/{openwb_cp.num}/get/ocpp/last_connection_settings",
+            settings,
+        )
+
+    async def _open_connection(
+        self,
+        chargebox_id: str,
+    ) -> Optional[OcppConnection]:
+        openwb_cp = get_cp_from_chargebox_id(chargebox_id)
+        if openwb_cp is None:
+            log.debug("OCPP %s: Ladepunktmodell momentan nicht verfügbar; Verbindungsaufbau zurückgestellt.",
+                      chargebox_id)
+            return None
+        url, version = self._get_connection_settings(chargebox_id, openwb_cp)
+
+        if not url:
+            raise ValueError("OCPP-Server-URL ist nicht konfiguriert")
+        if not version:
+            raise ValueError("OCPP-Subprotocol ist nicht konfiguriert")
+
+        ws_url = f"{url.rstrip('/')}/{quote(chargebox_id, safe='')}"
+
+        log.info(
+            "Verbinde OCPP Chargebox %s mit %s",
+            chargebox_id,
+            ws_url,
+        )
+
+        ws = await websockets.connect(
+            ws_url,
+            subprotocols=[version],
+            extra_headers=self.build_custom_headers(
+                chargebox_id, openwb_cp.data.config.ocpp_chargebox_password
+            ),
+        )
+
+        if ws.subprotocol != version:
+            negotiated = ws.subprotocol
+            await ws.close()
+            raise ConnectionError(
+                f"OCPP-Subprotocol nicht ausgehandelt: erwartet {version!r}, erhalten {negotiated!r}"
+            )
+
+        connection: Optional[OcppConnection] = None
+
+        try:
+            # Während des Handshakes kann das Backend die Ladepunktmodelle ersetzen.
+            openwb_cp = get_cp_from_chargebox_id(chargebox_id)
+            if openwb_cp is None:
+                log.debug("OCPP %s: Ladepunktmodell nach Handshake nicht verfügbar; Verbindung wird wiederholt.",
+                          chargebox_id)
+                await ws.close()
+                return None
+            cp = self._chargepoint_factory(chargebox_id, ws)
+            connection = OcppConnection(
+                chargebox_id=chargebox_id,
+                ws=ws,
+                cp=cp,
+            )
+            connection.server_url = url
+            connection.subprotocol = version
+            self._store_connection_settings(openwb_cp, url, version)
+
+            self._connections[chargebox_id] = connection
+            connection.start_task = asyncio.create_task(
+                self._run_charge_point(connection),
+                name=f"ocpp-{chargebox_id}-receiver",
+            )
+
+            response = await self._on_connected(connection)
+            if response is not True:
+                log.error("Initialisierung der OCPP-Verbindung für %s fehlgeschlagen", chargebox_id)
+                await self._cleanup_connection(connection)
+                return None
+
+            log.info("OCPP Chargebox %s verbunden", chargebox_id)
+            return connection
+        except asyncio.CancelledError:
+            if connection is not None:
+                await self._cleanup_connection(connection)
+            elif not ws.closed:
+                await ws.close()
+            raise
+        except Exception:
+            if connection is not None:
+                await self._cleanup_connection(connection)
+            elif not ws.closed:
+                await ws.close()
+            raise
+
+    async def _cleanup_connection(
+        self,
+        connection: OcppConnection,
+    ) -> None:
+        if connection.closing:
+            return
+
+        connection.closing = True
+        chargebox_id = connection.chargebox_id
+
+        # Zuerst entfernen. Ein während der Bereinigung beendeter Empfänger darf
+        # diese veraltete Verbindung nicht mehr als aktuelle Verbindung behandeln.
+        if self._connections.get(chargebox_id) is connection:
+            self._connections.pop(chargebox_id, None)
+
+        try:
+            await self._on_disconnected(connection)
+        except asyncio.CancelledError:
+            cancelled = True
+        except Exception:
+            cancelled = False
+            log.exception(
+                "Fehler beim Disconnect-Hook für OCPP %s",
+                chargebox_id,
+            )
+        else:
+            cancelled = False
+
+        current_task = asyncio.current_task()
+
+        cancel_background_tasks = getattr(connection.cp, "cancel_background_tasks", None)
+        if cancel_background_tasks is not None:
+            try:
+                await cancel_background_tasks()
+            except asyncio.CancelledError:
+                cancelled = True
+            except Exception:
+                log.exception(
+                    "Fehler beim Beenden der OCPP-Hintergrundtasks für %s",
+                    chargebox_id,
+                )
+
+        tasks = [
+            connection.retry_task,
+            connection.heartbeat_task,
+            connection.meter_task,
+            connection.start_task,
+        ]
+
+        for task in tasks:
+            if (
+                task is not None
+                and task is not current_task
+                and not task.done()
+            ):
+                task.cancel()
+
+        for task in tasks:
+            if task is None or task is current_task:
+                continue
+
+            try:
+                await task
+            except asyncio.CancelledError:
+                pass
+            except Exception:
+                # Die ursprüngliche Task hat ihren tatsächlichen Fehler bereits protokolliert.
+                pass
+        try:
+            if not connection.ws.closed:
+                await connection.ws.close()
+        finally:
+            if cancelled:
+                log.info(
+                    "OCPP-Verbindung zu %s wurde während der Bereinigung abgebrochen",
+                    chargebox_id,
+                )
+
+    async def _run_charge_point(
+        self,
+        connection: OcppConnection,
+    ) -> None:
+        chargebox_id = connection.chargebox_id
+
+        try:
+            log.info("OCPP Receiver für %s gestartet", chargebox_id)
+            await connection.cp.start()
+        except asyncio.CancelledError:
+            raise
+        except Exception:
+            log.exception(
+                "OCPP-Verbindung zu %s verloren",
+                chargebox_id,
+            )
+        finally:
+            # Den Handler als eigene Task starten: Das Cleanup wartet auf die
+            # Receiver-Task. Würde der Receiver den Handler direkt abwarten,
+            # warteten beide Tasks gegenseitig aufeinander (Deadlock).
+            task = asyncio.create_task(
+                self._on_connection_lost(connection),
+                name=f"ocpp-{chargebox_id}-connection-lost",
+            )
+            self._connection_lost_task.add(task)
+            task.add_done_callback(self._connection_lost_done)
+
+    def _connection_lost_done(self, task: asyncio.Task) -> None:
+        self._connection_lost_task.discard(task)
+        try:
+            task.result()
+        except asyncio.CancelledError:
+            pass
+        except Exception:
+            log.exception("Fehler beim Bereinigen einer verlorenen OCPP-Verbindung")
+
+    async def _on_connection_lost(
+        self,
+        connection: OcppConnection,
+    ) -> None:
+        chargebox_id = connection.chargebox_id
+
+        # Mit connect/disconnect serialisieren. Ohne Lock könnte das Cleanup
+        # einer alten Verbindung nach dem Aufbau ihrer Nachfolgerin laufen
+        lock = self._get_connect_lock(chargebox_id)
+        async with lock:
+            if self._connections.get(chargebox_id) is not connection:
+                return
+            await self._cleanup_connection(connection)
+
+            if self.is_wanted(chargebox_id):
+                self._schedule_reconnect(chargebox_id)
+
+    async def _reconnect_loop(
+        self,
+        chargebox_id: str,
+    ) -> None:
+        delay = 2
+
+        try:
+            while self.is_wanted(chargebox_id):
+                try:
+                    connection = await self.ensure_connected(chargebox_id)
+
+                    if connection is not None:
+                        log.info(
+                            "OCPP %s erfolgreich wieder verbunden",
+                            chargebox_id,
+                        )
+                        return
+
+                except asyncio.CancelledError:
+                    raise
+
+                except Exception:
+                    log.warning(
+                        "Reconnect für %s fehlgeschlagen. "
+                        "Neuer Versuch in %ss.",
+                        chargebox_id,
+                        delay,
+                    )
+
+                await asyncio.sleep(delay)
+                delay = min(delay * 2, 60)
+
+        finally:
+            task = self._reconnect_tasks.get(chargebox_id)
+            if task is asyncio.current_task():
+                self._reconnect_tasks.pop(chargebox_id, None)
+
+    def _schedule_reconnect(self, chargebox_id: str) -> None:
+        if not self.is_wanted(chargebox_id):
+            return
+
+        existing = self._reconnect_tasks.get(chargebox_id)
+        if existing is not None and not existing.done():
+            return
+
+        task = asyncio.create_task(
+            self._reconnect_loop(chargebox_id),
+            name=f"ocpp-{chargebox_id}-reconnect",
+        )
+
+        self._reconnect_tasks[chargebox_id] = task
+
+    async def _cancel_reconnect(self, chargebox_id: str) -> None:
+        task = self._reconnect_tasks.pop(chargebox_id, None)
+        if task is None or task.done():
+            return
+        if task is asyncio.current_task():
+            return
+
+        task.cancel()
+        try:
+            await task
+        except asyncio.CancelledError:
+            pass
+        except Exception as e:
+            log.debug("Reconnect-Task für %s endete beim Abbruch mit fehler: %s", chargebox_id, e)
+
+    def _get_connect_lock(self, chargebox_id: str) -> asyncio.Lock:
+        lock = self._connect_locks.get(chargebox_id)
+        if lock is None:
+            lock = asyncio.Lock()
+            self._connect_locks[chargebox_id] = lock
+        return lock
+
+    @staticmethod
+    def _is_usable(
+        connection: Optional[OcppConnection],
+    ) -> bool:
+        return (
+            connection is not None
+            and not connection.closing
+            and connection.start_task is not None
+            and not connection.start_task.done()
+            and not connection.ws.closed
+        )
