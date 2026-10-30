@@ -35,7 +35,9 @@ FORM = ('<form action="/commonauth"><input name="sessionDataKey" value="syntheti
 
 
 @pytest.fixture(autouse=True)
-def http():
+def http(caplog):
+    # Mock request URLs are test infrastructure; keep real HTTP and module logs checked.
+    caplog.set_level(logging.WARNING, logger="requests_mock.adapter")
     with requests_mock.Mocker() as mock:
         yield mock
 
