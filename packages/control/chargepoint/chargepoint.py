@@ -110,7 +110,8 @@ class Chargepoint(ChargepointRfidMixin, Load):
         else:
             # Darf Autolock durch Tag überschrieben werden?
             if data.data.optional_data.data.rfid.active:
-                if self.data.get.rfid is None and self.data.set.rfid is None:
+                if (self.data.set.rfid is None and
+                        (self.find_duo_partner() is not None or self.data.get.rfid is None)):
                     state = False
                     message = ("Keine Ladung, da der Ladepunkt durch Sperren nach Uhrzeit gesperrt ist und erst "
                                "per ID-Tag freigeschaltet werden muss.")
@@ -130,9 +131,13 @@ class Chargepoint(ChargepointRfidMixin, Load):
         # Vergleiche werden case-insensitive durchgeführt
         # das vereinfacht die Eingabe, kann aber auch für falsche Treffer sorgen.
         # 'fnmatch()' ist case-insensitive
+        # Bei einer Duo ist get.rfid ein gemeinsamer, noch nicht zugeordneter
+        # Scan. Erst set.rfid darf diesen Ladepunkt per RFID entsperren.
+        duo_partner = self.find_duo_partner()
         match = False
         for tag_id in self.template.data.valid_tags:
-            if ((self.data.get.rfid is not None and fnmatch(self.data.get.rfid, tag_id)) or
+            if ((duo_partner is None and
+                 self.data.get.rfid is not None and fnmatch(self.data.get.rfid, tag_id)) or
                     (self.data.get.vehicle_id is not None and fnmatch(self.data.get.vehicle_id, tag_id)) or
                     (self.data.set.rfid is not None and fnmatch(self.data.set.rfid, tag_id))):
                 match = True
@@ -617,7 +622,12 @@ class Chargepoint(ChargepointRfidMixin, Load):
         self._validate_rfid()
         charging_possible = self.is_charging_possible()[0]
         if charging_possible:
-            vehicle = self.template.get_ev(self.data.get.rfid or self.data.set.rfid,
+            # Bei einer Duo gehört ein neuer gemeinsamer Scan noch nicht zu
+            # diesem LP. Die Zuordnung erfolgt in update() über _link_rfid_to_cp().
+            rfid = self.data.set.rfid
+            if self.find_duo_partner() is None:
+                rfid = self.data.get.rfid or self.data.set.rfid
+            vehicle = self.template.get_ev(rfid,
                                            self.data.get.vehicle_id,
                                            self.data.config.ev)[0]
             charging_ev = self._get_charging_ev(vehicle, ev_list)
@@ -631,10 +641,15 @@ class Chargepoint(ChargepointRfidMixin, Load):
     def update(self, ev_list: Dict[str, Ev]) -> None:
         try:
             self._validate_rfid()
-            charging_possible, message = self.is_charging_possible()
             if self.data.get.rfid is not None and self.data.get.plug_state:
                 self._link_rfid_to_cp()
-            vehicle, message_ev = self.template.get_ev(self.data.set.rfid or self.data.get.rfid,
+            charging_possible, message = self.is_charging_possible()
+            # Ein vorläufiger gemeinsamer Scan gehört keinem eingesteckten Duo-LP.
+            # Am leeren LP bleibt die Fahrzeugvorschau bis zum Anstecken erhalten.
+            rfid = self.data.set.rfid
+            if self.find_duo_partner() is None or not self.data.get.plug_state:
+                rfid = rfid or self.data.get.rfid
+            vehicle, message_ev = self.template.get_ev(rfid,
                                                        self.data.get.vehicle_id,
                                                        self.data.config.ev)
             if message_ev:
@@ -725,12 +740,12 @@ class Chargepoint(ChargepointRfidMixin, Load):
                 # Starte nur Transaction wenn auch die chargepoint ID im Backend gesetzt wurde
                 if self.data.config.ocpp_chargebox_id:
                     # Starte nur Transaction wenn bereits ein RFID Tag oder die Fahrzeug ID erkannt wurde
-                    if (self.data.set.rfid or self.data.get.rfid or self.data.get.vehicle_id):
+                    if (rfid or self.data.get.vehicle_id):
                         self.data.set.ocpp_transaction_id = data.data.optional_data.start_transaction(
                             self.data.config.ocpp_chargebox_id,
                             self.chargepoint_module.fault_state,
                             self.num,
-                            self.data.set.rfid or self.data.get.rfid or self.data.get.vehicle_id,
+                            rfid or self.data.get.vehicle_id,
                             self.data.get.imported)
             if self.data.get.plug_state and self.data.set.plug_state_prev is False:
                 self.data.control_parameter.timestamp_chargemode_changed = create_timestamp()
