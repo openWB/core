@@ -605,7 +605,6 @@ class SetData:
                 "/get/ocpp/remote_stop" in msg.topic or
                 "/get/ocpp/unlock_stop" in msg.topic or
                 "/get/ocpp/tag_accepted" in msg.topic or
-                "/get/ocpp/test_reconnect" in msg.topic or
                 "/get/ocpp/connected" in msg.topic or
                 "/get/ocpp/reset" in msg.topic or
                 "/get/ocpp/rfid_stop" in msg.topic):
