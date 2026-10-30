@@ -221,8 +221,10 @@ class OcppConnectionManager:
     def build_custom_headers(
         self,
         charge_point_id: str,
-        auth_key: str,
+        auth_key: Optional[str],
     ) -> dict:
+        if not auth_key:
+            return {}
         credentials = f"{charge_point_id}:{auth_key}"
         encoded_credentials = base64.b64encode(credentials.encode("utf-8")).decode("utf-8")
         return {
