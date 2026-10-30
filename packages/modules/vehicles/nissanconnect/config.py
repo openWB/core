@@ -7,6 +7,7 @@ class NissanConnectConfiguration:
     user_id: Optional[str] = field(default=None, repr=False)
     password: Optional[str] = field(default=None, repr=False)
     vin: Optional[str] = field(default=None, repr=False)
+    refresh_while_charging: bool = False
 
 
 @dataclass
