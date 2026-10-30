@@ -12,6 +12,7 @@ from modules.common import req
 from modules.common.component_state import CounterState
 from modules.common.utils.peak_filter import PeakFilter
 from modules.common.component_type import ComponentType
+from modules.devices.tasmota.tasmota.parser import TasmotaParser
 
 log = logging.getLogger(__name__)
 
@@ -40,68 +41,21 @@ class TasmotaCounter(AbstractCounter):
         url = "http://" + self.__ip_address + "/cm?cmnd=Status%208"
         response = req.get_http_session().get(url, timeout=5).json()
 
-        voltages = None
-        currents = None
-        powers = None
-        power_factors = None
-        if 'ENERGY' in response['StatusSNS']:
-            voltages = [0.0, 0.0, 0.0]
-            powers = [0.0, 0.0, 0.0]
-            currents = [0.0, 0.0, 0.0]
-            power_factors = [0.0, 0.0, 0.0]
-
-            power = float(response['StatusSNS']['ENERGY']['Power'])
-            voltages[self.__phase-1] = float(response['StatusSNS']['ENERGY']['Voltage'])
-            powers[self.__phase-1] = float(response['StatusSNS']['ENERGY']['Power'])
-            currents[self.__phase-1] = float(response['StatusSNS']['ENERGY']['Current'])
-            power_factors[self.__phase-1] = float(response['StatusSNS']['ENERGY']['Factor'])
-            imported = float(response['StatusSNS']['ENERGY']['Total']*1000)
-            imported, _ = self.peak_filter.check_values(power, imported, None)
+        data = TasmotaParser(response, self.__phase)
+        power = data.power
+        measured_exported = None if data.meter_type == 'ENERGY' else data.exported
+        imported, exported = self.peak_filter.check_values(power, data.imported, measured_exported)
+        if data.meter_type == 'ENERGY':
             _, exported = self.sim_counter.sim_count(power)
-        elif 'Itron' in response['StatusSNS']:
-            power = float(response['StatusSNS']['Itron']['Power'])
-            if 'E_in' in response['StatusSNS']['Itron']:
-                imported = float(response['StatusSNS']['Itron']['E_in']*1000)
-                exported = float(response['StatusSNS']['Itron']['E_out']*1000)
-            else:
-                imported = float(response['StatusSNS']['Itron']['ImportActive']*1000)
-                exported = float(response['StatusSNS']['Itron']['ExportActive']*1000)
-            imported, exported = self.peak_filter.check_values(power, imported, exported)
-        elif 'MT681' in response['StatusSNS']:
-            power = float(response['StatusSNS']['MT681']['Watt_summe'])
-            imported = float(response['StatusSNS']['MT681']['Total_in']*1000)
-            exported = float(response['StatusSNS']['MT681']['Total_out']*1000)
-            imported, exported = self.peak_filter.check_values(power, imported, exported)
-        elif 'eBZ' in response['StatusSNS']:
-            powers = [0.0, 0.0, 0.0]
-            power = float(response['StatusSNS']['eBZ']['Power'])
-            imported = float(response['StatusSNS']['eBZ']['E_in']*1000)
-            exported = float(response['StatusSNS']['eBZ']['E_out']*1000)
-            imported, exported = self.peak_filter.check_values(power, imported, exported)
-            if (
-                '36_7_0' in response['StatusSNS']['eBZ'] and
-                '56_7_0' in response['StatusSNS']['eBZ'] and
-                '76_7_0' in response['StatusSNS']['eBZ']
-            ):
-                powers = [float(response['StatusSNS']['eBZ']['36_7_0']),
-                          float(response['StatusSNS']['eBZ']['56_7_0']),
-                          float(response['StatusSNS']['eBZ']['76_7_0'])]
-        elif 'MT631' in response['StatusSNS']:
-            power = float(response['StatusSNS']['MT631']['Power'])
-            imported = float(response['StatusSNS']['MT631']['E_in']*1000)
-            exported = float(response['StatusSNS']['MT631']['E_out']*1000)
-            imported, exported = self.peak_filter.check_values(power, imported, exported)
-        else:
-            raise ValueError("Nicht unterstützter Tasmota Zählertyp. Bitte an den Support wenden.")
 
         counter_state = CounterState(
             power=power,
             imported=imported,
             exported=exported,
-            voltages=voltages,
-            currents=currents,
-            powers=powers,
-            power_factors=power_factors
+            voltages=data.voltages,
+            currents=data.currents,
+            powers=data.powers,
+            power_factors=data.power_factors
         )
 
         self.store.set(counter_state)
