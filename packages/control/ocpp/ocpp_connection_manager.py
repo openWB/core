@@ -163,10 +163,6 @@ class OcppConnectionManager:
                     )
                 await self._cleanup_connection(existing)
 
-            # NUR ZUM TESTN
-            if openwb_cp.data.get.ocpp.test_reconnect:
-                return None
-
             return await self._open_connection(chargebox_id)
 
     async def reconnect_now(
@@ -509,13 +505,6 @@ class OcppConnectionManager:
             if self._connections.get(chargebox_id) is not connection:
                 return
             await self._cleanup_connection(connection)
-
-            openwb_cp = get_cp_from_chargebox_id(chargebox_id)
-            if (
-                openwb_cp is not None
-                and openwb_cp.data.get.ocpp.test_reconnect
-            ):
-                return
 
             if self.is_wanted(chargebox_id):
                 self._schedule_reconnect(chargebox_id)

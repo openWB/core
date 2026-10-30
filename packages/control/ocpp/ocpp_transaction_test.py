@@ -2012,7 +2012,6 @@ def test_remote_start_rejects_stop_flags_without_forwarding_tag(handler_setup, m
 @pytest.fixture
 def connection_config_setup(handler_setup, monkeypatch):
     _, openwb_cp = handler_setup
-    openwb_cp.data.get.ocpp.test_reconnect = False
     openwb_cp.data.config = SimpleNamespace(ocpp_chargebox_password="secret")
     config = SimpleNamespace(active=True, url="wss://old.example/ocpp/", version="ocpp1.6")
     monkeypatch.setattr(data, "data", SimpleNamespace(
@@ -2784,7 +2783,6 @@ def test_websocket_transaction_survives_reconnect(monkeypatch):
                                  tag_accepted=False, availability=[True, True],
                                  pending_availability=[False, False], pending_transactions=[],
                                  authorization_flow_status=None,
-                                 test_reconnect=False,
                                  config=ocpp_config_factory()),
             serial_number="serial-1",
         ), config=SimpleNamespace(ocpp_chargebox_password="test-password")),
