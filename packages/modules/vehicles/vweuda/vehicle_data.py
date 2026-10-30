@@ -62,11 +62,9 @@ def parse_vehicle_data(payload: dict) -> dict:
     timestamp = None
     if by_key.get(CADDY_SOC, {}).get("value") is not None:
         timestamp = by_key[CADDY_SOC].get("timestampUtc")
-    # Portal variants use different names; timestamp is only a fallback,
-    # even when it contains a later value than car_captured_time (PR #4127).
-    for name in ("car_captured_time", "timestamp"):
-        if not timestamp:
-            timestamp = max((field["value"] for field in data if field["dataFieldName"] == name), default=None)
+    if not timestamp:
+        timestamp = max((field["value"] for field in data if field["dataFieldName"] == "car_captured_time"),
+                        default=None)
     result.update(soc_timestamp=parse_datetime(timestamp).timestamp() if timestamp else None,
                   soc_timestamp_str=timestamp, warning=None)
     threshold = by_name.get("battery_care_mode.charge_bcam_threshold")

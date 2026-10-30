@@ -97,6 +97,10 @@ def _login_error(html: str) -> Optional[str]:
     return str(error) if error else None
 
 
+def _is_universal_login(fields: dict) -> bool:
+    return {"state", "username", "password"} <= fields.keys() and "hmac" not in fields
+
+
 def _login_fields(html: str) -> tuple[dict, Optional[str]]:
     form = _LoginForm(html)
     model = _template_model(html)
@@ -106,7 +110,7 @@ def _login_fields(html: str) -> tuple[dict, Optional[str]]:
     csrf = re.search(r"csrf_token\s*[:=]\s*['\"]([^'\"]+)['\"]", html)
     if csrf:
         form.fields.setdefault("_csrf", csrf.group(1))
-    if not all(key in form.fields for key in ("hmac", "_csrf")):
+    if not _is_universal_login(form.fields) and not all(key in form.fields for key in ("hmac", "_csrf")):
         raise AuthError(_login_error(html) or "Could not parse identity login form")
     return form.fields, form.action
 
@@ -116,7 +120,8 @@ def _check_login_status(response: Response) -> None:
     if status >= 500 or status in (404, 429):
         raise ApiError(f"Identity provider error (HTTP {status})", status=status)
     if status >= 400:
-        raise AuthError(_login_error(response.text) or f"Login rejected (HTTP {status})")
+        message = "Login failed - check email and password" if "/u/login" in urlparse(response.url).path else None
+        raise AuthError(_login_error(response.text) or message or f"Login rejected (HTTP {status})")
 
 
 class EudaApiClient:
@@ -166,27 +171,36 @@ class EudaApiClient:
             response = self._request("GET", next_url, headers={"Referer": previous_url}, allow_redirects=False)
 
     def login(self) -> None:
-        """Authorize → email form → password form → portal callback."""
+        """Authorize → legacy two-step or Auth0 single-form login → portal callback."""
         self._logged_in = False
         with self._request("GET", self._build_authorize_url(self._brand)) as response:
             _check_login_status(response)
             signin_url = response.url
             fields, action = _login_fields(response.text)
 
-        fields["email"] = self._email
-        with self._request("POST", urljoin(signin_url, action or ""), data=fields,
-                           headers={"Referer": signin_url}) as response:
-            _check_login_status(response)
-            authenticate_url = response.url
-            fields, action = _login_fields(response.text)
+        if _is_universal_login(fields):
+            # Auth0 posts both credentials at once; keep ?state= in the URL.
+            fields.update(username=self._email, password=self._password, action="default")
+            action_url = urljoin(signin_url, action or "")
+            referer = signin_url
+        else:
+            fields["email"] = self._email
+            with self._request("POST", urljoin(signin_url, action or ""), data=fields,
+                               headers={"Referer": signin_url}) as response:
+                _check_login_status(response)
+                referer = response.url
+                fields, action = _login_fields(response.text)
 
-        fields.update(email=self._email, password=self._password)
-        # relayState belongs in the POST body, not in the action URL as well.
-        action_url = urljoin(authenticate_url, action) if action else authenticate_url.split("?", 1)[0]
-        with self._post_login_form(action_url, data=fields, referer=authenticate_url) as response:
+            fields.update(email=self._email, password=self._password)
+            # Legacy relayState belongs in the POST body, not in the URL as well.
+            action_url = urljoin(referer, action) if action else referer.split("?", 1)[0]
+
+        with self._post_login_form(action_url, data=fields, referer=referer) as response:
             _check_login_status(response)
             parsed = urlparse(response.url)
             if parsed.netloc != urlparse(BASE_URL).netloc or not parsed.path.startswith(CALLBACK_LOGIN_PATH):
+                if "/u/login" in parsed.path:
+                    raise AuthError(_login_error(response.text) or "Login failed - check email and password")
                 raise AuthError(_login_error(response.text) or "Login did not reach the portal callback")
             if not response.cookies.get("access_token"):
                 raise AuthError("Login callback did not establish a session (access_token cookie missing)")
