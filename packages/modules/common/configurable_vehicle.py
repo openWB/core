@@ -1,5 +1,6 @@
 from enum import Enum
 import logging
+import math
 import time
 from typing import Optional, TypeVar, Generic, Callable
 from helpermodules import timecheck
@@ -37,8 +38,10 @@ class ConfigurableVehicle(Generic[T_VEHICLE_CONFIG]):
                  calc_while_charging: bool = False,
                  general_config: Optional[GeneralVehicleConfig] = None,
                  calculated_soc_state: Optional[CalculatedSocState] = None,
-                 initializer: Callable = lambda: None) -> None:
+                 initializer: Callable = lambda: None,
+                 request_interval_override: Optional[Callable[[], Optional[float]]] = None) -> None:
         self.__component_updater = component_updater
+        self.__request_interval_override = request_interval_override
         self.vehicle_config = vehicle_config
         self.calculated_soc_state = calculated_soc_state
         self.__initializer = initializer
@@ -97,7 +100,23 @@ class ConfigurableVehicle(Generic[T_VEHICLE_CONFIG]):
             Pub().pub(f"openWB/set/vehicle/{self.vehicle}/soc_module/calculated_soc_state",
                       asdict(self.calculated_soc_state))
 
+    def get_request_interval_override(self) -> Optional[float]:
+        """Return a module's current maximum request interval in seconds.
+
+        None keeps the regular schedule. A positive interval can only advance
+        requests and also selects the API instead of calculated/chargepoint SoC.
+        The callback must be a quick, read-only lookup of module-owned state.
+        Keep it and the updater in the same closure so their cache/error state
+        remains shared when the SoC scheduler deep-copies this vehicle object.
+        """
+        interval = self.__request_interval_override() if self.__request_interval_override is not None else None
+        if interval is not None and (not math.isfinite(interval) or interval <= 0):
+            raise ValueError("Vehicle request interval override must be finite and greater than zero")
+        return interval
+
     def _get_carstate_source(self, vehicle_update_data: VehicleUpdateData) -> SocSource:
+        if self.get_request_interval_override() is not None:
+            return SocSource.API
         # Kein SoC vom LP vorhanden oder erwünscht
         if (vehicle_update_data.soc_from_cp is None or self.general_config.use_soc_from_cp is False or
                 # oder aktueller manueller SoC vorhanden (ausgelesenen SoC während der Ladung korrigieren)
