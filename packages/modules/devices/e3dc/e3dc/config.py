@@ -1,3 +1,5 @@
+from typing import Optional
+
 from modules.common.component_setup import ComponentSetup
 from helpermodules.auto_str import auto_str
 from ..vendor import vendor_descriptor
@@ -27,8 +29,19 @@ class E3dc:
 
 @auto_str
 class E3dcBatConfiguration:
-    def __init__(self) -> None:
-        pass
+    def __init__(self,
+                 portal_username: Optional[str] = None,
+                 portal_password: Optional[str] = None,
+                 rscp_key: Optional[str] = None) -> None:
+        # Nur für die aktive Speichersteuerung benötigt. Ohne sie wird der Speicher weiterhin per
+        # Modbus ausgelesen, kann aber nicht aktiv gesteuert werden.
+        # portal_username/portal_password: Zugangsdaten des E3DC-Portal-Accounts (auch für die lokale
+        # RSCP-Verbindung zur Authentifizierung nötig).
+        # rscp_key: lokaler RSCP-Verschlüsselungscode, in den E3DC-Einstellungen unter
+        # "Hauptgerät -> Personalisieren -> RSCP-Passwort" vergeben.
+        self.portal_username = portal_username
+        self.portal_password = portal_password
+        self.rscp_key = rscp_key
 
 
 @auto_str
