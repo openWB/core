@@ -641,10 +641,7 @@ class FroniusWR:
         cnonce = self.cnonce
         user = self.user
         password = self.password
-        algorithm = self.api_config.auth_algorithm
-        password_algorithm = algorithm
-
-        password_algorithm = self.__get_password_hash_method()
+        algorithm = self.__get_password_hash_method()
 
         if len(self.user) < 4:
             raise RuntimeError("User needed for Authorization")
@@ -653,7 +650,7 @@ class FroniusWR:
 
         a1 = f"{user}:{realm}:{password}"
         a2 = f"{method}:{path}"
-        ha1 = hash_utf8(a1, password_algorithm)
+        ha1 = hash_utf8(a1, algorithm)
         ha2 = hash_utf8(a2, algorithm)
         noncebit = f"{nonce}:{ncvalue}:{cnonce}:auth:{ha2}"
         respdig = hash_utf8(f"{ha1}:{noncebit}", algorithm)
