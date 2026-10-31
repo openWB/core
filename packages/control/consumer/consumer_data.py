@@ -77,6 +77,7 @@ class Get:
     set_power: Optional[float] = None
     state: Optional[bool] = False
     state_str: Optional[str] = field(default=None, metadata={"topic": "get/state_str"})
+    temperatures: Optional[List[float]] = None
     voltages: List[float] = field(default_factory=voltages_list_factory)
 
 

@@ -31,6 +31,20 @@ def request_status(address: str, generation: Optional[int]) -> Dict:
     return req.get_http_session().get(status_url, timeout=3).json()
 
 
+def parse_temperatures(status: Dict, generation: int) -> Optional[List[float]]:
+    temperatures: List[float] = []
+    for index in range(3):
+        try:
+            if generation == 1:
+                value = status['ext_temperature'][str(index)]['tC']
+            else:
+                value = status[f'temperature:{100 + index}']['tC']
+            temperatures.append(float(value))
+        except (KeyError, TypeError, ValueError):
+            log.exception(f"Error parsing temperature for index {index} in status: {status}")
+    return temperatures if len(temperatures) > 0 else None
+
+
 def parse_data(phase: int, factor: float, status: Dict) -> Tuple[
         List[float], Optional[List[float]], Optional[List[float]], Optional[List[float]], float, Optional[float]]:
     try:

@@ -29,8 +29,7 @@ class ConsumerValueStoreBroker(ValueStore[ConsumerState]):
         if self.state.imported is not None and self.state.exported is not None:
             pub_to_broker(f"openWB/set/consumer/{self.num}/get/imported", self.state.imported, 2)
             pub_to_broker(f"openWB/set/consumer/{self.num}/get/exported", self.state.exported, 2)
-        if self.state.temperatures is not None:
-            pub_to_broker(f"openWB/set/consumer/{self.num}/get/temperatures", self.state.temperatures)
+        pub_to_broker(f"openWB/set/consumer/{self.num}/get/temperatures", self.state.temperatures)
 
 
 class PurgeConsumerState(ValueStore[ConsumerState]):
