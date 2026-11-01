@@ -48,6 +48,11 @@
 				</div>
 			</transition>
 			<RadioBarInput
+				v-if="
+					device.consumerType == 'suspendable_onoff' ||
+					device.consumerType == 'suspendable_tunable' ||
+					device.consumerType == 'continuous'
+				"
 				:id="'chargemode-' + device.name"
 				v-model="device.chargeMode"
 				class="chargemodes mt-3 mb-3"

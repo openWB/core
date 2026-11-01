@@ -70,6 +70,7 @@ export class Consumer implements PowerItem {
 	faultText = ''
 	temp = []
 	countAsHouse = false
+	consumerType = ''
 	now: EnergyData = {
 		energy: 0,
 		energyPv: 0,

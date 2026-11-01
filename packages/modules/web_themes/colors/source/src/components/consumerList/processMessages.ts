@@ -56,6 +56,7 @@ function processConsumerDeviceMessages(topic: string, message: string) {
 						JSON.stringify(usage),
 				)
 				dev.usage = usage
+				dev.consumerType = usage.type
 			}
 		} catch (e) {
 			console.warn('Error parsing consumer usage data: ' + e)
