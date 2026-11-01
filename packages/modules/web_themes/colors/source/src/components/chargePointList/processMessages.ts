@@ -139,7 +139,7 @@ export function processVehicleMessages(topic: string, message: string) {
 			vehicles[index].name = JSON.parse(message)
 		} else if (topic.match(/^openwb\/vehicle\/[0-9]+\/get\/soc$/i)) {
 			// set soc for cp
-			vehicles[index].soc = JSON.parse(message)
+			vehicles[index].soc = JSON.parse(message) ?? 0
 		} else if (topic.match(/^openwb\/vehicle\/[0-9]+\/get\/range$/i)) {
 			if (isNaN(+message)) {
 				vehicles[index].range = 0
