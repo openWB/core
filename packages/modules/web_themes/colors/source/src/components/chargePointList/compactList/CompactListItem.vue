@@ -49,7 +49,7 @@
 					class="d-flex justify-content-center align-items-center vehiclestatus"
 				>
 					<BatterySymbol
-						v-if="chargepoint.soc  != undefined"
+						v-if="chargepoint.soc != undefined"
 						class="me-1"
 						:soc="chargepoint.soc"
 					/>
@@ -139,7 +139,12 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { chargePoints, vehicles, type ChargeLimit, type ChargePoint } from '../model'
+import {
+	chargePoints,
+	vehicles,
+	type ChargeLimit,
+	type ChargePoint,
+} from '../model'
 import { chargemodes, globalConfig } from '@/assets/js/themeConfig'
 import { formatWatt, formatWattH } from '@/assets/js/helpers'
 import ChargeConfigPanel from '../cpConfig/ChargeConfigPanel.vue'
@@ -215,9 +220,6 @@ const chargedRangeString = computed(() => {
 	)
 })
 const modeString = computed(() => {
-	console.log("soc for chargepoint "+ props.chargepoint.name +": " + props.chargepoint.soc)
-	console.log(props.chargepoint.connectedVehicle)
-	console.log(vehicles[props.chargepoint.connectedVehicle])
 	return chargemodes[props.chargepoint.chargeMode].name
 })
 /* function nameCellStyle() {
