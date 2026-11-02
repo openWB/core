@@ -55,15 +55,13 @@ class FroniusSunspecInverter(AbstractInverter):
                     address, ModbusDataType.UINT_16, unit=unit)  # DCW
                 power += power_raw * (10 ** power_scale)
             power *= -1
-            self.peak_filter.check_values(power)
-            imported, exported = self.sim_counter.sim_count(power)
         elif version == FroniusInverterVersion.ac:
             power = self.__tcp_client.read_holding_registers(40092, ModbusDataType.FLOAT_32, unit=unit) * -1  # W
-            exported = self.__tcp_client.read_holding_registers(40102, ModbusDataType.FLOAT_32, unit=unit)  # WH
-            _, exported = self.peak_filter.check_values(power, None, exported)
-            imported, _ = self.sim_counter.sim_count(power)
         else:
             raise ValueError("Unbekannte Version "+str(version))
+
+        self.peak_filter.check_values(power)
+        imported, exported = self.sim_counter.sim_count(power)
 
         self.store.set(InverterState(power=power, exported=exported, imported=imported))
 
