@@ -2,9 +2,37 @@
 
 Stand: 2026-11-02. Geprüfter Commit: `cad1a45c6c6b1bdf8a7da553f091325a1ea7be96`.
 
+## Nachtrag: Telnet-Ersatz umgesetzt
+
+Die gemeinsame Versionsabfrage verwendet jetzt die Legacy-API von
+`telnetlib3==5.0.1` über `from telnetlib3 import telnetlib`. Verbindungs- und
+Lese-Timeout bleiben bei zwei Sekunden; Byteverarbeitung, Fehlerweitergabe und
+Verbindungsschließung bleiben unverändert. Der veraltete auskommentierte
+Asyncio-Entwurf wurde entfernt. Der vom Benutzer auf `jq==1.10.0` zurückgesetzte
+Pin wurde nicht geändert; die folgenden jq-Nachträge sind historische Prüfstände.
+
+- Zehn neue Regressionstests prüfen die Banner von Series-2-Satelliten und
+  Dimm-Kit, Telnet-Steuersequenzen, Teilantworten und leere Antworten bei
+  Timeout, Verbindungsende, Standardport, Fehlerweitergabe und fehlende IP.
+  Alle zehn Tests bestehen unter Python 3.9, 3.11 und 3.13.
+- Die vollständige Suite besteht unter 3.9 und 3.11 mit jeweils **1.492 Tests**.
+- Unter 3.13 bestehen ebenfalls **1.492 Tests** in einer Diagnoseumgebung
+  ohne echte gRPC-Installation. Logs: `/tmp/openwb-telnet-full-3.*-pytest.log`.
+- Der CI-ARM-Wheel-Check umfasst nun auch telnetlib3 und transitive
+  Abhängigkeiten. Die Downloads für jq, evdev, telnetlib3 und wcwidth waren
+  für ARMv7 mit Python 3.9, 3.11 und 3.13 erfolgreich.
+
+Der Telnet-Importblocker unter Python 3.13 ist damit behoben. Die vollständige
+binäre x86_64-Installation der Anforderungen bleibt unter 3.13 jedoch an
+`grpcio==1.60.1` blockiert: Für diesen Pin fehlt ein passendes Wheel. Ein
+Quellbau wurde nicht geprüft und der Pin nicht im Rahmen der Telnet-Umstellung
+geändert. Die CI-Matrix bleibt deshalb bei den aktuell vom Benutzer
+konfigurierten Versionen 3.9 und 3.11. Eine vollständige 3.13-Produktionsfreigabe
+und echte Raspberry-Pi-Gerätetests stehen weiterhin aus.
+
 ## Nachtrag: jq auf 1.11.0 aktualisiert
 
-Der aktuelle Pin ist `jq==1.11.0`; die nachfolgenden Nachträge dokumentieren
+Der damalige Pin war `jq==1.11.0`; die nachfolgenden Nachträge dokumentieren
 die vorherigen Pins und Teststände. PyPI nennt Python ab 3.8 als Voraussetzung
 und führt Python-Versionen bis 3.14 in den Klassifikatoren auf.
 
