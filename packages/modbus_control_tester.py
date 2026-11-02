@@ -42,6 +42,7 @@ REGISTERS = (
     Register(10114, Actions.READ_NUMBER, 1, ModbusDataType.INT_16, name="Plugged Status", expected=(1, 1)),
     Register(10115, Actions.READ_NUMBER, 1, ModbusDataType.INT_16, name="Charging Active", expected=(0, 0)),
     Register(10116, Actions.READ_NUMBER, 1, ModbusDataType.INT_16, name="Actual A Configured", expected=(0, 0)),
+    Register(10117, Actions.READ_NUMBER, 1, ModbusDataType.INT_16, name="Phases in Use", expected=(0, 3)),
     Register(10130, Actions.READ_NUMBER, 1, ModbusDataType.INT_16, name="Phase 1 Watt", expected=(0, 0)),
     Register(10131, Actions.READ_NUMBER, 1, ModbusDataType.INT_16, name="Phase 2 Watt", expected=(0, 0)),
     Register(10132, Actions.READ_NUMBER, 1, ModbusDataType.INT_16, name="Phase 3 Watt", expected=(0, 0)),
