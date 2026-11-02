@@ -33,11 +33,12 @@ class FroniusSunspecCounter(AbstractCounter):
     def update(self) -> None:
         unit = self.device_config.counter_modbus_id
 
-        power = self.__tcp_client.read_holding_registers(40098, ModbusDataType.FLOAT_32, unit=unit) * -1  # W
+        # Vorzeichen des SunSpec-Registers entspricht bereits der openWB-Konvention (positiv = Bezug).
+        power = self.__tcp_client.read_holding_registers(40098, ModbusDataType.FLOAT_32, unit=unit)  # W
         powers = [
-            self.__tcp_client.read_holding_registers(40100, ModbusDataType.FLOAT_32, unit=unit) * -1,  # WphA
-            self.__tcp_client.read_holding_registers(40102, ModbusDataType.FLOAT_32, unit=unit) * -1,  # WphB
-            self.__tcp_client.read_holding_registers(40104, ModbusDataType.FLOAT_32, unit=unit) * -1,  # WphC
+            self.__tcp_client.read_holding_registers(40100, ModbusDataType.FLOAT_32, unit=unit),  # WphA
+            self.__tcp_client.read_holding_registers(40102, ModbusDataType.FLOAT_32, unit=unit),  # WphB
+            self.__tcp_client.read_holding_registers(40104, ModbusDataType.FLOAT_32, unit=unit),  # WphC
         ]
         currents = [
             self.__tcp_client.read_holding_registers(40074, ModbusDataType.FLOAT_32, unit=unit),  # AphA
