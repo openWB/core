@@ -58,14 +58,14 @@ class Socket(ChargepointModule):
             log.info(f"Konfiguration als Buchse mit maximal {self.socket_max_current}A Ladestrom je Phase.")
         super().__init__(local_charge_point_num, client_handler, internal_cp, hierarchy_id)
 
-    def set_current(self, current: float) -> None:
+    def set_current(self, current: float, force: bool = False) -> None:
         with SingleComponentUpdateContext(self.fault_state, update_always=False):
             with self.client_error_context:
                 actor = ActorState(GPIO.input(19))
 
                 if actor == ActorState.OPENED:
                     current = 0
-                super().set_current(min(current, self.socket_max_current))
+                super().set_current(min(current, self.socket_max_current), force=force)
                 if actor == ActorState.OPENED and self.chargepoint_state.plug_state is True:
                     raise ValueError("Buchse hat nicht verriegelt, obwohl ein Fahrzeug angesteckt ist.")
 

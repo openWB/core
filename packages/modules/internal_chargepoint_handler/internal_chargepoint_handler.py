@@ -53,7 +53,8 @@ class UpdateState:
                 log.debug("Thread zur CP-Unterbrechung an LP"+str(self.cp_module.local_charge_point_num) +
                           " noch aktiv. Es muss erst gewartet werden, bis die CP-Unterbrechung abgeschlossen ist.")
                 return
-        self.cp_module.set_current(set_current)
+        # Bei Heartbeat-Verlust muss die Ladung sofort stoppen, der Übergangsfilter darf das nicht verzögern.
+        self.cp_module.set_current(set_current, force=heartbeat_expired)
         Pub().pub(f"openWB/set/chargepoint/{self.hierarchy_id}/set/current", payload=set_current)
         if data.trigger_phase_switch:
             log.debug("Switch Phases from "+str(self.old_phases_to_use) + " to " + str(data.phases_to_use))

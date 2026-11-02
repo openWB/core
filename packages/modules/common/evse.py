@@ -6,6 +6,7 @@ from typing import Optional, Tuple
 from helpermodules.logger import ModifyLoglevelContext
 
 from modules.common import modbus
+from modules.common import evse_transition_filter
 from modules.common.component_state import EvseState
 from modules.common.modbus import ModbusDataType
 
@@ -111,7 +112,8 @@ class Evse:
         else:
             return
 
-    def set_current(self, current: int, phases_in_use: Optional[int] = None) -> None:
+    def set_current(self, current: int, phases_in_use: Optional[int] = None,
+                    wait: bool = False, force: bool = False) -> None:
         time.sleep(0.1)
         if self.max_current == 20 and phases_in_use is not None and phases_in_use != 0:
             # Bei 20A EVSE und bekannter Phasenzahl auf 16A begrenzen, sonst erstmal Ladung mit Minimalstrom starten,
@@ -120,4 +122,12 @@ class Evse:
                 current = 16
         formatted_current = round(current*100) if self._precise_current else round(current)
         if self.evse_current != formatted_current:
+            # wait=True nur für Aufrufer, die unmittelbar danach Hardware schalten und den
+            # Schreibzugriff daher nicht in den nächsten Zyklus verschieben können.
+            if wait:
+                evse_transition_filter.wait_for_window(self.id, formatted_current)
+            if not evse_transition_filter.allow_write(self.id, formatted_current, force=force):
+                return
             self.client.write_register(1000, formatted_current, unit=self.id)
+            # Ein abgewarteter Schreibzugriff darf den Wiederanlauf nach der Umschaltung nicht sperren.
+            evse_transition_filter.record_write(self.id, formatted_current, arm_window=not wait)
