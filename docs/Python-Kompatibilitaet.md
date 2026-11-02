@@ -2,6 +2,25 @@
 
 Stand: 2026-11-02. Geprüfter Commit: `cad1a45c6c6b1bdf8a7da553f091325a1ea7be96`.
 
+## Nachtrag: jq auf 1.11.0 aktualisiert
+
+Der aktuelle Pin ist `jq==1.11.0`; die nachfolgenden Nachträge dokumentieren
+die vorherigen Pins und Teststände. PyPI nennt Python ab 3.8 als Voraussetzung
+und führt Python-Versionen bis 3.14 in den Klassifikatoren auf.
+
+Unter Python 3.9 bis 3.12 auf Linux x86_64 wurden der Wheel-Download ohne Cache,
+die erzwungene Neuinstallation mit `python -m pip`, echte Imports und eine
+jq-Abfrage erfolgreich geprüft. Die vollständige Anforderungsliste ließ sich
+installieren, `pip check` war erfolgreich und jeweils acht JSON-Gerätetests
+bestanden. Die vollständige Testsuite wurde für diesen Pin-Wechsel nicht erneut
+ausgeführt.
+
+Der unveränderte ARMv7-Wheel-Check läuft für alle vier CI-Versionen. Er war mit
+diesem Pin unter Python 3.9 erfolgreich, scheitert aber unter 3.10, 3.11 und
+3.12 an fehlenden jq-Wheels. Die erfolgreiche x86_64-Installation allein macht
+den gesamten Workflow daher noch nicht erfolgreich. Die Prüfung wurde nicht
+deaktiviert oder durch einen Quellbau umgangen.
+
 ## Nachtrag: Python 3.12 validiert
 
 Mit den korrigierten Pins `jq==1.10.0` und `evdev==1.6.1` wurde auch
