@@ -46,18 +46,24 @@ class SunspecCounter(AbstractCounter):
         power = read("W")
         imported = read("TotWhImp")
         exported = read("TotWhExp")
-        imported, exported = self.peak_filter.check_values(power, imported, exported)
+        powers = [read("WphA"), read("WphB"), read("WphC")]
+        currents = [read("AphA"), read("AphB"), read("AphC")]
+        voltages = [read("PhVphA"), read("PhVphB"), read("PhVphC")]
+        power_factors = [read("PFphA"), read("PFphB"), read("PFphC")]
+        frequency = read("Hz")
 
-        self.store.set(CounterState(
+        imported, exported = self.peak_filter.check_values(power, imported, exported)
+        counter_state = CounterState(
             power=power,
             imported=imported,
             exported=exported,
-            powers=[read("WphA"), read("WphB"), read("WphC")],
-            currents=[read("AphA"), read("AphB"), read("AphC")],
-            voltages=[read("PhVphA"), read("PhVphB"), read("PhVphC")],
-            power_factors=[read("PFphA"), read("PFphB"), read("PFphC")],
-            frequency=read("Hz"),
-        ))
+            powers=powers,
+            currents=currents,
+            voltages=voltages,
+            power_factors=power_factors,
+            frequency=frequency,
+        )
+        self.store.set(counter_state)
 
 
 component_descriptor = ComponentDescriptor(configuration_factory=SunspecCounterSetup)

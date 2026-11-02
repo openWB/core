@@ -41,13 +41,22 @@ class SunspecInverter(AbstractInverter):
 
     def update(self) -> None:
         unit = self.component_config.configuration.modbus_id
-        power = read_point(self.client, self.model, self.points["W"], unit=unit) * -1
-        exported = read_point(self.client, self.model, self.points["WH"], unit=unit)
+
+        def read(name: str):
+            return read_point(self.client, self.model, self.points[name], unit=unit)
+
+        power = read("W") * -1
+        exported = read("WH")
 
         _, exported = self.peak_filter.check_values(power, None, exported)
         imported, _ = self.sim_counter.sim_count(power)
 
-        self.store.set(InverterState(power=power, exported=exported, imported=imported))
+        inverter_state = InverterState(
+            power=power,
+            exported=exported,
+            imported=imported,
+        )
+        self.store.set(inverter_state)
 
 
 component_descriptor = ComponentDescriptor(configuration_factory=SunspecInverterSetup)

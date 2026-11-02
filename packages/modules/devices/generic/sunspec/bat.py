@@ -38,13 +38,23 @@ class SunspecBat(AbstractBat):
 
     def update(self) -> None:
         unit = self.component_config.configuration.modbus_id
+
+        def read(name: str):
+            return read_point(self.client, self.battery_model, points.BATTERY[name], unit=unit)
+
         # SunSpec W ist negativ beim Laden, positiv beim Entladen - umgekehrt zur openWB-Konvention.
-        power = read_point(self.client, self.battery_model, points.BATTERY["W"], unit=unit) * -1
-        soc = read_point(self.client, self.battery_model, points.BATTERY["SoC"], unit=unit)
+        power = read("W") * -1
+        soc = read("SoC")
 
         self.peak_filter.check_values(power)
         imported, exported = self.sim_counter.sim_count(power)
-        self.store.set(BatState(power=power, soc=soc, imported=imported, exported=exported))
+        bat_state = BatState(
+            power=power,
+            soc=soc,
+            imported=imported,
+            exported=exported,
+        )
+        self.store.set(bat_state)
 
 
 component_descriptor = ComponentDescriptor(configuration_factory=SunspecBatSetup)
