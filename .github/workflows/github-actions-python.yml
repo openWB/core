@@ -10,7 +10,7 @@ jobs:
       - name: Set up Python 3.9
         uses: actions/setup-python@v6
         with:
-          python-version: "3.9.12"
+          python-version: "3.9"
       - name: Install dependencies
         run: |
           pip3 install -r "/home/runner/work/core/core/requirements.txt"
