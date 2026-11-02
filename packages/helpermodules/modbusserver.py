@@ -108,6 +108,7 @@ try:
             14: lambda cp: cp.get.plug_state,
             15: lambda cp: cp.get.charge_state,
             16: lambda cp: cp.get.evse_current,
+            17: lambda cp: cp.get.phases_in_use,
             30: lambda cp: cp.get.powers[0],
             31: lambda cp: cp.get.powers[1],
             32: lambda cp: cp.get.powers[2],
