@@ -130,7 +130,8 @@ try:
                 _form_int16(int16_map[requested_value](charge_point), address)
             elif requested_value in str_map:
                 _form_str(str_map[requested_value](charge_point), address)
-            else:
+            elif requested_value - 1 not in int32_map:
+                # Das zweite Register eines 32-Bit-Werts wurde bereits beim ersten Register gefüllt.
                 log.warning(f"Unbekannte Adresse: {address}")
 
         return data_store[address]
