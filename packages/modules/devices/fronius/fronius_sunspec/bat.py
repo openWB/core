@@ -123,7 +123,7 @@ class FroniusSunspecBat(AbstractBat):
                       "entladen für den Hausverbrauch")
             self.__tcp_client.write_register(
                 40366, self._rate_percent(power_limit, unit), data_type=ModbusDataType.INT_16, unit=unit)  # OutWRte
-        else:
+        elif power_limit > 0:
             if self.last_mode != 'charge':
                 self.__tcp_client.write_register(40371, 1, data_type=ModbusDataType.UINT_16, unit=unit)  # ChaGriSet
                 self.__tcp_client.write_register(
