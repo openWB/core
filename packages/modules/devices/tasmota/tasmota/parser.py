@@ -12,7 +12,7 @@ class TasmotaParser:
         self.meter_type: Optional[str] = None
         self.meter: Dict = {}
         status = response.get('StatusSNS', {})
-        for meter_type in ('ENERGY', 'Itron', 'MT681', 'eBZ', 'MT631'):
+        for meter_type in ('ENERGY', 'Itron', 'MT681', 'eBZ', 'MT631', 'E320'):
             if meter_type in status:
                 self.meter_type = meter_type
                 self.meter = status[meter_type]

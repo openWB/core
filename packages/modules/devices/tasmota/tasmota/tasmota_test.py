@@ -15,6 +15,7 @@ METER_DATA = [
     ('MT681', {'Watt_summe': 230, 'Total_in': 12.5, 'Total_out': 2.5}),
     ('eBZ', {'Power': 230, 'E_in': 12.5, 'E_out': 2.5}),
     ('MT631', {'Power': 230, 'E_in': 12.5, 'E_out': 2.5}),
+    ('E320', {'Power': 230, 'E_in': 12.5, 'E_out': 2.5}),
 ]
 COMPONENTS = [(counter, counter.TasmotaCounter, TasmotaCounterSetup),
               (bat, bat.TasmotaBat, TasmotaBatSetup),
@@ -109,7 +110,7 @@ def test_unsupported_meter():
         TasmotaParser({'StatusSNS': {'unknown': {}}})
 
 
-@pytest.mark.parametrize('meter_type', ['ENERGY', 'Itron', 'MT681', 'eBZ', 'MT631'])
+@pytest.mark.parametrize('meter_type', ['ENERGY', 'Itron', 'MT681', 'eBZ', 'MT631', 'E320'])
 @pytest.mark.parametrize('attribute', [
     'power', 'imported', 'exported', 'currents', 'voltages', 'powers', 'power_factors',
 ])
