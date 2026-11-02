@@ -5,15 +5,28 @@ on: pull_request
 jobs:
   build:
     runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.9", "3.10", "3.11"]
     steps:
       - uses: actions/checkout@v7
-      - name: Set up Python 3.9
+      - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v6
         with:
-          python-version: "3.9.12"
+          python-version: ${{ matrix.python-version }}
       - name: Install dependencies
         run: |
-          pip3 install -r "/home/runner/work/core/core/requirements.txt"
+          python -m pip install -r requirements.txt
+      - name: Check Raspberry Pi dependency wheels
+        if: matrix.python-version != '3.10'
+        run: |
+          grep -E '^(jq|evdev)==' requirements.txt |
+            python -m pip download --only-binary=:all: --no-deps \
+              --platform linux_armv7l --implementation cp \
+              --python-version "${{ matrix.python-version }}" \
+              --extra-index-url https://www.piwheels.org/simple \
+              --dest "${RUNNER_TEMP}/armv7-wheels" -r /dev/stdin
       - name: Flake8 with annotations in packages folder
         uses: TrueBrain/actions-flake8@v2.4
         with:
