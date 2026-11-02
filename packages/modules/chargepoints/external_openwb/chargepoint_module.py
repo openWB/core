@@ -104,9 +104,13 @@ class ChargepointModule(AbstractChargepoint):
                             current_branch=parse_received_topics("current_branch"),
                             current_commit=parse_received_topics("current_commit")
                         )
+                        self.store.set(chargepoint_state)
                     except KeyError as e:
-                        raise KeyError(f"Es wurden nicht alle notwendigen Daten empfangen: {e}")
-                    self.store.set(chargepoint_state)
+                        if received_topics.get(f"{topic_prefix}fault_state", 0) == 2:
+                            self.fault_state.error(received_topics.get(
+                                f"{topic_prefix}fault_str", "Fehlerstatus vom internen Ladepunkt"))
+                        else:
+                            raise KeyError(f"Es wurden nicht alle notwendigen Daten empfangen: {e}")
 
                     fault_state = received_topics.get(f"{topic_prefix}fault_state")
                     if fault_state == 2:
