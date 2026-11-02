@@ -22,8 +22,8 @@ jobs:
           python -m pip install -r requirements.txt
       - name: Check Raspberry Pi dependency wheels
         run: |
-          grep -E '^(jq|evdev)==' requirements.txt |
-            python -m pip download --only-binary=:all: --no-deps \
+          grep -E '^(jq|evdev|telnetlib3)==' requirements.txt |
+            python -m pip download --only-binary=:all: \
               --platform linux_armv7l --implementation cp \
               --python-version "${{ matrix.python-version }}" \
               --extra-index-url https://www.piwheels.org/simple \
