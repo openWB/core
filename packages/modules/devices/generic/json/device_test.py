@@ -42,6 +42,25 @@ def test_device(monkeypatch, mock_value_store: Mock, requests_mock: requests_moc
     assert mock_value_store.set.call_args[0][0].power == expected_power
 
 
+@pytest.mark.parametrize("jq_power,response", [
+    ('.readings[] | select(.name == "power") | .value',
+     {"readings": [{"name": "voltage", "value": 230}, {"name": "power", "value": 42}]}),
+    ('(.missing // .power) | tonumber', {"power": "42"}),
+    ('[.phases[].power] | add', {"phases": [{"power": 10}, {"power": 12}, {"power": 20}]}),
+])
+def test_counter_jq_filters(monkeypatch, mock_value_store: Mock, requests_mock: requests_mock.Mocker,
+                            jq_power: str, response: dict):
+    monkeypatch.setattr(FaultState, "store_error", Mock())
+    requests_mock.get("http://sample_host/sample_path", json=response)
+    device = create_device(Json(configuration=JsonConfiguration("http://sample_host/sample_path")))
+    device.add_component(JsonCounterSetup(configuration=JsonCounterConfiguration(jq_power=jq_power)))
+
+    device.update()
+
+    mock_value_store.set.assert_called_once()
+    assert mock_value_store.set.call_args[0][0].power == 42
+
+
 def test_counter_powers(monkeypatch, mock_value_store: Mock, requests_mock: requests_mock.Mocker):
     # setup
     monkeypatch.setattr(FaultState, "store_error", Mock())
