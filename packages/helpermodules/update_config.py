@@ -63,7 +63,7 @@ NO_MODULE = {"type": None, "configuration": {}}
 
 class UpdateConfig:
 
-    DATASTORE_VERSION = 155
+    DATASTORE_VERSION = 156
 
     FILE_OPERATION_VERSION = 0
 
@@ -4191,3 +4191,20 @@ class UpdateConfig:
 
         self._loop_all_received_topics(upgrade)
         self._append_datastore_version(155)
+
+    def upgrade_datastore_156(self) -> None:
+        """Fronius SunSpec Speicher: mppt_index in mppt_index_charge/mppt_index_discharge aufgeteilt."""
+        def upgrade(topic: str, payload) -> Optional[dict]:
+            if re.fullmatch(r"openWB/system/device/[0-9]+/component/[0-9]+/config", topic) is None:
+                return None
+            config = decode_payload(payload)
+            if config.get("type") != "bat":
+                return None
+            mppt_index = config["configuration"].pop("mppt_index", None)
+            if mppt_index is None:
+                return None
+            config["configuration"]["mppt_index_charge"] = mppt_index
+            return {topic: config}
+
+        self._loop_all_received_topics(upgrade)
+        self._append_datastore_version(156)
