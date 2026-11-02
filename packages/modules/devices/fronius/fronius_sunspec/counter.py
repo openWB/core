@@ -40,10 +40,11 @@ class FroniusSunspecCounter(AbstractCounter):
             self.__tcp_client.read_holding_registers(40102, ModbusDataType.FLOAT_32, unit=unit),  # WphB
             self.__tcp_client.read_holding_registers(40104, ModbusDataType.FLOAT_32, unit=unit),  # WphC
         ]
+        # Stromregister sind entgegen dem Vorzeichen der Leistungsregister (negativ = Bezug), daher invertiert.
         currents = [
-            self.__tcp_client.read_holding_registers(40074, ModbusDataType.FLOAT_32, unit=unit),  # AphA
-            self.__tcp_client.read_holding_registers(40076, ModbusDataType.FLOAT_32, unit=unit),  # AphB
-            self.__tcp_client.read_holding_registers(40078, ModbusDataType.FLOAT_32, unit=unit),  # AphC
+            self.__tcp_client.read_holding_registers(40074, ModbusDataType.FLOAT_32, unit=unit) * -1,  # AphA
+            self.__tcp_client.read_holding_registers(40076, ModbusDataType.FLOAT_32, unit=unit) * -1,  # AphB
+            self.__tcp_client.read_holding_registers(40078, ModbusDataType.FLOAT_32, unit=unit) * -1,  # AphC
         ]
         voltages = [
             self.__tcp_client.read_holding_registers(40082, ModbusDataType.FLOAT_32, unit=unit),  # PhVphA
