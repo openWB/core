@@ -24,6 +24,8 @@ import time
 from typing import Any, Dict, Optional, Tuple
 from urllib.parse import urlencode
 
+from requests.exceptions import HTTPError
+
 from modules.common import req
 from modules.common.component_state import CarState
 from modules.vehicles.saic_ismart import crypto
@@ -97,13 +99,14 @@ def _send(method: str, path_with_query: str, config: SaicIsmartConfiguration,
     response = session.request(
         method, f"{BASE_URL}{path_with_query}",
         data=encrypted_body if encrypted_body else None, headers=headers, timeout=15)
-    if response.status_code in (401, 403):
-        # Die Cloud kann eine ungültige Session auch schon auf HTTP-Ebene ablehnen (zB nach Login in
-        # der iSMART-App auf dem Handy), nicht nur über das eigene code-Feld in einer 200-Antwort -
-        # muss hier genauso wie code=401/403 (_check_code) eine SaicAuthenticationError auslösen,
-        # sonst greift der automatische Relogin in _call_with_relogin() nicht.
-        raise SaicAuthenticationError(f"{path_with_query}: Session abgelaufen (HTTP {response.status_code})")
-    response.raise_for_status()
+    try:
+        response.raise_for_status()
+    except HTTPError as exc:
+        if response.status_code in (401, 403):
+            # Session kann auch schon auf HTTP-Ebene abgelehnt werden, nicht nur über code= in der Antwort.
+            raise SaicAuthenticationError(
+                f"{path_with_query}: Session abgelaufen (HTTP {response.status_code})") from exc
+        raise
 
     body_text = response.text
     resp_ts = response.headers.get("APP-SEND-DATE")

@@ -3,6 +3,7 @@ import time
 from unittest.mock import Mock
 
 import pytest
+from requests.exceptions import HTTPError
 
 from modules.vehicles.saic_ismart import api
 from modules.vehicles.saic_ismart.config import SaicIsmartConfiguration
@@ -104,8 +105,7 @@ class TestSendHttpLevelAuthError:
         # 200-Antwort - muss als SaicAuthenticationError erkannt werden, damit der automatische
         # Relogin in _call_with_relogin() greift (siehe Discussion zu wiederholtem 401 ohne Relogin).
         response = Mock(status_code=401, headers={})
-        response.raise_for_status = Mock(side_effect=AssertionError("raise_for_status() haette nicht "
-                                                                    "aufgerufen werden duerfen"))
+        response.raise_for_status = Mock(side_effect=HTTPError("401 Client Error"))
         session = Mock()
         session.request = Mock(return_value=response)
         monkeypatch.setattr(api.req, "get_http_session", Mock(return_value=session))
