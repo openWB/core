@@ -5,7 +5,7 @@ from modules.common.abstract_device import DeviceDescriptor
 from modules.common.component_state import ConsumerState
 from modules.common.configurable_consumer import ConfigurableConsumer
 from modules.consumers.shelly.shelly_pm.config import ShellyPM
-from modules.devices.shelly.shelly.status_handler import get_generation, request_status, parse_data
+from modules.devices.shelly.shelly.status_handler import get_generation, request_status, parse_data, parse_temperatures
 
 
 def create_consumer(config: ShellyPM):
@@ -63,6 +63,7 @@ def create_consumer(config: ShellyPM):
             voltages=voltages,
             currents=currents,
             powers=powers,
+            temperatures=parse_temperatures(status, generation),
         )
 
     return ConfigurableConsumer(consumer_config=config,
