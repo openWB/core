@@ -30,10 +30,8 @@ def fetch_prices(config: OstromTariffConfiguration) -> Dict[int, float]:
     raw_prices = req.get_http_session().get(
         url="https://production.ostrom-api.io/spot-prices?" +
             f"startDate={startDate}&endDate={endDate}&resolution=HOUR{zip}",
-        headers={
-            "accept": "application/json",
-            "authorization": "Bearer " + access_token
-        }
+        headers={"accept": "application/json",
+                 "authorization": "Bearer " + access_token}
     ).json()["data"]
     prices: Dict[int, float] = {}
     for raw_price in raw_prices:
