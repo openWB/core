@@ -22,12 +22,11 @@ jobs:
           python -m pip install -r requirements.txt
       - name: Check Raspberry Pi dependency wheels
         run: |
-          grep -E '^(jq|evdev|telnetlib3)==' requirements.txt |
-            python -m pip download --only-binary=:all: \
-              --platform linux_armv7l --implementation cp \
-              --python-version "${{ matrix.python-version }}" \
-              --extra-index-url https://www.piwheels.org/simple \
-              --dest "${RUNNER_TEMP}/armv7-wheels" -r /dev/stdin
+          python -m pip download --only-binary=:all: \
+            --platform linux_armv7l --implementation cp \
+            --python-version "${{ matrix.python-version }}" \
+            --extra-index-url https://www.piwheels.org/simple \
+            --dest "${RUNNER_TEMP}/armv7-wheels" -r requirements.txt
       - name: Flake8 with annotations in packages folder
         uses: TrueBrain/actions-flake8@v2.4
         with:
