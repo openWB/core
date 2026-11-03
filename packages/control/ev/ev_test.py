@@ -82,21 +82,19 @@ def test_remaining_phase_switch_time(timestamp_last_phase_switch,
 @pytest.mark.parametrize(
     "surplus, expected_condition",
     [
-        pytest.param(6901, True, id="Überschuss reicht für min_soc_current auf allen Phasen: umschalten"),
-        pytest.param(5000, False,
-                     id="Überschuss reicht für min_current, aber nicht für min_soc_current: nicht umschalten"),
+        pytest.param(6901, True, id="Überschuss reicht für min_current auf allen Phasen: umschalten"),
+        pytest.param(5000, False, id="Überschuss reicht nicht für min_current auf allen Phasen: nicht umschalten"),
     ],
 )
-def test_check_phase_switch_conditions_uses_min_soc_current_for_required_surplus(surplus, expected_condition):
-    """ required_surplus muss auf min_soc_current basieren, nicht auf min_current. """
+def test_check_phase_switch_conditions_required_surplus_based_on_min_current(surplus, expected_condition):
+    """ required_surplus muss auf control_parameter.min_current basieren. """
     # setup
     ev = Ev(0)
     ev.ev_template.data.max_phases = 3
     ev.ev_template.data.max_current_single_phase = 16
     ev.ev_template.data.nominal_difference = 1
     control_parameter = ControlParameter()
-    control_parameter.min_current = 6
-    control_parameter.min_soc_current = 10
+    control_parameter.min_current = 10
     control_parameter.phases = 1
     control_parameter.required_current = 6
     limit = LoadmanagementLimit(message=None, limiting_value=LimitingValue.CURRENT)
@@ -112,7 +110,7 @@ def test_check_phase_switch_conditions_uses_min_soc_current_for_required_surplus
         surplus=surplus,
     )
 
-    # evaluation: required_surplus = min_soc_current(10) * max_phases(3) * 230 = 6900
+    # evaluation: required_surplus = min_current(10) * max_phases(3) * 230 = 6900
     assert condition == expected_condition
 
 

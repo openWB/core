@@ -228,26 +228,26 @@ def test_process_charge_stop_reset_manual_soc(soc_module: Optional[ConfigurableV
 
 
 @pytest.mark.parametrize(
-    "chargemode_selected, min_soc, soc, charging_type, expected_min_current, expected_min_soc_current",
+    "chargemode_selected, min_soc, soc, charging_type, expected_min_current",
     [
-        pytest.param(Chargemode.PV_CHARGING, 50, 30, ChargingType.AC.value, 6, 16,
-                     id="PV-Laden, unterhalb Mindest-SoC (AC): Mindest-SoC-Ladestrom als Phasenumschalt-Untergrenze"),
-        pytest.param(Chargemode.PV_CHARGING, 50, 30, ChargingType.DC.value, 100, 145,
-                     id="PV-Laden, unterhalb Mindest-SoC (DC): Mindest-SoC-Ladestrom als Phasenumschalt-Untergrenze"),
-        pytest.param(Chargemode.PV_CHARGING, 50, 80, ChargingType.AC.value, 6, 6,
+        pytest.param(Chargemode.PV_CHARGING, 50, 30, ChargingType.AC.value, 16,
+                     id="PV-Laden, unterhalb Mindest-SoC (AC): Mindest-SoC-Ladestrom als Untergrenze"),
+        pytest.param(Chargemode.PV_CHARGING, 50, 30, ChargingType.DC.value, 145,
+                     id="PV-Laden, unterhalb Mindest-SoC (DC): Mindest-SoC-Ladestrom als Untergrenze"),
+        pytest.param(Chargemode.PV_CHARGING, 50, 80, ChargingType.AC.value, 6,
                      id="PV-Laden, Mindest-SoC bereits erreicht: allgemeiner Mindeststrom des Fahrzeugs"),
-        pytest.param(Chargemode.PV_CHARGING, 0, 30, ChargingType.AC.value, 6, 6,
+        pytest.param(Chargemode.PV_CHARGING, 0, 30, ChargingType.AC.value, 6,
                      id="PV-Laden, Mindest-SoC deaktiviert: allgemeiner Mindeststrom des Fahrzeugs"),
-        pytest.param(Chargemode.PV_CHARGING, 50, None, ChargingType.AC.value, 6, 6,
+        pytest.param(Chargemode.PV_CHARGING, 50, None, ChargingType.AC.value, 6,
                      id="PV-Laden, kein SoC bekannt: allgemeiner Mindeststrom des Fahrzeugs"),
-        pytest.param(Chargemode.PV_CHARGING, 50, 80, ChargingType.DC.value, 100, 100,
+        pytest.param(Chargemode.PV_CHARGING, 50, 80, ChargingType.DC.value, 100,
                      id="PV-Laden, Mindest-SoC bereits erreicht (DC): allgemeiner Mindeststrom des Fahrzeugs"),
-        pytest.param(Chargemode.INSTANT_CHARGING, 50, 30, ChargingType.AC.value, 6, 6,
+        pytest.param(Chargemode.INSTANT_CHARGING, 50, 30, ChargingType.AC.value, 6,
                      id="Sofortladen, Mindest-SoC-Werte vorhanden aber anderer Lademodus: unberührt"),
     ])
-def test_set_control_parameter_min_soc_current_as_phase_switch_floor(
-        chargemode_selected, min_soc, soc, charging_type, expected_min_current, expected_min_soc_current, mock_data):
-    """ Mindest-SoC-Ladestrom als Phasenumschalt-Untergrenze landet in min_soc_current, nicht in min_current. """
+def test_set_control_parameter_min_current_uses_min_soc_current_when_active(
+        chargemode_selected, min_soc, soc, charging_type, expected_min_current, mock_data):
+    """ Während aktiver Mindest-SoC-Ladung wird min_current auf den Mindest-SoC-Ladestrom gesetzt. """
     # setup
     cp = Chargepoint(0, None)
     cp.template = CpTemplate()
@@ -267,7 +267,6 @@ def test_set_control_parameter_min_soc_current_as_phase_switch_floor(
 
     # evaluation
     assert cp.data.control_parameter.min_current == expected_min_current
-    assert cp.data.control_parameter.min_soc_current == expected_min_soc_current
 
 
 @pytest.mark.parametrize(
@@ -277,8 +276,8 @@ def test_set_control_parameter_min_soc_current_as_phase_switch_floor(
         pytest.param(ChargepointState.PERFORMING_PHASE_SWITCH, id="Umschaltung wird gerade durchgeführt"),
         pytest.param(ChargepointState.WAIT_FOR_USING_PHASES, id="wartet auf Nutzung der neuen Phasenzahl"),
     ])
-def test_set_control_parameter_min_soc_current_frozen_during_phase_switch(state, mock_data):
-    """ min_soc_current darf sich während einer laufenden Phasenumschaltung nicht ändern. """
+def test_set_control_parameter_min_current_frozen_during_phase_switch(state, mock_data):
+    """ min_current darf sich während einer laufenden Phasenumschaltung nicht ändern. """
     # setup
     cp = Chargepoint(0, None)
     cp.template = CpTemplate()
@@ -293,8 +292,7 @@ def test_set_control_parameter_min_soc_current_frozen_during_phase_switch(state,
 
     # Umschaltung auslösen, dabei greift die Mindest-SoC-Untergrenze
     cp.set_control_parameter(Chargemode.INSTANT_CHARGING)
-    assert cp.data.control_parameter.min_current == 6
-    assert cp.data.control_parameter.min_soc_current == 16
+    assert cp.data.control_parameter.min_current == 16
 
     # Umschaltung läuft nun, Mindest-SoC wird währenddessen erreicht
     cp.data.control_parameter.state = state
@@ -303,12 +301,10 @@ def test_set_control_parameter_min_soc_current_frozen_during_phase_switch(state,
     # execution
     cp.set_control_parameter(Chargemode.INSTANT_CHARGING)
 
-    # evaluation: min_soc_current bleibt eingefroren, solange die Umschaltung läuft
-    assert cp.data.control_parameter.min_current == 6
-    assert cp.data.control_parameter.min_soc_current == 16
+    # evaluation: min_current bleibt eingefroren, solange die Umschaltung läuft
+    assert cp.data.control_parameter.min_current == 16
 
-    # nach Abschluss der Umschaltung darf min_soc_current wieder aktualisiert werden
+    # nach Abschluss der Umschaltung darf min_current wieder aktualisiert werden
     cp.data.control_parameter.state = ChargepointState.CHARGING_ALLOWED
     cp.set_control_parameter(Chargemode.INSTANT_CHARGING)
     assert cp.data.control_parameter.min_current == 6
-    assert cp.data.control_parameter.min_soc_current == 6

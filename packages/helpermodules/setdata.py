@@ -549,7 +549,6 @@ class SetData:
         elif "/control_parameter/current_plan" in msg.topic:
             self._validate_value(msg, int)
         elif ("/control_parameter/min_current" in msg.topic or
-                "/control_parameter/min_soc_current" in msg.topic or
                 "/control_parameter/reserved_power" in msg.topic or
                 "/control_parameter/timestamp_switch_on_off" in msg.topic or
                 "/control_parameter/timestamp_charge_start" in msg.topic or

@@ -268,13 +268,13 @@ class Ev:
                                        limit: LoadmanagementLimit,
                                        surplus: float) -> Tuple[bool, Optional[str]]:
         # Manche EV laden mit 6.1A bei 6A Soll-Strom
-        min_current = max(control_parameter.min_soc_current, control_parameter.required_current)
+        min_current = max(control_parameter.min_current, control_parameter.required_current)
         min_current_range = min_current + self.ev_template.data.nominal_difference
         max_current = min(self.ev_template.data.max_current_single_phase, max_current_cp)
         max_current_range = max_current - self.ev_template.data.nominal_difference
         phases_in_use = control_parameter.phases
         max_phases_ev = self.ev_template.data.max_phases
-        required_surplus = control_parameter.min_soc_current * max_phases_ev * 230 - get_power
+        required_surplus = control_parameter.min_current * max_phases_ev * 230 - get_power
         unbalanced_load_limit_reached = limit.limiting_value == LimitingValue.UNBALANCED_LOAD
         current_limit_reached = limit.limiting_value == LimitingValue.CURRENT
         condition_1_to_3 = ((((get_medium_charging_current(get_currents) > max_current_range or current_limit_reached)
@@ -321,11 +321,11 @@ class Ev:
         delay = surplus_config.vehicle.phase_switch_delay * 60
         if phases_in_use == 1:
             direction_str = f"Umschaltung von 1 auf {max_phases}"
-            required_reserved_power = max(0, control_parameter.min_soc_current * max_phases * 230 -
+            required_reserved_power = max(0, control_parameter.min_current * max_phases * 230 -
                                           self.ev_template.data.max_current_single_phase * 230)
 
             new_phase = max_phases
-            new_current = control_parameter.min_soc_current
+            new_current = control_parameter.min_current
             waiting_time = surplus_config.vehicle.switch_on_delay
         else:
             direction_str = f"Umschaltung von {max_phases} auf 1"
