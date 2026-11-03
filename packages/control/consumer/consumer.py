@@ -4,7 +4,6 @@ from typing import Callable, Dict, List, Optional, Tuple
 
 from control import data
 from control.consumer.usage import NOT_CONTROLLED, ON_OFF
-from control.algorithm.utils import get_medium_charging_current
 from control.chargemode import Chargemode
 from control.chargepoint.chargepoint_state import CHARGING_STATES, ChargepointState
 from control.consumer.consumer_data import ConsumerData, ConsumerUsage, WaitForStartStates
@@ -83,7 +82,7 @@ class Consumer(Load):
             return self._convert_power_to_current(self.data.config.min_power)
         else:
             if self.data.get.charge_state:
-                return get_medium_charging_current(self.data.get.currents)
+                return self.get_mean_current()
             else:
                 return self._convert_power_to_current(self.data.config.max_power)
 
@@ -159,7 +158,7 @@ class Consumer(Load):
     def _parse_required_current_by_usage(self, required_current: float) -> float:
         if self.data.usage.type in ON_OFF:
             if self.data.get.charge_state:
-                return get_medium_charging_current(self.data.get.currents)
+                return self.get_mean_current()
             else:
                 return self._convert_power_to_current(self.data.config.max_power)
         else:

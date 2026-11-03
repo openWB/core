@@ -11,7 +11,6 @@ from control.consumer.consumer import Consumer
 from control.chargepoint.chargepoint_state import ChargepointState
 from control.chargepoint.chargepoint import Chargepoint
 from control.chargemode import Chargemode
-from control.algorithm.utils import get_medium_charging_current
 from control.algorithm.filter_chargepoints import get_loads_by_chargemodes
 from dataclasses import dataclass, field
 from enum import Enum
@@ -210,7 +209,7 @@ class Counter:
                         load.data.config.phase_1,
                         load.data.get.currents)
                 except KeyError:
-                    element_current = [get_medium_charging_current(load.data.get.currents)]*3
+                    element_current = [load.get_mean_current()]*3
                 # Vorzeichen anhand der Gesamtleistung entscheiden, nicht anhand einzelner Phasenströme
                 # (min(element_current) < 0): bei ein-/zweiphasigem Laden zeigen ungenutzte Phasen oft ein
                 # geringes negatives Messrauschen (zB -0.05A), das sonst den ganzen Load faelschlich als
@@ -632,7 +631,7 @@ class Counter:
                                      # und wieder eingespeist wird.
                                      self.data.set.reserved_surplus == 0))
             if (switch_off_condition and (isinstance(load, Consumer) or
-                                          get_medium_charging_current(load.data.get.currents) <= min_current)):
+                                          load.get_mean_current() <= min_current)):
                 if load.is_charging_stop_allowed():
                     # EV, die ohnehin nicht laden, wird direkt die Ladefreigabe entzogen.
                     # Würde man required_power vom released_evu_surplus subtrahieren, würden keine anderen EVs

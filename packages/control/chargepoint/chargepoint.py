@@ -4,7 +4,6 @@ import traceback
 from typing import Dict, Optional, Tuple
 from fnmatch import fnmatch
 
-from control.algorithm.utils import get_medium_charging_current
 from control.chargelog import chargelog
 from control import data
 from control.chargemode import Chargemode
@@ -288,9 +287,11 @@ class Chargepoint(ChargepointRfidMixin, Load):
                     # Wird die Ladung gestartet? Nicht, wenn eine Phasenumschaltung gerade lief oder jetzt
                     # ansteht - die schaltet CP bereits selbst um (state_prev statt state, da
                     # WAIT_FOR_USING_PHASES auch unabhängig von einer Umschaltung erreicht wird).
+                    # Ohne Umschalt-Hardware kann aber nie umgeschaltet werden, also auch nie CP dadurch.
                     started_now = (self.data.set.current_prev == 0 and self.data.set.current != 0 and
                                    self.data.set.state_prev != ChargepointState.PERFORMING_PHASE_SWITCH and
-                                   self._is_phase_switch_required() is False)
+                                   (self._is_phase_switch_required() is False or
+                                    self.data.config.auto_phase_switch_hw is False))
                     # Ladung angefordert, Auto lädt aber trotz gültigem Signal seit geraumer Zeit nicht.
                     stuck = (
                         retry_interval > 0 and
@@ -695,7 +696,7 @@ class Chargepoint(ChargepointRfidMixin, Load):
                             f"{self.data.set.charge_template.data.chargemode.selected}, Submodus: "
                             f"{self.data.control_parameter.submode}, Phasen: "
                             f"{self.data.control_parameter.phases}"
-                            f", mittlerer Ist-Strom: {get_medium_charging_current(self.data.get.currents)}")
+                            f", mittlerer Ist-Strom: {self.get_mean_current()}")
                 except Exception:
                     log.exception("Fehler im Prepare-Modul für Ladepunkt "+str(self.num))
                     self.data.control_parameter.submode = Chargemode.STOP

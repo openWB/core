@@ -3,7 +3,7 @@ from modules.common.abstract_device import DeviceDescriptor
 from modules.common.component_state import ConsumerState
 from modules.common.configurable_consumer import ConfigurableConsumer
 from modules.consumers.shelly.shelly_em.config import ShellyEM
-from modules.devices.shelly.shelly.status_handler import get_generation, request_status, parse_data
+from modules.devices.shelly.shelly.status_handler import get_generation, request_status, parse_data, parse_temperatures
 
 
 def create_consumer(config: ShellyEM):
@@ -22,6 +22,7 @@ def create_consumer(config: ShellyEM):
         consumer_state = ConsumerState(
             power=power,
             powers=powers,
+            temperatures=parse_temperatures(status, generation),
         )
         if voltages is not None:
             consumer_state.voltages = voltages
