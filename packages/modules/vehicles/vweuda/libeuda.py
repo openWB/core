@@ -783,7 +783,8 @@ def get_field_timestamp_by_key(D: dict, key: str) -> str:
     return ret
 
 
-CAR_TIMESTAMP = "car_captured_time"
+CAR_TIMESTAMP1 = "car_captured_time"
+CAR_TIMESTAMP2 = "timestamp"
 
 
 def get_max_value_by_fieldname(D: dict, field: str) -> str:
@@ -828,9 +829,11 @@ def parse_vehicle_data(payload: dict) -> dict:
         _ts = get_field_timestamp_by_key(data, 'ae0294b4-1286-3e98-a818-1485b8d88430')
         soc_timestamp_str = re.sub(r'\....Z', 'Z', _ts)
 
-    # try to get soc_timestamp as max of all car_captured_time fields
+    # try to get soc_timestamp as max of all car_captured_time or timestamp fields
     if soc_timestamp_str is None:
-        soc_timestamp_str = get_max_value_by_fieldname(data, CAR_TIMESTAMP)
+        soc_timestamp_str = get_max_value_by_fieldname(data, CAR_TIMESTAMP1)
+    if soc_timestamp_str is None:
+        soc_timestamp_str = get_max_value_by_fieldname(data, CAR_TIMESTAMP2)
 
     # if soc is None, try sveral other fields
     if soc is None:
