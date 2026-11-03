@@ -40,7 +40,7 @@ class AdditionalCurrent:
                     load.data.set.current, available_for_cp, load.data.set.target_current)
                 self._set_loadmangement_message(current, limit, load)
                 common.set_current_counterdiff(
-                    load.data.control_parameter.min_current,
+                    load.data.set.target_current,
                     current,
                     load)
                 preferenced_loads.pop(0)
