@@ -16,7 +16,7 @@ from control.chargepoint.rfid import ChargepointRfidMixin
 from control.ev.charge_template import ChargeTemplate
 from control.ev.ev import Ev
 from control import phase_switch
-from control.chargepoint.chargepoint_state import CHARGING_STATES, ChargepointState, PHASE_SWITCH_STATES
+from control.chargepoint.chargepoint_state import CHARGING_STATES, ChargepointState
 from control.limiting_value import loadmanagement_limit_factory
 from control.load_protocol import Load
 from control.text import BidiState
@@ -232,22 +232,10 @@ class Chargepoint(ChargepointRfidMixin, Load):
                 self.data.control_parameter.chargemode = Chargemode.TIME_CHARGING
             else:
                 self.data.control_parameter.chargemode = self.data.set.charge_template.data.chargemode.selected
-            # nicht während laufender Phasenumschaltung ändern, sonst verfälscht das reserved_surplus in
-            # auto_phase_switch()
-            if self.data.control_parameter.state not in PHASE_SWITCH_STATES:
-                pv_charging = self.data.set.charge_template.data.chargemode.pv_charging
-                soc = self.data.set.charging_ev_data.data.get.soc
-                if (self.data.control_parameter.chargemode == Chargemode.PV_CHARGING and
-                        pv_charging.min_soc != 0 and soc is not None and soc < pv_charging.min_soc):
-                    self.data.control_parameter.min_current = (
-                        pv_charging.min_soc_current if self.template.data.charging_type == ChargingType.AC.value
-                        else pv_charging.dc_min_soc_current)
-                elif self.template.data.charging_type == ChargingType.AC.value:
-                    self.data.control_parameter.min_current = (
-                        self.data.set.charging_ev_data.ev_template.data.min_current)
-                else:
-                    self.data.control_parameter.min_current = (
-                        self.data.set.charging_ev_data.ev_template.data.dc_min_current)
+            if self.template.data.charging_type == ChargingType.AC.value:
+                self.data.control_parameter.min_current = self.data.set.charging_ev_data.ev_template.data.min_current
+            else:
+                self.data.control_parameter.min_current = self.data.set.charging_ev_data.ev_template.data.dc_min_current
         except Exception:
             log.exception("Fehler im LP-Modul "+str(self.num))
 
