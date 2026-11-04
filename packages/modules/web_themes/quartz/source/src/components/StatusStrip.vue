@@ -1,5 +1,5 @@
 <template>
-  <div class="flex flex-wrap gap-2.5 py-4">
+  <div class="grid grid-cols-3 gap-2 py-4 sm:flex sm:flex-wrap sm:gap-2.5">
     <StatChip
       v-for="chip in chips"
       :key="chip.label"
@@ -27,6 +27,7 @@
 <script setup lang="ts">
 import { computed, ref, type Component } from 'vue'
 import { useMqttStore } from '@/stores/mqtt-store'
+import { useCounters } from '@/composables/useCounters'
 import { formatKw, formatCentsPerKwh } from '@/utils/format'
 import type { CategoryKey } from '@/types/chart'
 import StatChip from './StatChip.vue'
@@ -38,10 +39,12 @@ import IconBolt from './icons/IconBolt.vue'
 import IconBattery from './icons/IconBattery.vue'
 import IconHouse from './icons/IconHouse.vue'
 import IconConsumer from './icons/IconConsumer.vue'
+import IconCounter from './icons/IconCounter.vue'
 import IconTag from './icons/IconTag.vue'
 import IconCloudSun from './icons/IconCloudSun.vue'
 
 const mqttStore = useMqttStore()
+const { counterIds } = useCounters()
 
 const showPriceDetail = ref(false)
 const showForecastDetail = ref(false)
@@ -52,14 +55,20 @@ const activeDetail = ref<CategoryKey | null>(null)
 // configured" warning is explicitly written onto that same counter object).
 const gridCounterFaultState = computed(() => mqttStore.counterInstanceFaultState(mqttStore.gridCounterId() ?? -1))
 
+const counterSumPower = computed(() => counterIds.value.reduce((sum, id) => sum + mqttStore.counterInstancePower(id), 0))
+const counterFaultState = computed(() =>
+  counterIds.value.reduce((max, id) => Math.max(max, mqttStore.counterInstanceFaultState(id)), 0),
+)
+
 const detailInfo = computed<Record<CategoryKey, { title: string; faultState: number }>>(() => ({
   pv: { title: 'Erzeugung', faultState: mqttStore.pvFaultStateTotal() },
   grid: { title: 'Netz', faultState: gridCounterFaultState.value },
-  house: { title: 'Hausverbrauch', faultState: gridCounterFaultState.value },
+  // reine Rechengröße, kein eigenes Modul -> kein Fehlerstatus
+  house: { title: 'Hausverbrauch', faultState: 0 },
   battery: { title: 'Speicher', faultState: mqttStore.batteryFaultStateTotal() },
   chargepoint: { title: 'Ladepunkte', faultState: mqttStore.chargePointFaultStateTotal() },
   consumer: { title: 'Verbraucher', faultState: mqttStore.consumerFaultStateTotal() },
-  counter: { title: 'Zähler', faultState: 0 },
+  counter: { title: 'Zähler', faultState: counterFaultState.value },
 }))
 
 interface Chip {
@@ -95,6 +104,20 @@ const chips = computed<Chip[]>(() => {
       clickable: true,
       onClick: () => (activeDetail.value = 'grid'),
     },
+  ]
+  if (counterIds.value.length > 0) {
+    result.push({
+      key: 'counter',
+      label: 'Zähler',
+      value: formatKw(counterSumPower.value),
+      icon: IconCounter,
+      color: 'grid',
+      faultState: detailInfo.value.counter.faultState,
+      clickable: true,
+      onClick: () => (activeDetail.value = 'counter'),
+    })
+  }
+  result.push(
     {
       key: 'battery',
       label: `Speicher · ${mqttStore.batterySoc} %`,
@@ -111,7 +134,6 @@ const chips = computed<Chip[]>(() => {
       value: formatKw(mqttStore.houseConsumption),
       icon: IconHouse,
       color: 'consumption',
-      faultState: detailInfo.value.house.faultState,
       clickable: true,
       onClick: () => (activeDetail.value = 'house'),
     },
@@ -135,7 +157,7 @@ const chips = computed<Chip[]>(() => {
       clickable: true,
       onClick: () => (activeDetail.value = 'consumer'),
     },
-  ]
+  )
   if (mqttStore.electricityPriceConfigured && mqttStore.currentElectricityPrice !== undefined) {
     result.push({
       label: 'Strompreis',

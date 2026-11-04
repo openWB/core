@@ -1,6 +1,6 @@
 <template>
   <div
-    class="panel flex flex-1 items-center justify-center gap-[7px] whitespace-nowrap px-[11px] py-2"
+    class="panel flex flex-1 items-center justify-center gap-1.5 overflow-hidden px-2 py-1.5 sm:gap-[7px] sm:px-[11px] sm:py-2"
     :class="[
       { 'cursor-pointer hover:border-accent': clickable },
       faultState === 1 ? 'chip-warning' : faultState !== undefined && faultState >= 2 ? 'chip-error' : '',
@@ -9,13 +9,14 @@
   >
     <component
       :is="icon"
+      class="shrink-0"
       :style="{ color: `var(--${color})` }"
     />
-    <div>
-      <div class="text-[11px] text-muted">
+    <div class="min-w-0">
+      <div class="truncate text-[10px] text-muted sm:text-[11px]">
         {{ label }}
       </div>
-      <div class="text-sm font-bold">
+      <div class="truncate text-xs font-bold sm:text-sm">
         {{ value }}
       </div>
     </div>

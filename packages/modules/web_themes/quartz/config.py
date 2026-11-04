@@ -15,7 +15,7 @@ class QuartzWebTheme:
                  name: str = "Quartz",
                  type: str = "quartz",
                  official: bool = False,
-                 userManagementSupported: bool = False,
+                 userManagementSupported: bool = True,
                  configuration: QuartzWebThemeConfiguration = None) -> None:
         self.name = name
         self.type = type

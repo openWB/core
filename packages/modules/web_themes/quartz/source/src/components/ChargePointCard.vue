@@ -28,18 +28,12 @@
       :charge-point-id="props.chargePointId"
     />
 
-    <p
-      v-if="faultState > 0 && faultMessage"
-      class="mt-0 mb-2.5 text-xs text-grid"
+    <div
+      class="status-box mb-2.5 min-h-24 px-3 py-2 text-xs"
+      :class="faultState > 0 && faultMessage ? 'status-box-fault' : 'status-box-info'"
     >
-      {{ faultMessage }}
-    </p>
-    <p
-      v-else-if="stateMessage"
-      class="mt-0 mb-2.5 text-xs text-muted"
-    >
-      {{ stateMessage }}
-    </p>
+      {{ faultState > 0 && faultMessage ? faultMessage : stateMessage || 'Kein Status verfügbar.' }}
+    </div>
 
     <div class="mb-2.5 flex items-center gap-1.5 rounded-lg bg-bg px-2 py-1.5">
       <IconCar class="flex-none text-muted" />
@@ -57,6 +51,10 @@
           {{ vehicle.name }}
         </option>
       </select>
+      <span
+        v-if="vehiclePriority !== undefined"
+        class="whitespace-nowrap rounded-full px-[9px] py-[3px] text-[11px] font-bold badge-muted"
+      >Prio {{ vehiclePriority }}</span>
       <span
         v-if="soc?.soc !== undefined"
         class="whitespace-nowrap text-xs text-muted"
@@ -138,6 +136,7 @@ const energyCharged = computed(() => mqttStore.chargePointEnergyChargedPlugged(p
 const chargeMode = computed(() => mqttStore.chargePointChargeMode(props.chargePointId))
 const vehicleInfo = computed(() => mqttStore.chargePointConnectedVehicleInfo(props.chargePointId))
 const soc = computed(() => mqttStore.chargePointConnectedVehicleSoc(props.chargePointId))
+const vehiclePriority = computed(() => (vehicleInfo.value ? mqttStore.vehiclePriority(vehicleInfo.value.id) : undefined))
 
 const locked = computed({
   get: () => mqttStore.chargePointManualLock(props.chargePointId),

@@ -28,18 +28,12 @@
       :name="name"
     />
 
-    <p
-      v-if="faultState > 0 && faultMessage"
-      class="mt-0 mb-2.5 text-xs text-grid"
+    <div
+      class="status-box mb-2.5 min-h-24 px-3 py-2 text-xs"
+      :class="faultState > 0 && faultMessage ? 'status-box-fault' : 'status-box-info'"
     >
-      {{ faultMessage }}
-    </p>
-    <p
-      v-else-if="stateMessage"
-      class="mt-0 mb-2.5 text-xs text-muted"
-    >
-      {{ stateMessage }}
-    </p>
+      {{ faultState > 0 && faultMessage ? faultMessage : stateMessage || 'Kein Status verfügbar.' }}
+    </div>
 
     <div class="flex gap-4 text-[13px]">
       <div>
@@ -60,7 +54,7 @@
       </div>
       <div>
         <div class="text-muted">
-          Verbraucht heute
+          Verbrauch heute
         </div>
         <div class="font-bold">
           {{ formatKwh(dailyImported) }}

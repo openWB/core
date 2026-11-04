@@ -79,6 +79,8 @@
         @update="mqttStore.setBatteryPowerDischarge"
       />
     </template>
+
+    <ActiveBatteryControlSettings />
   </BaseModal>
 </template>
 
@@ -88,6 +90,7 @@ import { useMqttStore } from '@/stores/mqtt-store'
 import BaseModal from './BaseModal.vue'
 import BaseSegmentedControl from './BaseSegmentedControl.vue'
 import FieldSlider from './FieldSlider.vue'
+import ActiveBatteryControlSettings from './ActiveBatteryControlSettings.vue'
 
 defineProps<{ modelValue: boolean; name: string }>()
 defineEmits<{ 'update:modelValue': [value: boolean] }>()

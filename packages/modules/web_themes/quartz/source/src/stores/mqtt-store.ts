@@ -366,6 +366,27 @@ export const useMqttStore = defineStore('mqtt', () => {
     return ([...entries].reverse().find((entry) => entry.timestamp <= now) ?? entries[0]).power
   })
 
+  // --- access control (user management) ---
+  // Published per logged-in session by the backend's own auth system - a user with restricted
+  // access simply never receives 'true' for a section they're not allowed to see. Same topics and
+  // shape koala's own mqtt-store.ts already reads; Quartz mirrors it rather than inventing its own.
+
+  function accessAllowed(): boolean {
+    return getValue.value<boolean>('openWB/system/security/access_allowed', false)
+  }
+  function accessSettingsAllowed(): boolean {
+    return getValue.value<boolean>('openWB/system/security/access/Settings', false)
+  }
+  function accessStatusAllowed(): boolean {
+    return getValue.value<boolean>('openWB/system/security/access/Status', false)
+  }
+  function accessChargeLogAllowed(): boolean {
+    return getValue.value<boolean>('openWB/system/security/access/ChargeLog', false)
+  }
+  function accessChartAllowed(): boolean {
+    return getValue.value<boolean>('openWB/system/security/access/Chart', false)
+  }
+
   // --- live view (recent rolling window, finer-grained than the 5-min daily log) ---
 
   // openWB/graph/alllivevaluesJson(1-16): chunked by runs/graphing.sh, each payload is newline-separated
@@ -437,12 +458,17 @@ export const useMqttStore = defineStore('mqtt', () => {
   const consumerIds = computed(() => getObjectIds('consumer'))
   const counterIds = computed(() => getObjectIds('counter'))
 
-  /** The device id isn't known client-side, hence the wildcard; lazily subscribed like getValue (getWildcardValues itself never auto-subscribes). */
+  /** The device id isn't known client-side, hence the '+' - a real single-level MQTT wildcard, unlike
+   *  getWildcardValues' plain string-prefix matching (which can't match this: the delivered topic has a
+   *  real device id where this topic string still has the literal '+'). Matched locally via regex instead. */
   function getComponentConfiguration(id: number): ComponentConfiguration | undefined {
     const topic = `openWB/system/device/+/component/${id}/config`
     if (!(topic in subscriptions.value)) subscribe(topic)
-    const configs = getWildcardValues(topic)
-    return Object.values(configs)[0] as ComponentConfiguration | undefined
+    const pattern = new RegExp(`^${topic.replace(/\+/g, '[^/]+')}$`)
+    for (const key in topics.value) {
+      if (pattern.test(key)) return topics.value[key] as ComponentConfiguration
+    }
+    return undefined
   }
 
   function chargePointConfig(id: number): Record<string, unknown> {
@@ -475,6 +501,42 @@ export const useMqttStore = defineStore('mqtt', () => {
   }
   function chargePointStateMessage(id: number): string {
     return getValue.value<string>(`openWB/chargepoint/${id}/get/state_str`, '')
+  }
+  /** Phase setpoint (distinct from chargePointPhasesInUse, which is the actually-active count). */
+  function chargePointPhasesToUse(id: number): number {
+    return getValue.value<number>(`openWB/chargepoint/${id}/set/phases_to_use`, 0)
+  }
+  function chargePointMaxEvseCurrent(id: number): number | undefined {
+    return getValue.value<number | undefined>(`openWB/chargepoint/${id}/get/max_evse_current`, undefined)
+  }
+  function chargePointInstanceVoltages(id: number): number[] {
+    return getValue.value<number[]>(`openWB/chargepoint/${id}/get/voltages`, [])
+  }
+  function chargePointInstanceCurrents(id: number): number[] {
+    return getValue.value<number[]>(`openWB/chargepoint/${id}/get/currents`, [])
+  }
+  /** Per-phase power in kW (the raw topic is in W, same convention as chargePointPower). */
+  function chargePointInstancePowers(id: number): number[] {
+    return getValue.value<number[]>(`openWB/chargepoint/${id}/get/powers`, []).map((p) => p / 1000)
+  }
+  function chargePointInstancePowerFactors(id: number): number[] {
+    return getValue.value<number[]>(`openWB/chargepoint/${id}/get/power_factors`, [])
+  }
+  function chargePointFrequency(id: number): number {
+    return getValue.value<number>(`openWB/chargepoint/${id}/get/frequency`, 0)
+  }
+  /** Lifetime/daily imported-exported in kWh (raw topics are in Wh). */
+  function chargePointInstanceDailyImported(id: number): number {
+    return getValue.value<number>(`openWB/chargepoint/${id}/get/daily_imported`, 0) / 1000
+  }
+  function chargePointInstanceDailyExported(id: number): number {
+    return getValue.value<number>(`openWB/chargepoint/${id}/get/daily_exported`, 0) / 1000
+  }
+  function chargePointInstanceImported(id: number): number {
+    return getValue.value<number>(`openWB/chargepoint/${id}/get/imported`, 0) / 1000
+  }
+  function chargePointInstanceExported(id: number): number {
+    return getValue.value<number>(`openWB/chargepoint/${id}/get/exported`, 0) / 1000
   }
   function chargePointFaultState(id: number): number {
     return getValue.value<number>(`openWB/chargepoint/${id}/get/fault_state`, 0)
@@ -579,6 +641,16 @@ export const useMqttStore = defineStore('mqtt', () => {
   function vehicleSocValue(id: number): number | undefined {
     return getValue.value<number | undefined>(`openWB/vehicle/${id}/get/soc`, undefined)
   }
+  function vehicleRange(id: number): number | undefined {
+    return getValue.value<number | undefined>(`openWB/vehicle/${id}/get/range`, undefined)
+  }
+  /** Unix seconds of the last SoC request - when the SoC value itself was last updated. */
+  function vehicleSocTimestamp(id: number): number | undefined {
+    return getValue.value<number | undefined>(`openWB/vehicle/${id}/get/soc_timestamp`, undefined)
+  }
+  function vehicleOdometer(id: number): number | undefined {
+    return getValue.value<number | undefined>(`openWB/vehicle/${id}/get/odometer`, undefined)
+  }
   function vehicleFaultState(id: number): number {
     return getValue.value<number>(`openWB/vehicle/${id}/get/fault_state`, 0)
   }
@@ -614,6 +686,19 @@ export const useMqttStore = defineStore('mqtt', () => {
   function consumerPriority(consumerId: number): number | undefined {
     return loadmanagementPriority('consumer', consumerId)
   }
+
+  /** At most 2 vehicles worth charting a SoC line for - connected-to-a-chargepoint ones first
+   *  (most relevant right now), then any other vehicle with a real SoC reading, same priority
+   *  order the 'colors' theme's own chart uses (chargePointList/model.ts::topVehicles). */
+  const topVehicleIds = computed<number[]>(() => {
+    const connected = chargePointIds.value
+      .map((id) => chargePointConnectedVehicleInfo(id)?.id)
+      .filter((id): id is number => id !== undefined && vehicleSocValue(id) !== undefined)
+    const others = vehicleList.value
+      .map((v) => v.id)
+      .filter((id) => !connected.includes(id) && vehicleSocValue(id) !== undefined)
+    return [...new Set([...connected, ...others])].slice(0, 2)
+  })
 
   function subscribeVehicleConnectionState(): void {
     subscribe('openWB/chargepoint/+/get/connected_vehicle/info')
@@ -667,6 +752,10 @@ export const useMqttStore = defineStore('mqtt', () => {
   }
   function batteryInstanceCurrents(id: number): number[] {
     return getValue.value<number[]>(`openWB/bat/${id}/get/currents`, [])
+  }
+  /** Status of an active battery-control mode (e.g. "Hält SoC bei X%") - empty when self-regulated. */
+  function batteryInstanceStateMessage(id: number): string {
+    return getValue.value<string>(`openWB/bat/${id}/get/state_str`, '')
   }
   function batteryInstanceFaultState(id: number): number {
     return getValue.value<number>(`openWB/bat/${id}/get/fault_state`, 0)
@@ -735,6 +824,94 @@ export const useMqttStore = defineStore('mqtt', () => {
   }
   function setBatteryPowerDischarge(kw: number): void {
     updateTopic('openWB/general/chargemode_config/bat/power_discharge', Math.round(kw * 1000), undefined, true)
+  }
+
+  // --- active battery control (openwb-ui-settings' ActiveBatControlConfiguration.vue) ---
+
+  /** Whether a battery's charge/discharge power can be overridden at all - undefined while not yet known (distinct from a confirmed false). */
+  function batteryInstancePowerLimitControllable(id: number): boolean | undefined {
+    return getValue.value<boolean | undefined>(`openWB/bat/${id}/get/power_limit_controllable`, undefined)
+  }
+  /** Max charge power in kW (the raw topic is in W). Only meaningful/editable for controllable batteries. */
+  function batteryInstanceMaxChargePower(id: number): number {
+    return getValue.value<number>(`openWB/bat/${id}/get/max_charge_power`, 0) / 1000
+  }
+  function setBatteryInstanceMaxChargePower(id: number, kw: number): void {
+    updateTopic(`openWB/bat/${id}/get/max_charge_power`, Math.round(kw * 1000), undefined, true)
+  }
+  /** Max discharge power in kW - the raw topic is stored negative (W), display/input use a positive kW value. */
+  function batteryInstanceMaxDischargePower(id: number): number {
+    return getValue.value<number>(`openWB/bat/${id}/get/max_discharge_power`, 0) / -1000
+  }
+  function setBatteryInstanceMaxDischargePower(id: number, kw: number): void {
+    updateTopic(`openWB/bat/${id}/get/max_discharge_power`, Math.round(kw * -1000), undefined, true)
+  }
+
+  function batControlActivated(): boolean {
+    return getValue.value<boolean>('openWB/bat/config/bat_control_activated', false)
+  }
+  function setBatControlActivated(active: boolean): void {
+    updateTopic('openWB/bat/config/bat_control_activated', active, undefined, true)
+  }
+  function batControlMinSoc(): number {
+    return getValue.value<number>('openWB/bat/config/bat_control_min_soc', 5)
+  }
+  function batControlMaxSoc(): number {
+    return getValue.value<number>('openWB/bat/config/bat_control_max_soc', 100)
+  }
+  function setBatControlSocRange(min: number, max: number): void {
+    updateTopic('openWB/bat/config/bat_control_min_soc', min, undefined, true)
+    updateTopic('openWB/bat/config/bat_control_max_soc', max, undefined, true)
+  }
+
+  function powerLimitCondition(): string {
+    return getValue.value<string>('openWB/bat/config/power_limit_condition', 'manual')
+  }
+  /** Switching to 'vehicle_charging' forces manual_mode to 'manual_limit', matching the reference's own handlePowerLimitConditionChange. */
+  function setPowerLimitCondition(condition: string): void {
+    updateTopic('openWB/bat/config/power_limit_condition', condition, undefined, true)
+    if (condition === 'vehicle_charging') {
+      updateTopic('openWB/bat/config/manual_mode', 'manual_limit', undefined, true)
+    }
+  }
+  function manualMode(): string {
+    return getValue.value<string>('openWB/bat/config/manual_mode', 'manual_limit')
+  }
+  function setManualMode(mode: string): void {
+    updateTopic('openWB/bat/config/manual_mode', mode, undefined, true)
+  }
+  function powerLimitMode(): string {
+    return getValue.value<string>('openWB/bat/config/power_limit_mode', 'mode_no_discharge')
+  }
+  function setPowerLimitMode(mode: string): void {
+    updateTopic('openWB/bat/config/power_limit_mode', mode, undefined, true)
+  }
+
+  function priceLimitActivated(): boolean {
+    return getValue.value<boolean>('openWB/bat/config/price_limit_activated', false)
+  }
+  function setPriceLimitActivated(active: boolean): void {
+    updateTopic('openWB/bat/config/price_limit_activated', active, undefined, true)
+  }
+  /** Display value in ct/kWh - the raw topic is stored scaled by 1e-5. */
+  function priceLimit(): number {
+    return getValue.value<number>('openWB/bat/config/price_limit', 0) * 100000
+  }
+  function setPriceLimit(ctPerKwh: number): void {
+    updateTopic('openWB/bat/config/price_limit', ctPerKwh / 100000, undefined, true)
+  }
+  function priceChargeActivated(): boolean {
+    return getValue.value<boolean>('openWB/bat/config/price_charge_activated', false)
+  }
+  function setPriceChargeActivated(active: boolean): void {
+    updateTopic('openWB/bat/config/price_charge_activated', active, undefined, true)
+  }
+  /** Display value in ct/kWh - the raw topic is stored scaled by 1e-5. */
+  function chargeLimit(): number {
+    return getValue.value<number>('openWB/bat/config/charge_limit', 0) * 100000
+  }
+  function setChargeLimit(ctPerKwh: number): void {
+    updateTopic('openWB/bat/config/charge_limit', ctPerKwh / 100000, undefined, true)
   }
 
   // --- counters ---
@@ -835,6 +1012,17 @@ export const useMqttStore = defineStore('mqtt', () => {
   function consumerInstanceDailyImported(id: number): number {
     return getValue.value<number>(`openWB/consumer/${id}/get/daily_imported`, 0) / 1000
   }
+  /** Not every consumer module publishes phase data - empty array when it doesn't. */
+  function consumerInstanceVoltages(id: number): number[] {
+    return getValue.value<number[]>(`openWB/consumer/${id}/get/voltages`, [])
+  }
+  function consumerInstanceCurrents(id: number): number[] {
+    return getValue.value<number[]>(`openWB/consumer/${id}/get/currents`, [])
+  }
+  /** Per-phase power in kW (the raw topic is in W). */
+  function consumerInstancePowers(id: number): number[] {
+    return getValue.value<number[]>(`openWB/consumer/${id}/get/powers`, []).map((p) => p / 1000)
+  }
   function consumerInstanceFaultState(id: number): number {
     return getValue.value<number>(`openWB/consumer/${id}/get/fault_state`, 0)
   }
@@ -928,6 +1116,11 @@ export const useMqttStore = defineStore('mqtt', () => {
     forecastFaultMessage,
     forecastSeries,
     currentForecastPower,
+    accessAllowed,
+    accessSettingsAllowed,
+    accessStatusAllowed,
+    accessChargeLogAllowed,
+    accessChartAllowed,
     fetchDailyLog,
     liveSeriesRaw,
     subscribeLiveSeries,
@@ -944,6 +1137,17 @@ export const useMqttStore = defineStore('mqtt', () => {
     chargePointPhasesInUse,
     chargePointChargingCurrent,
     chargePointStateMessage,
+    chargePointPhasesToUse,
+    chargePointMaxEvseCurrent,
+    chargePointInstanceVoltages,
+    chargePointInstanceCurrents,
+    chargePointInstancePowers,
+    chargePointInstancePowerFactors,
+    chargePointFrequency,
+    chargePointInstanceDailyImported,
+    chargePointInstanceDailyExported,
+    chargePointInstanceImported,
+    chargePointInstanceExported,
     chargePointFaultState,
     chargePointFaultMessage,
     chargePointFaultStateTotal,
@@ -967,6 +1171,9 @@ export const useMqttStore = defineStore('mqtt', () => {
     vehicleSocType,
     vehicleColor,
     vehicleSocValue,
+    vehicleRange,
+    vehicleSocTimestamp,
+    vehicleOdometer,
     vehicleFaultState,
     vehicleFaultMessage,
     subscribeVehicleConnectionState,
@@ -976,6 +1183,7 @@ export const useMqttStore = defineStore('mqtt', () => {
     unsubscribeLoadmanagementPrios,
     vehiclePriority,
     consumerPriority,
+    topVehicleIds,
     batteryIds,
     inverterIds,
     consumerIds,
@@ -988,6 +1196,7 @@ export const useMqttStore = defineStore('mqtt', () => {
     batteryInstanceImported,
     batteryInstanceExported,
     batteryInstanceCurrents,
+    batteryInstanceStateMessage,
     batteryInstanceFaultState,
     batteryInstanceFaultMessage,
     batteryDailyImportedTotal,
@@ -1007,6 +1216,30 @@ export const useMqttStore = defineStore('mqtt', () => {
     setBatteryPowerDischargeActive,
     batteryPowerDischarge,
     setBatteryPowerDischarge,
+    batteryInstancePowerLimitControllable,
+    batteryInstanceMaxChargePower,
+    setBatteryInstanceMaxChargePower,
+    batteryInstanceMaxDischargePower,
+    setBatteryInstanceMaxDischargePower,
+    batControlActivated,
+    setBatControlActivated,
+    batControlMinSoc,
+    batControlMaxSoc,
+    setBatControlSocRange,
+    powerLimitCondition,
+    setPowerLimitCondition,
+    manualMode,
+    setManualMode,
+    powerLimitMode,
+    setPowerLimitMode,
+    priceLimitActivated,
+    setPriceLimitActivated,
+    priceLimit,
+    setPriceLimit,
+    priceChargeActivated,
+    setPriceChargeActivated,
+    chargeLimit,
+    setChargeLimit,
     counterIds,
     gridCounterId,
     counterName,
@@ -1036,6 +1269,9 @@ export const useMqttStore = defineStore('mqtt', () => {
     consumerName,
     consumerInstancePower,
     consumerInstanceDailyImported,
+    consumerInstanceVoltages,
+    consumerInstanceCurrents,
+    consumerInstancePowers,
     consumerInstanceFaultState,
     consumerInstanceFaultMessage,
     consumerFaultStateTotal,
