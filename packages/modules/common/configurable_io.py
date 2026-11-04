@@ -21,9 +21,11 @@ class ConfigurableIo(Generic[T_IO_CONFIG], AbstractIoDevice):
                  component_reader: Callable[[], IoState],
                  component_writer: Callable[[Dict[int, Union[float, int]]], Optional[IoState]],
                  initializer: Callable = lambda: None,
-                 error_handler: Callable = lambda: None) -> None:
+                 error_handler: Callable = lambda: None,
+                 shutdown_handler: Callable = lambda: None) -> None:
         self.config = config
         self.__error_handler = error_handler
+        self.__shutdown_handler = shutdown_handler
         self.fault_state = FaultState(ComponentInfo(self.config.id, self.config.name,
                                       ComponentType.IO.value))
         self.store = store.get_io_value_store(self.config.id)
@@ -33,6 +35,9 @@ class ConfigurableIo(Generic[T_IO_CONFIG], AbstractIoDevice):
             self.component_reader = component_reader
             self.component_writer = component_writer
             initializer()
+
+    def shutdown(self) -> None:
+        self.__shutdown_handler()
 
     def error_handler(self) -> None:
         error_timestamp_topic = f"openWB/set/system/device/{self.config.id}/error_timestamp"
