@@ -42,6 +42,7 @@ def get_factory() -> Get:
 @dataclass
 class Set:
     power_limit: Optional[int] = field(default=None, metadata={"topic": "set/power_limit"})
+    error_timer: Optional[float] = field(default=None, metadata={"topic": "set/error_timer"})
     evu_power: Optional[int] = field(default=None, metadata={"topic": "set/evu_power"})
 
 

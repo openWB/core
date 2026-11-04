@@ -6,6 +6,7 @@ import requests
 
 from modules.common import req
 from modules.common.abstract_device import DeviceDescriptor
+from modules.common.component_context import SingleComponentUpdateContext
 from modules.common.configurable_device import ComponentFactoryByType, ConfigurableDevice, MultiComponentUpdater
 from modules.devices.fronius.fronius_http_api.bat import FroniusBat
 from modules.devices.fronius.fronius_http_api.config import (
@@ -67,17 +68,19 @@ def create_device(device_config: Fronius):
                     timeout=5).json()
             return meter_system_response
 
+        # Verbindungsfehler betrifft alle Komponenten, ein Fehler pro Komponente nur diese eine.
         for component in components:
-            component_type = component.component_config.type
-            if component_type in ("inverter", "bat"):
-                component.update(get_powerflow_response())
-            elif component_type == "counter":
-                variant = component.component_config.configuration.variant
-                component.update(get_powerflow_response(),
-                                 get_meter_system_response() if variant == 2 else None)
-            elif component_type == "inverter_production_meter":
-                variant = component.component_config.configuration.variant
-                component.update(get_meter_system_response() if variant == 2 else None)
+            with SingleComponentUpdateContext(component.fault_state):
+                component_type = component.component_config.type
+                if component_type in ("inverter", "bat"):
+                    component.update(get_powerflow_response())
+                elif component_type == "counter":
+                    variant = component.component_config.configuration.variant
+                    component.update(get_powerflow_response(),
+                                     get_meter_system_response() if variant == 2 else None)
+                elif component_type == "inverter_production_meter":
+                    variant = component.component_config.configuration.variant
+                    component.update(get_meter_system_response() if variant == 2 else None)
 
     return ConfigurableDevice(
         device_config=device_config,
