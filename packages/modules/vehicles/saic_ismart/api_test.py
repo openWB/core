@@ -104,10 +104,10 @@ class TestSendHttpLevelAuthError:
         # Login in der iSMART-App auf dem Handy), nicht nur ueber das eigene code-Feld in einer
         # 200-Antwort - muss als SaicAuthenticationError erkannt werden, damit der automatische
         # Relogin in _call_with_relogin() greift (siehe Discussion zu wiederholtem 401 ohne Relogin).
+        # Der Session-Hook in req.py ruft raise_for_status() bereits in session.request() auf.
         response = Mock(status_code=401, headers={})
-        response.raise_for_status = Mock(side_effect=HTTPError("401 Client Error"))
         session = Mock()
-        session.request = Mock(return_value=response)
+        session.request = Mock(side_effect=HTTPError("401 Client Error", response=response))
         monkeypatch.setattr(api.req, "get_http_session", Mock(return_value=session))
 
         with pytest.raises(api.SaicAuthenticationError):
