@@ -10,11 +10,11 @@
       type="button"
       :disabled="option.disabled"
       :class="[
-        'flex-1 rounded-lg border px-2 py-1.5 text-xs',
+        'flex-1 rounded-full border px-2 py-1 text-xs font-medium',
         option.disabled
           ? 'cursor-not-allowed border-border bg-transparent text-muted opacity-50'
           : modelValue === option.value
-            ? 'border-text bg-text text-panel'
+            ? 'border-accent bg-accent text-white'
             : 'border-border bg-transparent text-text',
       ]"
       @click="!option.disabled && $emit('update', option.value)"

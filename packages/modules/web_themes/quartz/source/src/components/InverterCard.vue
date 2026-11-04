@@ -13,22 +13,14 @@
     </p>
 
     <div class="flex gap-4 text-[13px]">
-      <div>
-        <div class="text-muted">
-          Leistung
-        </div>
-        <div class="font-bold">
-          {{ formatKw(power) }}
-        </div>
-      </div>
-      <div>
-        <div class="text-muted">
-          Eingespeist heute
-        </div>
-        <div class="font-bold">
-          {{ formatKwh(dailyExported) }}
-        </div>
-      </div>
+      <StatBlock
+        label="Leistung"
+        :value="formatKw(power)"
+      />
+      <StatBlock
+        label="Eingespeist heute"
+        :value="formatKwh(dailyExported)"
+      />
     </div>
   </div>
 </template>
@@ -38,6 +30,7 @@ import { computed } from 'vue'
 import { useMqttStore } from '@/stores/mqtt-store'
 import { formatKw, formatKwh } from '@/utils/format'
 import IconSun from './icons/IconSun.vue'
+import StatBlock from './StatBlock.vue'
 
 const props = defineProps<{ inverterId: number }>()
 const mqttStore = useMqttStore()

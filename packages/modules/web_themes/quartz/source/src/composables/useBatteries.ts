@@ -5,8 +5,8 @@ import { useMqttStore } from '@/stores/mqtt-store'
 export function useBatteries() {
   const mqttStore = useMqttStore()
 
-  onMounted(() => mqttStore.subscribeChargePointList())
-  onUnmounted(() => mqttStore.unsubscribeChargePointList())
+  onMounted(() => mqttStore.subscribeComponentHierarchy())
+  onUnmounted(() => mqttStore.unsubscribeComponentHierarchy())
 
   // prepend the overview pseudo-id (-1) once there's more than one battery - matches koala's own BatteryInformation.vue
   const batteryIds = computed(() => {

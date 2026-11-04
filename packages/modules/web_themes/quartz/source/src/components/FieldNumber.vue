@@ -25,21 +25,27 @@ const props = defineProps<{
   unit: string
   min?: number
   step?: number
+  /** Rounds the synced display value - a defensive guard against float noise in the source value (e.g. a *1e5/1e-5 scaling round-trip), not just a display nicety. */
+  decimals?: number
   modelValue: number
 }>()
 const emit = defineEmits<{ update: [value: number] }>()
 
-const local = ref(props.modelValue)
+function round(v: number): number {
+  return props.decimals === undefined ? v : Number(v.toFixed(props.decimals))
+}
+
+const local = ref(round(props.modelValue))
 
 watch(
   () => props.modelValue,
   (v) => {
-    local.value = v
+    local.value = round(v)
   },
 )
 
 function onChange(event: Event): void {
-  const value = Number((event.target as HTMLInputElement).value)
+  const value = round(Number((event.target as HTMLInputElement).value))
   local.value = value
   emit('update', value)
 }

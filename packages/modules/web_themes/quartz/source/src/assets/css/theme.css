@@ -208,6 +208,10 @@
     @apply mb-2 flex items-center justify-between;
   }
 
+  .badge {
+    @apply rounded-full px-[9px] py-[3px] text-[11px] font-bold whitespace-nowrap;
+  }
+
   .badge-ok {
     background: color-mix(in srgb, var(--pv) 18%, transparent);
     color: var(--pv);

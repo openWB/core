@@ -8,61 +8,42 @@
       <BaseIconButton
         v-if="showSettings"
         aria-label="Speicher-Einstellungen öffnen"
+        title="Speicher-Einstellungen öffnen"
         @click="showDialog = true"
       >
         <IconGear />
       </BaseIconButton>
     </div>
 
-    <p
-      v-if="faultState > 0 && faultMessage"
-      class="mt-0 mb-2.5 text-xs text-grid"
+    <div
+      class="status-box mb-2.5 min-h-24 px-3 py-2 text-xs"
+      :class="faultState > 0 && faultMessage ? 'status-box-fault' : 'status-box-info'"
     >
-      {{ faultMessage }}
-    </p>
-
-    <div class="flex gap-4 text-[13px]">
-      <div>
-        <div class="text-muted">
-          Leistung
-        </div>
-        <div class="font-bold">
-          {{ formatKw(power) }}
-        </div>
-      </div>
-      <div>
-        <div class="text-muted">
-          Geladen heute
-        </div>
-        <div class="font-bold">
-          {{ formatKwh(dailyImported) }}
-        </div>
-      </div>
-      <div>
-        <div class="text-muted">
-          Entladen heute
-        </div>
-        <div class="font-bold">
-          {{ formatKwh(dailyExported) }}
-        </div>
-      </div>
-      <div
-        v-if="soc !== undefined"
-        class="ml-auto"
-      >
-        <div class="text-muted">
-          SoC
-        </div>
-        <div class="font-bold">
-          {{ Math.round(soc) }}&nbsp;%
-        </div>
-      </div>
+      {{ faultState > 0 && faultMessage ? faultMessage : stateMessage || 'Kein Status verfügbar.' }}
     </div>
 
-    <BatterySettings
-      v-model="showDialog"
-      :name="name"
-    />
+    <div class="flex gap-4 text-[13px]">
+      <StatBlock
+        label="Leistung"
+        :value="formatKw(power)"
+      />
+      <StatBlock
+        label="Geladen heute"
+        :value="formatKwh(dailyImported)"
+      />
+      <StatBlock
+        label="Entladen heute"
+        :value="formatKwh(dailyExported)"
+      />
+      <StatBlock
+        v-if="soc !== undefined"
+        class="ml-auto"
+        label="SoC"
+        :value="`${Math.round(soc)} %`"
+      />
+    </div>
+
+    <BatterySettings v-model="showDialog" />
   </div>
 </template>
 
@@ -74,6 +55,7 @@ import IconBattery from './icons/IconBattery.vue'
 import IconGear from './icons/IconGear.vue'
 import BaseIconButton from './BaseIconButton.vue'
 import BatterySettings from './BatterySettings.vue'
+import StatBlock from './StatBlock.vue'
 
 const props = defineProps<{ batteryId: number }>()
 const mqttStore = useMqttStore()
@@ -97,4 +79,7 @@ const faultState = computed(() =>
 const faultMessage = computed(() =>
   isOverview.value ? mqttStore.batteryFaultMessageTotal() : mqttStore.batteryInstanceFaultMessage(props.batteryId),
 )
+// active-control status ("Hält SoC bei X%" etc.) is inherently per-battery - no aggregate
+// equivalent exists, so the overview pseudo-card just falls back to the generic empty state
+const stateMessage = computed(() => (isOverview.value ? '' : mqttStore.batteryInstanceStateMessage(props.batteryId)))
 </script>

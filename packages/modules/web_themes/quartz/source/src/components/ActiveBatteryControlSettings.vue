@@ -1,198 +1,145 @@
 <template>
-  <div class="settings-divider" />
-  <div class="settings-group-label">
-    Aktive Speichersteuerung
-  </div>
-
-  <div class="status-box status-box-warning my-2.5">
-    <p class="mt-0">
-      Die aktive Speichersteuerung durch openWB basiert auf öffentlich zugänglichen Informationen zu den
-      verschiedenen Speichersystemen. Diese können auch nicht vom Hersteller freigegebene Informationen beinhalten.
-    </p>
-    <p>
-      Fragen bezüglich der Gewährleistung und Hardwarekompatibilität sind vor der Nutzung mit dem Hersteller zu
-      klären. openWB übernimmt keine Haftung für Schäden, welche aus der Nutzung der "aktiven Speichersteuerung"
-      entstehen. Mit der Aktivierung (Schalter unten) bestätigst du, dass du die Hinweise gelesen und verstanden
-      hast und die Verantwortung für die Nutzung der aktiven Speichersteuerung übernimmst.
-    </p>
-  </div>
-
-  <div class="toggle-row">
-    <label for="bat-control-activated">Speicher aktiv steuern</label>
-    <input
-      id="bat-control-activated"
-      type="checkbox"
-      :checked="activated"
-      @change="mqttStore.setBatControlActivated(($event.target as HTMLInputElement).checked)"
-    >
-  </div>
-  <div class="mode-note">
-    {{ activated
-      ? 'Speicher wird aktiv gesteuert. Grundlage ist die nachfolgende Konfiguration.'
-      : 'Speicher wird nicht aktiv gesteuert, sondern regelt eigenständig. Es greifen die Regelparameter der Speicherbeachtung.' }}
-  </div>
-
-  <template v-if="activated">
-    <div class="settings-group-label mt-3">
-      Aktiv steuerbare Speicher
-    </div>
-    <div
-      v-if="hasNonControllableBatteries"
-      class="status-box status-box-warning my-2.5"
-    >
-      Es sind nicht steuerbare Speicher im System vorhanden. Diese führen gewöhnlich eigenständig eine
-      Nullpunktausregelung durch und versuchen auch aktiv gesteuerte Speicher auszugleichen.
+  <!-- activation (bat_control_activated) and whether a battery is controllable at all are both
+       decided outside Quartz (legacy settings UI / the module's own capability) - this section
+       only ever appears once both are already true, nothing to show/explain otherwise -->
+  <div
+    v-if="activated && controllableIds.length > 0"
+    class="mt-3 rounded-lg bg-bg p-3"
+  >
+    <div class="settings-group-label mb-2">
+      Speichersteuerung
     </div>
 
     <div
-      v-if="controllableIds.length === 0"
-      class="status-box status-box-info my-2.5"
+      v-for="id in controllableIds"
+      :key="id"
+      class="mb-2.5 rounded-lg bg-panel px-3 py-2.5 last:mb-0"
     >
-      Die Speicherentladung kann nicht aktiv gesteuert werden, da die Entladeleistung nicht an den/die
-      konfigurierten Speicher übergeben werden kann.
-    </div>
-
-    <template v-else>
-      <div
-        v-for="id in controllableIds"
-        :key="id"
-        class="my-2.5 rounded-lg bg-bg px-3 py-2.5"
-      >
-        <div class="mb-1 text-[13px] font-bold">
-          {{ mqttStore.batteryName(id) }}
-        </div>
-        <FieldNumber
-          label="Maximale Entladeleistung"
-          unit="kW"
-          :min="0.01"
-          :step="0.01"
-          :model-value="mqttStore.batteryInstanceMaxDischargePower(id)"
-          @update="(v) => mqttStore.setBatteryInstanceMaxDischargePower(id, v)"
-        />
-        <FieldNumber
-          label="Maximale Ladeleistung"
-          unit="kW"
-          :min="0.01"
-          :step="0.01"
-          :model-value="mqttStore.batteryInstanceMaxChargePower(id)"
-          @update="(v) => mqttStore.setBatteryInstanceMaxChargePower(id, v)"
-        />
+      <div class="mb-1 text-[13px] font-bold">
+        {{ mqttStore.batteryName(id) }}
       </div>
-
-      <div class="settings-divider" />
-      <FieldSlider
-        label="Untere Entladeschranke"
-        unit="%"
-        :min="5"
-        :max="100"
-        :model-value="minSoc"
-        @update="(v) => mqttStore.setBatControlSocRange(v, maxSoc)"
+      <FieldNumber
+        label="Maximale Entladeleistung"
+        unit="kW"
+        :min="0.01"
+        :step="0.01"
+        :decimals="2"
+        :model-value="mqttStore.batteryInstanceMaxDischargePower(id)"
+        @update="(v) => mqttStore.setBatteryInstanceMaxDischargePower(id, v)"
       />
-      <FieldSlider
-        label="Obere Ladeschranke"
-        unit="%"
-        :min="5"
-        :max="100"
-        :model-value="maxSoc"
-        @update="(v) => mqttStore.setBatControlSocRange(minSoc, v)"
+      <FieldNumber
+        label="Maximale Ladeleistung"
+        unit="kW"
+        :min="0.01"
+        :step="0.01"
+        :decimals="2"
+        :model-value="mqttStore.batteryInstanceMaxChargePower(id)"
+        @update="(v) => mqttStore.setBatteryInstanceMaxChargePower(id, v)"
       />
+    </div>
 
+    <FieldSlider
+      label="Untere Entladeschranke"
+      unit="%"
+      :min="5"
+      :max="100"
+      :model-value="minSoc"
+      @update="(v) => mqttStore.setBatteryControlSocRange(v, maxSoc)"
+    />
+    <FieldSlider
+      label="Obere Ladeschranke"
+      unit="%"
+      :min="5"
+      :max="100"
+      :model-value="maxSoc"
+      @update="(v) => mqttStore.setBatteryControlSocRange(minSoc, v)"
+    />
+
+    <BaseSegmentedControl
+      label="Regelbedingung"
+      :model-value="condition"
+      :options="conditionOptions"
+      @update="mqttStore.setBatteryPowerLimitCondition($event)"
+    />
+
+    <template v-if="condition === 'manual' || condition === 'vehicle_charging'">
       <BaseSegmentedControl
-        label="Regelbedingung"
-        :model-value="condition"
-        :options="conditionOptions"
-        @update="mqttStore.setPowerLimitCondition($event)"
+        label="Speichersteuerung"
+        :model-value="manualMode"
+        :options="manualModeOptions"
+        @update="mqttStore.setBatteryManualMode($event)"
       />
-
-      <div class="settings-divider" />
-
-      <template v-if="condition === 'manual' || condition === 'vehicle_charging'">
-        <div class="settings-group-label">
-          {{ condition === 'manual' ? 'Manuell' : 'Fahrzeugladung oder Verbraucherbetrieb aktiv' }}
-        </div>
-        <BaseSegmentedControl
-          label="Speichersteuerung"
-          :model-value="manualMode"
-          :options="manualModeOptions"
-          @update="mqttStore.setManualMode($event)"
-        />
-        <BaseSegmentedControl
-          v-if="manualMode === 'manual_limit'"
-          label="Regelmodus"
-          :model-value="powerLimitMode"
-          :options="powerLimitModeOptions"
-          @update="mqttStore.setPowerLimitMode($event)"
-        />
-      </template>
-
-      <template v-if="condition === 'price_limit'">
-        <div class="settings-group-label">
-          Preisgrenze (Variable Strompreise)
-        </div>
-        <div
-          v-if="!mqttStore.electricityPriceConfigured"
-          class="status-box status-box-warning my-2.5"
-        >
-          Bitte in den übergreifenden Ladeeinstellungen einen Strompreis-Anbieter konfigurieren. Ohne
-          Strompreis-Anbieter schaltet der Speicher auf Eigenregelung.
-        </div>
-        <div class="toggle-row">
-          <label for="price-limit-activated">Preisgrenze für Netzbezug statt Speicherentladung</label>
-          <input
-            id="price-limit-activated"
-            type="checkbox"
-            :checked="priceLimitActivated"
-            @change="mqttStore.setPriceLimitActivated(($event.target as HTMLInputElement).checked)"
-          >
-        </div>
-        <FieldNumber
-          label="Eigenregelung für Strompreise über"
-          unit="ct/kWh"
-          :step="0.001"
-          :model-value="priceLimit"
-          @update="mqttStore.setPriceLimit"
-        />
-        <BaseSegmentedControl
-          label="Regelmodus für Strompreise zwischen Preisgrenzen"
-          :model-value="powerLimitMode"
-          :options="powerLimitModeOptions"
-          @update="mqttStore.setPowerLimitMode($event)"
-        />
-        <div class="toggle-row">
-          <label for="price-charge-activated">Preisgrenze für Regelmodus (aktiv laden)</label>
-          <input
-            id="price-charge-activated"
-            type="checkbox"
-            :checked="priceChargeActivated"
-            @change="mqttStore.setPriceChargeActivated(($event.target as HTMLInputElement).checked)"
-          >
-        </div>
-        <FieldNumber
-          label="Speicher aktiv laden für Strompreise unter"
-          unit="ct/kWh"
-          :step="0.001"
-          :model-value="chargeLimit"
-          @update="mqttStore.setChargeLimit"
-        />
-      </template>
-
-      <template v-if="behaviorDescription.length">
-        <div class="settings-divider" />
-        <div class="settings-group-label">
-          Beschreibung des Verhaltens
-        </div>
-        <div class="status-box status-box-info my-2.5">
-          <p
-            v-for="(line, index) in behaviorDescription"
-            :key="index"
-            :class="{ 'mt-0': index === 0 }"
-          >
-            {{ line }}
-          </p>
-        </div>
-      </template>
+      <BaseSegmentedControl
+        v-if="manualMode === 'manual_limit'"
+        label="Regelmodus"
+        :model-value="powerLimitMode"
+        :options="powerLimitModeOptions"
+        @update="mqttStore.setBatteryPowerLimitMode($event)"
+      />
     </template>
-  </template>
+
+    <template v-if="condition === 'price_limit'">
+      <div
+        v-if="!mqttStore.electricityPriceConfigured"
+        class="status-box status-box-warning my-2.5"
+      >
+        Bitte in den übergreifenden Ladeeinstellungen einen Strompreis-Anbieter konfigurieren.
+      </div>
+      <div class="toggle-row">
+        <label for="price-limit-activated">Preisgrenze für Netzbezug statt Speicherentladung</label>
+        <input
+          id="price-limit-activated"
+          type="checkbox"
+          :checked="priceLimitActivated"
+          @change="mqttStore.setBatteryPriceLimitActivated(($event.target as HTMLInputElement).checked)"
+        >
+      </div>
+      <FieldNumber
+        label="Eigenregelung für Strompreise über"
+        unit="ct/kWh"
+        :step="0.001"
+        :decimals="3"
+        :model-value="priceLimit"
+        @update="mqttStore.setBatteryPriceLimit"
+      />
+      <BaseSegmentedControl
+        label="Regelmodus für Strompreise zwischen Preisgrenzen"
+        :model-value="powerLimitMode"
+        :options="powerLimitModeOptions"
+        @update="mqttStore.setBatteryPowerLimitMode($event)"
+      />
+      <div class="toggle-row">
+        <label for="price-charge-activated">Preisgrenze für Regelmodus (aktiv laden)</label>
+        <input
+          id="price-charge-activated"
+          type="checkbox"
+          :checked="priceChargeActivated"
+          @change="mqttStore.setBatteryPriceChargeActivated(($event.target as HTMLInputElement).checked)"
+        >
+      </div>
+      <FieldNumber
+        label="Speicher aktiv laden für Strompreise unter"
+        unit="ct/kWh"
+        :step="0.001"
+        :decimals="3"
+        :model-value="chargeLimit"
+        @update="mqttStore.setBatteryChargeLimit"
+      />
+    </template>
+
+    <div
+      v-if="behaviorDescription.length"
+      class="mode-note"
+    >
+      <p
+        v-for="(line, index) in behaviorDescription"
+        :key="index"
+        :class="index === 0 ? 'mt-0' : 'mt-1'"
+      >
+        {{ line }}
+      </p>
+    </div>
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -204,22 +151,19 @@ import FieldNumber from './FieldNumber.vue'
 
 const mqttStore = useMqttStore()
 
-const activated = computed(() => mqttStore.batControlActivated())
-const minSoc = computed(() => mqttStore.batControlMinSoc())
-const maxSoc = computed(() => mqttStore.batControlMaxSoc())
-const condition = computed(() => mqttStore.powerLimitCondition())
-const manualMode = computed(() => mqttStore.manualMode())
-const powerLimitMode = computed(() => mqttStore.powerLimitMode())
-const priceLimitActivated = computed(() => mqttStore.priceLimitActivated())
-const priceLimit = computed(() => mqttStore.priceLimit())
-const priceChargeActivated = computed(() => mqttStore.priceChargeActivated())
-const chargeLimit = computed(() => mqttStore.chargeLimit())
+const activated = computed(() => mqttStore.batteryControlActivated())
+const minSoc = computed(() => mqttStore.batteryControlMinSoc())
+const maxSoc = computed(() => mqttStore.batteryControlMaxSoc())
+const condition = computed(() => mqttStore.batteryPowerLimitCondition())
+const manualMode = computed(() => mqttStore.batteryManualMode())
+const powerLimitMode = computed(() => mqttStore.batteryPowerLimitMode())
+const priceLimitActivated = computed(() => mqttStore.batteryPriceLimitActivated())
+const priceLimit = computed(() => mqttStore.batteryPriceLimit())
+const priceChargeActivated = computed(() => mqttStore.batteryPriceChargeActivated())
+const chargeLimit = computed(() => mqttStore.batteryChargeLimit())
 
 const controllableIds = computed(() =>
   mqttStore.batteryIds.filter((id) => mqttStore.batteryInstancePowerLimitControllable(id) === true),
-)
-const hasNonControllableBatteries = computed(() =>
-  mqttStore.batteryIds.some((id) => mqttStore.batteryInstancePowerLimitControllable(id) === false),
 )
 
 const conditionOptions = [

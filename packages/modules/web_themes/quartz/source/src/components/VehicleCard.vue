@@ -26,51 +26,52 @@
     <div class="flex flex-wrap items-center gap-1.5">
       <span
         v-if="priority !== undefined"
-        class="whitespace-nowrap rounded-full px-[9px] py-[3px] text-[11px] font-bold badge-muted"
+        class="badge badge-muted"
       >Prio {{ priority }}</span>
       <span
         v-if="connectionState.length === 0"
-        class="whitespace-nowrap rounded-full px-[9px] py-[3px] text-[11px] font-bold badge-muted"
+        class="badge badge-muted"
       >Nicht zugeordnet</span>
       <span
         v-for="cp in connectionState"
         :key="cp.id"
-        :class="['whitespace-nowrap rounded-full px-[9px] py-[3px] text-[11px] font-bold', cp.charging ? 'badge-ok' : cp.plugged ? 'badge-wait' : 'badge-muted']"
+        :class="['badge', stateBadgeClassFor(cp.charging, cp.plugged)]"
       >{{ cp.name }}</span>
       <span
         v-if="socValue !== undefined"
-        class="ml-auto text-[13px] font-bold"
-      >{{ Math.round(socValue) }}&nbsp;%</span>
+        class="ml-auto flex items-center gap-1 text-[13px] font-bold"
+      >
+        {{ Math.round(socValue) }}&nbsp;%
+        <BaseIconButton
+          size="sm"
+          aria-label="SoC jetzt abrufen"
+          title="SoC jetzt abrufen"
+          @click="mqttStore.vehicleForceSocUpdate(vehicleId)"
+        >
+          <IconRefresh />
+        </BaseIconButton>
+      </span>
     </div>
 
     <div
       v-if="range !== undefined || odometer !== undefined || socTimestamp !== undefined"
       class="mt-2.5 flex flex-wrap gap-4 text-[13px]"
     >
-      <div v-if="range !== undefined">
-        <div class="text-muted">
-          Reichweite
-        </div>
-        <div class="font-bold">
-          {{ Math.round(range) }}&nbsp;km
-        </div>
-      </div>
-      <div v-if="odometer !== undefined">
-        <div class="text-muted">
-          Kilometerstand
-        </div>
-        <div class="font-bold">
-          {{ Math.round(odometer) }}&nbsp;km
-        </div>
-      </div>
-      <div v-if="socTimestamp !== undefined">
-        <div class="text-muted">
-          Letzter Zeitstempel
-        </div>
-        <div class="font-bold">
-          {{ new Date(socTimestamp * 1000).toLocaleString('de-DE') }}
-        </div>
-      </div>
+      <StatBlock
+        v-if="range !== undefined"
+        label="Reichweite"
+        :value="`${Math.round(range)} km`"
+      />
+      <StatBlock
+        v-if="odometer !== undefined"
+        label="Kilometerstand"
+        :value="`${Math.round(odometer)} km`"
+      />
+      <StatBlock
+        v-if="socTimestamp !== undefined"
+        label="Letzter Zeitstempel"
+        :value="new Date(socTimestamp * 1000).toLocaleString('de-DE')"
+      />
     </div>
   </div>
 </template>
@@ -78,8 +79,12 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useMqttStore } from '@/stores/mqtt-store'
+import { stateBadgeClass as stateBadgeClassFor } from '@/utils/badge'
 import IconCar from './icons/IconCar.vue'
+import IconRefresh from './icons/IconRefresh.vue'
+import StatBlock from './StatBlock.vue'
 import VehicleSocEditor from './VehicleSocEditor.vue'
+import BaseIconButton from './BaseIconButton.vue'
 
 const props = defineProps<{ vehicleId: number }>()
 const mqttStore = useMqttStore()

@@ -17,6 +17,7 @@
           <slot name="header-actions" />
           <BaseIconButton
             aria-label="Schließen"
+            title="Schließen"
             @click="close"
           >
             <IconClose />

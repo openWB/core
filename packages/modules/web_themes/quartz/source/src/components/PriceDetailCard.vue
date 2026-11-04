@@ -62,7 +62,7 @@ import { type ChartOptions, type ChartData } from 'chart.js'
 import '@/utils/chartSetup'
 import { useMqttStore } from '@/stores/mqtt-store'
 import { getCssColor, shadeColor } from '@/utils/color'
-import { formatTooltipTime } from '@/utils/format'
+import { formatTooltipTime, eurPerWhToCtPerKwh } from '@/utils/format'
 import BaseModal from './BaseModal.vue'
 
 defineProps<{ modelValue: boolean }>()
@@ -76,7 +76,7 @@ const endOfToday = () => new Date().setHours(23, 59, 59, 999)
 // reaches visibly to the end of the day instead of stopping dead at its last real entry
 function toStepSeries(prices: Record<string, number>): { x: number; y: number }[] {
   const points = Object.entries(prices)
-    .map(([timestamp, price]) => ({ x: Number(timestamp) * 1000, y: price * 100000 }))
+    .map(([timestamp, price]) => ({ x: Number(timestamp) * 1000, y: eurPerWhToCtPerKwh(price) }))
     .sort((a, b) => a.x - b.x)
   if (points.length === 0) return []
   const last = points[points.length - 1]

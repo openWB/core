@@ -1,72 +1,64 @@
 <template>
-  <div class="relative">
-    <BaseIconButton
-      size="sm"
-      aria-label="SoC manuell eingeben"
-      @click="openSocEditor"
-    >
-      <IconPencil />
-    </BaseIconButton>
-    <div
-      v-if="showSocEditor"
-      class="fixed inset-0 z-10"
-      @click="showSocEditor = false"
-    />
-    <div
-      v-if="showSocEditor"
-      class="panel absolute top-[calc(100%_+_8px)] right-0 z-[11] flex w-55 flex-col gap-2.5 p-3 shadow-[0_8px_24px_rgba(0,0,0,0.12)]"
-    >
-      <div class="settings-group-label">
-        SoC {{ vehicleName }}
-      </div>
-      <div class="flex items-center gap-2 text-[13px]">
-        <BaseIconButton
-          aria-label="SoC verringern"
-          @click="socInputValue = Math.max(0, socInputValue - 1)"
-        >
-          &minus;
-        </BaseIconButton>
-        <input
-          v-model.number="socInputValue"
-          type="number"
-          min="0"
-          max="100"
-          class="w-14 rounded-[6px] border border-border bg-bg p-1 text-center text-text"
-        >
-        <span>%</span>
-        <BaseIconButton
-          aria-label="SoC erhöhen"
-          @click="socInputValue = Math.min(100, socInputValue + 1)"
-        >
-          +
-        </BaseIconButton>
-      </div>
+  <BasePopover
+    v-model="showSocEditor"
+    panel-class="top-[calc(100%_+_8px)] right-0 flex w-55 flex-col gap-2.5 p-3"
+  >
+    <template #trigger>
+      <BaseIconButton
+        size="sm"
+        aria-label="SoC manuell eingeben"
+        title="SoC manuell eingeben"
+        @click="openSocEditor"
+      >
+        <IconPencil />
+      </BaseIconButton>
+    </template>
+    <div class="settings-group-label text-center">
+      SoC {{ vehicleName }}
+    </div>
+    <div class="flex items-center justify-center gap-2 text-[13px]">
+      <BaseIconButton
+        aria-label="SoC verringern"
+        title="SoC verringern"
+        @click="socInputValue = Math.max(0, socInputValue - 1)"
+      >
+        &minus;
+      </BaseIconButton>
       <input
         v-model.number="socInputValue"
-        type="range"
+        type="number"
         min="0"
         max="100"
-        class="range-slider"
+        class="w-14 rounded-[6px] border border-border bg-bg p-1 text-center text-text"
       >
-      <BaseButton
-        class="w-full"
-        @click="mqttStore.vehicleForceSocUpdate(vehicleId)"
+      <span>%</span>
+      <BaseIconButton
+        aria-label="SoC erhöhen"
+        title="SoC erhöhen"
+        @click="socInputValue = Math.min(100, socInputValue + 1)"
       >
-        SoC jetzt abrufen
-      </BaseButton>
-      <div class="flex justify-end gap-2">
-        <BaseButton @click="showSocEditor = false">
-          Abbrechen
-        </BaseButton>
-        <BaseButton
-          variant="primary"
-          @click="confirmSoc"
-        >
-          Übernehmen
-        </BaseButton>
-      </div>
+        +
+      </BaseIconButton>
     </div>
-  </div>
+    <input
+      v-model.number="socInputValue"
+      type="range"
+      min="0"
+      max="100"
+      class="range-slider"
+    >
+    <div class="flex justify-end gap-2">
+      <BaseButton @click="showSocEditor = false">
+        Abbrechen
+      </BaseButton>
+      <BaseButton
+        variant="primary"
+        @click="confirmSoc"
+      >
+        Übernehmen
+      </BaseButton>
+    </div>
+  </BasePopover>
 </template>
 
 <script setup lang="ts">
@@ -75,6 +67,7 @@ import { useMqttStore } from '@/stores/mqtt-store'
 import IconPencil from './icons/IconPencil.vue'
 import BaseIconButton from './BaseIconButton.vue'
 import BaseButton from './BaseButton.vue'
+import BasePopover from './BasePopover.vue'
 
 const props = defineProps<{ vehicleId: number; vehicleName: string; chargePointId?: number }>()
 const mqttStore = useMqttStore()

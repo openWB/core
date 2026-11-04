@@ -12,176 +12,6 @@
             {{ mode === 'day' ? 'Heute' : `Live · ${liveRangeMinutes} Min` }}
           </button>
         </h2>
-        <div class="sm:relative">
-          <BaseIconButton
-            aria-label="Diagramm-Einstellungen"
-            @click="showSettings = !showSettings"
-          >
-            <IconGear />
-          </BaseIconButton>
-          <div
-            v-if="showSettings"
-            class="fixed inset-0 z-10"
-            @click="showSettings = false"
-          />
-          <div
-            v-if="showSettings"
-            class="panel absolute top-14 right-3 left-3 z-[11] flex max-h-[85vh] flex-col gap-1.5 overflow-y-auto overflow-x-hidden p-3 shadow-[0_8px_24px_rgba(0,0,0,0.12)] sm:top-[calc(100%_+_8px)] sm:right-auto sm:left-0 sm:w-70"
-          >
-            <div class="settings-group-label mt-2 first:mt-0">
-              Ansicht
-            </div>
-            <BaseTabGroup
-              dense
-              :model-value="mode"
-              :options="viewOptions"
-              @update="mode = $event"
-            />
-
-            <template v-if="mode === 'live'">
-              <div class="settings-group-label mt-2 first:mt-0">
-                Zeitfenster &middot; {{ liveRangeMinutes }} Min
-              </div>
-              <input
-                v-model.number="liveRangeMinutes"
-                class="range-slider"
-                type="range"
-                min="15"
-                max="120"
-                step="15"
-              >
-            </template>
-
-            <template
-              v-if="
-                categoriesWithIndividualBreakdown.length > 0 || batterySoc.individual.length > 0 || selectedVehicleSoc.length > 1
-              "
-            >
-              <div class="settings-group-label mt-2 first:mt-0">
-                Linien
-              </div>
-              <div
-                v-for="cat in categoriesWithIndividualBreakdown"
-                :key="cat.key"
-                class="border-t border-border py-1.5 first-of-type:border-t-0"
-              >
-                <div class="flex items-center gap-[7px] text-[13px]">
-                  <span
-                    class="legend-dot"
-                    :style="{ background: getCssColor(cat.colorVar) }"
-                  />
-                  {{ cat.label }}
-                </div>
-
-                <div class="mt-1.5 mb-1">
-                  <BaseTabGroup
-                    dense
-                    :model-value="categoryMode[cat.key]"
-                    :options="categoryModeOptions"
-                    @update="categoryMode[cat.key] = $event"
-                  />
-                </div>
-
-                <div
-                  v-if="categoryMode[cat.key] === 'individual'"
-                  class="flex flex-col gap-1"
-                >
-                  <label
-                    v-for="(inst, idx) in categories[cat.key].individual"
-                    :key="inst.id"
-                    class="flex cursor-pointer items-center gap-[7px] text-xs text-muted"
-                  >
-                    <input
-                      type="checkbox"
-                      :checked="isInstanceVisible(cat.key, inst.id)"
-                      @change="setInstanceVisible(cat.key, inst.id, ($event.target as HTMLInputElement).checked)"
-                    >
-                    <span
-                      class="legend-dot"
-                      :style="{ background: instanceColor(getCssColor(cat.colorVar), idx) }"
-                    />
-                    {{ inst.label }}
-                  </label>
-                </div>
-              </div>
-
-              <div
-                v-if="batterySoc.individual.length > 0"
-                class="border-t border-border py-1.5"
-              >
-                <div class="flex items-center gap-[7px] text-[13px]">
-                  <span
-                    class="legend-dot"
-                    :style="{ background: getCssColor('--battery') }"
-                  />
-                  Speicher-SoC
-                </div>
-
-                <div class="mt-1.5 mb-1">
-                  <BaseTabGroup
-                    dense
-                    :model-value="socCategoryMode.batterySoc"
-                    :options="categoryModeOptions"
-                    @update="socCategoryMode.batterySoc = $event"
-                  />
-                </div>
-
-                <div
-                  v-if="socCategoryMode.batterySoc === 'individual'"
-                  class="flex flex-col gap-1"
-                >
-                  <label
-                    v-for="(inst, idx) in batterySoc.individual"
-                    :key="inst.id"
-                    class="flex cursor-pointer items-center gap-[7px] text-xs text-muted"
-                  >
-                    <input
-                      type="checkbox"
-                      :checked="isInstanceVisible('batterySoc', inst.id)"
-                      @change="setInstanceVisible('batterySoc', inst.id, ($event.target as HTMLInputElement).checked)"
-                    >
-                    <span
-                      class="legend-dot"
-                      :style="{ background: instanceColor(getCssColor('--battery'), idx) }"
-                    />
-                    {{ inst.label }}
-                  </label>
-                </div>
-              </div>
-
-              <div
-                v-if="selectedVehicleSoc.length > 1"
-                class="border-t border-border py-1.5"
-              >
-                <div class="flex items-center gap-[7px] text-[13px]">
-                  <span
-                    class="legend-dot"
-                    :style="{ background: getCssColor('--car') }"
-                  />
-                  Fahrzeug-SoC
-                </div>
-                <div class="mt-1.5 flex flex-col gap-1">
-                  <label
-                    v-for="(veh, idx) in selectedVehicleSoc"
-                    :key="veh.id"
-                    class="flex cursor-pointer items-center gap-[7px] text-xs text-muted"
-                  >
-                    <input
-                      type="checkbox"
-                      :checked="isInstanceVisible('vehicleSoc', veh.id)"
-                      @change="setInstanceVisible('vehicleSoc', veh.id, ($event.target as HTMLInputElement).checked)"
-                    >
-                    <span
-                      class="legend-dot"
-                      :style="{ background: instanceColor(getCssColor('--car'), idx) }"
-                    />
-                    {{ veh.label }}
-                  </label>
-                </div>
-              </div>
-            </template>
-          </div>
-        </div>
       </div>
       <div class="scrollbar-hide flex flex-nowrap items-center gap-4 overflow-x-auto sm:flex-wrap sm:overflow-visible">
         <button
@@ -223,7 +53,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, reactive, ref, watch, watchEffect, onMounted, onUnmounted } from 'vue'
+import { computed, ref, watch, watchEffect, onMounted, onUnmounted } from 'vue'
 import { Line as ChartjsLine } from 'vue-chartjs'
 import { Chart, type ChartOptions, type ChartData, type Plugin } from 'chart.js'
 import annotationPlugin from 'chartjs-plugin-annotation'
@@ -232,23 +62,27 @@ import '@/utils/chartSetup'
 import { useMqttStore } from '@/stores/mqtt-store'
 import { useDailyLog } from '@/composables/useDailyLog'
 import { useLiveView } from '@/composables/useLiveView'
+import { useChartSettings, categoryDefs, type LegendKey } from '@/composables/useChartSettings'
 import { getCssColor, hexToRgba, instanceColor } from '@/utils/color'
 import { formatTooltipTime } from '@/utils/format'
 import type { CategoryKey } from '@/types/chart'
-import IconGear from './icons/IconGear.vue'
-import BaseIconButton from './BaseIconButton.vue'
-import BaseTabGroup from './BaseTabGroup.vue'
 
 Chart.register(annotationPlugin, zoomPlugin)
 
-const viewOptions = [
-  { value: 'day', label: 'Heute' },
-  { value: 'live', label: 'Live' },
-] as const
-const categoryModeOptions = [
-  { value: 'combined', label: 'Gesamt' },
-  { value: 'individual', label: 'Einzeln' },
-] as const
+const {
+  mode,
+  liveRangeMinutes,
+  visibleSeries,
+  categoryMode,
+  forecastVisible,
+  socVisibleSeries,
+  socCategoryMode,
+  isInstanceVisible,
+  toggleLegendItem,
+  categories: publishedCategories,
+  batterySoc: publishedBatterySoc,
+  selectedVehicleSoc: publishedSelectedVehicleSoc,
+} = useChartSettings()
 
 const chartRef = ref<{ chart?: Chart } | null>(null)
 const isZoomed = ref(false)
@@ -302,34 +136,6 @@ const props = defineProps<{ theme: string }>()
 
 const mqttStore = useMqttStore()
 
-interface PersistedChartSettings {
-  mode?: 'day' | 'live'
-  liveRangeMinutes?: number
-  visibleSeries?: Partial<Record<CategoryKey, boolean>>
-  categoryMode?: Partial<Record<CategoryKey, 'combined' | 'individual'>>
-  instanceVisibility?: Record<string, boolean>
-  forecastVisible?: boolean
-  socVisibleSeries?: Partial<Record<'batterySoc' | 'vehicleSoc', boolean>>
-  socCategoryMode?: Partial<Record<'batterySoc', 'combined' | 'individual'>>
-}
-
-const STORAGE_KEY = 'quartz-chart-settings'
-
-function loadPersistedSettings(): PersistedChartSettings {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY)
-    return raw ? (JSON.parse(raw) as PersistedChartSettings) : {}
-  } catch {
-    return {}
-  }
-}
-
-const persisted = loadPersistedSettings()
-
-const showSettings = ref(false)
-const mode = ref<'day' | 'live'>(persisted.mode ?? 'day')
-const liveRangeMinutes = ref(persisted.liveRangeMinutes ?? 120)
-
 const { categories: dayCategories, batterySoc: dayBatterySoc, vehicleSocAll: dayVehicleSocAll } = useDailyLog()
 const {
   categories: liveCategories,
@@ -368,91 +174,14 @@ onUnmounted(() => {
 
 const hasData = computed(() => categories.value.grid.all.length > 0)
 
-interface CategoryDef {
-  key: CategoryKey
-  label: string
-  colorVar: string
-}
-
-const categoryDefs: CategoryDef[] = [
-  { key: 'pv', label: 'Erzeugung', colorVar: '--pv' },
-  { key: 'house', label: 'Hausverbrauch', colorVar: '--consumption' },
-  { key: 'grid', label: 'Netz', colorVar: '--grid' },
-  { key: 'counter', label: 'Zähler', colorVar: '--grid' },
-  { key: 'battery', label: 'Speicher', colorVar: '--battery' },
-  { key: 'chargepoint', label: 'Ladepunkte', colorVar: '--chargepoint' },
-  { key: 'consumer', label: 'Verbraucher', colorVar: '--consumer' },
-]
-
-const visibleSeries = reactive<Record<CategoryKey, boolean>>({
-  pv: true,
-  house: true,
-  grid: true,
-  counter: true,
-  battery: true,
-  chargepoint: true,
-  consumer: true,
-  ...persisted.visibleSeries,
-})
-
-const categoryMode = reactive<Record<CategoryKey, 'combined' | 'individual'>>({
-  pv: 'combined',
-  house: 'combined',
-  grid: 'combined',
-  counter: 'combined',
-  battery: 'combined',
-  chargepoint: 'combined',
-  consumer: 'combined',
-  ...persisted.categoryMode,
-})
-
-// per-instance visibility within "Einzeln" mode, keyed "<category>:<instanceId>" - defaults to
-// visible so a newly-appeared component shows up without the user having to opt it in
-const instanceVisibility = reactive<Record<string, boolean>>({ ...persisted.instanceVisibility })
-
-// independent of visibleSeries.pv on purpose - hiding the real Erzeugung line shouldn't also
-// hide the forecast (and vice versa), they're separate things a user may want toggled separately
-const forecastVisible = ref(persisted.forecastVisible ?? true)
-
-// overall show/hide per SoC line, same role visibleSeries plays for the power categories -
-// per-instance (which battery, which vehicle) is handled by instanceVisibility below instead,
-// same split power categories already use between "show this category" and "show this instance"
-const socVisibleSeries = reactive<Record<'batterySoc' | 'vehicleSoc', boolean>>({
-  batterySoc: true,
-  vehicleSoc: true,
-  ...persisted.socVisibleSeries,
-})
-const socCategoryMode = reactive<Record<'batterySoc', 'combined' | 'individual'>>({
-  batterySoc: 'combined',
-  ...persisted.socCategoryMode,
-})
-
+// published so ThemeSettingsModal.vue (a sibling, not a child - rendered from the hamburger
+// menu in App.vue) can show "which categories/instances exist right now" in its "Linien"
+// section without independently re-subscribing to the daily-log/live-view feeds itself
 watchEffect(() => {
-  const settings: PersistedChartSettings = {
-    mode: mode.value,
-    liveRangeMinutes: liveRangeMinutes.value,
-    visibleSeries: { ...visibleSeries },
-    categoryMode: { ...categoryMode },
-    instanceVisibility: { ...instanceVisibility },
-    forecastVisible: forecastVisible.value,
-    socVisibleSeries: { ...socVisibleSeries },
-    socCategoryMode: { ...socCategoryMode },
-  }
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(settings))
-  } catch {
-    // ignore storage errors (private browsing etc.)
-  }
+  publishedCategories.value = categories.value
+  publishedBatterySoc.value = batterySoc.value
+  publishedSelectedVehicleSoc.value = selectedVehicleSoc.value
 })
-
-// category is CategoryKey for the power categories, or 'batterySoc'/'vehicleSoc' for the SoC
-// lines - instanceVisibility itself is just a generic string-keyed map, so both share it
-function isInstanceVisible(category: string, id: string): boolean {
-  return instanceVisibility[`${category}:${id}`] ?? true
-}
-function setInstanceVisible(category: string, id: string, visible: boolean): void {
-  instanceVisibility[`${category}:${id}`] = visible
-}
 
 // Chart.js' 'index' tooltip mode (interaction.mode below) matches datasets by shared ARRAY
 // POSITION, not shared x-value - fine when every dataset has the same points (all the day-mode
@@ -533,14 +262,6 @@ function categoryHasComponent(key: CategoryKey): boolean {
 
 const visibleCategoryDefs = computed(() => categoryDefs.filter((c) => categoryHasComponent(c.key)))
 
-// only categories that actually offer a Gesamt/Einzeln choice belong in the settings panel -
-// per-category show/hide itself now lives in the clickable legend, not duplicated here
-const categoriesWithIndividualBreakdown = computed(() =>
-  visibleCategoryDefs.value.filter((c) => categories.value[c.key].individual.length > 0),
-)
-
-type LegendKey = CategoryKey | 'forecast' | 'batterySoc' | 'vehicleSoc'
-
 const legend = computed(() => {
   void props.theme
   const items = visibleCategoryDefs.value.map((c) => ({
@@ -561,12 +282,6 @@ const legend = computed(() => {
   }
   return items
 })
-
-function toggleLegendItem(key: LegendKey): void {
-  if (key === 'forecast') forecastVisible.value = !forecastVisible.value
-  else if (key === 'batterySoc' || key === 'vehicleSoc') socVisibleSeries[key] = !socVisibleSeries[key]
-  else visibleSeries[key] = !visibleSeries[key]
-}
 
 // x-axis bounds: the whole day for the day view, or the selected rolling window for live view
 const xRange = computed(() => {

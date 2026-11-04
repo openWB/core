@@ -1,4 +1,4 @@
-import { computed, onMounted, onUnmounted } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useMqttStore } from '@/stores/mqtt-store'
 import type {
   CategoryData,
@@ -180,11 +180,14 @@ function buildVehicleSoc(entries: DailyLogEntry[], names: Record<string, string>
 /** Fetches and parses today's daily_log into per-category chart series, kept live via the getDailyLog command. */
 export function useDailyLog() {
   const mqttStore = useMqttStore()
-  const dateString = todayDateString()
-  const topic = `openWB/log/daily/${dateString}`
+  // a ref (not a plain string) so the topic - and everything derived from it - follows the
+  // real date instead of freezing at whatever day the component happened to mount on; a tab
+  // left open across midnight would otherwise show yesterday's log forever
+  const dateString = ref(todayDateString())
+  const topic = computed(() => `openWB/log/daily/${dateString.value}`)
 
   const categories = computed<Record<CategoryKey, CategoryData>>(() => {
-    const log = mqttStore.getValue<DailyLogResponse | undefined>(topic, undefined)
+    const log = mqttStore.getValue<DailyLogResponse | undefined>(topic.value, undefined)
     const entries = log?.entries ?? []
     const names = log?.names ?? {}
     return {
@@ -201,15 +204,27 @@ export function useDailyLog() {
   })
 
   const batterySoc = computed<SocCategoryData>(() => {
-    const log = mqttStore.getValue<DailyLogResponse | undefined>(topic, undefined)
+    const log = mqttStore.getValue<DailyLogResponse | undefined>(topic.value, undefined)
     return buildBatterySoc(log?.entries ?? [], log?.names ?? {})
   })
   const vehicleSocAll = computed<SocSeries[]>(() => {
-    const log = mqttStore.getValue<DailyLogResponse | undefined>(topic, undefined)
+    const log = mqttStore.getValue<DailyLogResponse | undefined>(topic.value, undefined)
     return buildVehicleSoc(log?.entries ?? [], log?.names ?? {})
   })
 
   const hasData = computed(() => categories.value.grid.all.length > 0)
+
+  // swap the subscription whenever the topic itself changes (i.e. the date rolled over) -
+  // fires once immediately to establish the initial subscription, same idiom useLiveView's
+  // mode-driven subscribe/unsubscribe already uses
+  watch(
+    topic,
+    (newTopic, oldTopic) => {
+      if (oldTopic) mqttStore.unsubscribe(oldTopic)
+      mqttStore.subscribe(newTopic)
+    },
+    { immediate: true },
+  )
 
   // the backend only republishes this retained topic in response to a getDailyLog command - it
   // doesn't push updates on its own, so without a periodic re-fetch the chart would go stale
@@ -218,10 +233,13 @@ export function useDailyLog() {
 
   onMounted(() => {
     mqttStore.fetchDailyLog()
-    refreshTimer = setInterval(() => mqttStore.fetchDailyLog(), REFRESH_INTERVAL_MS)
+    refreshTimer = setInterval(() => {
+      dateString.value = todayDateString()
+      mqttStore.fetchDailyLog()
+    }, REFRESH_INTERVAL_MS)
   })
   onUnmounted(() => {
-    mqttStore.unsubscribe(topic)
+    mqttStore.unsubscribe(topic.value)
     clearInterval(refreshTimer)
   })
 
