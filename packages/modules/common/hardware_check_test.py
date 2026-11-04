@@ -7,12 +7,12 @@ from modules.common import sdm
 from modules.common import hardware_check
 from modules.common.component_state import CounterState, EvseState
 from modules.common.evse import Evse
-from modules.common.hardware_check import (
-    READ_EVSE_AGAIN, READ_LAN_ADAPTER_AGAIN, READ_METER_VOLTAGES_AGAIN, METER_PROBLEM, READ_USB_ADAPTER_AGAIN,
-    SeriesHardwareCheckMixin, _check_meter_values)
+from modules.common.hardware_check import READ_METER_VOLTAGES_AGAIN, check_meter
 from modules.common.modbus import NO_CONNECTION, ModbusSerialClient_, ModbusTcpClient_
 from modules.conftest import SAMPLE_IP, SAMPLE_PORT
 from modules.internal_chargepoint_handler.clients import ClientHandler
+from modules.internal_chargepoint_handler.internal_hardware_check import (
+    METER_PROBLEM, READ_EVSE_AGAIN, READ_LAN_ADAPTER_AGAIN, READ_USB_ADAPTER_AGAIN, SeriesHardwareCheckMixin)
 
 
 @pytest.mark.parametrize(
@@ -129,13 +129,13 @@ def test_check_meter_values_voltages(voltages, power, expected_msg, monkeypatch)
     # setup
     counter_state = Mock(voltages=voltages, currents=[0, 0, 0], powers=[0, 0, 0], power=power)
     # execution
-    msg = _check_meter_values(counter_state)
+    msg = check_meter(counter_state)
 
     # assert
     assert msg == expected_msg if expected_msg is None else expected_msg.format(voltages)
 
 
-@patch('modules.common.hardware_check.ClientHandlerProtocol')
+@patch('modules.internal_chargepoint_handler.internal_hardware_check.ClientHandlerProtocol')
 @pytest.mark.parametrize("serial_number, voltages, expected",
                          [(12345, [230]*3, (True, None, CounterState)),
                           (Exception(), [230]*3, (False, METER_PROBLEM, None))])
@@ -161,7 +161,7 @@ def test_check_meter(
     monkeypatch.setattr(hardware_check, "check_meter_values", mock_check_meter_values)
 
     # Act
-    result = mixin.check_meter(MockClientHandlerProtocol)
+    result = mixin.check_meter(MockClientHandlerProtocol, mock_meter_client)
 
     # Assert
     assert result[0] == expected[0]

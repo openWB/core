@@ -6,8 +6,11 @@ from control.consumer.usage import NOT_CONTROLLED
 from helpermodules import timecheck
 
 
+RFID_SUPPORTED_MODULE_TYPES = ("mqtt", "wallbox_socket")
+
+
 def rfid_supported(module) -> bool:
-    return getattr(module, "type", None) == "mqtt"
+    return getattr(module, "type", None) in RFID_SUPPORTED_MODULE_TYPES
 
 
 class ConsumerRfidMixin:

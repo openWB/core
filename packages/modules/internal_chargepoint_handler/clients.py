@@ -1,34 +1,19 @@
 import logging
-from typing import List, NamedTuple, Optional, Tuple, Union
+from typing import List, Optional, Tuple, Union
 from helpermodules.logger import ModifyLoglevelContext
 from modules.chargepoints.internal_openwb.config import InternalChargepointMode
 from modules.common.fault_state import FaultState
-from modules.common.hardware_check import SeriesHardwareCheckMixin
 
 from modules.common.modbus import ModbusSerialClient_, ModbusTcpClient_
-from modules.common import mpm3pm, sdm
 from modules.common import evse
-from modules.common import b23
 
 from modules.common.serial_modbus_devices import get_serial_modbus_devices, BUS_SOURCES
+from modules.internal_chargepoint_handler.hardware_definition import (
+    CP0_METERS, CP1_METERS, EVSE_ID_CP0, EVSE_ID_ONE_BUS_CP1, EVSE_ID_ONE_BUS_SE_CP1,
+    EVSE_ID_SE_CP0, EVSE_ID_TWO_BUSSES_CP1, EVSE_MIN_FIRMWARE, MeterClient, meter_config)
+from modules.internal_chargepoint_handler.internal_hardware_check import SeriesHardwareCheckMixin
 
 log = logging.getLogger(__name__)
-
-MeterClient = Union[mpm3pm.Mpm3pm, sdm.Sdm630_72, b23.B23]
-MeterType = Union[type[mpm3pm.Mpm3pm], type[sdm.Sdm630_72], type[b23.B23]]
-meter_config = NamedTuple("meter_config", [('type', MeterType), ('modbus_id', int)])
-CP0_METERS = [meter_config(mpm3pm.Mpm3pm, modbus_id=5),
-              meter_config(sdm.Sdm630_72, modbus_id=105),
-              meter_config(b23.B23, modbus_id=201)]
-
-CP1_METERS = [meter_config(mpm3pm.Mpm3pm, modbus_id=6), meter_config(sdm.Sdm630_72, modbus_id=106)]
-
-EVSE_ID_CP0 = [1]
-EVSE_ID_SE_CP0 = [11]
-EVSE_ID_TWO_BUSSES_CP1 = [1, 2]
-EVSE_ID_ONE_BUS_CP1 = [2]
-EVSE_ID_ONE_BUS_SE_CP1 = [12]
-EVSE_MIN_FIRMWARE = 7
 
 
 class ClientHandler(SeriesHardwareCheckMixin):
@@ -102,22 +87,25 @@ class ClientHandler(SeriesHardwareCheckMixin):
 def client_factory(mode: InternalChargepointMode,
                    local_charge_point_num: int,
                    fault_state: FaultState,
-                   created_client_handler: Optional[ClientHandler] = None) -> ClientHandler:
+                   created_client: Optional[Union[ModbusSerialClient_, ModbusTcpClient_]] = None) -> ClientHandler:
     serial_client, evse_ids = get_modbus_client(
-        mode, local_charge_point_num, created_client_handler, fault_state)
+        mode, local_charge_point_num, created_client, fault_state)
     return ClientHandler(local_charge_point_num, serial_client, evse_ids, fault_state)
 
 
 def get_modbus_client(mode: InternalChargepointMode,
                       local_charge_point_num: int,
-                      created_client_handler: Optional[ClientHandler] = None,
+                      created_client: Optional[Union[ModbusSerialClient_, ModbusTcpClient_]] = None,
                       fault_state: Optional[FaultState] = None) -> Tuple[Union[ModbusSerialClient_, ModbusTcpClient_],
                                                                          List[int]]:
     resolved_devices, counter = get_serial_modbus_devices()
 
     if counter == 0:
         # Wenn kein USB-Gerät gefunden wird, wird der Modbus-Anschluss der AddOn-Platine genutzt (/dev/serial0)
-        serial_client = ModbusSerialClient_("/dev/serial0")
+        if local_charge_point_num == 1 and created_client is not None:
+            serial_client = created_client
+        else:
+            serial_client = ModbusSerialClient_("/dev/serial0")
         if local_charge_point_num == 0:
             evse_ids = EVSE_ID_CP0
         else:
@@ -135,8 +123,8 @@ def get_modbus_client(mode: InternalChargepointMode,
             # Don't create two clients for one source!
             with ModifyLoglevelContext(log, logging.DEBUG):
                 log.debug("LP1 gleiches Device wie LP0")
-            if created_client_handler:
-                serial_client = created_client_handler.client
+            if created_client is not None:
+                serial_client = created_client
             else:
                 serial_client = ModbusSerialClient_(resolved_devices[0])
             if mode == InternalChargepointMode.SE:
