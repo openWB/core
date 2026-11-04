@@ -24,6 +24,8 @@ import time
 from typing import Any, Dict, Optional, Tuple
 from urllib.parse import urlencode
 
+from requests.exceptions import HTTPError
+
 from modules.common import req
 from modules.common.component_state import CarState
 from modules.vehicles.saic_ismart import crypto
@@ -94,10 +96,16 @@ def _send(method: str, path_with_query: str, config: SaicIsmartConfiguration,
         headers["event-id"] = event_id
 
     session = req.get_http_session()
-    response = session.request(
-        method, f"{BASE_URL}{path_with_query}",
-        data=encrypted_body if encrypted_body else None, headers=headers, timeout=15)
-    response.raise_for_status()
+    try:
+        response = session.request(
+            method, f"{BASE_URL}{path_with_query}",
+            data=encrypted_body if encrypted_body else None, headers=headers, timeout=15)
+    except HTTPError as exc:
+        if exc.response is not None and exc.response.status_code in (401, 403):
+            # Session kann auch schon auf HTTP-Ebene abgelehnt werden, nicht nur über code= in der Antwort.
+            raise SaicAuthenticationError(
+                f"{path_with_query}: Session abgelaufen (HTTP {exc.response.status_code})") from exc
+        raise
 
     body_text = response.text
     resp_ts = response.headers.get("APP-SEND-DATE")
