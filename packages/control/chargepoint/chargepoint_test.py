@@ -119,6 +119,7 @@ def test_initiate_control_pilot_interruption_skipped_when_phase_switch_pending()
     cp.data.set.charging_ev_data.ev_template.data.control_pilot_interruption_duration = 4
     cp.data.set.charging_ev_data.ev_template.data.control_pilot_interruption_retry_interval = 0
     cp.data.config.control_pilot_interruption_hw = True
+    cp.data.config.auto_phase_switch_hw = True
     cp.data.set.current = 0
     cp.data.control_parameter.state = ChargepointState.SWITCH_ON_DELAY
     cp.remember_previous_values()
@@ -135,6 +136,35 @@ def test_initiate_control_pilot_interruption_skipped_when_phase_switch_pending()
     message_present = (cp.data.get.state_str is not None and
                        "Control-Pilot-Unterbrechung" in cp.data.get.state_str)
     assert message_present is False
+
+
+def test_initiate_control_pilot_interruption_not_skipped_without_phase_switch_hw():
+    """ Ohne Umschalt-Hardware kann eine "ausstehende" Umschaltung nie durchgefuehrt werden und damit auch
+    nie CP umschalten - die Unterbrechung darf hier nicht blockiert werden (siehe Issue #4215). """
+    # setup
+    cp = Chargepoint(0, None)
+    cp.chargepoint_module = Mock(interrupt_cp=Mock(), config=Mock(id=0))
+    cp.data.set.charging_ev_data = Ev(0)
+    cp.data.set.charging_ev_data.ev_template.data.control_pilot_interruption = True
+    cp.data.set.charging_ev_data.ev_template.data.control_pilot_interruption_duration = 4
+    cp.data.set.charging_ev_data.ev_template.data.control_pilot_interruption_retry_interval = 0
+    cp.data.config.control_pilot_interruption_hw = True
+    cp.data.config.auto_phase_switch_hw = False
+    cp.data.set.current = 0
+    cp.data.control_parameter.state = ChargepointState.NO_CHARGING_ALLOWED
+    cp.remember_previous_values()
+    cp.data.control_parameter.state = ChargepointState.WAIT_FOR_USING_PHASES
+    cp.data.set.current = 6
+    cp.data.set.phases_to_use = 3
+    cp.data.control_parameter.phases = 1
+
+    # evaluation
+    cp.initiate_control_pilot_interruption()
+
+    # assertion
+    message_present = (cp.data.get.state_str is not None and
+                       "Control-Pilot-Unterbrechung" in cp.data.get.state_str)
+    assert message_present is True
 
 
 @pytest.mark.parametrize("required_current, max_discharge_power, dc_max_current, expected_required_current",

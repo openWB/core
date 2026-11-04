@@ -156,6 +156,24 @@ def test_set_power_left_reads_consumer_power_directly(monkeypatch, data_):
     assert counter.data.set.raw_power_left == 23000
 
 
+def test_set_current_left_accounts_for_small_consumer_with_unknown_phase(monkeypatch, data_):
+    consumer = Consumer(7)
+    consumer.data.config.phase_1 = 0
+    consumer.data.get.currents = [0.25, 0, 0]
+    consumer.data.get.power = 57.5
+    consumer.data.set.switch_interval_elapsed = True
+    data.data.consumer_data = {"consumer7": consumer}
+    monkeypatch.setattr(data.data.counter_all_data, "get_loads_of_counter", Mock(return_value=["consumer7"]))
+    counter = Counter(0)
+    counter.data.config.max_currents = [16]*3
+    counter.data.config.max_total_power = 16*3*230
+    counter.data.get.currents = [1]*3
+
+    counter._set_current_left(True)
+
+    assert counter.data.set.raw_currents_left == pytest.approx([15.25]*3)
+
+
 @dataclass
 class Params:
     name: str

@@ -3,6 +3,7 @@ import time
 from unittest.mock import Mock
 
 import pytest
+from requests.exceptions import HTTPError
 
 from modules.vehicles.saic_ismart import api
 from modules.vehicles.saic_ismart.config import SaicIsmartConfiguration
@@ -95,3 +96,19 @@ class TestFetchSocWakesAndRetriesWithinAuthScope:
 
         assert result.soc == 55.5
         assert wake_mock.call_count == 2
+
+
+class TestSendHttpLevelAuthError:
+    def test_http_401_raises_authentication_error_not_http_error(self, monkeypatch):
+        # Die Cloud lehnt eine ungueltige Session manchmal schon auf HTTP-Ebene ab (zB nach
+        # Login in der iSMART-App auf dem Handy), nicht nur ueber das eigene code-Feld in einer
+        # 200-Antwort - muss als SaicAuthenticationError erkannt werden, damit der automatische
+        # Relogin in _call_with_relogin() greift (siehe Discussion zu wiederholtem 401 ohne Relogin).
+        # Der Session-Hook in req.py ruft raise_for_status() bereits in session.request() auf.
+        response = Mock(status_code=401, headers={})
+        session = Mock()
+        session.request = Mock(side_effect=HTTPError("401 Client Error", response=response))
+        monkeypatch.setattr(api.req, "get_http_session", Mock(return_value=session))
+
+        with pytest.raises(api.SaicAuthenticationError):
+            api._send("GET", "/vehicle/charging/mgmtData?vin=xxx", _config(), "token")

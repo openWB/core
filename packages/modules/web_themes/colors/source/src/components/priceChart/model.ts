@@ -21,6 +21,15 @@ class EtData {
 		}
 	}
 
+	get etCurrentPriceStringDetailed() {
+		if (this.etPriceList.size > 0) {
+			const [p] = this.etPriceList.values()
+			return p + (globalData.country === 'ch' ? ' Rp' : ' ct')
+		} else {
+			return '---'
+		}
+	}
+
 	maxPriceForDuration(durationMinutes: number, maxTime?: Date): number {
 		if (this.etPriceList.size > 0) {
 			const plist = maxTime

@@ -397,7 +397,7 @@ export const infotext: { [key: string]: string } = {
 	pricebased:
 		'Laden bei dynamischem Stromtarif, wenn eingestellter Maximalpreis unterboten wird.',
 	pvpriority:
-		'Ladepriorität bei PV-Produktion. Bevorzung von Fahzeugen, Speicher, oder Fahrzeugen bis zum eingestellten Mindest-Ladestand. Die Einstellung ist für alle Ladepunkte gleich.',
+		'Ladepriorität bei PV-Produktion. Vorrang für Fahrzeuge und gesteuerte Verbraucher, für den Speicher oder abhängig vom SoC des Speichers. Die Einstellung ist für alle Ladepunkte gleich.',
 	chargeTemplate: 'Ladeprofil für dieses Fahrzeug.',
 	ecoMinCurrent:
 		'Minimaler Ladestrom beim Preisladen. Bei PV-Überschuss kann der Strom höher sein.',

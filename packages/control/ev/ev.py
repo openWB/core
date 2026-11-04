@@ -1,7 +1,7 @@
 """ EV-Logik
 ermittelt, den Ladestrom, den das EV gerne zur Verfügung hätte.
 
-In den control Parametern wird sich der Lademodus, Submodus, Priorität, Phasen und Stromstärke gemerkt,
+In den control Parametern werden Lademodus, Submodus, Phasen und Stromstärke gemerkt,
 mit denen das EV aktuell in der Regelung berücksichtigt wird. Bei der Ermittlung der benötigten Strom-
 stärke wird auch geprüft, ob sich an diesen Parametern etwas geändert hat. Falls ja, muss das EV
 in der Regelung neu priorisiert werden und eine neue Zuteilung des Stroms erhalten.
@@ -112,6 +112,9 @@ class Ev:
                     interval = self.soc_module.general_config.request_interval_charging
                 else:
                     interval = self.soc_module.general_config.request_interval_not_charging
+                override = self.soc_module.get_request_interval_override()
+                if override is not None:
+                    interval = min(interval, override)
                 # Zeitstempel prüfen, ob wieder abgefragt werden muss.
                 if timecheck.check_timestamp(self.data.get.soc_request_timestamp, interval-5) is False:
                     # Zeit ist abgelaufen

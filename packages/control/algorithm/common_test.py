@@ -155,6 +155,20 @@ def test_get_missing_currents_left(required_currents_1: List[float],
     assert currents == expected_currents
 
 
+@pytest.mark.parametrize("timestamp_charge_start", [None, 1652683152])
+@pytest.mark.parametrize("set_current", [0.25, 2])
+def test_consider_less_charging_keeps_small_consumer_current(timestamp_charge_start, set_current):
+    consumer = Consumer(1)
+    consumer.data.get.currents = [0.25, 0, 0]
+    consumer.data.set.current_prev = 0.25
+    consumer.data.control_parameter.timestamp_charge_start = timestamp_charge_start
+    data.data.counter_all_data.data.config.consider_less_charging = False
+
+    considered = common.consider_less_charging_chargepoint_in_loadmanagement(consumer, set_current)
+
+    assert considered == pytest.approx(0.25)
+
+
 @pytest.mark.parametrize(
     "consider_less_charging, get_currents, expected_considered",
     [

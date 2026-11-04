@@ -549,13 +549,15 @@ class SimpleMQTTDaemon:
             # Extract max_price from eco_charging
             eco_charging = chargemode.get('eco_charging', {})
             if 'max_price' in eco_charging:
+                # Convert from internal value (EUR/Wh) to ct/kWh for display
+                max_price_ct_kwh = eco_charging['max_price'] * 100000
                 topic = f"openWB/simpleAPI/chargepoint/{chargepoint_id}/max_price_eco"
-                self._publish_if_changed(topic, eco_charging['max_price'])
+                self._publish_if_changed(topic, max_price_ct_kwh)
 
                 # Also publish for lowest ID if this is it
                 if 'chargepoint' in self.lowest_ids and self.lowest_ids['chargepoint'] == int(chargepoint_id):
                     simple_topic = "openWB/simpleAPI/chargepoint/max_price_eco"
-                    self._publish_if_changed(simple_topic, eco_charging['max_price'])
+                    self._publish_if_changed(simple_topic, max_price_ct_kwh)
 
             # Extract instant_charging_limit values
             instant_charging = chargemode.get('instant_charging', {})

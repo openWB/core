@@ -599,7 +599,6 @@ export const topVehicles = computed(() => {
 	} */ /*else if (result.length == 1) {
 		result.push(-1)
 	}*/
-	console.log(result)
 	return result
 })
 export const chargeLimitModes = [

@@ -115,6 +115,8 @@ class ConfigurableForecast(Generic[T_FORECAST_CONFIG]):
     def update(self) -> None:
         force_update = self._is_force_update_requested()
         if not force_update and not self._is_update_due():
+            # Heute/Morgen-Split hängt vom Kalendertag ab, daher jeden Zyklus neu berechnen
+            self.store.update()
             return
         try:
             trigger_mode = "manuell" if force_update else "geplant"

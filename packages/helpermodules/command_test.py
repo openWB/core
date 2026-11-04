@@ -21,6 +21,54 @@ from modules.chargepoints.internal_openwb.chargepoint_module import ChargepointM
 pytest_plugins = ["helpermodules.measurement_logging.process_log_testdata", "helpermodules.command_test_data"]
 
 
+@pytest.mark.parametrize("command_name", ["removeComponent", "removeDevice"])
+@pytest.mark.parametrize("meter_id", [0, 4])
+@pytest.mark.parametrize("linked_meter", [None, 0, 4, 9])
+def test_remove_linked_consumer_meter(command_name, meter_id, linked_meter, monkeypatch):
+    c = Command.__new__(Command)
+    c.max_id_device = 2
+    c.max_id_hierarchy = 10
+    monkeypatch.setattr(SubData, "consumer_data", {
+        "consumer8": SimpleNamespace(data=SimpleNamespace(
+            extra_meter=linked_meter, module=SimpleNamespace(name="Wärmepumpe"))),
+    })
+    monkeypatch.setattr(SubData, "system_data", {
+        "device2": SimpleNamespace(components={
+            "component7": SimpleNamespace(component_config=SimpleNamespace(id=7)),
+            f"component{meter_id}": SimpleNamespace(component_config=SimpleNamespace(id=meter_id)),
+        }),
+        "system": SimpleNamespace(data={"security": {"user_management_active": False}}),
+    })
+    broker_branch = Mock()
+    message = Mock()
+    remove_role = Mock()
+    monkeypatch.setattr(command, "ProcessBrokerBranch", broker_branch)
+    monkeypatch.setattr(command, "pub_user_message", message)
+    monkeypatch.setattr(command, "remove_acl_role", remove_role)
+    data = {"id": 2} if command_name == "removeDevice" else {
+        "deviceId": 2, "id": meter_id, "type": "counter",
+    }
+    payload = {"data": data}
+
+    getattr(c, command_name)("test", payload)
+
+    if linked_meter == meter_id:
+        broker_branch.assert_not_called()
+        remove_role.assert_not_called()
+        message.assert_called_once()
+        args = message.call_args.args
+        assert args[:2] == (payload, "test")
+        assert args[3] == command.MessageType.ERROR
+        assert "Wärmepumpe" in args[2]
+        assert "separate Leistungsmessung" in args[2]
+    else:
+        branch = "system/device/2/" if command_name == "removeDevice" else (
+            f"system/device/2/component/{meter_id}/")
+        broker_branch.assert_called_once_with(branch)
+        broker_branch.return_value.remove_topics.assert_called_once_with()
+        assert message.call_args.args[3] == command.MessageType.SUCCESS
+
+
 @pytest.fixture
 def subdata_fixture() -> None:
     SubData(*([Mock()]*16))

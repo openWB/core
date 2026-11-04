@@ -2041,28 +2041,6 @@ export const useMqttStore = defineStore('mqtt', () => {
   };
 
   /**
-   * Get or set the charge point connected vehicle charge priority identified by the charge point id
-   * @param chargePointId charge point id
-   * @returns boolean | undefined
-   */
-  const chargePointConnectedVehiclePriority = (chargePointId: number) => {
-    return computed({
-      get() {
-        return chargePointConnectedVehicleChargeTemplate(chargePointId).value
-          ?.prio;
-      },
-      set(newValue: boolean) {
-        return updateTopic(
-          `openWB/chargepoint/${chargePointId}/set/charge_template`,
-          newValue,
-          'prio',
-          true,
-        );
-      },
-    });
-  };
-
-  /**
    * Get or set the charge point connected vehicle time charging identified by the charge point id
    * @param chargePointId charge point id
    * @returns boolean | undefined
@@ -2587,44 +2565,6 @@ export const useMqttStore = defineStore('mqtt', () => {
   };
 
   /**
-   * Get or set the manual SoC for a vehicle connected to a charge point
-   * @param chargePointId charge point id
-   * @returns number | undefined
-   */
-  const chargePointConnectedVehicleSocManual = (chargePointId: number) => {
-    return computed({
-      get() {
-        const vehicleInfo =
-          chargePointConnectedVehicleInfo(chargePointId).value;
-        const vehicleId = vehicleInfo?.id;
-        const topic = `openWB/vehicle/${vehicleId}/soc_module/calculated_soc_state`;
-        const socState = getValue.value(topic) as
-          CalculatedSocState | undefined;
-        return socState?.manual_soc ?? socState?.soc_start ?? 0;
-      },
-      set(newValue: number) {
-        const vehicleInfo =
-          chargePointConnectedVehicleInfo(chargePointId).value;
-        if (!vehicleInfo) {
-          console.warn('No vehicle connected to charge point', chargePointId);
-          return;
-        }
-        const vehicleId = vehicleInfo.id;
-        doPublish(
-          `openWB/set/vehicle/${vehicleId}/soc_module/calculated_soc_state/manual_soc`,
-          newValue,
-        );
-        // Also update the charge point connected vehicle soc
-        const cpTopic = `openWB/chargepoint/${chargePointId}/get/connected_vehicle/soc`;
-        const cpSoc = getValue.value(cpTopic) as { soc?: number };
-        if (cpSoc && cpSoc.soc !== undefined) {
-          updateTopic(cpTopic, newValue, 'soc', true);
-        }
-      },
-    });
-  };
-
-  /**
    * Get the charge point connected vehicle SoC type identified by the charge point id
    * @param chargePointId charge point id
    * @returns string | null | undefined
@@ -3036,7 +2976,10 @@ export const useMqttStore = defineStore('mqtt', () => {
         const topic = `openWB/vehicle/${vehicleId}/soc_module/calculated_soc_state`;
         const socState = getValue.value(topic) as
           CalculatedSocState | undefined;
-        return socState?.manual_soc ?? socState?.soc_start ?? 0;
+        const currentSoc = getValue.value(
+          `openWB/vehicle/${vehicleId}/get/soc`,
+        ) as number | undefined;
+        return socState?.manual_soc ?? currentSoc ?? 0;
       },
       set(newValue: number) {
         doPublish(
@@ -4893,7 +4836,6 @@ export const useMqttStore = defineStore('mqtt', () => {
     chargePointConnectedVehicleEcoChargeLimitSoC,
     chargePointConnectedVehicleEcoChargeLimitEnergy,
     chargePointConnectedVehicleEcoChargeMaxPrice,
-    chargePointConnectedVehiclePriority,
     chargePointConnectedVehicleTimeCharging,
     chargePointConnectedVehicleChargeTemplate,
     chargePointConnectedVehicleBidiEnabled,
@@ -4950,7 +4892,6 @@ export const useMqttStore = defineStore('mqtt', () => {
     vehicleTimeChargingPlanWeeklyDays,
     vehicleTimeChargingPlanDcPower,
     chargePointConnectedVehicleSocType,
-    chargePointConnectedVehicleSocManual,
     // Battery data
     batteryConfigured,
     batteryIds,

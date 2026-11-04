@@ -1,5 +1,8 @@
 <template>
-  <q-dialog v-model="visible">
+  <q-dialog
+    v-model="visible"
+    @hide="reset"
+  >
     <q-card>
       <q-card-section>
         <div class="row">
@@ -53,7 +56,6 @@
           label="Abbrechen"
           color="negative"
           v-close-popup
-          @click="cancelChanges"
         />
         <q-btn
           label="Bestätigen"
@@ -116,13 +118,13 @@ const socSliderMarker = {
   100: '100%',
 };
 
+const reset = () => {
+  // Reset temporary soc value
+  socValue.value = undefined;
+};
+
 const confirmChanges = () => {
   mqttStore.vehicleSocManualValue(props.vehicleId, props.chargePointId).value =
     socInputValue.value;
-};
-
-const cancelChanges = () => {
-  // Reset temporary soc value
-  socValue.value = undefined;
 };
 </script>

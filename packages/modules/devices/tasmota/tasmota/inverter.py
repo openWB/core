@@ -12,6 +12,7 @@ from modules.common import req
 from modules.common.component_state import InverterState
 from modules.common.utils.peak_filter import PeakFilter
 from modules.common.component_type import ComponentType
+from modules.devices.tasmota.tasmota.parser import TasmotaParser
 
 log = logging.getLogger(__name__)
 
@@ -40,39 +41,19 @@ class TasmotaInverter(AbstractInverter):
         url = "http://" + self.__ip_address + "/cm?cmnd=Status%208"
         response = req.get_http_session().get(url, timeout=5).json()
 
-        currents = None
-        if 'ENERGY' in response['StatusSNS']:
-            currents = [0.0, 0.0, 0.0]
-            power = float(response['StatusSNS']['ENERGY']['Power']) * -1
-            currents[self.__phase-1] = float(response['StatusSNS']['ENERGY']['Current'])
+        data = TasmotaParser(response, self.__phase)
+        power = data.power * -1
+        exported = data.exported
+        if data.meter_type == 'ENERGY':
             self.peak_filter.check_values(power)
             _, exported = self.sim_counter.sim_count(power)
-        elif 'Itron' in response['StatusSNS']:
-            power = float(response['StatusSNS']['Itron']['Power']) * -1
-            if 'E_in' in response['StatusSNS']['Itron']:
-                exported = float(response['StatusSNS']['Itron']['E_out']*1000)
-            else:
-                exported = float(response['StatusSNS']['Itron']['ExportActive']*1000)
-            _, exported = self.peak_filter.check_values(power, None, exported)
-        elif 'MT681' in response['StatusSNS']:
-            power = float(response['StatusSNS']['MT681']['Watt_summe']) * -1
-            exported = float(response['StatusSNS']['MT681']['Total_out']*1000)
-            _, exported = self.peak_filter.check_values(power, None, exported)
-        elif 'eBZ' in response['StatusSNS']:
-            power = float(response['StatusSNS']['eBZ']['Power']) * -1
-            exported = float(response['StatusSNS']['eBZ']['E_out']*1000)
-            _, exported = self.peak_filter.check_values(power, None, exported)
-        elif 'MT631' in response['StatusSNS']:
-            power = float(response['StatusSNS']['MT631']['Power']) * -1
-            exported = float(response['StatusSNS']['MT631']['E_out']*1000)
-            _, exported = self.peak_filter.check_values(power, None, exported)
         else:
-            raise ValueError("Nicht unterstützter Tasmota Zählertyp. Bitte an den Support wenden.")
+            _, exported = self.peak_filter.check_values(power, None, exported)
 
         inverter_state = InverterState(
             power=power,
             exported=exported,
-            currents=currents
+            currents=data.currents
         )
 
         self.store.set(inverter_state)

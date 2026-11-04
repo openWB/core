@@ -170,7 +170,8 @@ def create_pub_cert_ski(id: int):
     Path(cert_path).mkdir(parents=True, exist_ok=True)
     run_command([
         "openssl", "req", "-x509",
-        "-newkey", "rsa:4096", "-keyout", f"{cert_path}/hems-key-{id}.pem",
+        "-newkey", "ec", "-pkeyopt", "ec_paramgen_curve:prime256v1",
+        "-sha256", "-keyout", f"{cert_path}/hems-key-{id}.pem",
         "-out", f"{cert_path}/hems-cert-{id}.pem",
         "-days", "365", "-nodes",
         "-subj", "/CN=HEMS/C=DE/O=openWB GmbH"

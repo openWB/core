@@ -107,6 +107,8 @@ function classifyNodes(input: EnergyFlowInput): {
 
   if (input.pv < 0) {
     source(NODE_PV, 'PV', -input.pv);
+  } else if (input.pv > 0) {
+    sink(NODE_PV, 'PV', input.pv);
   }
 
   if (input.battery > 0) {

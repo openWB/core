@@ -88,9 +88,8 @@ class KostalPlenticoreBat(AbstractBat):
             self.client.write_register(1034, power_value, data_type=ModbusDataType.FLOAT_32,
                                        wordorder=Endian.Little, unit=unit)
 
-
-def power_limit_controllable(self) -> bool:
-    return True
+    def power_limit_controllable(self) -> bool:
+        return True
 
 
 component_descriptor = ComponentDescriptor(configuration_factory=KostalPlenticoreBatSetup)

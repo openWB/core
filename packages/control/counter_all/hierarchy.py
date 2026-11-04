@@ -341,18 +341,28 @@ class HierarchyMixin:
 
     def validate_hierarchy(self: HierarchyProtocol):
         try:
-            self._delete_obsolete_entries()
-            self._add_missing_entries()
+            linked_extra_meter_counter_ids = {
+                consumer.data.extra_meter
+                for consumer in data.data.consumer_data.values()
+                if consumer.data.extra_meter is not None
+            }
+            self._delete_obsolete_entries(linked_extra_meter_counter_ids)
+            self._add_missing_entries(linked_extra_meter_counter_ids)
         except Exception:
             log.exception("Fehler bei der Validierung der Hierarchie")
 
-    def _delete_obsolete_entries(self: HierarchyProtocol):
+    def _delete_obsolete_entries(self: HierarchyProtocol, linked_extra_meter_counter_ids: List[int]):
         def check_and_remove(name, type_name: ComponentType, data_structure):
             if element["type"] == type_name.value:
                 if f"{name}{element['id']}" not in data_structure:
                     self.hierarchy_remove_item(element["id"])
                     pub_system_message({}, f"{component_type_to_readable_text(type_name)} mit ID {element['id']} wurde"
                                        " aus der Hierarchie entfernt, da keine gültige Konfiguration gefunden wurde.",
+                                       MessageType.WARNING)
+                elif type_name == ComponentType.COUNTER and element["id"] in linked_extra_meter_counter_ids:
+                    self.hierarchy_remove_item(element["id"])
+                    pub_system_message({}, f"Zähler mit ID {element['id']} wurde aus der Hierarchie entfernt, da er "
+                                       "einem Verbraucher als separate Leistungsmessung zugeordnet ist.",
                                        MessageType.WARNING)
 
         for level in self.get_list_of_elements_per_level():
@@ -363,13 +373,7 @@ class HierarchyMixin:
                 check_and_remove("pv", ComponentType.INVERTER, data.data.pv_data)
                 check_and_remove("consumer", ComponentType.CONSUMER, data.data.consumer_data)
 
-    def _add_missing_entries(self: HierarchyProtocol):
-        linked_extra_meter_counter_ids = {
-            consumer.data.extra_meter
-            for consumer in data.data.consumer_data.values()
-            if consumer.data.extra_meter is not None
-        }
-
+    def _add_missing_entries(self: HierarchyProtocol, linked_extra_meter_counter_ids: List[int]):
         def check_and_add(type_name: ComponentType, data_structure):
             for entry in data_structure:
                 break_flag = False
