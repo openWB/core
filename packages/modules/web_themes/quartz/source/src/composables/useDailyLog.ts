@@ -1,12 +1,26 @@
 import { computed, onMounted, onUnmounted } from 'vue'
 import { useMqttStore } from '@/stores/mqtt-store'
-import type { CategoryData, CategoryKey, InstancePoint, InstanceSeries } from '@/types/chart'
+import type {
+  CategoryData,
+  CategoryKey,
+  InstancePoint,
+  InstanceSeries,
+  SocCategoryData,
+  SocPoint,
+  SocSeries,
+} from '@/types/chart'
 
 /** One flow's energy in/out of a daily_log component entry, already in kW (see process_log.py::convert_legacy_units). */
 interface FlowEntry {
   power_imported?: number
   power_exported?: number
   grid?: boolean
+  soc?: number
+}
+
+/** Keyed by vehicle id (e.g. "ev1") - see process_log_entry_builder.py's ev_dict, a sibling of bat/cp/pv/consumer. */
+interface VehicleLogEntry {
+  soc?: number
 }
 
 interface DailyLogEntry {
@@ -17,6 +31,7 @@ interface DailyLogEntry {
   cp?: Record<string, FlowEntry>
   consumer?: Record<string, FlowEntry>
   hc?: Record<string, FlowEntry>
+  ev?: Record<string, VehicleLogEntry>
 }
 
 interface DailyLogResponse {
@@ -120,6 +135,48 @@ function buildCounterCategory(entries: DailyLogEntry[], names: Record<string, st
   return { all, individual }
 }
 
+function buildBatterySoc(entries: DailyLogEntry[], names: Record<string, string>): SocCategoryData {
+  const all: SocPoint[] = []
+  const instancePoints = new Map<string, SocPoint[]>()
+
+  entries.forEach((entry) => {
+    const timestamp = entry.timestamp * 1000
+    const batData = entry.bat ?? {}
+    if (batData.all?.soc !== undefined) all.push({ timestamp, soc: batData.all.soc })
+    Object.keys(batData).forEach((id) => {
+      if (id === 'all') return
+      const soc = batData[id].soc
+      if (soc === undefined) return
+      if (!instancePoints.has(id)) instancePoints.set(id, [])
+      instancePoints.get(id)?.push({ timestamp, soc })
+    })
+  })
+
+  const individual: SocSeries[] = Array.from(instancePoints.entries()).map(([id, points]) => ({
+    id,
+    label: names[id] ?? `Speicher ${id.replace(/\D/g, '')}`,
+    points,
+  }))
+  return { all, individual }
+}
+
+function buildVehicleSoc(entries: DailyLogEntry[], names: Record<string, string>): SocSeries[] {
+  const instancePoints = new Map<string, SocPoint[]>()
+  entries.forEach((entry) => {
+    const timestamp = entry.timestamp * 1000
+    Object.entries(entry.ev ?? {}).forEach(([id, ev]) => {
+      if (ev.soc === undefined) return
+      if (!instancePoints.has(id)) instancePoints.set(id, [])
+      instancePoints.get(id)?.push({ timestamp, soc: ev.soc })
+    })
+  })
+  return Array.from(instancePoints.entries()).map(([id, points]) => ({
+    id: id.replace(/\D/g, ''),
+    label: names[id] ?? `Fahrzeug ${id.replace(/\D/g, '')}`,
+    points,
+  }))
+}
+
 /** Fetches and parses today's daily_log into per-category chart series, kept live via the getDailyLog command. */
 export function useDailyLog() {
   const mqttStore = useMqttStore()
@@ -143,6 +200,15 @@ export function useDailyLog() {
     }
   })
 
+  const batterySoc = computed<SocCategoryData>(() => {
+    const log = mqttStore.getValue<DailyLogResponse | undefined>(topic, undefined)
+    return buildBatterySoc(log?.entries ?? [], log?.names ?? {})
+  })
+  const vehicleSocAll = computed<SocSeries[]>(() => {
+    const log = mqttStore.getValue<DailyLogResponse | undefined>(topic, undefined)
+    return buildVehicleSoc(log?.entries ?? [], log?.names ?? {})
+  })
+
   const hasData = computed(() => categories.value.grid.all.length > 0)
 
   // the backend only republishes this retained topic in response to a getDailyLog command - it
@@ -159,5 +225,5 @@ export function useDailyLog() {
     clearInterval(refreshTimer)
   })
 
-  return { categories, hasData }
+  return { categories, hasData, batterySoc, vehicleSocAll }
 }

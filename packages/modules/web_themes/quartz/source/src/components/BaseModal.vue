@@ -1,24 +1,27 @@
 <template>
   <div
     v-if="modelValue"
-    class="fixed inset-0 z-[60] flex items-center justify-center bg-[rgba(10,12,16,0.5)] p-5"
+    class="fixed inset-0 z-[60] flex items-start justify-center bg-[rgba(10,12,16,0.5)] px-2 pt-[4vh] pb-2 sm:px-5 sm:pt-[8vh] sm:pb-5"
     @click="close"
   >
     <div
-      class="panel max-h-[90vh] overflow-y-auto px-7 py-6"
+      class="panel max-h-[94vh] overflow-y-auto px-4 py-4 sm:max-h-[90vh] sm:px-7 sm:py-6"
       :style="{ width: `min(${width}px, 100%)` }"
       @click.stop
     >
-      <div class="mb-[18px] flex items-center justify-between">
-        <h3 class="m-0 text-[17px] font-bold">
+      <div class="mb-3 flex items-center justify-between sm:mb-[18px]">
+        <h3 class="m-0 text-[15px] font-bold sm:text-[17px]">
           {{ title }}
         </h3>
-        <BaseIconButton
-          aria-label="Schließen"
-          @click="close"
-        >
-          <IconClose />
-        </BaseIconButton>
+        <div class="flex items-center gap-1.5">
+          <slot name="header-actions" />
+          <BaseIconButton
+            aria-label="Schließen"
+            @click="close"
+          >
+            <IconClose />
+          </BaseIconButton>
+        </div>
       </div>
       <slot />
     </div>

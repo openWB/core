@@ -93,8 +93,30 @@
     @apply rounded-[14px] border border-border bg-panel;
   }
 
+  /* for a horizontally-scrollable row (e.g. the chart legend on narrow viewports) that should
+     scroll via touch/trackpad without a visible scrollbar taking up space */
+  .scrollbar-hide {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
   .settings-group-label {
     @apply text-[11px] font-bold tracking-[0.02em] text-muted uppercase;
+  }
+
+  .detail-section {
+    @apply mb-2 rounded-[10px] bg-bg px-2 py-2 last:mb-0 sm:px-3 sm:py-2.5;
+  }
+
+  /* same blue "info" tint + reserved height as the card-level status box, so a status message's
+     varying length never changes this section's height - min-h-24 comfortably fits 3 lines of
+     text-[13px] plus the section's own label row, so 1-3 line messages all render the same height */
+  .detail-section-info {
+    @apply min-h-24;
+    background: color-mix(in srgb, var(--chargepoint) 10%, transparent);
   }
 
   .field-label {
@@ -176,6 +198,10 @@
 
   .status-box-fault {
     background: color-mix(in srgb, var(--error) 12%, transparent);
+  }
+
+  .status-box-info {
+    background: color-mix(in srgb, var(--chargepoint) 10%, transparent);
   }
 
   .plan-edit-head {

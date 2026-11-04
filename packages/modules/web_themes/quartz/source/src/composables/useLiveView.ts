@@ -1,8 +1,17 @@
 import { computed, type Ref } from 'vue'
 import { useMqttStore, type RawLivePoint } from '@/stores/mqtt-store'
-import type { CategoryData, CategoryKey, InstancePoint, InstanceSeries } from '@/types/chart'
+import type {
+  CategoryData,
+  CategoryKey,
+  InstancePoint,
+  InstanceSeries,
+  SocCategoryData,
+  SocPoint,
+  SocSeries,
+} from '@/types/chart'
 
 const INSTANCE_KEY = /^(cp|consumer|counter)(\d+)-power$/
+const EV_SOC_KEY = /^ev(\d+)-soc$/
 
 /**
  * Finer-grained recent-window series than the daily log - see koala's alllivevaluesJson*
@@ -19,10 +28,12 @@ const INSTANCE_KEY = /^(cp|consumer|counter)(\d+)-power$/
 export function useLiveView(rangeMinutes: Ref<number>) {
   const mqttStore = useMqttStore()
 
-  const categories = computed<Record<CategoryKey, CategoryData>>(() => {
+  const points = computed(() => {
     const cutoff = Date.now() - rangeMinutes.value * 60 * 1000
-    const points = mqttStore.liveSeriesRaw.filter((entry) => entry.timestamp * 1000 >= cutoff)
+    return mqttStore.liveSeriesRaw.filter((entry) => entry.timestamp * 1000 >= cutoff)
+  })
 
+  const categories = computed<Record<CategoryKey, CategoryData>>(() => {
     const pv: InstancePoint[] = []
     const grid: InstancePoint[] = []
     const house: InstancePoint[] = []
@@ -34,7 +45,7 @@ export function useLiveView(rangeMinutes: Ref<number>) {
     const consumerInstances = new Map<string, InstancePoint[]>()
     const counterInstances = new Map<string, InstancePoint[]>()
 
-    points.forEach((entry: RawLivePoint) => {
+    points.value.forEach((entry: RawLivePoint) => {
       const timestamp = entry.timestamp * 1000
       pv.push({ timestamp, power: entry['pv-all'] ?? 0 })
       grid.push({ timestamp, power: entry.grid ?? 0 })
@@ -63,19 +74,57 @@ export function useLiveView(rangeMinutes: Ref<number>) {
       counterAll.push({ timestamp, power: counterSum })
     })
 
-    const toSeries = (map: Map<string, InstancePoint[]>, labelPrefix: string): InstanceSeries[] =>
-      Array.from(map.entries()).map(([id, pts]) => ({ id, label: `${labelPrefix} ${id.replace(/\D/g, '')}`, points: pts }))
+    // real names (not a generic "Zähler <id>"-style fallback) - the live feed itself carries no
+    // name data, but the real component config is already available via the store's own
+    // getComponentConfiguration-backed getters, same ones the cards/popups already use
+    const toSeries = (map: Map<string, InstancePoint[]>, resolveName: (id: number) => string): InstanceSeries[] =>
+      Array.from(map.entries()).map(([id, pts]) => ({
+        id,
+        label: resolveName(Number(id.replace(/\D/g, ''))),
+        points: pts,
+      }))
 
     return {
       pv: { all: pv, individual: [] },
       grid: { all: grid, individual: [] },
       house: { all: house, individual: [] },
       battery: { all: battery, individual: [] },
-      consumer: { all: consumerAll, individual: toSeries(consumerInstances, 'Verbraucher') },
-      chargepoint: { all: chargepointAll, individual: toSeries(cpInstances, 'Ladepunkt') },
-      counter: { all: counterAll, individual: toSeries(counterInstances, 'Zähler') },
+      consumer: { all: consumerAll, individual: toSeries(consumerInstances, mqttStore.consumerName) },
+      chargepoint: { all: chargepointAll, individual: toSeries(cpInstances, mqttStore.chargePointName) },
+      counter: { all: counterAll, individual: toSeries(counterInstances, mqttStore.counterName) },
     }
   })
 
-  return { categories }
+  // only the aggregate 'bat-all-soc' is published to the live feed (graph.py) - no per-battery
+  // breakdown there, unlike the daily log, so individual stays empty (same asymmetry the
+  // 'battery' power category above already has between day and live mode)
+  const batterySoc = computed<SocCategoryData>(() => ({
+    all: points.value
+      .filter((entry) => entry['bat-all-soc'] !== undefined)
+      .map((entry) => ({ timestamp: entry.timestamp * 1000, soc: entry['bat-all-soc'] as number })),
+    individual: [],
+  }))
+
+  const vehicleSocAll = computed<SocSeries[]>(() => {
+    const instancePoints = new Map<string, SocPoint[]>()
+    points.value.forEach((entry: RawLivePoint) => {
+      const timestamp = entry.timestamp * 1000
+      Object.keys(entry).forEach((key) => {
+        const match = key.match(EV_SOC_KEY)
+        if (!match) return
+        const [, num] = match
+        const value = entry[key]
+        if (value === undefined) return
+        if (!instancePoints.has(num)) instancePoints.set(num, [])
+        instancePoints.get(num)?.push({ timestamp, soc: value })
+      })
+    })
+    return Array.from(instancePoints.entries()).map(([id, pts]) => ({
+      id,
+      label: `Fahrzeug ${id}`,
+      points: pts,
+    }))
+  })
+
+  return { categories, batterySoc, vehicleSocAll }
 }

@@ -42,6 +42,36 @@
         class="ml-auto text-[13px] font-bold"
       >{{ Math.round(socValue) }}&nbsp;%</span>
     </div>
+
+    <div
+      v-if="range !== undefined || odometer !== undefined || socTimestamp !== undefined"
+      class="mt-2.5 flex flex-wrap gap-4 text-[13px]"
+    >
+      <div v-if="range !== undefined">
+        <div class="text-muted">
+          Reichweite
+        </div>
+        <div class="font-bold">
+          {{ Math.round(range) }}&nbsp;km
+        </div>
+      </div>
+      <div v-if="odometer !== undefined">
+        <div class="text-muted">
+          Kilometerstand
+        </div>
+        <div class="font-bold">
+          {{ Math.round(odometer) }}&nbsp;km
+        </div>
+      </div>
+      <div v-if="socTimestamp !== undefined">
+        <div class="text-muted">
+          Letzter Zeitstempel
+        </div>
+        <div class="font-bold">
+          {{ new Date(socTimestamp * 1000).toLocaleString('de-DE') }}
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -60,5 +90,8 @@ const faultState = computed(() => mqttStore.vehicleFaultState(props.vehicleId))
 const faultMessage = computed(() => mqttStore.vehicleFaultMessage(props.vehicleId))
 const connectionState = computed(() => mqttStore.vehicleConnectionState(props.vehicleId))
 const socValue = computed(() => mqttStore.vehicleSocValue(props.vehicleId))
+const range = computed(() => mqttStore.vehicleRange(props.vehicleId))
+const odometer = computed(() => mqttStore.vehicleOdometer(props.vehicleId))
+const socTimestamp = computed(() => mqttStore.vehicleSocTimestamp(props.vehicleId))
 const priority = computed(() => mqttStore.vehiclePriority(props.vehicleId))
 </script>
