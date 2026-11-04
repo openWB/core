@@ -51,11 +51,11 @@ def _log_response(response: Response, *args, **kwargs) -> None:
     if not log.isEnabledFor(logging.DEBUG):
         return
     content_type = response.headers.get('Content-Type', '').split(';', 1)[0].strip().lower()
-    binary = (content_type.startswith(('image/', 'audio/', 'video/', 'font/')) or
-              content_type in ('application/zip', 'application/x-zip-compressed',
-                               'application/octet-stream', 'application/pdf', 'application/gzip'))
+    text = (content_type.startswith('text/') or
+            content_type in ('application/json', 'application/xml', 'application/x-www-form-urlencoded') or
+            (content_type.startswith('application/') and content_type.endswith(('+json', '+xml'))))
     # The portal can omit/mislabel the content type of ZIP downloads.
-    if binary or response.content.startswith((b'PK\x03\x04', b'PK\x05\x06', b'PK\x07\x08')):
+    if not text or response.content.startswith((b'PK\x03\x04', b'PK\x05\x06', b'PK\x07\x08')):
         log.debug("Get-Response: binary data (%s, %s bytes)", content_type or 'unknown type', len(response.content))
     else:
         log.debug("Get-Response: %s", response.text)
