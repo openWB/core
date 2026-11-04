@@ -5,8 +5,8 @@ import { useMqttStore } from '@/stores/mqtt-store'
 export function useInverters() {
   const mqttStore = useMqttStore()
 
-  onMounted(() => mqttStore.subscribeChargePointList())
-  onUnmounted(() => mqttStore.unsubscribeChargePointList())
+  onMounted(() => mqttStore.subscribeComponentHierarchy())
+  onUnmounted(() => mqttStore.unsubscribeComponentHierarchy())
 
   return { inverterIds: computed(() => mqttStore.inverterIds) }
 }

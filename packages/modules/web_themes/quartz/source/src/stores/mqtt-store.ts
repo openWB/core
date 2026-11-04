@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import mqtt, { type MqttClient } from 'mqtt'
 import type { QoS } from 'mqtt-packet'
+import { eurPerWhToCtPerKwh, ctPerKwhToEurPerWh } from '@/utils/format'
 
 type TopicMap = Record<string, unknown>
 type SubscriptionCounts = Record<string, number>
@@ -179,6 +180,19 @@ interface LoadmanagementPrioEntry {
   children?: LoadmanagementPrioEntry[]
 }
 
+/**
+ * Shared mutual-clamp shape for a two-handle min/max range (battery priority SoC, active
+ * battery control SoC) - whichever side the caller just moved wins and pushes the other side
+ * along with it instead of letting the range invert (min > max). The caller always passes both
+ * values (the one just dragged plus the other's last known value), so comparing each against
+ * the currently stored value identifies which one changed.
+ */
+function clampMinMaxRange(newMin: number, newMax: number, oldMin: number, oldMax: number): [number, number] {
+  if (newMin !== oldMin) return [newMin, Math.max(newMin, newMax)]
+  if (newMax !== oldMax) return [Math.min(newMin, newMax), newMax]
+  return [newMin, newMax]
+}
+
 export const useMqttStore = defineStore('mqtt', () => {
   let client: MqttClient | null = null
   const clientId = Math.random().toString(36).replace(/[^a-z]+/g, '').substring(0, 6)
@@ -313,7 +327,7 @@ export const useMqttStore = defineStore('mqtt', () => {
   // prices are pruned server-side to "now or later" (see ElectricityPricingCard.vue), so the first entry is current
   const currentElectricityPrice = computed<number | undefined>(() => {
     const entries = Object.values(electricityPrices.value)
-    return entries.length > 0 ? entries[0] * 100000 : undefined
+    return entries.length > 0 ? eurPerWhToCtPerKwh(entries[0]) : undefined
   })
 
   // the two components a variable electricity price can be made of - either may be unconfigured
@@ -445,10 +459,11 @@ export const useMqttStore = defineStore('mqtt', () => {
     return hierarchy[0]?.type === 'counter' ? hierarchy[0].id : undefined
   }
 
-  function subscribeChargePointList(): void {
+  /** The component hierarchy backs every entity type's id list (chargepoints/consumers/counters/inverters/batteries), not just chargepoints. */
+  function subscribeComponentHierarchy(): void {
     subscribe('openWB/counter/get/hierarchy')
   }
-  function unsubscribeChargePointList(): void {
+  function unsubscribeComponentHierarchy(): void {
     unsubscribe('openWB/counter/get/hierarchy')
   }
 
@@ -792,8 +807,9 @@ export const useMqttStore = defineStore('mqtt', () => {
     return getValue.value<number>('openWB/general/chargemode_config/bat/max_soc', 100)
   }
   function setBatteryPrioritySoc(min: number, max: number): void {
-    updateTopic('openWB/general/chargemode_config/bat/min_soc', min, undefined, true)
-    updateTopic('openWB/general/chargemode_config/bat/max_soc', max, undefined, true)
+    const [clampedMin, clampedMax] = clampMinMaxRange(min, max, batteryPrioritySocMin(), batteryPrioritySocMax())
+    updateTopic('openWB/general/chargemode_config/bat/min_soc', clampedMin, undefined, true)
+    updateTopic('openWB/general/chargemode_config/bat/max_soc', clampedMax, undefined, true)
   }
 
   /** Whether to reserve some charging power for the battery below min-SoC instead of giving it all to vehicles/consumers. */
@@ -847,71 +863,69 @@ export const useMqttStore = defineStore('mqtt', () => {
     updateTopic(`openWB/bat/${id}/get/max_discharge_power`, Math.round(kw * -1000), undefined, true)
   }
 
-  function batControlActivated(): boolean {
+  // activation itself is a deliberate, liability-worded confirmation step done only in the
+  // legacy settings UI - read-only here, no setter
+  function batteryControlActivated(): boolean {
     return getValue.value<boolean>('openWB/bat/config/bat_control_activated', false)
   }
-  function setBatControlActivated(active: boolean): void {
-    updateTopic('openWB/bat/config/bat_control_activated', active, undefined, true)
-  }
-  function batControlMinSoc(): number {
+  function batteryControlMinSoc(): number {
     return getValue.value<number>('openWB/bat/config/bat_control_min_soc', 5)
   }
-  function batControlMaxSoc(): number {
-    return getValue.value<number>('openWB/bat/config/bat_control_max_soc', 100)
+  function batteryControlMaxSoc(): number {
+    return getValue.value<number>('openWB/bat/config/bat_control_max_soc', 90)
   }
-  function setBatControlSocRange(min: number, max: number): void {
-    updateTopic('openWB/bat/config/bat_control_min_soc', min, undefined, true)
-    updateTopic('openWB/bat/config/bat_control_max_soc', max, undefined, true)
+  function setBatteryControlSocRange(min: number, max: number): void {
+    const [clampedMin, clampedMax] = clampMinMaxRange(min, max, batteryControlMinSoc(), batteryControlMaxSoc())
+    updateTopic('openWB/bat/config/bat_control_min_soc', clampedMin, undefined, true)
+    updateTopic('openWB/bat/config/bat_control_max_soc', clampedMax, undefined, true)
   }
 
-  function powerLimitCondition(): string {
+  function batteryPowerLimitCondition(): string {
     return getValue.value<string>('openWB/bat/config/power_limit_condition', 'manual')
   }
   /** Switching to 'vehicle_charging' forces manual_mode to 'manual_limit', matching the reference's own handlePowerLimitConditionChange. */
-  function setPowerLimitCondition(condition: string): void {
+  function setBatteryPowerLimitCondition(condition: string): void {
     updateTopic('openWB/bat/config/power_limit_condition', condition, undefined, true)
     if (condition === 'vehicle_charging') {
       updateTopic('openWB/bat/config/manual_mode', 'manual_limit', undefined, true)
     }
   }
-  function manualMode(): string {
+  function batteryManualMode(): string {
     return getValue.value<string>('openWB/bat/config/manual_mode', 'manual_limit')
   }
-  function setManualMode(mode: string): void {
+  function setBatteryManualMode(mode: string): void {
     updateTopic('openWB/bat/config/manual_mode', mode, undefined, true)
   }
-  function powerLimitMode(): string {
+  function batteryPowerLimitMode(): string {
     return getValue.value<string>('openWB/bat/config/power_limit_mode', 'mode_no_discharge')
   }
-  function setPowerLimitMode(mode: string): void {
+  function setBatteryPowerLimitMode(mode: string): void {
     updateTopic('openWB/bat/config/power_limit_mode', mode, undefined, true)
   }
 
-  function priceLimitActivated(): boolean {
+  function batteryPriceLimitActivated(): boolean {
     return getValue.value<boolean>('openWB/bat/config/price_limit_activated', false)
   }
-  function setPriceLimitActivated(active: boolean): void {
+  function setBatteryPriceLimitActivated(active: boolean): void {
     updateTopic('openWB/bat/config/price_limit_activated', active, undefined, true)
   }
-  /** Display value in ct/kWh - the raw topic is stored scaled by 1e-5. */
-  function priceLimit(): number {
-    return getValue.value<number>('openWB/bat/config/price_limit', 0) * 100000
+  function batteryPriceLimit(): number {
+    return eurPerWhToCtPerKwh(getValue.value<number>('openWB/bat/config/price_limit', 0))
   }
-  function setPriceLimit(ctPerKwh: number): void {
-    updateTopic('openWB/bat/config/price_limit', ctPerKwh / 100000, undefined, true)
+  function setBatteryPriceLimit(ctPerKwh: number): void {
+    updateTopic('openWB/bat/config/price_limit', ctPerKwhToEurPerWh(ctPerKwh), undefined, true)
   }
-  function priceChargeActivated(): boolean {
+  function batteryPriceChargeActivated(): boolean {
     return getValue.value<boolean>('openWB/bat/config/price_charge_activated', false)
   }
-  function setPriceChargeActivated(active: boolean): void {
+  function setBatteryPriceChargeActivated(active: boolean): void {
     updateTopic('openWB/bat/config/price_charge_activated', active, undefined, true)
   }
-  /** Display value in ct/kWh - the raw topic is stored scaled by 1e-5. */
-  function chargeLimit(): number {
-    return getValue.value<number>('openWB/bat/config/charge_limit', 0) * 100000
+  function batteryChargeLimit(): number {
+    return eurPerWhToCtPerKwh(getValue.value<number>('openWB/bat/config/charge_limit', 0))
   }
-  function setChargeLimit(ctPerKwh: number): void {
-    updateTopic('openWB/bat/config/charge_limit', ctPerKwh / 100000, undefined, true)
+  function setBatteryChargeLimit(ctPerKwh: number): void {
+    updateTopic('openWB/bat/config/charge_limit', ctPerKwhToEurPerWh(ctPerKwh), undefined, true)
   }
 
   // --- counters ---
@@ -1073,12 +1087,12 @@ export const useMqttStore = defineStore('mqtt', () => {
 
   // --- daily log (chart history) ---
 
+  /** Only requests a fresh payload - subscribing to the (date-dependent) topic is the caller's responsibility, see useDailyLog.ts. */
   function fetchDailyLog(date: Date = new Date()): void {
     const dateString =
       date.getFullYear().toString() +
       (date.getMonth() + 1).toString().padStart(2, '0') +
       date.getDate().toString().padStart(2, '0')
-    subscribe(`openWB/log/daily/${dateString}`)
     sendCommand('getDailyLog', { date: dateString })
   }
 
@@ -1127,8 +1141,8 @@ export const useMqttStore = defineStore('mqtt', () => {
     unsubscribeLiveSeries,
     updateTopic,
     chargePointIds,
-    subscribeChargePointList,
-    unsubscribeChargePointList,
+    subscribeComponentHierarchy,
+    unsubscribeComponentHierarchy,
     chargePointName,
     chargePointPlugState,
     chargePointChargeState,
@@ -1221,25 +1235,24 @@ export const useMqttStore = defineStore('mqtt', () => {
     setBatteryInstanceMaxChargePower,
     batteryInstanceMaxDischargePower,
     setBatteryInstanceMaxDischargePower,
-    batControlActivated,
-    setBatControlActivated,
-    batControlMinSoc,
-    batControlMaxSoc,
-    setBatControlSocRange,
-    powerLimitCondition,
-    setPowerLimitCondition,
-    manualMode,
-    setManualMode,
-    powerLimitMode,
-    setPowerLimitMode,
-    priceLimitActivated,
-    setPriceLimitActivated,
-    priceLimit,
-    setPriceLimit,
-    priceChargeActivated,
-    setPriceChargeActivated,
-    chargeLimit,
-    setChargeLimit,
+    batteryControlActivated,
+    batteryControlMinSoc,
+    batteryControlMaxSoc,
+    setBatteryControlSocRange,
+    batteryPowerLimitCondition,
+    setBatteryPowerLimitCondition,
+    batteryManualMode,
+    setBatteryManualMode,
+    batteryPowerLimitMode,
+    setBatteryPowerLimitMode,
+    batteryPriceLimitActivated,
+    setBatteryPriceLimitActivated,
+    batteryPriceLimit,
+    setBatteryPriceLimit,
+    batteryPriceChargeActivated,
+    setBatteryPriceChargeActivated,
+    batteryChargeLimit,
+    setBatteryChargeLimit,
     counterIds,
     gridCounterId,
     counterName,

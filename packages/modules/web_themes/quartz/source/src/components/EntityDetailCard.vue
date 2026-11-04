@@ -271,7 +271,6 @@ const instances = computed<InstanceInfo[]>(() => {
       }))
     case 'battery':
       return mqttStore.batteryIds
-        .filter((id) => id !== -1)
         .map((id) => {
           const stateMessage = mqttStore.batteryInstanceStateMessage(id)
           const sections: Section[] = []

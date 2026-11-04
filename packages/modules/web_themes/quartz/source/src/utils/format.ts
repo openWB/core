@@ -13,6 +13,20 @@ export function formatKwh(kwh: number): string {
   return `${kwh.toLocaleString(undefined, { minimumFractionDigits: 3, maximumFractionDigits: 3 })} kWh`
 }
 
+/**
+ * The backend stores variable electricity prices as EUR/Wh; every price field in the UI displays
+ * ct/kWh instead (x100000). Rounded to 3 decimals (matching the UI's own 0.001 step) since the
+ * raw *100000/100000 round-trip isn't exact in floating point (e.g. 0.0003 -> 29.999999999999996
+ * unrounded) - centralized here so every price field converts the same way instead of each
+ * reimplementing (and potentially missing) the rounding.
+ */
+export function eurPerWhToCtPerKwh(eurPerWh: number): number {
+  return Math.round(eurPerWh * 100000 * 1000) / 1000
+}
+export function ctPerKwhToEurPerWh(ctPerKwh: number): number {
+  return ctPerKwh / 100000
+}
+
 /** Chart tooltip title for an hour:minute point in time, e.g. a Chart.js x value in ms. */
 export function formatTooltipTime(timestamp: number): string {
   return new Date(timestamp).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })

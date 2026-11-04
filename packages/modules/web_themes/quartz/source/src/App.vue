@@ -5,106 +5,52 @@
         href="/openWB/web/"
         class="text-[18px] font-bold tracking-[-0.01em] text-text no-underline"
       >openWB</a>
-      <div class="hidden items-center gap-7">
+      <BasePopover
+        v-model="showNavMenu"
+        panel-class="top-[calc(100%_+_8px)] right-0 flex w-56 max-w-[calc(100vw-2rem)] flex-col gap-0.5 p-2"
+      >
+        <template #trigger="{ toggle }">
+          <BaseIconButton
+            aria-label="Menü öffnen"
+            title="Menü öffnen"
+            @click="toggle"
+          >
+            <IconMenu />
+          </BaseIconButton>
+        </template>
         <a
           v-if="mqttStore.accessStatusAllowed()"
           href="/openWB/web/settings/#/Status"
-          class="border-b-2 border-accent px-1 py-2 text-sm font-medium text-text no-underline"
+          class="rounded-lg px-3 py-2 text-sm font-semibold text-accent no-underline"
+          @click="showNavMenu = false"
         >Status</a>
         <a
           v-if="mqttStore.accessChartAllowed()"
           href="/openWB/web/settings/#/Logging/Chart"
-          class="text-sm font-medium text-muted"
-        >
-          Auswertungen
-        </a>
+          class="rounded-lg px-3 py-2 text-sm font-medium text-text no-underline"
+          @click="showNavMenu = false"
+        >Auswertungen</a>
         <a
           v-if="mqttStore.accessChargeLogAllowed()"
           href="/openWB/web/settings/#/Logging/ChargeLog"
-          class="text-sm font-medium text-muted"
-        >
-          Ladeprotokoll
-        </a>
+          class="rounded-lg px-3 py-2 text-sm font-medium text-text no-underline"
+          @click="showNavMenu = false"
+        >Ladeprotokoll</a>
         <a
           v-if="mqttStore.accessSettingsAllowed()"
           href="/openWB/web/settings/"
-          class="text-sm font-medium text-muted"
-        >Einstellungen</a>
-      </div>
-      <label class="hidden cursor-pointer items-center gap-2.5 text-[13px] text-muted">
-        {{ dark ? 'Dunkel' : 'Hell' }}
-        <button
-          class="relative inline-flex h-6 w-11 items-center rounded-full border-0 bg-[#d1d5db] p-0.5"
-          role="switch"
-          :aria-checked="dark"
-          :class="{ 'bg-accent': dark }"
-          @click="toggleDark"
-        >
-          <span
-            class="block h-5 w-5 rounded-full bg-white shadow-[0_1px_2px_rgba(0,0,0,0.3)] transition-transform duration-150 [transition-timing-function:ease]"
-            :class="{ 'translate-x-5': dark }"
-          />
-        </button>
-      </label>
-
-      <div class="relative">
-        <BaseIconButton
-          aria-label="Menü öffnen"
-          @click="showNavMenu = !showNavMenu"
-        >
-          <IconMenu />
-        </BaseIconButton>
-        <div
-          v-if="showNavMenu"
-          class="fixed inset-0 z-10"
+          class="rounded-lg px-3 py-2 text-sm font-medium text-text no-underline"
           @click="showNavMenu = false"
-        />
-        <div
-          v-if="showNavMenu"
-          class="panel absolute top-[calc(100%_+_8px)] right-0 z-[11] flex w-56 max-w-[calc(100vw-2rem)] flex-col gap-0.5 p-2 shadow-[0_8px_24px_rgba(0,0,0,0.12)]"
+        >Einstellungen</a>
+        <div class="my-1 border-t border-border" />
+        <button
+          type="button"
+          class="rounded-lg border-0 bg-transparent px-3 py-2 text-left text-sm font-medium text-text"
+          @click="showThemeSettings = true; showNavMenu = false"
         >
-          <a
-            v-if="mqttStore.accessStatusAllowed()"
-            href="/openWB/web/settings/#/Status"
-            class="rounded-lg px-3 py-2 text-sm font-semibold text-accent no-underline"
-            @click="showNavMenu = false"
-          >Status</a>
-          <a
-            v-if="mqttStore.accessChartAllowed()"
-            href="/openWB/web/settings/#/Logging/Chart"
-            class="rounded-lg px-3 py-2 text-sm font-medium text-text no-underline"
-            @click="showNavMenu = false"
-          >Auswertungen</a>
-          <a
-            v-if="mqttStore.accessChargeLogAllowed()"
-            href="/openWB/web/settings/#/Logging/ChargeLog"
-            class="rounded-lg px-3 py-2 text-sm font-medium text-text no-underline"
-            @click="showNavMenu = false"
-          >Ladeprotokoll</a>
-          <a
-            v-if="mqttStore.accessSettingsAllowed()"
-            href="/openWB/web/settings/"
-            class="rounded-lg px-3 py-2 text-sm font-medium text-text no-underline"
-            @click="showNavMenu = false"
-          >Einstellungen</a>
-          <div class="my-1 border-t border-border" />
-          <label class="flex cursor-pointer items-center justify-between gap-2.5 px-3 py-2 text-[13px] text-muted">
-            {{ dark ? 'Dunkel' : 'Hell' }}
-            <button
-              class="relative inline-flex h-6 w-11 items-center rounded-full border-0 bg-[#d1d5db] p-0.5"
-              role="switch"
-              :aria-checked="dark"
-              :class="{ 'bg-accent': dark }"
-              @click="toggleDark"
-            >
-              <span
-                class="block h-5 w-5 rounded-full bg-white shadow-[0_1px_2px_rgba(0,0,0,0.3)] transition-transform duration-150 [transition-timing-function:ease]"
-                :class="{ 'translate-x-5': dark }"
-              />
-            </button>
-          </label>
-        </div>
-      </div>
+          Theme-Einstellungen
+        </button>
+      </BasePopover>
     </nav>
 
     <StatusStrip />
@@ -117,42 +63,6 @@
         :options="tabs"
         @update="activeTab = $event"
       />
-      <div
-        v-if="activeTab === 'alle' && configuredSections.length > 0"
-        class="relative shrink-0"
-      >
-        <BaseIconButton
-          aria-label="Anzeige einstellen"
-          @click="showSectionSettings = !showSectionSettings"
-        >
-          <IconGear />
-        </BaseIconButton>
-        <div
-          v-if="showSectionSettings"
-          class="fixed inset-0 z-10"
-          @click="showSectionSettings = false"
-        />
-        <div
-          v-if="showSectionSettings"
-          class="panel absolute top-[calc(100%_+_8px)] left-0 z-[11] flex w-64 max-w-[calc(100vw-2rem)] flex-col gap-0.5 p-2 shadow-[0_8px_24px_rgba(0,0,0,0.12)] sm:right-0 sm:left-auto"
-        >
-          <div class="settings-group-label px-3 pt-1 pb-0.5">
-            Karten unter Alles anzeigen
-          </div>
-          <label
-            v-for="section in configuredSections"
-            :key="section.key"
-            class="flex cursor-pointer items-center justify-between gap-2.5 rounded-lg px-3 py-2 text-sm text-text"
-          >
-            {{ section.label }}
-            <input
-              type="checkbox"
-              :checked="visibleSections.has(section.key)"
-              @change="toggleSection(section.key, ($event.target as HTMLInputElement).checked)"
-            >
-          </label>
-        </div>
-      </div>
     </div>
 
     <template v-if="showChargePoints && (activeTab !== 'alle' || (chargePointIds.length > 0 && visibleSections.has('ladepunkte')))">
@@ -250,6 +160,15 @@
         />
       </div>
     </template>
+
+    <ThemeSettingsModal
+      v-model="showThemeSettings"
+      :dark="dark"
+      :configured-sections="configuredSections"
+      :visible-sections="visibleSections"
+      @update:dark="dark = $event"
+      @toggle-section="(key, checked) => toggleSection(key as SectionKey, checked)"
+    />
   </div>
 </template>
 
@@ -265,7 +184,8 @@ import InverterCard from './components/InverterCard.vue'
 import ConsumerCard from './components/ConsumerCard.vue'
 import BaseTabGroup from './components/BaseTabGroup.vue'
 import BaseIconButton from './components/BaseIconButton.vue'
-import IconGear from './components/icons/IconGear.vue'
+import BasePopover from './components/BasePopover.vue'
+import ThemeSettingsModal from './components/ThemeSettingsModal.vue'
 import IconMenu from './components/icons/IconMenu.vue'
 import { useChargePoints } from './composables/useChargePoints'
 import { useVehicles } from './composables/useVehicles'
@@ -280,7 +200,7 @@ const mqttStore = useMqttStore()
 type SectionKey = 'ladepunkte' | 'fahrzeuge' | 'speicher' | 'zaehler' | 'wechselrichter' | 'verbraucher'
 
 const tabs = [
-  { value: 'alle', label: 'Alles' },
+  { value: 'alle', label: 'Auswahl' },
   { value: 'ladepunkte', label: 'Ladepunkte' },
   { value: 'fahrzeuge', label: 'Fahrzeuge' },
   { value: 'speicher', label: 'Speicher' },
@@ -304,7 +224,7 @@ const { counterIds } = useCounters()
 const { inverterIds } = useInverters()
 const { consumerIds } = useConsumers()
 
-// which entity-type card sections appear in the "Alles" overview - the dedicated per-type tabs
+// which entity-type card sections appear in the "Auswahl" overview - the dedicated per-type tabs
 // always show their full card grid regardless of this (see v-if conditions above)
 const SECTIONS_STORAGE_KEY = 'quartz-visible-sections'
 const DEFAULT_VISIBLE_SECTIONS: SectionKey[] = ['ladepunkte', 'fahrzeuge', 'verbraucher']
@@ -319,7 +239,7 @@ function loadPersistedSections(): SectionKey[] {
 }
 
 const visibleSections = ref(new Set<SectionKey>(loadPersistedSections()))
-const showSectionSettings = ref(false)
+const showThemeSettings = ref(false)
 
 watchEffect(() => {
   try {
@@ -356,12 +276,11 @@ watchEffect(() => {
   document.documentElement.setAttribute('data-theme', theme.value)
 })
 
-function toggleDark(): void {
-  dark.value = !dark.value
+watchEffect(() => {
   try {
     localStorage.setItem(STORAGE_KEY, String(dark.value))
   } catch {
     // ignore storage errors (private browsing etc.)
   }
-}
+})
 </script>

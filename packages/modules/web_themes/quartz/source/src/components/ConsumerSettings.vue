@@ -61,14 +61,6 @@
         @update="setResetField('chargemode', $event)"
       />
     </template>
-
-    <div class="settings-divider" />
-    <a
-      href="/openWB/web/settings/#/ConsumerConfiguration"
-      class="add-plan-btn block text-center no-underline"
-    >
-      Geräte-Einstellungen
-    </a>
   </BaseModal>
 </template>
 

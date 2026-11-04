@@ -9,15 +9,16 @@
         <BaseIconButton
           v-if="showControls"
           aria-label="Verbraucher-Einstellungen öffnen"
+          title="Verbraucher-Einstellungen öffnen"
           @click="showSettings = true"
         >
           <IconGear />
         </BaseIconButton>
         <span
           v-if="priority !== undefined"
-          class="whitespace-nowrap rounded-full px-[9px] py-[3px] text-[11px] font-bold badge-muted"
+          class="badge badge-muted"
         >Prio {{ priority }}</span>
-        <span :class="['whitespace-nowrap rounded-full px-[9px] py-[3px] text-[11px] font-bold', stateBadgeClass]">{{ stateBadgeText }}</span>
+        <span :class="['badge', stateBadgeClass]">{{ stateBadgeText }}</span>
       </div>
     </div>
 
@@ -36,47 +37,30 @@
     </div>
 
     <div class="flex gap-4 text-[13px]">
-      <div>
-        <div class="text-muted">
-          Leistung
-        </div>
-        <div class="font-bold">
-          {{ formatKw(power) }}
-        </div>
-      </div>
-      <div>
-        <div class="text-muted">
-          Laufzeit
-        </div>
-        <div class="font-bold">
-          {{ formatRuntime(onTime) }}
-        </div>
-      </div>
-      <div>
-        <div class="text-muted">
-          Verbrauch heute
-        </div>
-        <div class="font-bold">
-          {{ formatKwh(dailyImported) }}
-        </div>
-      </div>
+      <StatBlock
+        label="Leistung"
+        :value="formatKw(power)"
+      />
+      <StatBlock
+        label="Laufzeit"
+        :value="formatRuntime(onTime)"
+      />
+      <StatBlock
+        label="Verbrauch heute"
+        :value="formatKwh(dailyImported)"
+      />
     </div>
 
     <div
       v-if="temperatures.length > 0"
       class="mt-3 flex gap-4 text-[13px]"
     >
-      <div
+      <StatBlock
         v-for="(temp, idx) in temperatures"
         :key="idx"
-      >
-        <div class="text-muted">
-          {{ temperatures.length > 1 ? `Temperatur ${idx + 1}` : 'Temperatur' }}
-        </div>
-        <div class="font-bold">
-          {{ temp.toLocaleString(undefined, { maximumFractionDigits: 1 }) }}&nbsp;°C
-        </div>
-      </div>
+        :label="temperatures.length > 1 ? `Temperatur ${idx + 1}` : 'Temperatur'"
+        :value="`${temp.toLocaleString(undefined, { maximumFractionDigits: 1 })} °C`"
+      />
     </div>
 
     <BaseTabGroup
@@ -95,11 +79,13 @@ import { computed, ref } from 'vue'
 import { useMqttStore } from '@/stores/mqtt-store'
 import { formatKw, formatKwh, formatRuntime } from '@/utils/format'
 import { chargeModes } from '@/utils/chargeModes'
+import { stateBadgeClass as stateBadgeClassFor } from '@/utils/badge'
 import IconConsumer from './icons/IconConsumer.vue'
 import IconGear from './icons/IconGear.vue'
 import BaseIconButton from './BaseIconButton.vue'
 import BaseTabGroup from './BaseTabGroup.vue'
 import ConsumerSettings from './ConsumerSettings.vue'
+import StatBlock from './StatBlock.vue'
 
 const props = defineProps<{ consumerId: number }>()
 const mqttStore = useMqttStore()
@@ -130,9 +116,5 @@ const stateBadgeText = computed(() => {
   if (plugState.value) return 'Bereit'
   return 'Aus'
 })
-const stateBadgeClass = computed(() => {
-  if (chargeState.value) return 'badge-ok'
-  if (plugState.value) return 'badge-wait'
-  return 'badge-muted'
-})
+const stateBadgeClass = computed(() => stateBadgeClassFor(chargeState.value, plugState.value))
 </script>

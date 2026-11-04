@@ -1,84 +1,89 @@
 <template>
   <BaseModal
     :model-value="modelValue"
-    :title="`Speicher-Beachtung: ${name}`"
+    title="Einstellungen · Speicher"
     @update:model-value="$emit('update:modelValue', $event)"
   >
-    <BaseSegmentedControl
-      :model-value="mode"
-      :options="modeOptions"
-      @update="mqttStore.setBatteryMode($event)"
-    />
-    <FieldSlider
-      v-if="mode === 'min_soc_bat_mode'"
-      label="Minimaler Speicher-SoC"
-      unit="%"
-      :min="0"
-      :max="100"
-      :model-value="socMin"
-      @update="(v) => mqttStore.setBatteryPrioritySoc(v, socMax)"
-    />
-    <FieldSlider
-      v-if="mode === 'min_soc_bat_mode'"
-      label="Maximaler Speicher-SoC"
-      unit="%"
-      :min="0"
-      :max="100"
-      :model-value="socMax"
-      @update="(v) => mqttStore.setBatteryPrioritySoc(socMin, v)"
-    />
-
-    <template v-if="mode === 'min_soc_bat_mode'">
-      <div class="settings-divider" />
-      <div class="settings-group-label">
-        Speicher-Ladeleistung unterhalb Mindest-SoC
+    <div class="rounded-lg bg-bg p-3">
+      <div class="settings-group-label mb-2">
+        Speicherbeachtung
       </div>
-      <div class="toggle-row">
-        <label for="bat-power-reserve-active">Nur eine bestimmte Ladeleistung reservieren</label>
-        <input
-          id="bat-power-reserve-active"
-          type="checkbox"
-          :checked="powerReserveActive"
-          @change="mqttStore.setBatteryPowerReserveActive(($event.target as HTMLInputElement).checked)"
-        >
-      </div>
+      <BaseSegmentedControl
+        :model-value="mode"
+        :options="modeOptions"
+        @update="mqttStore.setBatteryMode($event)"
+      />
       <FieldSlider
-        v-if="powerReserveActive"
-        label="Reservierte Ladeleistung"
-        unit="kW"
+        v-if="mode === 'min_soc_bat_mode'"
+        label="Minimaler Speicher-SoC"
+        unit="%"
         :min="0"
-        :max="20"
-        :step="0.1"
-        :decimals="1"
-        :model-value="powerReserve"
-        @update="mqttStore.setBatteryPowerReserve"
+        :max="100"
+        :model-value="socMin"
+        @update="(v) => mqttStore.setBatteryPrioritySoc(v, socMax)"
+      />
+      <FieldSlider
+        v-if="mode === 'min_soc_bat_mode'"
+        label="Maximaler Speicher-SoC"
+        unit="%"
+        :min="0"
+        :max="100"
+        :model-value="socMax"
+        @update="(v) => mqttStore.setBatteryPrioritySoc(socMin, v)"
       />
 
-      <div class="settings-divider" />
-      <div class="settings-group-label">
-        Speicher-SoC oberhalb Maximal-SoC
-      </div>
-      <div class="toggle-row">
-        <label for="bat-power-discharge-active">Entladung des Speichers erlauben</label>
-        <input
-          id="bat-power-discharge-active"
-          type="checkbox"
-          :checked="powerDischargeActive"
-          @change="mqttStore.setBatteryPowerDischargeActive(($event.target as HTMLInputElement).checked)"
-        >
-      </div>
-      <FieldSlider
-        v-if="powerDischargeActive"
-        label="Erlaubte Entladeleistung"
-        unit="kW"
-        :min="0"
-        :max="20"
-        :step="0.1"
-        :decimals="1"
-        :model-value="powerDischarge"
-        @update="mqttStore.setBatteryPowerDischarge"
-      />
-    </template>
+      <template v-if="mode === 'min_soc_bat_mode'">
+        <div class="settings-divider" />
+        <div class="settings-group-label">
+          Speicher-Ladeleistung unterhalb Mindest-SoC
+        </div>
+        <div class="toggle-row">
+          <label for="bat-power-reserve-active">Nur eine bestimmte Ladeleistung reservieren</label>
+          <input
+            id="bat-power-reserve-active"
+            type="checkbox"
+            :checked="powerReserveActive"
+            @change="mqttStore.setBatteryPowerReserveActive(($event.target as HTMLInputElement).checked)"
+          >
+        </div>
+        <FieldSlider
+          v-if="powerReserveActive"
+          label="Reservierte Ladeleistung"
+          unit="kW"
+          :min="0"
+          :max="20"
+          :step="0.1"
+          :decimals="1"
+          :model-value="powerReserve"
+          @update="mqttStore.setBatteryPowerReserve"
+        />
+
+        <div class="settings-divider" />
+        <div class="settings-group-label">
+          Speicher-SoC oberhalb Maximal-SoC
+        </div>
+        <div class="toggle-row">
+          <label for="bat-power-discharge-active">Entladung des Speichers erlauben</label>
+          <input
+            id="bat-power-discharge-active"
+            type="checkbox"
+            :checked="powerDischargeActive"
+            @change="mqttStore.setBatteryPowerDischargeActive(($event.target as HTMLInputElement).checked)"
+          >
+        </div>
+        <FieldSlider
+          v-if="powerDischargeActive"
+          label="Erlaubte Entladeleistung"
+          unit="kW"
+          :min="0"
+          :max="20"
+          :step="0.1"
+          :decimals="1"
+          :model-value="powerDischarge"
+          @update="mqttStore.setBatteryPowerDischarge"
+        />
+      </template>
+    </div>
 
     <ActiveBatteryControlSettings />
   </BaseModal>
@@ -92,7 +97,7 @@ import BaseSegmentedControl from './BaseSegmentedControl.vue'
 import FieldSlider from './FieldSlider.vue'
 import ActiveBatteryControlSettings from './ActiveBatteryControlSettings.vue'
 
-defineProps<{ modelValue: boolean; name: string }>()
+defineProps<{ modelValue: boolean }>()
 defineEmits<{ 'update:modelValue': [value: boolean] }>()
 
 const mqttStore = useMqttStore()

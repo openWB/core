@@ -9,17 +9,19 @@
         <BaseIconButton
           :active="locked"
           :aria-label="locked ? 'Ladepunkt entsperren' : 'Ladepunkt sperren'"
+          :title="locked ? 'Ladepunkt entsperren' : 'Ladepunkt sperren'"
           @click="locked = !locked"
         >
           <IconLock />
         </BaseIconButton>
         <BaseIconButton
           aria-label="Ladepunkt-Einstellungen öffnen"
+          title="Ladepunkt-Einstellungen öffnen"
           @click="showSettings = true"
         >
           <IconGear />
         </BaseIconButton>
-        <span :class="['whitespace-nowrap rounded-full px-[9px] py-[3px] text-[11px] font-bold', stateBadgeClass]">{{ stateBadgeText }}</span>
+        <span :class="['badge', stateBadgeClass]">{{ stateBadgeText }}</span>
       </div>
     </div>
 
@@ -53,7 +55,7 @@
       </select>
       <span
         v-if="vehiclePriority !== undefined"
-        class="whitespace-nowrap rounded-full px-[9px] py-[3px] text-[11px] font-bold badge-muted"
+        class="badge badge-muted"
       >Prio {{ vehiclePriority }}</span>
       <span
         v-if="soc?.soc !== undefined"
@@ -75,38 +77,29 @@
     />
 
     <div class="mt-3 flex gap-4 text-[13px]">
-      <div>
-        <div class="text-muted">
-          Leistung
-        </div>
-        <div class="flex items-center gap-1.5 font-bold">
+      <StatBlock label="Leistung">
+        <span class="flex items-center gap-1.5">
           {{ formatKw(power) }}
           <span
             v-if="phasesInUse > 0"
             class="rounded-full px-[7px] py-px text-[11px] font-bold phase-badge"
+            title="Phasenanzahl"
           >{{ phasesInUse }}~</span>
           <span
             v-if="chargingCurrent > 0"
             class="text-xs font-normal text-muted"
           >{{ chargingCurrent.toLocaleString(undefined, { maximumFractionDigits: 1 }) }}&nbsp;A</span>
-        </div>
-      </div>
-      <div>
-        <div class="text-muted">
-          Geladen
-        </div>
-        <div class="font-bold">
-          {{ formatKwh(energyCharged) }}
-        </div>
-      </div>
-      <div v-if="soc?.range_charged">
-        <div class="text-muted">
-          Reichweite
-        </div>
-        <div class="font-bold">
-          +{{ Math.round(soc.range_charged) }}&nbsp;{{ soc.range_unit }}
-        </div>
-      </div>
+        </span>
+      </StatBlock>
+      <StatBlock
+        label="Geladen"
+        :value="formatKwh(energyCharged)"
+      />
+      <StatBlock
+        v-if="soc?.range_charged"
+        label="Reichweite"
+        :value="`+${Math.round(soc.range_charged)} ${soc.range_unit}`"
+      />
     </div>
   </div>
 </template>
@@ -116,6 +109,7 @@ import { computed, ref } from 'vue'
 import { useMqttStore } from '@/stores/mqtt-store'
 import { formatKw, formatKwh } from '@/utils/format'
 import { chargeModes as modes } from '@/utils/chargeModes'
+import { stateBadgeClass as stateBadgeClassFor } from '@/utils/badge'
 import IconBolt from './icons/IconBolt.vue'
 import IconCar from './icons/IconCar.vue'
 import IconLock from './icons/IconLock.vue'
@@ -124,6 +118,7 @@ import ChargePointSettings from './ChargePointSettings.vue'
 import BaseIconButton from './BaseIconButton.vue'
 import BaseTabGroup from './BaseTabGroup.vue'
 import VehicleSocEditor from './VehicleSocEditor.vue'
+import StatBlock from './StatBlock.vue'
 
 const props = defineProps<{ chargePointId: number }>()
 const mqttStore = useMqttStore()
@@ -157,12 +152,7 @@ const stateBadgeText = computed(() => {
   if (plugState.value) return 'Angesteckt'
   return 'Nicht angesteckt'
 })
-const stateBadgeClass = computed(() => {
-  if (locked.value) return 'badge-muted'
-  if (chargeState.value) return 'badge-ok'
-  if (plugState.value) return 'badge-wait'
-  return 'badge-muted'
-})
+const stateBadgeClass = computed(() => stateBadgeClassFor(chargeState.value, plugState.value, locked.value))
 
 function onVehicleChange(value: string): void {
   const id = Number(value)

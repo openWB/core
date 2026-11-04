@@ -6,11 +6,11 @@ export function useConsumers() {
   const mqttStore = useMqttStore()
 
   onMounted(() => {
-    mqttStore.subscribeChargePointList()
+    mqttStore.subscribeComponentHierarchy()
     mqttStore.subscribeLoadmanagementPrios()
   })
   onUnmounted(() => {
-    mqttStore.unsubscribeChargePointList()
+    mqttStore.unsubscribeComponentHierarchy()
     mqttStore.unsubscribeLoadmanagementPrios()
   })
 

@@ -67,7 +67,7 @@
         <BaseSegmentedControl
           label="Anzahl Phasen Mindest-SoC"
           :model-value="pv.phases_to_use_min_soc"
-          :options="[{ value: 1, label: '1' }, { value: 3, label: 'Maximum' }]"
+          :options="[{ value: 1, label: '1' }, { value: 3, label: 'Maximum' }, { value: 0, label: 'Automatik' }]"
           @update="(v) => setField('chargemode.pv_charging.phases_to_use_min_soc', v)"
         />
         <LimitFields
@@ -99,8 +99,8 @@
           :max="50"
           :step="0.1"
           :decimals="1"
-          :model-value="eco.max_price * 100000"
-          @update="(v) => setField('chargemode.eco_charging.max_price', v / 100000)"
+          :model-value="eurPerWhToCtPerKwh(eco.max_price)"
+          @update="(v) => setField('chargemode.eco_charging.max_price', ctPerKwhToEurPerWh(v))"
         />
         <LimitFields
           :limit="eco.limit"
@@ -138,6 +138,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useMqttStore, type Limit } from '@/stores/mqtt-store'
+import { eurPerWhToCtPerKwh, ctPerKwhToEurPerWh } from '@/utils/format'
 import BaseModal from './BaseModal.vue'
 import FieldSlider from './FieldSlider.vue'
 import BaseSegmentedControl from './BaseSegmentedControl.vue'
