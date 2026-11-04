@@ -20,6 +20,11 @@
 			</div>
 		</template>
 		<template #buttons>
+			<span v-for="(temp, idx) in device.temp" :key="idx">
+				<WbBadge v-if="temp < 300" :small="true" bgcolor="var(--color-battery)">
+					<span>{{ formatTemp(temp) }} </span>
+				</WbBadge>
+			</span>
 			<WbBadge
 				v-if="device.priority > 0"
 				:small="true"
@@ -43,6 +48,11 @@
 				</div>
 			</transition>
 			<RadioBarInput
+				v-if="
+					device.consumerType == 'suspendable_onoff' ||
+					device.consumerType == 'suspendable_tunable' ||
+					device.consumerType == 'continuous'
+				"
 				:id="'chargemode-' + device.name"
 				v-model="device.chargeMode"
 				class="chargemodes mt-3 mb-3"
@@ -74,7 +84,7 @@
 <script setup lang="ts">
 import WbSubwidget from '@/components/shared/WbSubwidget.vue'
 import type { Consumer } from './model.ts'
-import { formatWatt, formatTime } from '@/assets/js/helpers'
+import { formatWatt, formatTime, formatTemp } from '@/assets/js/helpers'
 import { chargemodes } from '@/assets/js/themeConfig'
 import WbBadge from '@/components/shared/WbBadge.vue'
 import InfoItem from '@/components/shared/InfoItem.vue'
