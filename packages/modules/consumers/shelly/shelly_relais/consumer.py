@@ -58,8 +58,10 @@ def create_consumer(config: ShellyRelais):
 
     def parse_state(status: Dict) -> bool:
         try:
-            return status["switch:0"]["output"]
-        except (KeyError, TypeError):
+            if generation == 1:
+                return status["relays"][config.configuration.channel]["ison"]
+            return status[f"switch:{config.configuration.channel}"]["output"]
+        except (KeyError, TypeError, IndexError):
             raise Exception("Schaltstatus des Relais nicht lesbar.")
 
     return ConfigurableConsumer(consumer_config=config,
