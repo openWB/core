@@ -316,8 +316,8 @@ chmod 666 "$LOGFILE"
 
 	# check for python dependencies
 	if ((hasInet == 1)); then
-		echo "install required python packages with 'pip3'..."
-		if pip3 install --only-binary :all: -r "${OPENWBBASEDIR}/requirements.txt"; then
+		echo "install required python packages with 'install_packages.py'..."
+		if python3 "${OPENWBBASEDIR}/runs/install_packages.py"; then
 			echo "done"
 		else
 			echo "failed!"
