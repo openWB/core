@@ -9,9 +9,36 @@
             class="cursor-pointer rounded-full border-0 px-2.5 py-1 text-[13px] font-semibold badge-muted"
             @click="mode = mode === 'day' ? 'live' : 'day'"
           >
-            {{ mode === 'day' ? 'Heute' : `Live · ${liveRangeMinutes} Min` }}
+            {{ mode === 'day' ? dayLabel : `Live · ${liveRangeMinutes} Min` }}
           </button>
         </h2>
+        <template v-if="mode === 'day'">
+          <BaseIconButton
+            size="sm"
+            aria-label="Vorheriger Tag"
+            title="Vorheriger Tag"
+            @click="goToPreviousDay"
+          >
+            <IconChevronLeft />
+          </BaseIconButton>
+          <BaseIconButton
+            size="sm"
+            :class="{ 'opacity-40': isToday }"
+            aria-label="Nächster Tag"
+            title="Nächster Tag"
+            @click="goToNextDay"
+          >
+            <IconChevronRight />
+          </BaseIconButton>
+          <button
+            v-if="!isToday"
+            type="button"
+            class="cursor-pointer rounded-full border-0 px-2 py-1 text-xs text-accent"
+            @click="goToToday"
+          >
+            Heute
+          </button>
+        </template>
       </div>
       <div class="scrollbar-hide flex flex-nowrap items-center gap-4 overflow-x-auto sm:flex-wrap sm:overflow-visible">
         <button
@@ -48,6 +75,12 @@
         :options="chartOptions"
         :plugins="[nowLabelPlugin]"
       />
+      <p
+        v-else
+        class="absolute inset-0 flex items-center justify-center text-sm text-muted"
+      >
+        Keine Daten für diesen Tag.
+      </p>
     </div>
   </div>
 </template>
@@ -64,8 +97,11 @@ import { useDailyLog } from '@/composables/useDailyLog'
 import { useLiveView } from '@/composables/useLiveView'
 import { useChartSettings, categoryDefs, type LegendKey } from '@/composables/useChartSettings'
 import { getCssColor, hexToRgba, instanceColor } from '@/utils/color'
-import { formatTooltipTime } from '@/utils/format'
+import { formatTooltipTime, formatChartDateLabel } from '@/utils/format'
 import type { CategoryKey } from '@/types/chart'
+import BaseIconButton from './BaseIconButton.vue'
+import IconChevronLeft from './icons/IconChevronLeft.vue'
+import IconChevronRight from './icons/IconChevronRight.vue'
 
 Chart.register(annotationPlugin, zoomPlugin)
 
@@ -117,8 +153,9 @@ onUnmounted(() => window.removeEventListener('resize', updateIsNarrow))
 const nowLabelPlugin: Plugin<'line'> = {
   id: 'nowLabel',
   afterDraw(chart) {
-    // not useful in live mode - "now" already sits right at the chart's right edge there
-    if (mode.value !== 'day') return
+    // not useful in live mode ("now" already sits right at the chart's right edge there), nor
+    // when viewing a past day (there's no "now" within that day's range)
+    if (mode.value !== 'day' || !isToday.value) return
     const x = chart.scales.x?.getPixelForValue(now.value)
     if (x === undefined) return
     const { ctx, chartArea } = chart
@@ -136,7 +173,18 @@ const props = defineProps<{ theme: string }>()
 
 const mqttStore = useMqttStore()
 
-const { categories: dayCategories, batterySoc: dayBatterySoc, vehicleSocAll: dayVehicleSocAll } = useDailyLog()
+const {
+  categories: dayCategories,
+  batterySoc: dayBatterySoc,
+  vehicleSocAll: dayVehicleSocAll,
+  forecast: dayForecast,
+  selectedDate,
+  isToday,
+  goToPreviousDay,
+  goToNextDay,
+  goToToday,
+} = useDailyLog()
+const dayLabel = computed(() => formatChartDateLabel(selectedDate.value))
 const {
   categories: liveCategories,
   batterySoc: liveBatterySoc,
@@ -172,6 +220,9 @@ onUnmounted(() => {
   if (mode.value === 'live') mqttStore.unsubscribeLiveSeries()
 })
 
+// a zoom/pan from a previously viewed day shouldn't carry over to the newly selected one
+watch(selectedDate, () => (isZoomed.value = false))
+
 const hasData = computed(() => categories.value.grid.all.length > 0)
 
 // published so ThemeSettingsModal.vue (a sibling, not a child - rendered from the hamburger
@@ -206,15 +257,20 @@ function resampleToTimestamps(points: { x: number; y: number }[], timestamps: nu
   })
 }
 
-// whole-day forecast, independent of how much real history exists - history can be
-// flat/missing (component in error state, or just started) while the forecast for
-// today is already known in full; only meaningful next to the day view's combined PV line.
-// Split from forecastToday (the actually-drawn series) so the legend item can stay present and
+// whole-day forecast for the day currently selected in day mode. Today, unchanged from before:
+// the live MQTT snapshot (mqttStore.forecastSeries), the continuously-refining forecast for a day
+// that hasn't ended yet. Past days instead read the daily_log's own "forecast" field (see
+// write_log.py::get_forecast_values), a snapshot frozen once that day ended - the live topic has
+// long since moved on to today's values by then, so it's the only source history can use; older
+// days (or days forecast wasn't configured for) simply have none. History can be flat/missing
+// (component in error state) while the forecast is already known in full; only meaningful next to
+// the day view's combined PV line.
+// Split from forecastDay (the actually-drawn series) so the legend item can stay present and
 // clickable even while forecastVisible is off - otherwise toggling it hides the only way back on.
-const forecastSeriesToday = computed(() => {
-  if (mode.value !== 'day' || categoryMode.pv !== 'combined' || !mqttStore.forecastConfigured) {
-    return []
-  }
+const forecastSeriesDay = computed(() => {
+  if (mode.value !== 'day' || categoryMode.pv !== 'combined') return []
+  if (!isToday.value) return dayForecast.value.map((entry) => ({ x: entry.timestamp, y: entry.power }))
+  if (!mqttStore.forecastConfigured) return []
   const startOfToday = new Date().setHours(0, 0, 0, 0)
   const endOfToday = new Date().setHours(23, 59, 59, 999)
   const raw = mqttStore.forecastSeries
@@ -224,7 +280,7 @@ const forecastSeriesToday = computed(() => {
   // tooltip alignment) - grid.all has no entries for the future, so resampling the whole series
   // onto it would silently cut the forecast off at "now" instead of showing the rest of the day.
   // grid.all also doesn't necessarily start at 00:00 (e.g. a system only switched on at 13:00
-  // today has no log entries before that) - any forecast points before its first timestamp need
+  // that day has no log entries before that) - any forecast points before its first timestamp need
   // to be kept unchanged too, same as the future tail, or they'd be silently dropped instead of
   // showing the pre-startup projected line
   const referenceTimestamps = categories.value.grid.all.map((p) => p.timestamp)
@@ -236,7 +292,7 @@ const forecastSeriesToday = computed(() => {
   const future = raw.filter((p) => p.x > lastReference)
   return [...past, ...resampledElapsed, ...future]
 })
-const forecastToday = computed(() => (forecastVisible.value ? forecastSeriesToday.value : []))
+const forecastDay = computed(() => (forecastVisible.value ? forecastSeriesDay.value : []))
 
 // whether a category has any real component behind it at all - grid/house are always
 // meaningful (grid connection + derived house consumption always exist), the rest depend on
@@ -270,7 +326,7 @@ const legend = computed(() => {
     color: getCssColor(c.colorVar),
     visible: visibleSeries[c.key],
   }))
-  if (forecastSeriesToday.value.length > 1) {
+  if (forecastSeriesDay.value.length > 1) {
     items.push({ key: 'forecast', label: 'Prognose', color: getCssColor('--pv'), visible: forecastVisible.value })
   }
   if (batterySoc.value.all.length > 0) {
@@ -288,7 +344,10 @@ const xRange = computed(() => {
   if (mode.value === 'live') {
     return { min: now.value - liveRangeMinutes.value * 60 * 1000, max: now.value }
   }
-  return { min: new Date().setHours(0, 0, 0, 0), max: new Date().setHours(23, 59, 59, 999) }
+  return {
+    min: new Date(selectedDate.value).setHours(0, 0, 0, 0),
+    max: new Date(selectedDate.value).setHours(23, 59, 59, 999),
+  }
 })
 
 const chartData = computed<ChartData<'line', { x: number; y: number }[]>>(() => {
@@ -331,11 +390,11 @@ const chartData = computed<ChartData<'line', { x: number; y: number }[]>>(() => 
     }
   })
 
-  if (forecastToday.value.length > 1) {
+  if (forecastDay.value.length > 1) {
     const pvColor = getCssColor('--pv')
     datasets.push({
       label: 'Prognose',
-      data: forecastToday.value,
+      data: forecastDay.value,
       borderColor: pvColor,
       backgroundColor: 'transparent',
       fill: false,
@@ -431,7 +490,7 @@ const chartOptions = computed<ChartOptions<'line'>>(() => {
         annotations: {
           now: {
             type: 'line',
-            display: mode.value === 'day',
+            display: mode.value === 'day' && isToday.value,
             xMin: now.value,
             xMax: now.value,
             borderColor: mutedColor,

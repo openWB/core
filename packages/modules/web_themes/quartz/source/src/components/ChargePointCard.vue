@@ -54,10 +54,6 @@
         </option>
       </select>
       <span
-        v-if="vehiclePriority !== undefined"
-        class="badge badge-muted"
-      >Prio {{ vehiclePriority }}</span>
-      <span
         v-if="soc?.soc !== undefined"
         class="whitespace-nowrap text-xs text-muted"
       >{{ Math.round(soc.soc) }}&nbsp;%</span>
@@ -69,16 +65,22 @@
       />
     </div>
 
-    <BaseTabGroup
-      dense
-      :model-value="chargeMode"
-      :options="modes"
-      @update="mqttStore.setChargePointChargeMode(props.chargePointId, $event)"
-    />
+    <div class="rounded-lg bg-bg p-3">
+      <BaseTabGroup
+        dense
+        class="justify-center"
+        :model-value="chargeMode"
+        :options="modes"
+        @update="mqttStore.setChargePointChargeMode(props.chargePointId, $event)"
+      />
+    </div>
 
-    <div class="mt-3 flex gap-4 text-[13px]">
-      <StatBlock label="Leistung">
-        <span class="flex items-center gap-1.5">
+    <div class="mt-3 grid grid-cols-[repeat(5,auto)] items-end gap-4 text-[13px]">
+      <StatBlock
+        class="col-start-1"
+        label="Leistung"
+      >
+        <span class="flex items-center gap-1">
           {{ formatKw(power) }}
           <span
             v-if="phasesInUse > 0"
@@ -87,19 +89,42 @@
           >{{ phasesInUse }}~</span>
           <span
             v-if="chargingCurrent > 0"
-            class="text-xs font-normal text-muted"
+            class="rounded-full px-[7px] py-px text-[11px] font-bold phase-badge"
+            title="Aktueller Ladestrom"
           >{{ chargingCurrent.toLocaleString(undefined, { maximumFractionDigits: 1 }) }}&nbsp;A</span>
         </span>
       </StatBlock>
       <StatBlock
+        class="col-start-2"
         label="Geladen"
         :value="formatKwh(energyCharged)"
       />
       <StatBlock
         v-if="soc?.range_charged"
+        class="col-start-3"
         label="Reichweite"
         :value="`+${Math.round(soc.range_charged)} ${soc.range_unit}`"
       />
+      <StatBlock
+        v-if="limitLabel"
+        class="col-start-4"
+        label="Ziel"
+      >
+        <span
+          class="flex items-center gap-1"
+          title="Ladebegrenzung"
+        >
+          <IconTarget class="text-muted" />
+          {{ limitLabel }}
+        </span>
+      </StatBlock>
+      <span
+        v-if="timeChargingActive"
+        class="col-start-5 text-accent"
+        title="Zeitladen aktiv"
+      >
+        <IconClock />
+      </span>
     </div>
   </div>
 </template>
@@ -114,6 +139,8 @@ import IconBolt from './icons/IconBolt.vue'
 import IconCar from './icons/IconCar.vue'
 import IconLock from './icons/IconLock.vue'
 import IconGear from './icons/IconGear.vue'
+import IconTarget from './icons/IconTarget.vue'
+import IconClock from './icons/IconClock.vue'
 import ChargePointSettings from './ChargePointSettings.vue'
 import BaseIconButton from './BaseIconButton.vue'
 import BaseTabGroup from './BaseTabGroup.vue'
@@ -129,9 +156,21 @@ const name = computed(() => mqttStore.chargePointName(props.chargePointId))
 const power = computed(() => mqttStore.chargePointPower(props.chargePointId))
 const energyCharged = computed(() => mqttStore.chargePointEnergyChargedPlugged(props.chargePointId))
 const chargeMode = computed(() => mqttStore.chargePointChargeMode(props.chargePointId))
+
+// only instant/pv/eco modes carry a plain chargemode.<mode>.limit - scheduled_charging's limit
+// lives per-plan instead (a different shape), and stop has no limit concept at all
+const limitLabel = computed(() => {
+  const mode = chargeMode.value
+  if (mode !== 'instant_charging' && mode !== 'pv_charging' && mode !== 'eco_charging') return undefined
+  const limit = mqttStore.chargePointChargeTemplate(props.chargePointId)?.chargemode[mode].limit
+  if (!limit || limit.selected === 'none') return undefined
+  return limit.selected === 'soc'
+    ? `${limit.soc} %`
+    : `${(limit.amount / 1000).toLocaleString(undefined, { maximumFractionDigits: 1 })} kWh`
+})
+const timeChargingActive = computed(() => mqttStore.chargePointChargeTemplate(props.chargePointId)?.time_charging.active ?? false)
 const vehicleInfo = computed(() => mqttStore.chargePointConnectedVehicleInfo(props.chargePointId))
 const soc = computed(() => mqttStore.chargePointConnectedVehicleSoc(props.chargePointId))
-const vehiclePriority = computed(() => (vehicleInfo.value ? mqttStore.vehiclePriority(vehicleInfo.value.id) : undefined))
 
 const locked = computed({
   get: () => mqttStore.chargePointManualLock(props.chargePointId),

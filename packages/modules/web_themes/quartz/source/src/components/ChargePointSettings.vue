@@ -12,6 +12,15 @@
     </p>
 
     <template v-if="template">
+      <div class="mb-3.5 rounded-lg bg-bg p-3">
+        <BaseTabGroup
+          class="justify-center"
+          :model-value="mode"
+          :options="chargeModes"
+          @update="mqttStore.setChargePointChargeMode(props.chargePointId, $event)"
+        />
+      </div>
+
       <template v-if="mode === 'instant_charging'">
         <FieldSlider
           label="Stromstärke"
@@ -39,6 +48,8 @@
           unit="A"
           :min="0"
           :max="16"
+          :discrete-values="MIN_CURRENT_STEPS"
+          :off-value="0"
           :model-value="pv.min_current"
           @update="(v) => setField('chargemode.pv_charging.min_current', v)"
         />
@@ -81,7 +92,7 @@
         <FieldSlider
           label="Minimaler Dauerstrom unter der Preisgrenze"
           unit="A"
-          :min="0"
+          :min="6"
           :max="16"
           :model-value="eco.current"
           @update="(v) => setField('chargemode.eco_charging.current', v)"
@@ -97,10 +108,14 @@
           unit="ct/kWh"
           :min="0"
           :max="50"
-          :step="0.1"
-          :decimals="1"
+          :step="0.01"
+          :decimals="2"
           :model-value="eurPerWhToCtPerKwh(eco.max_price)"
           @update="(v) => setField('chargemode.eco_charging.max_price', ctPerKwhToEurPerWh(v))"
+        />
+        <ElectricityTariffChart
+          :model-value="eurPerWhToCtPerKwh(eco.max_price)"
+          @update:model-value="(v) => setField('chargemode.eco_charging.max_price', ctPerKwhToEurPerWh(v))"
         />
         <LimitFields
           :limit="eco.limit"
@@ -115,10 +130,12 @@
         </p>
       </template>
 
-      <div class="settings-divider" />
-      <ScheduledChargingPlans :charge-point-id="props.chargePointId" />
+      <template v-if="mode === 'scheduled_charging'">
+        <div class="settings-divider" />
+        <ScheduledChargingPlans :charge-point-id="props.chargePointId" />
+      </template>
 
-      <template v-if="mode !== 'scheduled_charging'">
+      <template v-if="mode !== 'stop'">
         <div class="settings-divider" />
         <div class="toggle-row">
           <label for="cp-zeitladen">Zeitladen</label>
@@ -129,7 +146,10 @@
             @change="setField('time_charging.active', ($event.target as HTMLInputElement).checked)"
           >
         </div>
-        <TimeChargingPlans :charge-point-id="props.chargePointId" />
+        <TimeChargingPlans
+          v-if="template.time_charging.active"
+          :charge-point-id="props.chargePointId"
+        />
       </template>
     </template>
   </BaseModal>
@@ -139,12 +159,15 @@
 import { computed } from 'vue'
 import { useMqttStore, type Limit } from '@/stores/mqtt-store'
 import { eurPerWhToCtPerKwh, ctPerKwhToEurPerWh } from '@/utils/format'
+import { chargeModes } from '@/utils/chargeModes'
 import BaseModal from './BaseModal.vue'
 import FieldSlider from './FieldSlider.vue'
+import BaseTabGroup from './BaseTabGroup.vue'
 import BaseSegmentedControl from './BaseSegmentedControl.vue'
 import LimitFields from './LimitFields.vue'
 import ScheduledChargingPlans from './ScheduledChargingPlans.vue'
 import TimeChargingPlans from './TimeChargingPlans.vue'
+import ElectricityTariffChart from './ElectricityTariffChart.vue'
 
 const props = defineProps<{ chargePointId: number; modelValue: boolean }>()
 defineEmits<{ 'update:modelValue': [value: boolean] }>()
@@ -158,6 +181,10 @@ const mode = computed(() => template.value?.chargemode.selected)
 // defaults match control/ev/charge_template.py's own dataclass defaults - only used to narrow
 // between "template still loading" and "mode === x", never actually shown unguarded
 const DEFAULT_LIMIT: Limit = { selected: 'none', soc: 50, amount: 50000 }
+
+// "Minimaler Dauerstrom" (pv_charging/eco_charging) is "Aus" (0) or 6-16A - no EVSE/vehicle can
+// sustain continuous charging below 6A (IEC 61851), same discrete range koala's own slider uses
+const MIN_CURRENT_STEPS = [0, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]
 const instant = computed(
   () => template.value?.chargemode.instant_charging ?? { current: 16, dc_current: 145, phases_to_use: 3, limit: DEFAULT_LIMIT },
 )
