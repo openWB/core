@@ -29,7 +29,8 @@ def create_consumer(config: Lambda):
         # Wärmepumpe selbst auf Datenquelle "Modbus Client" umgestellt werden (Kap. 4.3),
         # das kann openWB nicht per Modbus setzen. Wird vom Core automatisch aufgerufen,
         # solange dieser Verbraucher als ConsumerUsage.SELF_CONTROLLED konfiguriert ist.
-        client.write_register(102, values.evu_power, wordorder=Endian.Little, unit=config.configuration.modbus_id)
+        client.write_register(102, values.evu_power, data_type=ModbusDataType.INT_16,
+                              wordorder=Endian.Little, unit=config.configuration.modbus_id)
 
     def update() -> ConsumerState:
         power = client.read_holding_registers(
