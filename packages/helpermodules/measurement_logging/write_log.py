@@ -101,6 +101,8 @@ log = logging.getLogger(__name__)
 #         ],
 #         "names": {"cp1": "", "counter2": "", "pv3": ""},
 #         "colors": {"cp1": "", "counter2": "", "pv3": ""},
+#         "forecast": {"<timestamp>": W, ...},  # PV-Prognose für den jeweiligen Tag, wächst/verfeinert
+#                                                # sich mit jedem Logging-Zyklus
 #     }
 
 
@@ -142,11 +144,24 @@ def save_log():
         new_colors = get_colors(content["entries"][-1])
         existing_colors.update(new_colors)
         content["colors"] = existing_colors
+        existing_forecast = content.get("forecast")
+        if not isinstance(existing_forecast, dict):
+            existing_forecast = {}
+        existing_forecast.update(get_forecast_values())
+        content["forecast"] = existing_forecast
         write_and_check(filepath, content)
         return content["entries"]
     except Exception:
         log.exception("Fehler beim Speichern des Log-Eintrags")
         return None
+
+
+def get_forecast_values() -> Dict:
+    try:
+        return data.data.optional_data.data.forecast.get.today_values or {}
+    except Exception:
+        log.exception("Fehler beim Speichern der Prognosewerte")
+        return {}
 
 
 def get_previous_entry(parent_file: Path, content: Dict) -> Optional[Dict]:

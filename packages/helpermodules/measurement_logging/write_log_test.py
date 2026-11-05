@@ -133,6 +133,7 @@ def test_save_log_keeps_existing_names_and_colors_when_writing_new_entry(monkeyp
         "entries": [{"timestamp": 1, "cp": {"cp1": {"imported": 1, "exported": 0}}}],
         "names": {"cp1": "Bestehender Ladepunkt"},
         "colors": {"cp1": "#111111"},
+        "forecast": {"1": 100.0},
     }
     mocked_file = Mock()
     mocked_file.__enter__ = Mock(return_value=mocked_file)
@@ -148,6 +149,7 @@ def test_save_log_keeps_existing_names_and_colors_when_writing_new_entry(monkeyp
     monkeypatch.setattr(write_log, "get_names", Mock(
         return_value={"cp1": "Bestehender Ladepunkt", "cp2": "Neuer Ladepunkt"}))
     monkeypatch.setattr(write_log, "get_colors", Mock(return_value={"cp1": "#111111", "cp2": "#222222"}))
+    monkeypatch.setattr(write_log, "get_forecast_values", Mock(return_value={"2": 200.0}))
     write_and_check_mock = Mock()
     monkeypatch.setattr(write_log, "write_and_check", write_and_check_mock)
 
@@ -166,4 +168,8 @@ def test_save_log_keeps_existing_names_and_colors_when_writing_new_entry(monkeyp
     assert written_content["colors"] == {
         "cp1": "#111111",
         "cp2": "#222222",
+    }
+    assert written_content["forecast"] == {
+        "1": 100.0,
+        "2": 200.0,
     }
