@@ -40,8 +40,12 @@ def create_consumer(config: Lambda):
     def set_power_limit(power_limit: float, data: SetLimitData) -> None:
         # Schreibt den von openWB berechneten Überschuss in Register 102 (E-Manager Bezug/Einspeisung).
         # Keine echte Leistungsvorgabe - die Wärmepumpe regelt weiterhin selbst anhand dieses Wertes.
+        # Negiert wie in send_values(), da der E-Manager auf "Neg. E-Überschuss" eingestellt sein muss
+        # (negativ = Überschuss) - ohne das Minus würde eine zugeteilte Leistung als Fehlbetrag
+        # missverstanden.
         client.write_register(102,
-                              max(power_limit, 0),
+                              -max(power_limit, 0),
+                              data_type=ModbusDataType.INT_16,
                               wordorder=Endian.Little,
                               unit=config.configuration.modbus_id)
 
