@@ -66,21 +66,6 @@
         >
       </div>
 
-      <span class="field-label mt-3">Zeitraum</span>
-      <div class="time-range-row">
-        <input
-          v-model="editing.time[0]"
-          type="time"
-          class="field-select"
-        >
-        <span>bis</span>
-        <input
-          v-model="editing.time[1]"
-          type="time"
-          class="field-select"
-        >
-      </div>
-
       <BaseSegmentedControl
         label="Häufigkeit"
         :model-value="editing.frequency.selected"
@@ -105,6 +90,21 @@
         <input
           v-model="editing.frequency.once[1]"
           type="date"
+          class="field-select"
+        >
+      </div>
+
+      <span class="field-label mt-3">Zeitraum</span>
+      <div class="time-range-row">
+        <input
+          v-model="editing.time[0]"
+          type="time"
+          class="field-select"
+        >
+        <span>bis</span>
+        <input
+          v-model="editing.time[1]"
+          type="time"
           class="field-select"
         >
       </div>
@@ -196,9 +196,9 @@ const editing = ref<TimeChargingPlan | null>(null)
 const editingIndex = ref<number | null>(null)
 
 const frequencyOptions = [
+  { value: 'once', label: 'Einmalig' },
   { value: 'daily', label: 'Täglich' },
   { value: 'weekly', label: 'Wöchentlich' },
-  { value: 'once', label: 'Einmalig' },
 ] as const
 
 const limitOptions = [

@@ -5,11 +5,10 @@
         <IconCar class="text-car" />
         <span class="text-[14px] font-bold">{{ name }}</span>
       </div>
-      <VehicleSocEditor
-        v-if="info"
-        :vehicle-id="vehicleId"
-        :vehicle-name="name"
-      />
+      <span
+        v-if="priority !== undefined"
+        class="badge badge-muted"
+      >Prio {{ priority }}</span>
     </div>
 
     <p class="mt-0 mb-2.5 text-xs text-muted">
@@ -25,10 +24,6 @@
 
     <div class="flex flex-wrap items-center gap-1.5">
       <span
-        v-if="priority !== undefined"
-        class="badge badge-muted"
-      >Prio {{ priority }}</span>
-      <span
         v-if="connectionState.length === 0"
         class="badge badge-muted"
       >Nicht zugeordnet</span>
@@ -41,15 +36,20 @@
         v-if="socValue !== undefined"
         class="ml-auto flex items-center gap-1 text-[13px] font-bold"
       >
-        {{ Math.round(socValue) }}&nbsp;%
         <BaseIconButton
           size="sm"
           aria-label="SoC jetzt abrufen"
-          title="SoC jetzt abrufen"
+          :title="socUpdateInProgress ? 'SoC wird abgerufen …' : 'SoC jetzt abrufen'"
           @click="mqttStore.vehicleForceSocUpdate(vehicleId)"
         >
-          <IconRefresh />
+          <IconRefresh :class="{ 'animate-spin': socUpdateInProgress }" />
         </BaseIconButton>
+        {{ Math.round(socValue) }}&nbsp;%
+        <VehicleSocEditor
+          v-if="info"
+          :vehicle-id="vehicleId"
+          :vehicle-name="name"
+        />
       </span>
     </div>
 
@@ -95,6 +95,7 @@ const faultState = computed(() => mqttStore.vehicleFaultState(props.vehicleId))
 const faultMessage = computed(() => mqttStore.vehicleFaultMessage(props.vehicleId))
 const connectionState = computed(() => mqttStore.vehicleConnectionState(props.vehicleId))
 const socValue = computed(() => mqttStore.vehicleSocValue(props.vehicleId))
+const socUpdateInProgress = computed(() => mqttStore.vehicleSocUpdateInProgress(props.vehicleId))
 const range = computed(() => mqttStore.vehicleRange(props.vehicleId))
 const odometer = computed(() => mqttStore.vehicleOdometer(props.vehicleId))
 const socTimestamp = computed(() => mqttStore.vehicleSocTimestamp(props.vehicleId))

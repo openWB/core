@@ -32,6 +32,15 @@ export function formatTooltipTime(timestamp: number): string {
   return new Date(timestamp).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })
 }
 
+/** Day-view chart heading, e.g. "Heute", "Gestern", or "Mo., 03.11.". */
+export function formatChartDateLabel(date: Date): string {
+  const startOfDay = (d: Date) => new Date(d).setHours(0, 0, 0, 0)
+  const diffDays = Math.round((startOfDay(date) - startOfDay(new Date())) / 86_400_000)
+  if (diffDays === 0) return 'Heute'
+  if (diffDays === -1) return 'Gestern'
+  return date.toLocaleDateString('de-DE', { weekday: 'short', day: '2-digit', month: '2-digit' })
+}
+
 /** Format a runtime duration already in seconds, e.g. 5400 -> "1:30 h". */
 export function formatRuntime(seconds: number): string {
   const totalMinutes = Math.floor(seconds / 60)

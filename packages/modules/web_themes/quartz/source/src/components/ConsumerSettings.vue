@@ -5,11 +5,13 @@
     @update:model-value="$emit('update:modelValue', $event)"
   >
     <span class="field-label">Betriebsmodus</span>
-    <BaseSegmentedControl
-      :model-value="mqttStore.consumerMode(consumerId)"
-      :options="chargeModes"
-      @update="mqttStore.setConsumerMode(consumerId, $event)"
-    />
+    <div class="rounded-lg bg-bg p-3">
+      <BaseSegmentedControl
+        :model-value="mqttStore.consumerMode(consumerId)"
+        :options="chargeModes"
+        @update="mqttStore.setConsumerMode(consumerId, $event)"
+      />
+    </div>
 
     <div class="settings-divider" />
     <div class="toggle-row">
@@ -55,11 +57,13 @@
       >
 
       <span class="field-label mt-3">Zielmodus</span>
-      <BaseSegmentedControl
-        :model-value="resetTargetMode"
-        :options="chargeModes"
-        @update="setResetField('chargemode', $event)"
-      />
+      <div class="rounded-lg bg-bg p-3">
+        <BaseSegmentedControl
+          :model-value="resetTargetMode"
+          :options="chargeModes"
+          @update="setResetField('chargemode', $event)"
+        />
+      </div>
     </template>
   </BaseModal>
 </template>
@@ -78,9 +82,9 @@ defineEmits<{ 'update:modelValue': [value: boolean] }>()
 const mqttStore = useMqttStore()
 
 const frequencyOptions = [
+  { value: 'once', label: 'Einmalig' },
   { value: 'daily', label: 'Täglich' },
   { value: 'weekly', label: 'Wöchentlich' },
-  { value: 'once', label: 'Einmalig' },
 ] as const
 
 const resetChargemode = computed(() => mqttStore.consumerUsage(props.consumerId)?.reset_chargemode)

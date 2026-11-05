@@ -36,7 +36,20 @@
       {{ faultState > 0 && faultMessage ? faultMessage : stateMessage || 'Kein Status verfügbar.' }}
     </div>
 
-    <div class="flex gap-4 text-[13px]">
+    <div
+      v-if="showControls"
+      class="rounded-lg bg-bg p-3"
+    >
+      <BaseTabGroup
+        dense
+        class="justify-center"
+        :model-value="mode"
+        :options="chargeModes"
+        @update="mqttStore.setConsumerMode(props.consumerId, $event)"
+      />
+    </div>
+
+    <div class="mt-3 flex items-end gap-4 text-[13px]">
       <StatBlock
         label="Leistung"
         :value="formatKw(power)"
@@ -49,6 +62,13 @@
         label="Verbrauch heute"
         :value="formatKwh(dailyImported)"
       />
+      <span
+        v-if="resetActive"
+        class="text-accent"
+        title="Automatische Umstellung aktiv"
+      >
+        <IconClock />
+      </span>
     </div>
 
     <div
@@ -62,15 +82,6 @@
         :value="`${temp.toLocaleString(undefined, { maximumFractionDigits: 1 })} °C`"
       />
     </div>
-
-    <BaseTabGroup
-      v-if="showControls"
-      dense
-      class="mt-3"
-      :model-value="mode"
-      :options="chargeModes"
-      @update="mqttStore.setConsumerMode(props.consumerId, $event)"
-    />
   </div>
 </template>
 
@@ -82,6 +93,7 @@ import { chargeModes } from '@/utils/chargeModes'
 import { stateBadgeClass as stateBadgeClassFor } from '@/utils/badge'
 import IconConsumer from './icons/IconConsumer.vue'
 import IconGear from './icons/IconGear.vue'
+import IconClock from './icons/IconClock.vue'
 import BaseIconButton from './BaseIconButton.vue'
 import BaseTabGroup from './BaseTabGroup.vue'
 import ConsumerSettings from './ConsumerSettings.vue'
@@ -104,6 +116,7 @@ const plugState = computed(() => mqttStore.consumerPlugState(props.consumerId))
 const chargeState = computed(() => mqttStore.consumerChargeState(props.consumerId))
 const priority = computed(() => mqttStore.consumerPriority(props.consumerId))
 const mode = computed(() => mqttStore.consumerMode(props.consumerId))
+const resetActive = computed(() => mqttStore.consumerUsage(props.consumerId)?.reset_chargemode?.active ?? false)
 
 // meter-only/self-controlled consumers can't be switched by openWB - nothing to configure
 const showControls = computed(() => {

@@ -643,6 +643,10 @@ export const useMqttStore = defineStore('mqtt', () => {
   function vehicleForceSocUpdate(vehicleId: number): void {
     doPublish(`openWB/set/vehicle/${vehicleId}/get/force_soc_update`, 1, false)
   }
+  /** True while a forced SoC update is pending - update_soc.py republishes this False once it's actually run the fetch. */
+  function vehicleSocUpdateInProgress(vehicleId: number): boolean {
+    return getValue.value<boolean>(`openWB/vehicle/${vehicleId}/get/force_soc_update`, false)
+  }
 
   function vehicleInfo(id: number): VehicleInfo | undefined {
     return getValue.value<VehicleInfo | undefined>(`openWB/vehicle/${id}/info`, undefined)
@@ -1181,6 +1185,7 @@ export const useMqttStore = defineStore('mqtt', () => {
     vehicleManualSoc,
     setVehicleManualSoc,
     vehicleForceSocUpdate,
+    vehicleSocUpdateInProgress,
     vehicleInfo,
     vehicleSocType,
     vehicleColor,

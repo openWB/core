@@ -3,8 +3,8 @@
  *  between ChargePointCard.vue and ConsumerCard.vue/ConsumerSettings.vue. */
 export const chargeModes = [
   { value: 'instant_charging', label: 'Sofort' },
-  { value: 'pv_charging', label: 'PV-Laden' },
-  { value: 'scheduled_charging', label: 'Zielladen' },
+  { value: 'pv_charging', label: 'PV' },
+  { value: 'scheduled_charging', label: 'Ziel' },
   { value: 'eco_charging', label: 'Eco' },
   { value: 'stop', label: 'Stop' },
 ]

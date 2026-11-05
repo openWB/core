@@ -37,15 +37,22 @@ interface DailyLogEntry {
 interface DailyLogResponse {
   entries: DailyLogEntry[]
   names?: Record<string, string>
+  /** PV forecast for this day, keyed by timestamp (seconds) -> power (W) - see write_log.py::get_forecast_values. */
+  forecast?: Record<string, number>
 }
 
-function todayDateString(): string {
-  const now = new Date()
+function dateToString(date: Date): string {
   return (
-    now.getFullYear().toString() +
-    (now.getMonth() + 1).toString().padStart(2, '0') +
-    now.getDate().toString().padStart(2, '0')
+    date.getFullYear().toString() +
+    (date.getMonth() + 1).toString().padStart(2, '0') +
+    date.getDate().toString().padStart(2, '0')
   )
+}
+
+function startOfDay(date: Date): Date {
+  const d = new Date(date)
+  d.setHours(0, 0, 0, 0)
+  return d
 }
 
 type SignMode = 'export' | 'import' | 'net'
@@ -160,6 +167,13 @@ function buildBatterySoc(entries: DailyLogEntry[], names: Record<string, string>
   return { all, individual }
 }
 
+/** Same unit conversion as mqttStore.forecastSeries (W -> kW), so both feed the chart identically. */
+function buildForecast(log: DailyLogResponse | undefined): InstancePoint[] {
+  return Object.entries(log?.forecast ?? {})
+    .map(([timestamp, watts]) => ({ timestamp: Number(timestamp) * 1000, power: watts / 1000 }))
+    .sort((a, b) => a.timestamp - b.timestamp)
+}
+
 function buildVehicleSoc(entries: DailyLogEntry[], names: Record<string, string>): SocSeries[] {
   const instancePoints = new Map<string, SocPoint[]>()
   entries.forEach((entry) => {
@@ -177,14 +191,41 @@ function buildVehicleSoc(entries: DailyLogEntry[], names: Record<string, string>
   }))
 }
 
-/** Fetches and parses today's daily_log into per-category chart series, kept live via the getDailyLog command. */
+/**
+ * Fetches and parses a day's daily_log into per-category chart series, kept live via the
+ * getDailyLog command. Defaults to today and auto-follows the real date across midnight, unless
+ * the caller has navigated to a past day via goToPreviousDay/goToNextDay (goToToday re-enables
+ * following).
+ */
 export function useDailyLog() {
   const mqttStore = useMqttStore()
-  // a ref (not a plain string) so the topic - and everything derived from it - follows the
-  // real date instead of freezing at whatever day the component happened to mount on; a tab
-  // left open across midnight would otherwise show yesterday's log forever
-  const dateString = ref(todayDateString())
+  const selectedDate = ref(startOfDay(new Date()))
+  const followToday = ref(true)
+  const dateString = computed(() => dateToString(selectedDate.value))
   const topic = computed(() => `openWB/log/daily/${dateString.value}`)
+  const isToday = computed(() => dateString.value === dateToString(new Date()))
+
+  function goToPreviousDay(): void {
+    followToday.value = false
+    const d = new Date(selectedDate.value)
+    d.setDate(d.getDate() - 1)
+    selectedDate.value = d
+  }
+  function goToNextDay(): void {
+    const d = new Date(selectedDate.value)
+    d.setDate(d.getDate() + 1)
+    const today = startOfDay(new Date())
+    if (d.getTime() >= today.getTime()) {
+      followToday.value = true
+      selectedDate.value = today
+    } else {
+      selectedDate.value = d
+    }
+  }
+  function goToToday(): void {
+    followToday.value = true
+    selectedDate.value = startOfDay(new Date())
+  }
 
   const categories = computed<Record<CategoryKey, CategoryData>>(() => {
     const log = mqttStore.getValue<DailyLogResponse | undefined>(topic.value, undefined)
@@ -211,31 +252,38 @@ export function useDailyLog() {
     const log = mqttStore.getValue<DailyLogResponse | undefined>(topic.value, undefined)
     return buildVehicleSoc(log?.entries ?? [], log?.names ?? {})
   })
+  const forecast = computed<InstancePoint[]>(() =>
+    buildForecast(mqttStore.getValue<DailyLogResponse | undefined>(topic.value, undefined)),
+  )
 
   const hasData = computed(() => categories.value.grid.all.length > 0)
 
-  // swap the subscription whenever the topic itself changes (i.e. the date rolled over) -
-  // fires once immediately to establish the initial subscription, same idiom useLiveView's
-  // mode-driven subscribe/unsubscribe already uses
+  // swap the subscription and request fresh data whenever the topic itself changes (date
+  // navigation, or the date rolling over at midnight) - fires once immediately to establish the
+  // initial subscription, same idiom useLiveView's mode-driven subscribe/unsubscribe already uses
   watch(
     topic,
     (newTopic, oldTopic) => {
       if (oldTopic) mqttStore.unsubscribe(oldTopic)
       mqttStore.subscribe(newTopic)
+      mqttStore.fetchDailyLog(selectedDate.value)
     },
     { immediate: true },
   )
 
   // the backend only republishes this retained topic in response to a getDailyLog command - it
-  // doesn't push updates on its own, so without a periodic re-fetch the chart would go stale
+  // doesn't push updates on its own, so without a periodic re-fetch today's chart would go stale;
+  // a past day's log is already complete and never changes, so it's left alone. While following
+  // today, this is also what carries selectedDate across midnight instead of freezing on
+  // yesterday's date forever.
   const REFRESH_INTERVAL_MS = 60_000
   let refreshTimer: ReturnType<typeof setInterval> | undefined
 
   onMounted(() => {
-    mqttStore.fetchDailyLog()
     refreshTimer = setInterval(() => {
-      dateString.value = todayDateString()
-      mqttStore.fetchDailyLog()
+      if (!followToday.value) return
+      selectedDate.value = startOfDay(new Date())
+      mqttStore.fetchDailyLog(selectedDate.value)
     }, REFRESH_INTERVAL_MS)
   })
   onUnmounted(() => {
@@ -243,5 +291,16 @@ export function useDailyLog() {
     clearInterval(refreshTimer)
   })
 
-  return { categories, hasData, batterySoc, vehicleSocAll }
+  return {
+    categories,
+    hasData,
+    batterySoc,
+    vehicleSocAll,
+    forecast,
+    selectedDate,
+    isToday,
+    goToPreviousDay,
+    goToNextDay,
+    goToToday,
+  }
 }

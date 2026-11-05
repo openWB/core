@@ -2,26 +2,26 @@
   <div class="my-3">
     <div class="mb-1.5 flex items-center justify-between text-[13px]">
       <span class="field-label m-0">{{ label }}</span>
-      <span>{{ displayValue }}&nbsp;{{ unit }}</span>
+      <span>{{ displayValue }}&nbsp;{{ displayUnit }}</span>
     </div>
     <input
       type="range"
       class="w-full accent-accent"
-      :min="min"
-      :max="max"
+      :min="sliderMin"
+      :max="sliderMax"
       :step="step ?? 1"
-      :value="local"
+      :value="sliderPosition"
       :aria-label="`${label} in ${unit}`"
       @pointerdown="dragging = true"
       @pointerup="dragging = false"
-      @input="local = Number(($event.target as HTMLInputElement).value)"
+      @input="local = toRealValue(Number(($event.target as HTMLInputElement).value))"
       @change="onChange"
     >
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 
 const props = defineProps<{
   label: string
@@ -31,6 +31,10 @@ const props = defineProps<{
   step?: number
   decimals?: number
   modelValue: number
+  /** When set, the slider only lands on these values (e.g. [0, 6, 7, ..., 16]) - min/max are ignored. */
+  discreteValues?: number[]
+  /** A discreteValues entry (typically 0) to display as "Aus" instead of a number+unit. */
+  offValue?: number
 }>()
 const emit = defineEmits<{ update: [value: number] }>()
 
@@ -50,21 +54,32 @@ watch(
   },
 )
 
-const displayValue = ref('')
-watch(
-  local,
-  (v) => {
-    displayValue.value = v.toLocaleString(undefined, {
-      minimumFractionDigits: props.decimals ?? 0,
-      maximumFractionDigits: props.decimals ?? 0,
-    })
-  },
-  { immediate: true },
-)
+// a native <input type="range"> only knows a plain min/max/step range - discreteValues maps
+// that onto an index space instead (same approach as koala's SliderStandard), so the thumb can
+// only land on the configured values, e.g. "Aus" (0) + 6-16, never 1-5
+const sliderMin = computed(() => (props.discreteValues ? 0 : props.min))
+const sliderMax = computed(() => (props.discreteValues ? props.discreteValues.length - 1 : props.max))
+const sliderPosition = computed(() => {
+  if (!props.discreteValues) return local.value
+  const index = props.discreteValues.indexOf(local.value)
+  return index >= 0 ? index : 0
+})
+function toRealValue(sliderValue: number): number {
+  return props.discreteValues ? props.discreteValues[sliderValue] ?? props.discreteValues[0] : sliderValue
+}
+
+const displayValue = computed(() => {
+  if (props.offValue !== undefined && local.value === props.offValue) return 'Aus'
+  return local.value.toLocaleString(undefined, {
+    minimumFractionDigits: props.decimals ?? 0,
+    maximumFractionDigits: props.decimals ?? 0,
+  })
+})
+const displayUnit = computed(() => (props.offValue !== undefined && local.value === props.offValue ? '' : props.unit))
 
 function onChange(event: Event): void {
   dragging.value = false
-  const value = Number((event.target as HTMLInputElement).value)
+  const value = toRealValue(Number((event.target as HTMLInputElement).value))
   local.value = value
   emit('update', value)
 }
