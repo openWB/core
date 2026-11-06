@@ -68,3 +68,16 @@ def test_write_single_register_raw_uses_fc06_not_fc16():
 
     delegate.write_register.assert_called_once_with(1000, 42, unit=1)
     delegate.write_registers.assert_not_called()
+
+
+def test_write_register_with_small_data_type_encodes_negative_values():
+    # a raw negative int handed straight to pymodbus fails there (it expects an already-encoded
+    # unsigned 0..65535 register value) - INT_16/INT_8 must go through the same binary-payload
+    # encoding as every other data_type, not a "simple" direct-write shortcut
+    delegate = Mock()
+    delegate.is_socket_open.return_value = True
+
+    client = ModbusClient(delegate, "test", 502)
+    client.write_register(1000, -500, data_type=ModbusDataType.INT_16, unit=1)
+
+    delegate.write_registers.assert_called_once_with(1000, [65036], unit=1)
