@@ -147,7 +147,9 @@ def save_log():
         existing_forecast = content.get("forecast")
         if not isinstance(existing_forecast, dict):
             existing_forecast = {}
-        existing_forecast.update(get_forecast_values())
+        new_forecast = get_forecast_values()
+        if isinstance(new_forecast, dict):
+            existing_forecast.update(new_forecast)
         content["forecast"] = existing_forecast
         write_and_check(filepath, content)
         return content["entries"]
