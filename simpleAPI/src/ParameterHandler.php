@@ -245,6 +245,8 @@ class ParameterHandler
                 return $this->getIoOutputAll($id);
             case 'get_io_output':
                 return $this->getIoOutput($id, $options['io_output'] ?? null, $options['io_output_type'] ?? null);
+            case 'get_io_input_all':
+                return $this->getIoInputAll($id);
 
             case 'get_lastlivevaluesjson':
                 return $this->getLastLiveValuesJson();
@@ -2822,6 +2824,24 @@ class ParameterHandler
     }
 
     /**
+     * IO-Eingaenge komplett lesen (digital + analog), z.B. die Kontakte des
+     * Dimm & Control Kits. Nur lesend; die Auswertung erfolgt in openWB ueber
+     * die IO-Aktionen.
+     */
+    private function getIoInputAll($id)
+    {
+        $digital = $this->getIoOutputMap($id, 'digital_input');
+        $analog = $this->getIoOutputMap($id, 'analog_input');
+
+        return [
+            "io_{$id}" => [
+                'digital_input' => $digital,
+                'analog_input' => $analog
+            ]
+        ];
+    }
+
+    /**
      * Einzelnen IO-Ausgang lesen.
      */
     private function getIoOutput($id, $outputName, $outputType = null)
@@ -2930,7 +2950,8 @@ class ParameterHandler
     }
 
     /**
-     * IO-Output-Map von MQTT laden.
+     * IO-Werte-Map von MQTT laden (digital_output, analog_output,
+     * digital_input oder analog_input).
      */
     private function getIoOutputMap($id, $outputType)
     {

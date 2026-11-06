@@ -333,6 +333,8 @@ class SimpleAPI
             // IO - Ausgaenge
             'get_io_output_all',
             'get_io_output',
+            // IO - Eingaenge
+            'get_io_input_all',
             // System - Werte
             'get_lastlivevaluesjson'
         ];
@@ -516,6 +518,7 @@ class SimpleAPI
             'get_battery_currents',
             'get_pv_currents',
             'get_io_output_all',
+            'get_io_input_all',
             'get_consumer_all',
             'get_consumer',
             'consumer',
