@@ -480,6 +480,9 @@ class SimpleAPI
     {
         if (strpos($param, 'chargepoint') !== false || strpos($param, 'get_chargepoint') !== false) {
             return 'chargepoint';
+        } elseif ($param === 'get_io_input_all') {
+            // Eingaenge: auch Geraete ohne Ausgaenge finden (siehe MqttClient::getAuxiliaryScanConfig)
+            return 'io_input';
         } elseif (strpos($param, 'io') !== false) {
             return 'io';
         } elseif (strpos($param, 'battery') !== false) {
@@ -519,6 +522,7 @@ class SimpleAPI
             'get_pv_currents',
             'get_io_output_all',
             'get_io_input_all',
+            'get_chargepoint_limit',
             'get_consumer_all',
             'get_consumer',
             'consumer',
