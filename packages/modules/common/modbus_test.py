@@ -1,6 +1,6 @@
 import threading
 import time
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 
 from modules.common.modbus import ModbusClient, ModbusDataType
 
@@ -73,11 +73,18 @@ def test_write_single_register_raw_uses_fc06_not_fc16():
 def test_write_register_with_small_data_type_encodes_negative_values():
     # a raw negative int handed straight to pymodbus fails there (it expects an already-encoded
     # unsigned 0..65535 register value) - INT_16/INT_8 must go through the same binary-payload
-    # encoding as every other data_type, not a "simple" direct-write shortcut
+    # encoding as every other data_type, not a "simple" direct-write shortcut. Patches
+    # BinaryPayloadBuilder itself (rather than asserting on real encoded bytes) so this doesn't
+    # depend on pymodbus being the real package vs. the stub conftest.py substitutes it with.
     delegate = Mock()
     delegate.is_socket_open.return_value = True
+    encoded_registers = [65036]
 
-    client = ModbusClient(delegate, "test", 502)
-    client.write_register(1000, -500, data_type=ModbusDataType.INT_16, unit=1)
+    with patch("modules.common.modbus.BinaryPayloadBuilder") as builder_cls:
+        builder_cls.return_value.to_registers.return_value = encoded_registers
 
-    delegate.write_registers.assert_called_once_with(1000, [65036], unit=1)
+        client = ModbusClient(delegate, "test", 502)
+        client.write_register(1000, -500, data_type=ModbusDataType.INT_16, unit=1)
+
+        builder_cls.return_value.add_16bit_int.assert_called_once_with(-500)
+    delegate.write_registers.assert_called_once_with(1000, encoded_registers, unit=1)
