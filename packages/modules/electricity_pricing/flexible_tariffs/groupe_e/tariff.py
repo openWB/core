@@ -25,7 +25,7 @@ def readApi() -> list[tuple[str, float]]:
     session = req.get_http_session()
     prices_raw = session.get(
         url=endpoint +
-        f"?start_timestamp={ quote(startDate) }&end_timestamp={ quote(endDate) }",
+        f"?start_timestamp={quote(startDate)}&end_timestamp={quote(endDate)}",
     ).json()
     return [(timestamp(power), (power[tariffName]/100000))
             for power in prices_raw]

@@ -1,19 +1,46 @@
 name: Python application
 
-on: pull_request
+on:
+  pull_request:
+  workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        raspberry-pi-os-release: ["Bullseye", "Bookworm", "Trixie"]
+        include:
+          - raspberry-pi-os-release: "Bullseye"
+            glibc: "2_31"
+            python-version: "3.9"
+            arm-wheel-python-version: "3.9.2"
+          - raspberry-pi-os-release: "Bookworm"
+            glibc: "2_36"
+            python-version: "3.11"
+            arm-wheel-python-version: "3.11"
+          - raspberry-pi-os-release: "Trixie"
+            glibc: "2_41"
+            python-version: "3.13"
+            arm-wheel-python-version: "3.13"
     steps:
       - uses: actions/checkout@v7
-      - name: Set up Python 3.9
+      - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v6
         with:
-          python-version: "3.9.12"
+          python-version: ${{ matrix.python-version }}
       - name: Install dependencies
         run: |
-          pip3 install -r "/home/runner/work/core/core/requirements.txt"
+          python -m pip install -r requirements.txt
+      - name: Check Raspberry Pi dependency wheels
+        run: |
+          python -m pip download --only-binary=:all: \
+            --platform linux_armv7l --platform manylinux_${{ matrix.glibc }}_armv7l \
+            --implementation cp \
+            --python-version "${{ matrix.arm-wheel-python-version }}" \
+            --extra-index-url https://www.piwheels.org/simple \
+            --dest "${RUNNER_TEMP}/armv7-wheels" -r requirements.txt
       - name: Flake8 with annotations in packages folder
         uses: TrueBrain/actions-flake8@v2.4
         with:
