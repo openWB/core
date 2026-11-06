@@ -254,6 +254,7 @@ class SimpleAPI
             'get_chargepoint_pv_charging_min_current',
             'get_chargepoint_soc',
             'get_chargepoint_state_str',
+            'get_chargepoint_limit',
             'get_chargepoint_fault_str',
             'get_chargepoint_fault_state',
             'get_chargepoint_phases_in_use',
