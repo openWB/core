@@ -7,6 +7,12 @@ from modules.common.component_type import ComponentType
 
 log = logging.getLogger(__name__)
 
+# Vorwärtssprünge werden nur bis zu dieser Vielfachheit von allowed_deviation geglättet (siehe
+# check_total_energy). Das deckt die Größenordnung eines einzelnen groben Zähler-/WR-Registertakts mit
+# Puffer ab, lässt aber deutlich größere Sprünge (zB nach einer längeren Verbindungsunterbrechung) weiter
+# sofort nach einer Bestätigung im nächsten Zyklus durch, statt sie über eine ggf. sehr lange Zeit zu glätten.
+MAX_SMOOTHABLE_JUMP_FACTOR = 10
+
 
 class PeakFilter:
     def __init__(self, component_type: ComponentType, component_id: int, fault_state: FaultState):
@@ -89,9 +95,21 @@ class PeakFilter:
                                              f"aktueller Zählerwert: {total_energy / 1000 }kWh. "
                                              "Warte einen Regelintervall.")
             elif allowed_deviation > 0 and (total_energy - previous_total_energy) > allowed_deviation:
+                jump = total_energy - previous_total_energy
                 log.debug(f"PeakFilter: Unplausibler Zählerwert: {total_energy / 1000}kWh. "
-                          f"Differenz zum vorherigen Wert: {total_energy - previous_total_energy}Wh. "
+                          f"Differenz zum vorherigen Wert: {jump}Wh. "
                           f"erlaubte Differenz: {round(allowed_deviation, 2)}Wh.")
+                if jump <= allowed_deviation * MAX_SMOOTHABLE_JUMP_FACTOR:
+                    # Manche Zähler/Wechselrichter aktualisieren ihren Stand nicht kontinuierlich, sondern in
+                    # Sprüngen. Ein einmaliges Verwerfen würde den vollen Sprung im nächsten Zyklus ungebremst
+                    # durchreichen (der Sprung bleibt ja bestehen und ist dann keine Abweichung mehr).
+                    # Stattdessen hier auf die erlaubte Differenz begrenzen und als neue Vergleichsbasis merken,
+                    # sodass der Sprung über die folgenden Zyklen gleichmäßig nachgezogen wird. Nur für Sprünge
+                    # bis MAX_SMOOTHABLE_JUMP_FACTOR × allowed_deviation, damit ein Sprung nach einer längeren
+                    # Verbindungsunterbrechung (echter, großer Nachholbedarf) nicht ebenso ausgebremst wird.
+                    checked_energy = previous_total_energy + allowed_deviation
+                    prev_energy = checked_energy
+                    return checked_energy, prev_energy
             elif (total_energy - previous_total_energy) < 0:
                 if previous_total_energy > max_energy:
                     log.debug("PeakFilter: Erholung nach unplausibel hohem Zählerwert erkannt. "
