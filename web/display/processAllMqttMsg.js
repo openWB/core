@@ -47,8 +47,14 @@ function setIframeSource() {
 					break;
 			}
 			// load display from primary or local
-			destination = `${location.protocol}//${host}/openWB/web/display/?${query.toString()}`;
-			addLog(`all done, loading theme from primary`);
+			const configuredDisplayUrl = data["openWB/optional/int_display/display_url"];
+			if (configuredDisplayUrl && configuredDisplayUrl.trim()) {
+				destination = configuredDisplayUrl.trim();
+				addLog(`all done, loading manually configured display URL`);
+			} else {
+				destination = `${location.protocol}//${host}/openWB/web/display/?${query.toString()}`;
+				addLog(`all done, loading theme from primary`);
+			}
 			// no iframe here as this would result in another nesting with the wrapper on primary
 			setTimeout(() => {
 				location.href = destination;

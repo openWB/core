@@ -63,7 +63,8 @@ class SetData:
             enthält Topic und Payload
         """
         self.heartbeat = True
-        if decode_payload(msg.payload) != "":
+        if (decode_payload(msg.payload) != "" or
+                msg.topic == "openWB/set/optional/int_display/display_url"):
             mqtt_log.debug(f"Topic: {msg.topic}, Payload: {decode_payload(msg.payload)}")
             if "openWB/set/vehicle/" in msg.topic:
                 if "openWB/set/vehicle/template/ev_template/" in msg.topic:
@@ -955,6 +956,8 @@ class SetData:
                   "openWB/set/optional/int_display/pin_active" in msg.topic):
                 self._validate_value(msg, bool)
             elif "openWB/set/optional/int_display/pin_code" in msg.topic:
+                self._validate_value(msg, str)
+            elif "openWB/set/optional/int_display/display_url" in msg.topic:
                 self._validate_value(msg, str)
             elif "openWB/set/optional/int_display/standby" in msg.topic:
                 self._validate_value(msg, int, [(0, 600)])

@@ -137,6 +137,7 @@ class InternalDisplay:
     detected: bool = field(default=False, metadata={"topic": "int_display/detected"})
     on_if_plugged_in: bool = field(default=True, metadata={"topic": "int_display/on_if_plugged_in"})
     only_local_charge_points: bool = field(default=False, metadata={"topic": "int_display/only_local_charge_points"})
+    display_url: str = field(default="", metadata={"topic": "int_display/display_url"})
     pin_active: bool = field(default=False, metadata={"topic": "int_display/pin_active"})
     pin_code: str = field(default="0000", metadata={"topic": "int_display/pin_code"})
     rotation: int = field(default=0, metadata={"topic": "int_display/rotation"})
