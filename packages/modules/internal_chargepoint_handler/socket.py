@@ -8,9 +8,13 @@ from helpermodules.hardware_configuration import get_hardware_configuration_sett
 from helpermodules.logger import ModifyLoglevelContext
 from modules.common.component_context import SingleComponentUpdateContext
 from modules.common.component_state import ChargepointState
+from modules.common.evse import EvseStatusCode
+from modules.common.modbus import ModbusDataType
 from modules.internal_chargepoint_handler.chargepoint_module import ChargepointModule
 from modules.internal_chargepoint_handler.clients import ClientHandler
 from modules.internal_chargepoint_handler.internal_chargepoint_handler_config import InternalChargepoint
+from helpermodules.pub import Pub
+from modules.common.connector_unlock import currents_are_zero, UNLOCK_STABLE_SECONDS, UNLOCK_TIMEOUT
 
 
 log = logging.getLogger(__name__)
@@ -57,8 +61,53 @@ class Socket(ChargepointModule):
         with ModifyLoglevelContext(log, logging.DEBUG):
             log.info(f"Konfiguration als Buchse mit maximal {self.socket_max_current}A Ladestrom je Phase.")
         super().__init__(local_charge_point_num, client_handler, internal_cp, hierarchy_id)
+        self._unlock_blocked = internal_cp.get.unlock_blocked
+
+    @property
+    def unlock_blocked(self) -> bool:
+        return self._unlock_blocked
+
+    def _set_unlock_blocked(self, blocked: bool) -> None:
+        self._unlock_blocked = blocked
+        Pub().pub(f"openWB/set/internal_chargepoint/{self.local_charge_point_num}/get/unlock_blocked", blocked)
+
+    def _read_unlock_state(self):
+        # Bypass get_values(): its cached/zero fallback values cannot authorize release.
+        with self._client.client:
+            self._client.evse_client.set_current(0)
+            evse, meter = self._client.request_and_check_hardware(self.fault_state)
+            controller = self._client.evse_client
+            raw_current, _, state = controller.client.read_holding_registers(
+                1000, [ModbusDataType.UINT_16]*3, unit=controller.id)
+        safe = (raw_current == 0 and state in (EvseStatusCode.READY, EvseStatusCode.EV_PRESENT)
+                and evse.charge_state is False and evse.set_current == 0 and currents_are_zero(meter.currents))
+        return evse.plug_state, safe
+
+    def perform_unlock(self, timeout: float = UNLOCK_TIMEOUT, cancelled=None) -> bool:
+        """Run only in the hardware handler, with phase/CP operations excluded."""
+        self._set_unlock_blocked(True)
+        deadline = time.monotonic() + min(max(timeout, 0), UNLOCK_TIMEOUT)
+        stable_since = None
+        while time.monotonic() < deadline and not (cancelled and cancelled.is_set()):
+            _, safe = self._read_unlock_state()
+            now = time.monotonic()
+            if now >= deadline or (cancelled and cancelled.is_set()):
+                break
+            if not safe:
+                stable_since = None
+            elif stable_since is None:
+                stable_since = now
+            if stable_since is not None and now - stable_since >= UNLOCK_STABLE_SECONDS:
+                if ActorState(GPIO.input(19)) != ActorState.OPENED:
+                    self.__open_actor()
+                return ActorState(GPIO.input(19)) == ActorState.OPENED
+            time.sleep(0.5)
+        return False
 
     def set_current(self, current: float) -> None:
+        if self._unlock_blocked:
+            super().set_current(0)
+            return
         with SingleComponentUpdateContext(self.fault_state, update_always=False):
             with self.client_error_context:
                 actor = ActorState(GPIO.input(19))
@@ -75,7 +124,12 @@ class Socket(ChargepointModule):
             log.debug("Actor: "+str(actor))
             self.chargepoint_state = super().get_values(phase_switch_cp_active, last_tag)
             self.chargepoint_state.max_evse_current = self.socket_max_current
-            if phase_switch_cp_active:
+            if self._unlock_blocked:
+                if not phase_switch_cp_active:
+                    plugged, safe = self._read_unlock_state()
+                    if plugged is False and safe:
+                        self._set_unlock_blocked(False)
+            elif phase_switch_cp_active:
                 log.debug("Keine Actor-Bewegung, da CP-Unterbrechung oder Phasenumschaltung aktiv.")
             else:
                 if self.chargepoint_state.plug_state is True and actor == ActorState.OPENED:
@@ -95,6 +149,8 @@ class Socket(ChargepointModule):
     def __set_actor(self, open: bool):
         GPIO.output(23, GPIO.LOW if open else GPIO.HIGH)
         GPIO.output(26, GPIO.HIGH)
-        time.sleep(1)
-        GPIO.output(26, GPIO.LOW)
+        try:
+            time.sleep(1)
+        finally:
+            GPIO.output(26, GPIO.LOW)
         log.debug("Actor opened" if open else "Actor closed")

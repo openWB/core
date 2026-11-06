@@ -79,6 +79,7 @@ INTERNAL_TOPICS = ['openWB/bat/set/charging_power_left',
                    'openWB/internal_chargepoint/+/get/state_str',
                    'openWB/internal_chargepoint/+/get/rfid',
                    'openWB/internal_chargepoint/+/get/rfid_timestamp',
+                   'openWB/internal_chargepoint/+/get/unlock_blocked',
                    # abgesehen vom Fahrzeug können mqtt get-Topics bei aktiver BV nur gepublished werden
                    'openWB/mqtt/bat/+/get/power',
                    'openWB/mqtt/bat/+/get/soc',
