@@ -2,11 +2,12 @@
 import logging
 import datetime
 import time
-from typing import List, Tuple, Dict
+from typing import List, Optional, Tuple, Dict
 from dataclasses import dataclass
 
 from modules.electricity_pricing.flexible_tariffs.fixed_hours.config import (FixedHoursTariff,
-                                                                             FixedHoursTariffConfiguration)
+                                                                             FixedHoursTariffConfiguration,
+                                                                             FixedHoursTariffEntry)
 from modules.common.abstract_device import DeviceDescriptor
 from modules.common.component_state import TariffState
 
@@ -66,22 +67,40 @@ def _fetch(config: FixedHoursTariffConfiguration) -> TariffState:
     return _calculate_price_timeslots(config)
 
 
-def _fetch_price_for_time_slot(config: FixedHoursTariffConfiguration,
+def _find_tariff_for_time_slot(config: FixedHoursTariffConfiguration,
                                time_slot: datetime.datetime
-                               ) -> float:
+                               ) -> Optional[FixedHoursTariffEntry]:
     for tariff in config.tariffs:
         active_times = [(_to_time(start), _to_time(end)) for start, end in tariff["active_times"]["times"]]
         active_dates = [
             (_to_date(start, time_slot), _to_date(end, time_slot))
-            for start, end in tariff["active_times"]["dates"]
+            for start, end in tariff["active_times"].get("dates") or []
         ]
         # If no weekdays specified, assume all days are active
-        weekdays = tariff["active_times"]["weekdays"] or range(7)
+        # (get: upgrade_datastore_133 hat weekdays neben active_times statt darin angelegt)
+        weekdays = tariff["active_times"].get("weekdays") or range(7)
         if (any(start <= time_slot.time() < end for start, end in active_times) and
                 any(start <= time_slot.date() <= end for start, end in active_dates) and
                 time_slot.weekday() in weekdays):
-            return tariff["price"]
-    return config.default_price
+            return tariff
+    return None
+
+
+def _fetch_price_for_time_slot(config: FixedHoursTariffConfiguration,
+                               time_slot: datetime.datetime
+                               ) -> float:
+    tariff = _find_tariff_for_time_slot(config, time_slot)
+    return tariff["price"] if tariff is not None else config.default_price
+
+
+def get_tariff_name_for_time_slot(config: FixedHoursTariffConfiguration,
+                                  time_slot: datetime.datetime,
+                                  default_name: Optional[str] = None
+                                  ) -> Optional[str]:
+    """Name des Tarifzeitraums, dessen Preis _fetch_price_for_time_slot für diesen Zeitslot liefert;
+    default_name, wenn der Standardpreis gilt."""
+    tariff = _find_tariff_for_time_slot(config, time_slot)
+    return tariff["name"] if tariff is not None else default_name
 
 
 def _calculate_price_timeslots(config: FixedHoursTariffConfiguration) -> TariffState:
