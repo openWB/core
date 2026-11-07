@@ -55,6 +55,15 @@
 						:style="{ color: 'var(--color-fg)' }"
 					/>
 				</DisplayButton>
+				<DisplayButton v-else >
+					<i
+						class="fa-solid fa-sm fas fa-sync py-0 px-3 mt-3"
+						:class="chargepoint.waitingForSoc ? 'fa-spinner fa-spin' : 'fa-sync'"
+					@click="loadSoc"
+						:style="{ color: 'var(--color-fg)' }"
+					/>
+				</DisplayButton>
+				
 			</InfoItem>
 			<InfoItem
 				v-if="chargepoint.isSocConfigured"
@@ -230,6 +239,10 @@ const currentPriceStyle = computed(() => {
 		? { color: 'var(--color-charging)' }
 		: { color: 'var(--color-menu)' }
 })
+function loadSoc() {
+	updateServer('socUpdate', 1, props.chargepoint.connectedVehicle)
+	chargePoints[props.chargepoint.id].waitingForSoc = true
+}
 </script>
 <style scoped>
 .titleline {
@@ -264,6 +277,9 @@ const currentPriceStyle = computed(() => {
 }
 .fa-edit {
 	font-size: 8pt;
+}
+.fa-sync {
+	font-size: 10pt;
 }
 .socEditor {
 	border: 1px solid var(--color-menu);
