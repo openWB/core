@@ -124,12 +124,12 @@ function setIframeSource() {
 
 function addLog(message, forceDisplay = false) {
 	const logElement = document.getElementById('log');
-	let displayedMessages = logElement.innerHTML.split("\n");
+	let displayedMessages = logElement.textContent.split("\n");
 	if (displayedMessages.length > 25) {
 		displayedMessages.shift();
 	}
 	displayedMessages.push(message);
-	logElement.innerHTML = displayedMessages.join("\n");
+	logElement.textContent = displayedMessages.join("\n");
 	if (forceDisplay) {
 		logElement.classList.remove("hide");
 	}
