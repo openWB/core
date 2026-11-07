@@ -753,7 +753,7 @@ class UpdateConfig:
         ("openWB/optional/int_display/rotation", 0),
         ("openWB/optional/int_display/theme", asdict(CardsDisplayTheme())),
         ("openWB/optional/int_display/only_local_charge_points", False),
-        ("openWB/optional/int_display/display_url", ""),
+        ("openWB/optional/int_display/display_url", None),
         ("openWB/optional/monitoring/config", NO_MODULE),
         ("openWB/optional/ocpp/config", asdict(OcppConfig())),
         ("openWB/optional/rfid/active", False),

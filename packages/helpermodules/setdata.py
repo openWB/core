@@ -63,8 +63,7 @@ class SetData:
             enthält Topic und Payload
         """
         self.heartbeat = True
-        if (decode_payload(msg.payload) != "" or
-                msg.topic == "openWB/set/optional/int_display/display_url"):
+        if decode_payload(msg.payload) != "":
             mqtt_log.debug(f"Topic: {msg.topic}, Payload: {decode_payload(msg.payload)}")
             if "openWB/set/vehicle/" in msg.topic:
                 if "openWB/set/vehicle/template/ev_template/" in msg.topic:
