@@ -1,4 +1,21 @@
 var credentialsFetched = false;
+var pendingDisplayNavigationTimeout = null;
+var pendingDisplayNavigationDestination = null;
+
+function scheduleDisplayNavigation(destination) {
+	if (destination === pendingDisplayNavigationDestination) {
+		return;
+	}
+	if (pendingDisplayNavigationTimeout !== null) {
+		clearTimeout(pendingDisplayNavigationTimeout);
+	}
+	pendingDisplayNavigationDestination = destination;
+	pendingDisplayNavigationTimeout = setTimeout(() => {
+		pendingDisplayNavigationTimeout = null;
+		pendingDisplayNavigationDestination = null;
+		location.href = destination;
+	}, 2000);
+}
 
 function setIframeSource() {
 	if (allTopicsReceived()) {
@@ -56,9 +73,7 @@ function setIframeSource() {
 				addLog(`all done, loading theme from primary`);
 			}
 			// no iframe here as this would result in another nesting with the wrapper on primary
-			setTimeout(() => {
-				location.href = destination;
-			}, 2000);
+			scheduleDisplayNavigation(destination);
 		} else {
 			// load primary display (from primary or secondary openWB)
 			host = location.host;
