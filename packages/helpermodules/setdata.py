@@ -956,6 +956,8 @@ class SetData:
                 self._validate_value(msg, bool)
             elif "openWB/set/optional/int_display/pin_code" in msg.topic:
                 self._validate_value(msg, str)
+            elif "openWB/set/optional/int_display/display_url" in msg.topic:
+                self._validate_value(msg, str)
             elif "openWB/set/optional/int_display/standby" in msg.topic:
                 self._validate_value(msg, int, [(0, 600)])
             elif "openWB/set/optional/int_display/theme" in msg.topic:
