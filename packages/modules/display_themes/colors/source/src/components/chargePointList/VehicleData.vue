@@ -27,7 +27,7 @@
 				<span>
 					<RangeInput
 						id="manualSoc"
-						v-model="manualSoc"
+						v-model="manualSoc ?? 0"
 						:min="0"
 						:max="100"
 						:step="1"
@@ -48,7 +48,7 @@
 				heading="Ladestand:"
 				class="grid-col-4 grid-left"
 			>
-				<BatterySymbol :soc="soc" class="me-2" />
+				<BatterySymbol :soc="soc ?? 0" class="me-2" />
 				<DisplayButton v-if="chargepoint.isSocManual" @click="startSocEditor">
 					<i
 						class="fa-solid fa-sm fas fa-edit py-0 px-3 mt-3"
@@ -163,7 +163,7 @@ const cp = ref(props.chargepoint)
 const editSoc = ref(false)
 
 function setSoc() {
-	updateServer('setSoc', manualSoc.value, props.chargepoint.connectedVehicle)
+	updateServer('setSoc', manualSoc.value ?? 0, props.chargepoint.connectedVehicle)
 	editSoc.value = false
 }
 const manualSoc = computed({

@@ -80,11 +80,11 @@ export class ChargePoint {
 			vehicles[this.connectedVehicle].name = name
 		}
 	}
-	get soc() {
+	get soc() : number | undefined {
 		if (vehicles[this.connectedVehicle] && vehicles[this.connectedVehicle].soc != undefined) {
 			return vehicles[this.connectedVehicle].soc
 		} else {
-			return 0
+			return undefined
 		}
 	}
 	set soc(newSoc: number) {
