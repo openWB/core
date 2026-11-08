@@ -57,7 +57,7 @@
 				</DisplayButton>
 				<DisplayButton v-else >
 					<i
-						class="fa-solid fa-sm fas fa-sync py-0 px-3 mt-3"
+						class="fa-solid fa-sm fas py-0 px-3 mt-3"
 						:class="chargepoint.waitingForSoc ? 'fa-spinner fa-spin' : 'fa-sync'"
 					@click="loadSoc"
 						:style="{ color: 'var(--color-fg)' }"
