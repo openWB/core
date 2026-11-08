@@ -81,7 +81,7 @@ export class ChargePoint {
 		}
 	}
 	get soc() {
-		if (vehicles[this.connectedVehicle]) {
+		if (vehicles[this.connectedVehicle] && vehicles[this.connectedVehicle].soc != undefined) {
 			return vehicles[this.connectedVehicle].soc
 		} else {
 			return 0
