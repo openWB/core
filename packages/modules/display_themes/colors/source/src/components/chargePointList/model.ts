@@ -391,6 +391,12 @@ export class Vehicle {
 		}
 		return undefined
 	}
+	get visible(): boolean {
+		return (
+			this.name != '__invalid' && this.name != ""//&&
+			//(this.id != 0 || globalConfig.showStandardVehicle)
+		)
+	}
 }
 export interface ConnectedVehicleConfig {
 	average_consumption: number
