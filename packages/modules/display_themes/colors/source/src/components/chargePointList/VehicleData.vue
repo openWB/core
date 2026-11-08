@@ -27,7 +27,7 @@
 				<span>
 					<RangeInput
 						id="manualSoc"
-						v-model="manualSoc ?? 0"
+						v-model="manualSoc"
 						:min="0"
 						:max="100"
 						:step="1"
@@ -168,10 +168,10 @@ function setSoc() {
 }
 const manualSoc = computed({
 	get() {
-		return props.chargepoint.soc
+		return props.chargepoint.soc ?? 0
 	},
-	set(s: number) {
-		chargePoints[props.chargepoint.id].soc = s
+	set(s: number | undefined) {
+		chargePoints[props.chargepoint.id].soc = s ?? 0
 	},
 })
 const soc = computed(() => {
