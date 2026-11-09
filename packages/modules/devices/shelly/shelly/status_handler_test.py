@@ -39,6 +39,24 @@ def test_parse_temperatures_still_logs_on_genuinely_malformed_value(caplog):
     assert len(caplog.records) == 1
 
 
+def test_parse_temperatures_logs_when_entry_present_but_missing_tc(caplog):
+    status = {"ext_temperature": {"0": {"hwID": "28FF"}}}
+
+    with caplog.at_level(logging.ERROR):
+        result = parse_temperatures(status, generation=1)
+
+    assert result is None
+    assert len(caplog.records) == 1
+
+
+def test_parse_temperatures_logs_instead_of_raising_when_entry_is_not_a_mapping():
+    status = {"ext_temperature": {"0": 21.5}}
+
+    result = parse_temperatures(status, generation=1)
+
+    assert result is None
+
+
 def test_parse_temperatures_gen2_without_ext_sensors_does_not_log(caplog):
     with caplog.at_level(logging.ERROR):
         result = parse_temperatures({}, generation=2)
