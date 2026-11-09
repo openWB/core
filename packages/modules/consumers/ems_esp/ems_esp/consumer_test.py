@@ -1,6 +1,7 @@
 from unittest.mock import Mock
 
 import pytest
+import requests
 import requests_mock
 
 from modules.common import configurable_consumer
@@ -72,4 +73,14 @@ def test_raises_when_neither_device_has_hpcurrpower(monkeypatch, requests_mock: 
     consumer = _create_consumer(monkeypatch)
 
     with pytest.raises(ValueError):
+        consumer.module_updater()
+
+
+def test_non_404_http_error_is_not_mistaken_for_unknown_device(monkeypatch, requests_mock: requests_mock.Mocker):
+    # eg. a wrong/expired token (401) would otherwise fail on every device name and surface as
+    # a misleading "hpcurrpower not found" instead of the real problem
+    requests_mock.get(f"http://{SAMPLE_IP}/api/heatpump", status_code=401)
+    consumer = _create_consumer(monkeypatch)
+
+    with pytest.raises(requests.exceptions.HTTPError):
         consumer.module_updater()

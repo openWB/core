@@ -34,8 +34,10 @@ def create_consumer(config: EmsEsp):
             url = f"http://{config.configuration.ip_address}/api/{device_name}"
             try:
                 values = session.get(url, headers=headers).json()
-            except requests.exceptions.HTTPError:
-                continue
+            except requests.exceptions.HTTPError as e:
+                if e.response is not None and e.response.status_code == 404:
+                    continue
+                raise
             if "hpcurrpower" in values:
                 return url
         raise ValueError(
