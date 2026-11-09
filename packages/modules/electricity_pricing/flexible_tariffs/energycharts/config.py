@@ -1,4 +1,5 @@
 from dataclasses import dataclass, field
+from typing import Optional
 
 
 @dataclass
@@ -7,6 +8,7 @@ class EnergyChartsTariffConfiguration:
     surcharge: float = 0
     net: bool = True
     tax: float = 19
+    price_cap: Optional[float] = None
 
 
 @dataclass

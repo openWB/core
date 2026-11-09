@@ -63,7 +63,7 @@ NO_MODULE = {"type": None, "configuration": {}}
 
 class UpdateConfig:
 
-    DATASTORE_VERSION = 155
+    DATASTORE_VERSION = 156
 
     FILE_OPERATION_VERSION = 0
 
@@ -4191,3 +4191,18 @@ class UpdateConfig:
 
         self._loop_all_received_topics(upgrade)
         self._append_datastore_version(155)
+
+    def upgrade_datastore_156(self) -> None:
+        """Optionale Preisobergrenze für Energy-Charts ergänzen."""
+        def upgrade(topic: str, payload) -> Optional[dict]:
+            if topic == "openWB/optional/ep/flexible_tariff/provider":
+                provider = decode_payload(payload)
+                if provider.get("type") == "energycharts":
+                    config = provider["configuration"]
+                    if "price_cap" not in config:
+                        config["price_cap"] = None
+                        return {topic: provider}
+            return None
+
+        self._loop_all_received_topics(upgrade)
+        self._append_datastore_version(156)
