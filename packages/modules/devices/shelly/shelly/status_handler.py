@@ -39,8 +39,11 @@ def parse_temperatures(status: Dict, generation: int) -> Optional[List[float]]:
                 value = status['ext_temperature'][str(index)]['tC']
             else:
                 value = status[f'temperature:{100 + index}']['tC']
+        except KeyError:
+            continue
+        try:
             temperatures.append(float(value))
-        except (KeyError, TypeError, ValueError):
+        except (TypeError, ValueError):
             log.exception(f"Error parsing temperature for index {index} in status: {status}")
     return temperatures if len(temperatures) > 0 else None
 
