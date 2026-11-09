@@ -63,6 +63,10 @@ class FilesystemMigrations:
             # Neues Topic (z.B. bei Upgrade von älteren Versionen): alle File-Operation-Upgrades ausführen.
             file_operation_version = []
             self._update_topic("openWB/system/file_operation_version", file_operation_version)
+        elif isinstance(file_operation_version, int):
+            # Legacy-Zähler: Die Versionen vor diesem Wert sind bereits abgeschlossen.
+            file_operation_version = list(range(file_operation_version))
+            self._update_topic("openWB/system/file_operation_version", file_operation_version)
 
         log.debug(f"current file operation version: {file_operation_version}")
         log.debug(f"target file operation version: {self.FILE_OPERATION_VERSION}")
@@ -96,7 +100,9 @@ class FilesystemMigrations:
 
 def run_migrations() -> None:
     LOCK_FILE.parent.mkdir(parents=True, exist_ok=True)
-    # Die Lock-Datei erst nach dem gesamten Migrationslauf entfernen, auch bei Fehlern.
+    # Lock-Datei beibehalten, damit alle Prozesse denselben Inode sperren.
+    # Löschen und Neuanlegen könnte parallele Läufe ermöglichen.
+    # Die Sperre wird beim Verlassen des with-Blocks automatisch freigegeben.
     with LOCK_FILE.open("a") as lock_file:
         try:
             fcntl.flock(lock_file.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
@@ -110,8 +116,6 @@ def run_migrations() -> None:
             log.exception("Dateisystem-Migrationen abgebrochen.")
             pub_system_message({}, "Fehler bei der Aktualisierung der Dateisystem-Daten.", MessageType.ERROR)
             raise
-        finally:
-            LOCK_FILE.unlink(missing_ok=True)
 
 
 if __name__ == "__main__":

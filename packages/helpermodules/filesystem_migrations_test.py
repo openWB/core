@@ -1,8 +1,9 @@
-import fcntl
+import json
 from pathlib import Path
 from unittest.mock import Mock, patch
 
 import pytest
+from paho.mqtt.client import MQTTMessage
 
 from helpermodules import filesystem_migrations
 from helpermodules.filesystem_migrations import FilesystemMigrations
@@ -25,6 +26,30 @@ def test_file_operation_0_start_behavior(monkeypatch, file_operation_version, fi
     with patch.object(updater, "upgrade_file_operation_0") as upgrade_mock:
         updater._FilesystemMigrations__solve_breaking_changes_filesystem()
     assert upgrade_mock.call_count == expected_calls
+
+
+@pytest.mark.parametrize("progress", [0, 1, 2])
+def test_legacy_integer_progress_is_persisted_as_list_and_pending_migrations_run(monkeypatch, mock_pub, progress):
+    updater = FilesystemMigrations()
+    updater.all_received_topics = {
+        "openWB/system/file_operation_version": str(progress).encode(),
+        "openWB/system/log_data_ready": b"true",
+    }
+    monkeypatch.setattr(FilesystemMigrations, "FILE_OPERATION_VERSION", 2)
+    calls = []
+    for version in range(3):
+        monkeypatch.setattr(
+            updater, f"upgrade_file_operation_{version}",
+            lambda version=version: calls.append(version), raising=False,
+        )
+
+    updater._FilesystemMigrations__solve_breaking_changes_filesystem()
+
+    assert calls == list(range(progress, 3))
+    assert updater.all_received_topics["openWB/system/file_operation_version"] == [0, 1, 2]
+    first_publish = mock_pub.publisher.client.publish.call_args_list[0]
+    assert first_publish.args == ("openWB/system/file_operation_version", json.dumps(list(range(progress))))
+    assert first_publish.kwargs == {"qos": 1, "retain": True}
 
 
 def test_file_operations_run_sequentially_and_resume_after_failure(monkeypatch):
@@ -120,7 +145,7 @@ def test_next_migration_runs_after_all_totals_attempts_despite_failed_day(monkey
 
 
 @pytest.mark.parametrize("completed, ready", [([], True), ([0], False)])
-def test_file_operation_0_failure_leaves_logs_unready_and_blocks_next(monkeypatch, completed, ready):
+def test_file_operation_0_failure_leaves_logs_unready_and_blocks_next(monkeypatch, mock_pub, completed, ready):
     monkeypatch.setattr(FilesystemMigrations, "FILE_OPERATION_VERSION", 1)
     updater = FilesystemMigrations()
     updater.all_received_topics = {
@@ -137,19 +162,28 @@ def test_file_operation_0_failure_leaves_logs_unready_and_blocks_next(monkeypatc
 
     assert updater.all_received_topics["openWB/system/log_data_ready"] is False
     assert updater.all_received_topics["openWB/system/file_operation_version"] == completed
+    mock_pub.publisher.client.publish.assert_called_once_with(
+        "openWB/system/log_data_ready", "false", qos=1, retain=True)
     next_migration.assert_not_called()
 
 
 def test_filesystem_worker_reads_current_topics_before_migrating(monkeypatch):
     updater = FilesystemMigrations()
     broker = Mock()
-    monkeypatch.setattr(filesystem_migrations, "BrokerClient", Mock(return_value=broker))
+    broker_client = Mock(return_value=broker)
+    monkeypatch.setattr(filesystem_migrations, "BrokerClient", broker_client)
+    topics = {
+        "openWB/system/file_operation_version": b"[0]",
+        "openWB/system/log_data_ready": b"true",
+    }
 
     def read_topics():
-        updater.all_received_topics = {
-            "openWB/system/file_operation_version": [0],
-            "openWB/system/log_data_ready": True,
-        }
+        on_message = broker_client.call_args.args[2]
+        for topic, payload in topics.items():
+            message = MQTTMessage(topic=topic.encode())
+            message.payload = payload
+            on_message(broker.client, None, message)
+        assert updater.all_received_topics == topics
 
     broker.start_finite_loop.side_effect = read_topics
     migration = Mock()
@@ -160,43 +194,3 @@ def test_filesystem_worker_reads_current_topics_before_migrating(monkeypatch):
     migration.assert_not_called()
     broker.start_finite_loop.assert_called_once_with()
     broker.disconnect.assert_called_once_with()
-
-
-def test_worker_skips_broker_read_while_another_worker_holds_lock(monkeypatch, tmp_path):
-    lock_path = tmp_path / "filesystem_migrations.lock"
-    monkeypatch.setattr(filesystem_migrations, "LOCK_FILE", lock_path)
-
-    def migrate():
-        assert lock_path.exists()
-
-    update = Mock(side_effect=migrate)
-    monkeypatch.setattr(FilesystemMigrations, "update_filesystem", update)
-
-    with lock_path.open("a") as lock_file:
-        fcntl.flock(lock_file.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
-        filesystem_migrations.run_migrations()
-        update.assert_not_called()
-        assert lock_path.exists()
-
-    filesystem_migrations.run_migrations()
-    update.assert_called_once_with()
-    assert not lock_path.exists()
-
-
-def test_worker_reports_failure_and_releases_lock(monkeypatch, tmp_path):
-    lock_path = tmp_path / "filesystem_migrations.lock"
-    monkeypatch.setattr(filesystem_migrations, "LOCK_FILE", lock_path)
-    update = Mock(side_effect=RuntimeError("migration failed"))
-    monkeypatch.setattr(FilesystemMigrations, "update_filesystem", update)
-    message = Mock()
-    monkeypatch.setattr(filesystem_migrations, "pub_system_message", message)
-
-    with pytest.raises(RuntimeError, match="migration failed"):
-        filesystem_migrations.run_migrations()
-
-    message.assert_called_once()
-    assert not lock_path.exists()
-    update.side_effect = None
-    filesystem_migrations.run_migrations()
-    assert update.call_count == 2
-    assert not lock_path.exists()

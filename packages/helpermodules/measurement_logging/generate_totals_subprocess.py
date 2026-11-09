@@ -13,7 +13,6 @@ import logging
 
 
 BASE_PATH = Path(__file__).resolve().parents[3]
-logger.setup_generate_totals_logging(include_process_log=True)
 log = logging.getLogger("generate_totals")
 
 LOCK_FILE = BASE_PATH / "data" / "generate_totals.lock"
@@ -80,6 +79,9 @@ def _generate_totals():
 def generate_totals():
     LOCK_FILE.parent.mkdir(parents=True, exist_ok=True)
 
+    # Lock-Datei beibehalten, damit alle Prozesse denselben Inode sperren.
+    # Löschen und Neuanlegen könnte parallele Läufe ermöglichen.
+    # Die Sperre wird beim Verlassen des with-Blocks automatisch freigegeben.
     with LOCK_FILE.open("a") as lock_file:
         try:
             fcntl.flock(lock_file.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
@@ -97,16 +99,9 @@ def generate_totals():
         # Unsere Sperre gilt dann nur für die alte Datei. Abbrechen, damit nicht zwei Prozesse gleichzeitig rechnen.
         if not os.path.samestat(current_lock_stat, os.fstat(lock_file.fileno())):
             raise RuntimeError("Lock-Datei der Totals-Migration wurde zwischenzeitlich ausgetauscht.")
-        try:
-            _generate_totals()
-        finally:
-            # Nur unsere eigene Lock-Datei entfernen, keine zwischenzeitlich neu angelegte Datei.
-            try:
-                if os.path.samestat(LOCK_FILE.stat(), os.fstat(lock_file.fileno())):
-                    LOCK_FILE.unlink(missing_ok=True)
-            except FileNotFoundError:
-                pass
+        _generate_totals()
 
 
 if __name__ == "__main__":
+    logger.setup_generate_totals_logging(include_process_log=True)
     generate_totals()
