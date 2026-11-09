@@ -634,3 +634,35 @@ def test_file_operation_0_start_behavior(file_operation_version, finished, expec
     with patch.object(update_config, "upgrade_file_operation_0") as upgrade_mock:
         update_config._UpdateConfig__solve_breaking_changes_filesystem()
     assert upgrade_mock.call_count == expected_calls
+
+
+@pytest.mark.parametrize("provider_type, configuration, expected_configuration, updated", [
+    ("energycharts", {"surcharge": 0.0001}, {"surcharge": 0.0001, "price_cap": None}, True),
+    ("energycharts", {"price_cap": 0.0002}, {"price_cap": 0.0002}, False),
+    ("energycharts", {"price_cap": None}, {"price_cap": None}, False),
+    ("tibber", {}, {}, False),
+    (None, {}, {}, False),
+])
+def test_upgrade_datastore_156_adds_energycharts_price_cap(
+    mock_pub: Mock, provider_type, configuration, expected_configuration, updated
+):
+    topic = "openWB/optional/ep/flexible_tariff/provider"
+    uc = UpdateConfig()
+    uc.all_received_topics = {
+        topic: json.dumps({"type": provider_type, "configuration": configuration}).encode(),
+        "openWB/system/datastore_version": [155],
+    }
+
+    uc.upgrade_datastore_156()
+
+    if updated:
+        assert uc.all_received_topics[topic] == {
+            "type": provider_type, "configuration": expected_configuration
+        }
+    else:
+        assert json.loads(uc.all_received_topics[topic]) == {
+            "type": provider_type, "configuration": expected_configuration
+        }
+    updated_topics = [call.args[0] for call in mock_pub.pub.call_args_list]
+    assert (topic in updated_topics) is updated
+    assert uc.all_received_topics["openWB/system/datastore_version"] == [155, 156]
