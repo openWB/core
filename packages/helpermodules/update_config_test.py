@@ -619,23 +619,6 @@ def test_upgrade_datastore_153_migrates_legacy_modes(
     assert uc.all_received_topics["openWB/system/datastore_version"] == [152, 153]
 
 
-@pytest.mark.parametrize("file_operation_version, finished, expected_calls", [
-    ([], False, 1),  # erster Start
-    ([0], True, 0),   # bereits fertig -> kein Neustart
-    ([0], False, 1),  # angefangen, aber nicht fertig -> Neustart
-])
-def test_file_operation_0_start_behavior(file_operation_version, finished, expected_calls):
-    update_config = UpdateConfig()
-    update_config.all_received_topics = {
-        "openWB/system/file_operation_version": file_operation_version,
-        "openWB/system/log_data_ready": finished
-    }
-
-    with patch.object(update_config, "upgrade_file_operation_0") as upgrade_mock:
-        update_config._UpdateConfig__solve_breaking_changes_filesystem()
-    assert upgrade_mock.call_count == expected_calls
-
-
 @pytest.mark.parametrize("provider_type, configuration, expected_configuration, updated", [
     ("energycharts", {"surcharge": 0.0001}, {"surcharge": 0.0001, "price_cap": None}, True),
     ("energycharts", {"price_cap": 0.0002}, {"price_cap": 0.0002}, False),
@@ -666,3 +649,21 @@ def test_upgrade_datastore_156_adds_energycharts_price_cap(
     updated_topics = [call.args[0] for call in mock_pub.pub.call_args_list]
     assert (topic in updated_topics) is updated
     assert uc.all_received_topics["openWB/system/datastore_version"] == [155, 156]
+
+
+def test_start_filesystem_migrations_launches_one_worker(monkeypatch):
+    updater = UpdateConfig()
+    popen = Mock()
+    monkeypatch.setattr(update_config.subprocess, "Popen", popen)
+
+    updater._UpdateConfig__start_filesystem_migrations()
+
+    popen.assert_called_once_with(
+        [update_config.sys.executable, "-m", "helpermodules.filesystem_migrations"],
+        cwd=updater.base_path / "packages",
+        start_new_session=True,
+        stdin=update_config.subprocess.DEVNULL,
+        stdout=update_config.subprocess.DEVNULL,
+        stderr=update_config.subprocess.DEVNULL,
+        close_fds=True,
+    )

@@ -73,32 +73,39 @@ def _generate_totals():
     log.info(f"Totals-Migration abgeschlossen. Fehlerhafte Logs: {errors}.")
     publisher = pub.Pub()
     publish_info = publisher.publisher.client.publish(
-        "openWB/set/system/log_data_ready", json.dumps(True), qos=1, retain=True)
+        "openWB/system/log_data_ready", json.dumps(True), qos=1, retain=True)
     publish_info.wait_for_publish()
 
 
 def generate_totals():
     LOCK_FILE.parent.mkdir(parents=True, exist_ok=True)
 
-    with LOCK_FILE.open("w") as lock_file:
+    with LOCK_FILE.open("a") as lock_file:
         try:
             fcntl.flock(lock_file.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
-        except Exception:
+        except BlockingIOError:
             log.exception("generate_totals_subprocess läuft bereits. "
                           "Der zweite Prozess wird beendet.")
-            return
+            raise
         try:
             current_lock_stat = LOCK_FILE.stat()
-        except FileNotFoundError:
-            return
+        except FileNotFoundError as exc:
+            raise RuntimeError(
+                "Lock-Datei wurde zwischenzeitlich gelöscht. Totals-Berechnung wird nicht gestartet."
+            ) from exc
         # Ein anderer Prozess kann die bereits geöffnete Lock-Datei inzwischen gelöscht und neu angelegt haben.
         # Unsere Sperre gilt dann nur für die alte Datei. Abbrechen, damit nicht zwei Prozesse gleichzeitig rechnen.
         if not os.path.samestat(current_lock_stat, os.fstat(lock_file.fileno())):
-            return
+            raise RuntimeError("Lock-Datei der Totals-Migration wurde zwischenzeitlich ausgetauscht.")
         try:
             _generate_totals()
         finally:
-            LOCK_FILE.unlink(missing_ok=True)
+            # Nur unsere eigene Lock-Datei entfernen, keine zwischenzeitlich neu angelegte Datei.
+            try:
+                if os.path.samestat(LOCK_FILE.stat(), os.fstat(lock_file.fileno())):
+                    LOCK_FILE.unlink(missing_ok=True)
+            except FileNotFoundError:
+                pass
 
 
 if __name__ == "__main__":
