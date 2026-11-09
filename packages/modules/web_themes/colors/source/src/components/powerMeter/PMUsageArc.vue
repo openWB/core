@@ -91,7 +91,7 @@ const devicesToShow = computed(() => {
 })
 const consumersToShow = computed(() => {
 	return [...consumers.values()]
-		.filter((c) => c.showInGraph)
+		.filter((c) => c.showInGraph && !c.countAsHouse)
 		.sort((a, b) => {
 			return b.power - a.power
 		})
