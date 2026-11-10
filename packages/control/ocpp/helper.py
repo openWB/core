@@ -11,6 +11,14 @@ def _get_formatted_time() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
+def is_ocpp_stop_active(ocpp_data) -> bool:
+    """Prüft, ob mindestens eine OCPP-Stop-Sperre aktiv ist."""
+    return any(
+        getattr(ocpp_data, flag, False)
+        for flag in ("remote_stop", "rfid_stop", "reset", "unlock_stop")
+    )
+
+
 def get_chargebox_id(cp):
     """Während eines ID-Wechsels gehört der Vorgang noch zur bisherigen ID."""
     return getattr(cp.data.get.ocpp, "previous_chargebox_id", None) or cp.data.config.ocpp_chargebox_id

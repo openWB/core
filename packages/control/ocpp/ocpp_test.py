@@ -839,7 +839,7 @@ def test_chargepoint_passes_meter_update_timestamp_to_client(mock_data, monkeypa
     cp.chargepoint_module = ChargepointModule(Mqtt())
     transfer = Mock()
     timestamp = "2026-10-23T12:00:00+00:00"
-    monkeypatch.setattr("control.chargepoint.chargepoint._get_formatted_time", lambda: timestamp)
+    monkeypatch.setattr("control.chargepoint.ocpp._get_formatted_time", lambda: timestamp)
     monkeypatch.setattr(data.data.ocpp_client, "transfer_values", transfer)
     monkeypatch.setattr(data.data.ocpp_client, "request_start", Mock())
     monkeypatch.setattr(cp, "_process_charge_stop", Mock())

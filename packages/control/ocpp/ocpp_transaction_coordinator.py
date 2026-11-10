@@ -8,7 +8,7 @@ from time import monotonic
 
 from helpermodules.pub import Pub
 
-from control.ocpp.helper import get_cp_from_chargebox_id, _get_config, _get_formatted_time
+from control.ocpp.helper import get_cp_from_chargebox_id, _get_config, _get_formatted_time, is_ocpp_stop_active
 
 from control.ocpp.ocpp_connection import OcppConnection
 
@@ -149,8 +149,7 @@ class TransactionCoordinator:
         if openwb_cp.data.get.ocpp.pending_transactions:
             return False
 
-        if any(getattr(openwb_cp.data.get.ocpp, flag, False)
-               for flag in ("remote_stop", "rfid_stop", "reset", "unlock_stop")):
+        if is_ocpp_stop_active(openwb_cp.data.get.ocpp):
             return False
 
         if not all(openwb_cp.data.get.ocpp.availability):
@@ -480,8 +479,7 @@ class TransactionCoordinator:
             bool(openwb_cp.data.get.plug_state)
             and not getattr(openwb_cp.data.get.ocpp, "previous_chargebox_id", None)
             and not openwb_cp.data.get.ocpp.pending_transactions
-            and not any(getattr(openwb_cp.data.get.ocpp, flag, False)
-                        for flag in ("remote_stop", "rfid_stop", "reset", "unlock_stop"))
+            and not is_ocpp_stop_active(openwb_cp.data.get.ocpp)
             and all(openwb_cp.data.get.ocpp.availability)
         )
 
