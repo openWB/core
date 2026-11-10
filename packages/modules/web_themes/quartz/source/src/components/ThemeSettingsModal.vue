@@ -13,6 +13,16 @@
         :model-value="dark"
         @update:model-value="$emit('update:dark', $event)"
       />
+
+      <div class="settings-group-label mt-3">
+        Anzeige
+      </div>
+      <BaseTabGroup
+        dense
+        :model-value="displayMode"
+        :options="displayModeOptions"
+        @update="displayMode = $event"
+      />
     </div>
 
     <div
@@ -82,175 +92,29 @@
           Linien
         </div>
         <div class="sm:grid sm:grid-cols-3 sm:gap-x-6">
-          <div>
-            <div
-              v-for="cat in powerColumnCategories"
-              :key="cat.key"
-              class="border-t border-border py-1.5 first-of-type:border-t-0"
-            >
-              <div class="flex items-center gap-[7px] text-[13px]">
-                <span
-                  class="legend-dot"
-                  :style="{ background: getCssColor(cat.colorVar) }"
-                />
-                {{ cat.label }}
-              </div>
-
-              <div class="mt-1.5 mb-1">
-                <BaseTabGroup
-                  dense
-                  :model-value="categoryMode[cat.key]"
-                  :options="categoryModeOptions"
-                  @update="categoryMode[cat.key] = $event"
-                />
-              </div>
-
-              <div
-                v-if="categoryMode[cat.key] === 'individual'"
-                class="flex flex-col gap-1"
-              >
-                <label
-                  v-for="(inst, idx) in categories[cat.key].individual"
-                  :key="inst.id"
-                  class="flex cursor-pointer items-center gap-[7px] text-xs text-muted"
-                >
-                  <input
-                    type="checkbox"
-                    :checked="isInstanceVisible(cat.key, inst.id)"
-                    @change="setInstanceVisible(cat.key, inst.id, ($event.target as HTMLInputElement).checked)"
-                  >
-                  <span
-                    class="legend-dot"
-                    :style="{ background: instanceColor(getCssColor(cat.colorVar), idx) }"
-                  />
-                  {{ inst.label }}
-                </label>
-              </div>
-            </div>
-          </div>
+          <CategoryLinesColumn :category-defs="powerColumnCategories" />
+          <CategoryLinesColumn :category-defs="usageColumnCategories" />
 
           <div>
-            <div
-              v-for="cat in usageColumnCategories"
-              :key="cat.key"
-              class="border-t border-border py-1.5 first-of-type:border-t-0"
-            >
-              <div class="flex items-center gap-[7px] text-[13px]">
-                <span
-                  class="legend-dot"
-                  :style="{ background: getCssColor(cat.colorVar) }"
-                />
-                {{ cat.label }}
-              </div>
-
-              <div class="mt-1.5 mb-1">
-                <BaseTabGroup
-                  dense
-                  :model-value="categoryMode[cat.key]"
-                  :options="categoryModeOptions"
-                  @update="categoryMode[cat.key] = $event"
-                />
-              </div>
-
-              <div
-                v-if="categoryMode[cat.key] === 'individual'"
-                class="flex flex-col gap-1"
-              >
-                <label
-                  v-for="(inst, idx) in categories[cat.key].individual"
-                  :key="inst.id"
-                  class="flex cursor-pointer items-center gap-[7px] text-xs text-muted"
-                >
-                  <input
-                    type="checkbox"
-                    :checked="isInstanceVisible(cat.key, inst.id)"
-                    @change="setInstanceVisible(cat.key, inst.id, ($event.target as HTMLInputElement).checked)"
-                  >
-                  <span
-                    class="legend-dot"
-                    :style="{ background: instanceColor(getCssColor(cat.colorVar), idx) }"
-                  />
-                  {{ inst.label }}
-                </label>
-              </div>
-            </div>
-          </div>
-
-          <div>
-            <div
+            <LineGroup
               v-if="batterySoc.individual.length > 0"
-              class="border-t border-border py-1.5 first-of-type:border-t-0"
-            >
-              <div class="flex items-center gap-[7px] text-[13px]">
-                <span
-                  class="legend-dot"
-                  :style="{ background: getCssColor('--battery') }"
-                />
-                Speicher-SoC
-              </div>
+              label="Speicher-SoC"
+              :color="getCssColor('--battery')"
+              :mode="socCategoryMode.batterySoc"
+              :items="batterySoc.individual"
+              :is-visible="(id) => isInstanceVisible('batterySoc', id)"
+              :set-visible="(id, visible) => setInstanceVisible('batterySoc', id, visible)"
+              @update:mode="socCategoryMode.batterySoc = $event"
+            />
 
-              <div class="mt-1.5 mb-1">
-                <BaseTabGroup
-                  dense
-                  :model-value="socCategoryMode.batterySoc"
-                  :options="categoryModeOptions"
-                  @update="socCategoryMode.batterySoc = $event"
-                />
-              </div>
-
-              <div
-                v-if="socCategoryMode.batterySoc === 'individual'"
-                class="flex flex-col gap-1"
-              >
-                <label
-                  v-for="(inst, idx) in batterySoc.individual"
-                  :key="inst.id"
-                  class="flex cursor-pointer items-center gap-[7px] text-xs text-muted"
-                >
-                  <input
-                    type="checkbox"
-                    :checked="isInstanceVisible('batterySoc', inst.id)"
-                    @change="setInstanceVisible('batterySoc', inst.id, ($event.target as HTMLInputElement).checked)"
-                  >
-                  <span
-                    class="legend-dot"
-                    :style="{ background: instanceColor(getCssColor('--battery'), idx) }"
-                  />
-                  {{ inst.label }}
-                </label>
-              </div>
-            </div>
-
-            <div
+            <LineGroup
               v-if="selectedVehicleSoc.length > 1"
-              class="border-t border-border py-1.5 first-of-type:border-t-0"
-            >
-              <div class="flex items-center gap-[7px] text-[13px]">
-                <span
-                  class="legend-dot"
-                  :style="{ background: getCssColor('--car') }"
-                />
-                Fahrzeug-SoC
-              </div>
-              <div class="mt-1.5 flex flex-col gap-1">
-                <label
-                  v-for="(veh, idx) in selectedVehicleSoc"
-                  :key="veh.id"
-                  class="flex cursor-pointer items-center gap-[7px] text-xs text-muted"
-                >
-                  <input
-                    type="checkbox"
-                    :checked="isInstanceVisible('vehicleSoc', veh.id)"
-                    @change="setInstanceVisible('vehicleSoc', veh.id, ($event.target as HTMLInputElement).checked)"
-                  >
-                  <span
-                    class="legend-dot"
-                    :style="{ background: instanceColor(getCssColor('--car'), idx) }"
-                  />
-                  {{ veh.label }}
-                </label>
-              </div>
-            </div>
+              label="Fahrzeug-SoC"
+              :color="getCssColor('--car')"
+              :items="selectedVehicleSoc"
+              :is-visible="(id) => isInstanceVisible('vehicleSoc', id)"
+              :set-visible="(id, visible) => setInstanceVisible('vehicleSoc', id, visible)"
+            />
           </div>
         </div>
       </template>
@@ -261,12 +125,14 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useMqttStore } from '@/stores/mqtt-store'
-import { useChartSettings, categoryDefs, viewOptions, categoryModeOptions } from '@/composables/useChartSettings'
-import { getCssColor, instanceColor } from '@/utils/color'
+import { useChartSettings, categoryDefs, viewOptions, displayModeOptions } from '@/composables/useChartSettings'
+import { getCssColor } from '@/utils/color'
 import type { CategoryKey } from '@/types/chart'
 import BaseModal from './BaseModal.vue'
 import BaseTabGroup from './BaseTabGroup.vue'
 import DarkModeToggle from './DarkModeToggle.vue'
+import CategoryLinesColumn from './CategoryLinesColumn.vue'
+import LineGroup from './LineGroup.vue'
 
 defineProps<{
   modelValue: boolean
@@ -283,8 +149,8 @@ defineEmits<{
 const mqttStore = useMqttStore()
 const {
   mode,
+  displayMode,
   liveRangeMinutes,
-  categoryMode,
   socCategoryMode,
   isInstanceVisible,
   setInstanceVisible,

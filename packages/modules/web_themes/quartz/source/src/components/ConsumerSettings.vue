@@ -15,13 +15,11 @@
 
     <div class="settings-divider" />
     <div class="toggle-row">
-      <label for="cu-reset-active">Betriebsmodus automatisch umstellen</label>
-      <input
-        id="cu-reset-active"
-        type="checkbox"
-        :checked="resetActive"
-        @change="setResetField('active', ($event.target as HTMLInputElement).checked)"
-      >
+      <label>Betriebsmodus automatisch umstellen</label>
+      <BaseToggle
+        :model-value="resetActive"
+        @update:model-value="setResetField('active', $event)"
+      />
     </div>
 
     <template v-if="resetActive">
@@ -72,20 +70,16 @@
 import { computed } from 'vue'
 import { useMqttStore } from '@/stores/mqtt-store'
 import { chargeModes } from '@/utils/chargeModes'
+import { frequencyOptions } from '@/composables/usePlanListEditor'
 import BaseModal from './BaseModal.vue'
 import BaseSegmentedControl from './BaseSegmentedControl.vue'
 import WeekdayToggle from './WeekdayToggle.vue'
+import BaseToggle from './BaseToggle.vue'
 
 const props = defineProps<{ modelValue: boolean; consumerId: number; name: string }>()
 defineEmits<{ 'update:modelValue': [value: boolean] }>()
 
 const mqttStore = useMqttStore()
-
-const frequencyOptions = [
-  { value: 'once', label: 'Einmalig' },
-  { value: 'daily', label: 'Täglich' },
-  { value: 'weekly', label: 'Wöchentlich' },
-] as const
 
 const resetChargemode = computed(() => mqttStore.consumerUsage(props.consumerId)?.reset_chargemode)
 const resetActive = computed(() => resetChargemode.value?.active ?? false)

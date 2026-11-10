@@ -237,36 +237,31 @@ export function useDailyLog() {
     }
   }
 
-  const categories = computed<Record<CategoryKey, CategoryData>>(() => {
-    const log = mqttStore.getValue<DailyLogResponse | undefined>(topic.value, undefined)
-    const entries = log?.entries ?? []
-    const names = log?.names ?? {}
-    return {
-      pv: buildCategory(entries, 'pv', 'export', names, 'Wechselrichter'),
-      battery: buildCategory(entries, 'bat', 'net', names, 'Speicher'),
-      chargepoint: buildCategory(entries, 'cp', 'import', names, 'Ladepunkt'),
-      consumer: buildCategory(entries, 'consumer', 'import', names, 'Verbraucher'),
-      grid: buildCombinedOnly(entries.map((e) => ({ timestamp: e.timestamp * 1000, power: gridPower(e) }))),
-      house: buildCombinedOnly(
-        entries.map((e) => ({ timestamp: e.timestamp * 1000, power: flowValue(e.hc?.all, 'import') })),
-      ),
-      counter: buildCounterCategory(entries, names),
-    }
-  })
+  const log = computed(() => mqttStore.getValue<DailyLogResponse | undefined>(topic.value, undefined))
+  const entries = computed(() => log.value?.entries ?? [])
+  const names = computed(() => log.value?.names ?? {})
 
-  const batterySoc = computed<SocCategoryData>(() => {
-    const log = mqttStore.getValue<DailyLogResponse | undefined>(topic.value, undefined)
-    return buildBatterySoc(log?.entries ?? [], log?.names ?? {})
-  })
-  const vehicleSocAll = computed<SocSeries[]>(() => {
-    const log = mqttStore.getValue<DailyLogResponse | undefined>(topic.value, undefined)
-    return buildVehicleSoc(log?.entries ?? [], log?.names ?? {})
-  })
-  const forecast = computed<InstancePoint[]>(() =>
-    buildForecast(mqttStore.getValue<DailyLogResponse | undefined>(topic.value, undefined)),
-  )
+  const categories = computed<Record<CategoryKey, CategoryData>>(() => ({
+    pv: buildCategory(entries.value, 'pv', 'export', names.value, 'Wechselrichter'),
+    battery: buildCategory(entries.value, 'bat', 'net', names.value, 'Speicher'),
+    chargepoint: buildCategory(entries.value, 'cp', 'import', names.value, 'Ladepunkt'),
+    consumer: buildCategory(entries.value, 'consumer', 'import', names.value, 'Verbraucher'),
+    grid: buildCombinedOnly(entries.value.map((e) => ({ timestamp: e.timestamp * 1000, power: gridPower(e) }))),
+    house: buildCombinedOnly(
+      entries.value.map((e) => ({ timestamp: e.timestamp * 1000, power: flowValue(e.hc?.all, 'import') })),
+    ),
+    counter: buildCounterCategory(entries.value, names.value),
+  }))
 
-  const hasData = computed(() => categories.value.grid.all.length > 0)
+  const batterySoc = computed<SocCategoryData>(() => buildBatterySoc(entries.value, names.value))
+  const vehicleSocAll = computed<SocSeries[]>(() => buildVehicleSoc(entries.value, names.value))
+  const forecast = computed<InstancePoint[]>(() => buildForecast(log.value))
+
+  // get_daily_log() always returns at least {entries: [], names: {}} (see process_log.py), even
+  // for a day with no log file - so the topic is guaranteed to eventually hold *something* once
+  // the command's response arrives, and "still undefined" reliably means "response not in yet"
+  // rather than "no data", distinguishing a loading flash from a genuinely empty day
+  const isLoading = computed(() => log.value === undefined)
 
   // swap the subscription and request fresh data whenever the topic itself changes (date
   // navigation, or the date rolling over at midnight) - fires once immediately to establish the
@@ -303,7 +298,7 @@ export function useDailyLog() {
 
   return {
     categories,
-    hasData,
+    isLoading,
     batterySoc,
     vehicleSocAll,
     forecast,

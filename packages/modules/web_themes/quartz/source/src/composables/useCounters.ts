@@ -9,7 +9,7 @@ export function useCounters() {
   onUnmounted(() => mqttStore.unsubscribeComponentHierarchy())
 
   // non-grid sub-meters only - the grid/EVU connection itself is already shown as "Netz",
-  // matching both koala's own precedent and the existing Zähler chart category
+  // matching the existing Zähler chart category
   const counterIds = computed(() => mqttStore.counterIds.filter((id) => id !== mqttStore.gridCounterId()))
 
   return { counterIds }

@@ -81,39 +81,41 @@
           :options="[{ value: 1, label: '1' }, { value: 3, label: 'Maximum' }, { value: 0, label: 'Automatik' }]"
           @update="(v) => setField('chargemode.pv_charging.phases_to_use', v)"
         />
-        <FieldSlider
-          label="Mindest-SoC für das Fahrzeug"
-          unit="%"
-          :min="0"
-          :max="100"
-          :model-value="pv.min_soc"
-          @update="(v) => setField('chargemode.pv_charging.min_soc', v)"
-        />
-        <FieldSlider
-          v-if="acChargingEnabled"
-          label="Mindest-SoC-Strom"
-          unit="A"
-          :min="6"
-          :max="32"
-          :model-value="pv.min_soc_current"
-          @update="(v) => setField('chargemode.pv_charging.min_soc_current', v)"
-        />
-        <FieldSlider
-          v-if="dcChargingEnabled"
-          label="DC Mindest-SoC-Leistung"
-          unit="kW"
-          :min="0"
-          :max="300"
-          :model-value="convertDcCurrentToPower(pv.dc_min_soc_current)"
-          @update="(v) => setField('chargemode.pv_charging.dc_min_soc_current', convertPowerToDcCurrent(v))"
-        />
-        <BaseSegmentedControl
-          v-if="acChargingEnabled"
-          label="Anzahl Phasen Mindest-SoC"
-          :model-value="pv.phases_to_use_min_soc"
-          :options="[{ value: 1, label: '1' }, { value: 3, label: 'Maximum' }, { value: 0, label: 'Automatik' }]"
-          @update="(v) => setField('chargemode.pv_charging.phases_to_use_min_soc', v)"
-        />
+        <template v-if="vehicleSocType !== undefined">
+          <FieldSlider
+            label="Mindest-SoC für das Fahrzeug"
+            unit="%"
+            :min="0"
+            :max="100"
+            :model-value="pv.min_soc"
+            @update="(v) => setField('chargemode.pv_charging.min_soc', v)"
+          />
+          <FieldSlider
+            v-if="acChargingEnabled"
+            label="Mindest-SoC-Strom"
+            unit="A"
+            :min="6"
+            :max="32"
+            :model-value="pv.min_soc_current"
+            @update="(v) => setField('chargemode.pv_charging.min_soc_current', v)"
+          />
+          <FieldSlider
+            v-if="dcChargingEnabled"
+            label="DC Mindest-SoC-Leistung"
+            unit="kW"
+            :min="0"
+            :max="300"
+            :model-value="convertDcCurrentToPower(pv.dc_min_soc_current)"
+            @update="(v) => setField('chargemode.pv_charging.dc_min_soc_current', convertPowerToDcCurrent(v))"
+          />
+          <BaseSegmentedControl
+            v-if="acChargingEnabled"
+            label="Anzahl Phasen Mindest-SoC"
+            :model-value="pv.phases_to_use_min_soc"
+            :options="[{ value: 1, label: '1' }, { value: 3, label: 'Maximum' }, { value: 0, label: 'Automatik' }]"
+            @update="(v) => setField('chargemode.pv_charging.phases_to_use_min_soc', v)"
+          />
+        </template>
         <LimitFields
           :limit="pv.limit"
           field-prefix="chargemode.pv_charging.limit"
@@ -182,13 +184,11 @@
       <template v-if="mode !== 'stop'">
         <div class="settings-divider" />
         <div class="toggle-row">
-          <label for="cp-zeitladen">Zeitladen</label>
-          <input
-            id="cp-zeitladen"
-            type="checkbox"
-            :checked="template.time_charging.active"
-            @change="setField('time_charging.active', ($event.target as HTMLInputElement).checked)"
-          >
+          <label>Zeitladen</label>
+          <BaseToggle
+            :model-value="template.time_charging.active"
+            @update:model-value="setField('time_charging.active', $event)"
+          />
         </div>
         <TimeChargingPlans
           v-if="template.time_charging.active"
@@ -212,6 +212,7 @@ import LimitFields from './LimitFields.vue'
 import ScheduledChargingPlans from './ScheduledChargingPlans.vue'
 import TimeChargingPlans from './TimeChargingPlans.vue'
 import ElectricityTariffChart from './ElectricityTariffChart.vue'
+import BaseToggle from './BaseToggle.vue'
 
 const props = defineProps<{ chargePointId: number; modelValue: boolean }>()
 defineEmits<{ 'update:modelValue': [value: boolean] }>()
@@ -222,19 +223,22 @@ const name = computed(() => mqttStore.chargePointName(props.chargePointId))
 const template = computed(() => mqttStore.chargePointChargeTemplate(props.chargePointId))
 const mode = computed(() => template.value?.chargemode.selected)
 
-// both false while the chargepoint's own config/template topics are still loading - matches
-// koala's real behavior (it has the same brief gap), not something to paper over with a fallback
+// both false while the chargepoint's own config/template topics are still loading - a brief,
+// expected gap, not something to paper over with a fallback
 const acChargingEnabled = computed(() => mqttStore.chargePointChargeType(props.chargePointId) === 'AC')
 const dcChargingEnabled = computed(() => mqttStore.chargePointChargeType(props.chargePointId) === 'DC')
-// matches koala's own DC_POWER_FALLBACK - corresponds to the backend's dc_max_current default (435 A)
+// corresponds to the backend's dc_max_current default (435 A)
 const dcMaxPower = computed(() => mqttStore.chargePointDcMaxPower(props.chargePointId) ?? 300)
+// undefined when the connected vehicle can't report its own SoC at all - gates hiding the
+// entire Mindest-SoC sub-block (fields are meaningless without it)
+const vehicleSocType = computed(() => mqttStore.chargePointConnectedVehicleSocType(props.chargePointId))
 
 // defaults match control/ev/charge_template.py's own dataclass defaults - only used to narrow
 // between "template still loading" and "mode === x", never actually shown unguarded
 const DEFAULT_LIMIT: Limit = { selected: 'none', soc: 50, amount: 50000 }
 
 // "Minimaler Dauerstrom" (pv_charging/eco_charging) is "Aus" (0) or 6-16A - no EVSE/vehicle can
-// sustain continuous charging below 6A (IEC 61851), same discrete range koala's own slider uses
+// sustain continuous charging below 6A (IEC 61851)
 const MIN_CURRENT_STEPS = [0, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]
 const instant = computed(
   () => template.value?.chargemode.instant_charging ?? { current: 16, dc_current: 145, phases_to_use: 3, limit: DEFAULT_LIMIT },

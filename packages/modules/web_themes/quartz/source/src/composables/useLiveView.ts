@@ -14,7 +14,7 @@ const INSTANCE_KEY = /^(cp|consumer|counter)(\d+)-power$/
 const EV_SOC_KEY = /^ev(\d+)-soc$/
 
 /**
- * Finer-grained recent-window series than the daily log - see koala's alllivevaluesJson*
+ * Finer-grained recent-window series than the daily log - see the alllivevaluesJson*
  * chunks (runs/graphing.sh). Unlike the daily log, this feed only carries per-instance
  * breakdown for chargepoints, consumers and (non-grid) counters - pv/battery are only ever
  * published as totals, so their 'individual' arrays are always empty here. The backend never

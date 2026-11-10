@@ -8,7 +8,7 @@ export function useBatteries() {
   onMounted(() => mqttStore.subscribeComponentHierarchy())
   onUnmounted(() => mqttStore.unsubscribeComponentHierarchy())
 
-  // prepend the overview pseudo-id (-1) once there's more than one battery - matches koala's own BatteryInformation.vue
+  // prepend the overview pseudo-id (-1) once there's more than one battery
   const batteryIds = computed(() => {
     const ids = mqttStore.batteryIds
     return ids.length > 1 ? [-1, ...ids] : ids

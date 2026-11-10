@@ -30,7 +30,7 @@ import { formatTooltipTime, eurPerWhToCtPerKwh } from '@/utils/format'
 
 Chart.register(annotationPlugin)
 
-/** The price threshold (ct/kWh) - clicking the chart emits the clicked hour's own price as the new threshold, same as koala's equivalent chart. */
+/** The price threshold (ct/kWh) - clicking the chart emits the clicked hour's own price as the new threshold. */
 const props = defineProps<{ modelValue?: number }>()
 const emit = defineEmits<{ 'update:modelValue': [value: number] }>()
 
@@ -50,8 +50,8 @@ const points = computed(() => {
 })
 
 // contiguous runs of "below/at threshold" (allowed - green) vs "above threshold" (blocked -
-// red) price slots, shaded as background boxes - ported from koala's ElectricityTariffChart.vue,
-// simplified to one pass over the series instead of two separate below/above loops
+// red) price slots, shaded as background boxes - one pass over the series rather than two
+// separate below/above loops
 const priceAnnotations = computed<AnnotationOptions[]>(() => {
   if (props.modelValue === undefined || points.value.length === 0) return []
   const allowedColor = hexToRgba(getCssColor('--pv'), 0.2)

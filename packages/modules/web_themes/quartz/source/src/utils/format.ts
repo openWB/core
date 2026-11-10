@@ -29,10 +29,9 @@ export function ctPerKwhToEurPerWh(ctPerKwh: number): number {
 
 /**
  * DC charging stores/sets a current (A), same as AC, but a DC charge point's actual phase count
- * isn't meaningful to the user the way AC phases are - every DC-capable web theme (koala included)
- * shows/edits this as a kW power instead, assuming a 3-phase 230V system for the conversion
- * (matches koala's own convertDcCurrentToPower/convertPowerToDcCurrent exactly, down to the
- * rounding - not an arbitrary choice, keeping this consistent with the reference theme).
+ * isn't meaningful to the user the way AC phases are - shown/edited as a kW power instead,
+ * assuming a 3-phase 230V system for the conversion (not an arbitrary choice - keeps every
+ * DC-capable field in the app converting the same way).
  */
 export function convertDcCurrentToPower(dcCurrent: number): number {
   return Math.round((dcCurrent * 3 * 230) / 1000)

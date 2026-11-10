@@ -1,68 +1,24 @@
 <template>
-  <div class="px-1 pt-1 pb-2">
+  <div class="px-1">
     <template v-if="sources.length > 0 || sinks.length > 0">
-      <div class="mb-1.5 text-center text-[13px] font-bold text-muted">
-        {{ formatKw(sourceTotal) }}
-      </div>
-      <div class="flex h-[26px] overflow-hidden rounded-lg">
-        <div
-          v-for="seg in sources"
-          :key="seg.label"
-          :style="{ width: pct(seg.value, sourceTotal) + '%', background: `var(--${seg.colorVar})` }"
-        />
-      </div>
-      <div class="mt-2 flex flex-wrap justify-center gap-x-3 gap-y-1">
-        <span
-          v-for="seg in sources"
-          :key="seg.label"
-          class="flex flex-none items-center gap-1.5 text-[11.5px] whitespace-nowrap text-muted"
-        >
-          <span
-            class="legend-dot"
-            :style="{ background: `var(--${seg.colorVar})` }"
-          />
-          <b
-            class="font-bold"
-            :style="{ color: `var(--${seg.colorVar})` }"
-          >{{ formatKw(seg.value) }}</b>
-          {{ seg.label }}
-        </span>
-      </div>
+      <FlowBar
+        :segments="sources"
+        :total="sourceTotal"
+        position="above"
+      />
 
-      <div class="my-2.5 flex items-center justify-center text-muted">
+      <div class="my-1 flex items-center justify-center text-muted">
         <IconArrowDown
-          :width="18"
-          :height="18"
+          :width="14"
+          :height="14"
         />
       </div>
 
-      <div class="mb-2 flex flex-wrap justify-center gap-x-3 gap-y-1">
-        <span
-          v-for="seg in sinks"
-          :key="seg.label"
-          class="flex flex-none items-center gap-1.5 text-[11.5px] whitespace-nowrap text-muted"
-        >
-          <span
-            class="legend-dot"
-            :style="{ background: `var(--${seg.colorVar})` }"
-          />
-          <b
-            class="font-bold"
-            :style="{ color: `var(--${seg.colorVar})` }"
-          >{{ formatKw(seg.value) }}</b>
-          {{ seg.label }}
-        </span>
-      </div>
-      <div class="flex h-[26px] overflow-hidden rounded-lg">
-        <div
-          v-for="seg in sinks"
-          :key="seg.label"
-          :style="{ width: pct(seg.value, sinkTotal) + '%', background: `var(--${seg.colorVar})` }"
-        />
-      </div>
-      <div class="mt-1.5 text-center text-[13px] font-bold text-muted">
-        {{ formatKw(sinkTotal) }}
-      </div>
+      <FlowBar
+        :segments="sinks"
+        :total="sinkTotal"
+        position="below"
+      />
     </template>
     <p
       v-else
@@ -77,14 +33,9 @@
 import { computed } from 'vue'
 import { useMqttStore } from '@/stores/mqtt-store'
 import { useCounters } from '@/composables/useCounters'
-import { formatKw } from '@/utils/format'
+import type { FlowSegment } from '@/types/flow'
+import FlowBar from './FlowBar.vue'
 import IconArrowDown from './icons/IconArrowDown.vue'
-
-interface FlowSegment {
-  label: string
-  value: number
-  colorVar: string
-}
 
 const mqttStore = useMqttStore()
 const { counterIds } = useCounters()
@@ -110,8 +61,10 @@ const sources = computed<FlowSegment[]>(() => {
   if (mqttStore.chargePointSumPower < 0) {
     segments.push({ label: 'Ladepunkte (V2H)', value: -mqttStore.chargePointSumPower, colorVar: 'chargepoint' })
   }
-  if (counterSumPower.value < 0) segments.push({ label: 'Zähler', value: -counterSumPower.value, colorVar: 'grid' })
-  return segments
+  if (counterSumPower.value < 0) {
+    segments.push({ label: 'Zähler', value: -counterSumPower.value, colorVar: 'grid', hatched: true })
+  }
+  return segments.sort((a, b) => a.value - b.value)
 })
 
 const sinks = computed<FlowSegment[]>(() => {
@@ -121,14 +74,12 @@ const sinks = computed<FlowSegment[]>(() => {
   if (mqttStore.consumerPower > 0) segments.push({ label: 'Verbraucher', value: mqttStore.consumerPower, colorVar: 'consumer' })
   if (mqttStore.gridPower < 0) segments.push({ label: 'Netz-Einspeisung', value: -mqttStore.gridPower, colorVar: 'grid' })
   if (mqttStore.batteryPower > 0) segments.push({ label: 'Speicher', value: mqttStore.batteryPower, colorVar: 'battery' })
-  if (counterSumPower.value > 0) segments.push({ label: 'Zähler', value: counterSumPower.value, colorVar: 'grid' })
-  return segments
+  if (counterSumPower.value > 0) {
+    segments.push({ label: 'Zähler', value: counterSumPower.value, colorVar: 'grid', hatched: true })
+  }
+  return segments.sort((a, b) => a.value - b.value)
 })
 
 const sourceTotal = computed(() => sources.value.reduce((sum, s) => sum + s.value, 0))
 const sinkTotal = computed(() => sinks.value.reduce((sum, s) => sum + s.value, 0))
-
-function pct(value: number, total: number): number {
-  return total > 0 ? (value / total) * 100 : 0
-}
 </script>

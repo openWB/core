@@ -38,13 +38,11 @@
           Speicher-Ladeleistung unterhalb Mindest-SoC
         </div>
         <div class="toggle-row">
-          <label for="bat-power-reserve-active">Nur eine bestimmte Ladeleistung reservieren</label>
-          <input
-            id="bat-power-reserve-active"
-            type="checkbox"
-            :checked="powerReserveActive"
-            @change="mqttStore.setBatteryPowerReserveActive(($event.target as HTMLInputElement).checked)"
-          >
+          <label>Nur eine bestimmte Ladeleistung reservieren</label>
+          <BaseToggle
+            :model-value="powerReserveActive"
+            @update:model-value="mqttStore.setBatteryPowerReserveActive($event)"
+          />
         </div>
         <FieldSlider
           v-if="powerReserveActive"
@@ -63,13 +61,11 @@
           Speicher-SoC oberhalb Maximal-SoC
         </div>
         <div class="toggle-row">
-          <label for="bat-power-discharge-active">Entladung des Speichers erlauben</label>
-          <input
-            id="bat-power-discharge-active"
-            type="checkbox"
-            :checked="powerDischargeActive"
-            @change="mqttStore.setBatteryPowerDischargeActive(($event.target as HTMLInputElement).checked)"
-          >
+          <label>Entladung des Speichers erlauben</label>
+          <BaseToggle
+            :model-value="powerDischargeActive"
+            @update:model-value="mqttStore.setBatteryPowerDischargeActive($event)"
+          />
         </div>
         <FieldSlider
           v-if="powerDischargeActive"
@@ -96,6 +92,7 @@ import BaseModal from './BaseModal.vue'
 import BaseSegmentedControl from './BaseSegmentedControl.vue'
 import FieldSlider from './FieldSlider.vue'
 import ActiveBatteryControlSettings from './ActiveBatteryControlSettings.vue'
+import BaseToggle from './BaseToggle.vue'
 
 defineProps<{ modelValue: boolean }>()
 defineEmits<{ 'update:modelValue': [value: boolean] }>()

@@ -55,8 +55,9 @@ export interface EvTemplate {
   bidi: boolean
 }
 
-/** openWB/chargepoint/<id>/config - only the field needed to look up the hardware template. */
+/** openWB/chargepoint/<id>/config - only the fields this theme reads. */
 export interface ChargePointConfig {
+  name: string
   template: number
 }
 /** openWB/chargepoint/template/<id> - only the fields AC/DC gating and DC power conversion need. */
@@ -169,7 +170,7 @@ export interface VehicleInfo {
   model?: string
 }
 
-/** One chargepoint a vehicle is currently connected to (koala derives this the same way - no direct topic). */
+/** One chargepoint a vehicle is currently connected to - no direct topic for this, derived client-side. */
 export interface VehicleConnectionState {
   id: number
   name: string
@@ -399,8 +400,7 @@ export const useMqttStore = defineStore('mqtt', () => {
 
   // --- access control (user management) ---
   // Published per logged-in session by the backend's own auth system - a user with restricted
-  // access simply never receives 'true' for a section they're not allowed to see. Same topics and
-  // shape koala's own mqtt-store.ts already reads; Quartz mirrors it rather than inventing its own.
+  // access simply never receives 'true' for a section they're not allowed to see.
 
   function accessAllowed(): boolean {
     return getValue.value<boolean>('openWB/system/security/access_allowed', false)
@@ -422,7 +422,7 @@ export const useMqttStore = defineStore('mqtt', () => {
 
   // openWB/graph/alllivevaluesJson(1-16): chunked by runs/graphing.sh, each payload is newline-separated
   // JSON lines (not one JSON document) rather than a single value, so getValue()'s auto-JSON-parsing
-  // leaves it as a raw string here - split/parse it the same way koala's mqtt-store does.
+  // leaves it as a raw string here - split/parse it manually below.
   const liveSeriesRaw = computed<RawLivePoint[]>(() => {
     const chunks = getWildcardValues('openWB/graph/alllivevaluesJson')
     const points: RawLivePoint[] = []
@@ -513,11 +513,11 @@ export const useMqttStore = defineStore('mqtt', () => {
     return undefined
   }
 
-  function chargePointConfig(id: number): Record<string, unknown> {
-    return getValue.value<Record<string, unknown>>(`openWB/chargepoint/${id}/config`, {})
+  function chargePointConfig(id: number): ChargePointConfig | undefined {
+    return getValue.value<ChargePointConfig | undefined>(`openWB/chargepoint/${id}/config`, undefined)
   }
   function chargePointName(id: number): string {
-    return (chargePointConfig(id).name as string | undefined) ?? `Ladepunkt ${id}`
+    return chargePointConfig(id)?.name ?? `Ladepunkt ${id}`
   }
 
   function chargePointPlugState(id: number): boolean {
@@ -589,9 +589,6 @@ export const useMqttStore = defineStore('mqtt', () => {
   function chargePointFaultStateTotal(): number {
     return getValue.value<number>('openWB/chargepoint/get/fault_state', 0)
   }
-  function chargePointFaultMessageTotal(): string {
-    return getValue.value<string>('openWB/chargepoint/get/fault_str', '')
-  }
 
   function chargePointManualLock(id: number): boolean {
     return getValue.value<boolean>(`openWB/chargepoint/${id}/set/manual_lock`, false)
@@ -611,6 +608,12 @@ export const useMqttStore = defineStore('mqtt', () => {
     updateTopic(`openWB/chargepoint/${id}/get/connected_vehicle/info`, { id: vehicleId, name: vehicleName })
     doPublish(`openWB/set/chargepoint/${id}/config/ev`, vehicleId)
   }
+  /** The connected vehicle's own SoC-module type - undefined if it has no SoC capability at all. */
+  function chargePointConnectedVehicleSocType(id: number): string | undefined {
+    const vehicleId = chargePointConnectedVehicleInfo(id)?.id
+    if (vehicleId === undefined) return undefined
+    return vehicleSocType(vehicleId)
+  }
   function chargePointConnectedVehicleSoc(id: number): ChargePointConnectedVehicleSoc | undefined {
     return getValue.value<ChargePointConnectedVehicleSoc | undefined>(
       `openWB/chargepoint/${id}/get/connected_vehicle/soc`,
@@ -623,8 +626,8 @@ export const useMqttStore = defineStore('mqtt', () => {
       undefined,
     )?.ev_template
   }
-  /** Whether the vehicle currently connected to this chargepoint can do bidi/V2H at all - same
-   *  gate koala's own bidi toggle uses, not a hardware/chargepoint-side capability check. */
+  /** Whether the vehicle currently connected to this chargepoint can do bidi/V2H at all - a
+   *  vehicle-side capability, not a hardware/chargepoint-side one. */
   function chargePointConnectedVehicleBidiCapable(id: number): boolean {
     const templateId = chargePointConnectedVehicleEvTemplateId(id)
     if (templateId === undefined) return false
@@ -633,8 +636,7 @@ export const useMqttStore = defineStore('mqtt', () => {
   }
 
   function chargePointTemplate(id: number): ChargePointTemplate | undefined {
-    const templateId = getValue.value<ChargePointConfig | undefined>(`openWB/chargepoint/${id}/config`, undefined)
-      ?.template
+    const templateId = chargePointConfig(id)?.template
     if (templateId === undefined) return undefined
     return getValue.value<ChargePointTemplate | undefined>(`openWB/chargepoint/template/${templateId}`, undefined)
   }
@@ -711,9 +713,6 @@ export const useMqttStore = defineStore('mqtt', () => {
   function vehicleSocType(id: number): string | undefined {
     return getValue.value<{ type?: string } | undefined>(`openWB/vehicle/${id}/soc_module/config`, undefined)?.type
   }
-  function vehicleColor(id: number): string | undefined {
-    return getValue.value<string | undefined>(`openWB/vehicle/${id}/color`, undefined)
-  }
   function vehicleSocValue(id: number): number | undefined {
     return getValue.value<number | undefined>(`openWB/vehicle/${id}/get/soc`, undefined)
   }
@@ -783,7 +782,7 @@ export const useMqttStore = defineStore('mqtt', () => {
     unsubscribe('openWB/chargepoint/+/get/connected_vehicle/info')
   }
 
-  /** Every chargepoint this vehicle is currently connected to - no direct vehicle-side topic for this, derived the same way koala does it. */
+  /** Every chargepoint this vehicle is currently connected to - no direct vehicle-side topic for this, derived client-side. */
   function vehicleConnectionState(vehicleId: number): VehicleConnectionState[] {
     const connected = getWildcardValues('openWB/chargepoint/')
     return Object.entries(connected)
@@ -1091,9 +1090,6 @@ export const useMqttStore = defineStore('mqtt', () => {
   function pvFaultStateTotal(): number {
     return getValue.value<number>('openWB/pv/get/fault_state', 0)
   }
-  function pvFaultMessageTotal(): string {
-    return getValue.value<string>('openWB/pv/get/fault_str', '')
-  }
 
   // --- consumers ---
 
@@ -1127,9 +1123,6 @@ export const useMqttStore = defineStore('mqtt', () => {
   }
   function consumerFaultStateTotal(): number {
     return getValue.value<number>('openWB/consumer/get/fault_state', 0)
-  }
-  function consumerFaultMessageTotal(): string {
-    return getValue.value<string>('openWB/consumer/get/fault_str', '')
   }
   function consumerInstanceStateMessage(id: number): string {
     return getValue.value<string>(`openWB/consumer/${id}/get/state_str`, '')
@@ -1180,14 +1173,11 @@ export const useMqttStore = defineStore('mqtt', () => {
 
   return {
     topics,
-    subscriptions,
     connected,
     initialize,
     subscribe,
     unsubscribe,
     getValue,
-    doPublish,
-    sendCommand,
     pvPower,
     gridPower,
     houseConsumption,
@@ -1221,7 +1211,6 @@ export const useMqttStore = defineStore('mqtt', () => {
     liveSeriesRaw,
     subscribeLiveSeries,
     unsubscribeLiveSeries,
-    updateTopic,
     chargePointIds,
     subscribeComponentHierarchy,
     unsubscribeComponentHierarchy,
@@ -1247,13 +1236,12 @@ export const useMqttStore = defineStore('mqtt', () => {
     chargePointFaultState,
     chargePointFaultMessage,
     chargePointFaultStateTotal,
-    chargePointFaultMessageTotal,
     chargePointManualLock,
     setChargePointManualLock,
     chargePointConnectedVehicleInfo,
     setChargePointConnectedVehicle,
     chargePointConnectedVehicleSoc,
-    chargePointConnectedVehicleEvTemplateId,
+    chargePointConnectedVehicleSocType,
     chargePointConnectedVehicleBidiCapable,
     chargePointChargeType,
     chargePointDcMaxPower,
@@ -1269,8 +1257,6 @@ export const useMqttStore = defineStore('mqtt', () => {
     vehicleForceSocUpdate,
     vehicleSocUpdateInProgress,
     vehicleInfo,
-    vehicleSocType,
-    vehicleColor,
     vehicleSocValue,
     vehicleRange,
     vehicleSocTimestamp,
@@ -1366,7 +1352,6 @@ export const useMqttStore = defineStore('mqtt', () => {
     inverterInstanceFaultState,
     inverterInstanceFaultMessage,
     pvFaultStateTotal,
-    pvFaultMessageTotal,
     consumerName,
     consumerInstancePower,
     consumerInstanceDailyImported,
@@ -1376,7 +1361,6 @@ export const useMqttStore = defineStore('mqtt', () => {
     consumerInstanceFaultState,
     consumerInstanceFaultMessage,
     consumerFaultStateTotal,
-    consumerFaultMessageTotal,
     consumerInstanceStateMessage,
     consumerPlugState,
     consumerChargeState,

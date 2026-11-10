@@ -1,19 +1,42 @@
 <template>
-  <div class="panel relative mb-6 px-3 pt-5 pb-4 sm:px-6">
+  <div
+    v-if="showFlow"
+    class="panel relative mb-6 px-3 pt-4 pb-3 sm:px-6"
+  >
+    <h2 class="m-0 mb-2 text-base font-bold">
+      <span v-if="displayMode === 'both'">Fluss</span>
+      <button
+        v-else
+        type="button"
+        class="cursor-pointer border-0 bg-transparent p-0 font-bold text-text"
+        title="Zwischen Diagramm und Fluss-Ansicht wechseln"
+        @click="displayMode = 'chart'"
+      >
+        Fluss
+      </button>
+    </h2>
+    <FlowBalanceBar />
+  </div>
+
+  <div
+    v-if="showChart"
+    class="panel relative mb-6 px-3 pt-5 pb-4 sm:px-6"
+  >
     <div class="mb-3 flex flex-wrap items-center justify-between gap-3">
       <div class="flex items-center gap-2">
         <h2 class="m-0 flex items-center gap-2 text-base font-bold">
+          <span v-if="displayMode === 'both'">Verlauf</span>
           <button
+            v-else
             type="button"
             class="cursor-pointer border-0 bg-transparent p-0 font-bold text-text"
             title="Zwischen Diagramm und Fluss-Ansicht wechseln"
-            @click="displayMode = displayMode === 'chart' ? 'flow' : 'chart'"
+            @click="displayMode = 'flow'"
           >
-            {{ displayMode === 'chart' ? 'Verlauf' : 'Fluss' }}
+            Verlauf
           </button>
           ·
           <button
-            v-if="displayMode === 'chart'"
             type="button"
             class="cursor-pointer rounded-full border-0 px-2.5 py-1 text-[13px] font-semibold badge-muted"
             @click="mode = mode === 'day' ? 'live' : 'day'"
@@ -21,7 +44,7 @@
             {{ mode === 'day' ? dayLabel : `Live · ${liveRangeMinutes} Min` }}
           </button>
         </h2>
-        <template v-if="displayMode === 'chart' && mode === 'day'">
+        <template v-if="mode === 'day'">
           <BaseIconButton
             size="sm"
             aria-label="Vorheriger Tag"
@@ -70,15 +93,12 @@
           </div>
         </template>
       </div>
-      <div
-        v-if="displayMode === 'chart'"
-        class="scrollbar-hide flex flex-nowrap items-center gap-4 overflow-x-auto sm:flex-wrap sm:overflow-visible"
-      >
+      <div class="scrollbar-hide flex flex-nowrap items-center gap-4 overflow-x-auto sm:flex-wrap sm:overflow-visible">
         <button
           v-for="item in legend"
           :key="item.key"
           type="button"
-          class="flex flex-none cursor-pointer items-center gap-1.5 border-0 bg-transparent p-0 text-xs whitespace-nowrap text-muted"
+          class="flex flex-none cursor-pointer items-center gap-1.5 border-0 bg-transparent p-0 text-[11px] whitespace-nowrap text-muted"
           :class="{ 'opacity-40': !item.visible }"
           @click="toggleLegendItem(item.key)"
         >
@@ -91,10 +111,7 @@
       </div>
     </div>
 
-    <div
-      v-if="displayMode === 'chart'"
-      class="relative min-h-[300px] sm:min-h-[420px]"
-    >
+    <div class="relative min-h-[300px] sm:min-h-[420px]">
       <button
         v-if="isZoomed"
         class="absolute top-0 right-0 z-10 rounded-full border border-border bg-panel px-2.5 py-[3px] text-xs text-accent shadow-[0_2px_8px_rgba(0,0,0,0.1)]"
@@ -111,14 +128,19 @@
         :options="chartOptions"
         :plugins="[nowLabelPlugin]"
       />
+      <div
+        v-else-if="isLoading"
+        class="absolute inset-0 flex items-center justify-center text-muted"
+      >
+        <IconRefresh class="animate-spin" />
+      </div>
       <p
         v-else
         class="absolute inset-0 flex items-center justify-center text-sm text-muted"
       >
-        Keine Daten für diesen Tag.
+        {{ mode === 'day' ? 'Keine Daten für diesen Tag.' : 'Keine Daten für diesen Zeitraum.' }}
       </p>
     </div>
-    <FlowBalanceBar v-else />
   </div>
 </template>
 
@@ -140,6 +162,7 @@ import BaseIconButton from './BaseIconButton.vue'
 import IconChevronLeft from './icons/IconChevronLeft.vue'
 import IconChevronRight from './icons/IconChevronRight.vue'
 import IconCalendar from './icons/IconCalendar.vue'
+import IconRefresh from './icons/IconRefresh.vue'
 import FlowBalanceBar from './FlowBalanceBar.vue'
 
 Chart.register(annotationPlugin, zoomPlugin)
@@ -159,6 +182,9 @@ const {
   batterySoc: publishedBatterySoc,
   selectedVehicleSoc: publishedSelectedVehicleSoc,
 } = useChartSettings()
+
+const showChart = computed(() => displayMode.value !== 'flow')
+const showFlow = computed(() => displayMode.value !== 'chart')
 
 const chartRef = ref<{ chart?: Chart } | null>(null)
 const isZoomed = ref(false)
@@ -218,6 +244,7 @@ const {
   batterySoc: dayBatterySoc,
   vehicleSocAll: dayVehicleSocAll,
   forecast: dayForecast,
+  isLoading: dayIsLoading,
   selectedDate,
   isToday,
   goToPreviousDay,
@@ -259,29 +286,54 @@ const selectedVehicleSoc = computed(() =>
     .map((v) => ({ ...v, label: mqttStore.vehicleList.find((veh) => veh.id === Number(v.id))?.name ?? v.label })),
 )
 
+// live mode has no equivalent of day mode's guaranteed command-response signal (graph.py's
+// retained alllivevaluesJson* chunks only exist once something has actually been logged, which a
+// fresh install genuinely may not have yet) - so this is a short grace period after
+// (re-)subscribing, just long enough for the broker to redeliver the retained chunks, rather than
+// a precise "response received" check
+const liveIsLoading = ref(false)
+let liveLoadingTimeout: ReturnType<typeof setTimeout> | undefined
+function startLiveLoadingGracePeriod(): void {
+  liveIsLoading.value = true
+  clearTimeout(liveLoadingTimeout)
+  liveLoadingTimeout = setTimeout(() => {
+    liveIsLoading.value = false
+  }, 5000)
+}
+watch(liveCategories, () => {
+  if (liveCategories.value.grid.all.length > 0) liveIsLoading.value = false
+})
+
 // mode can start as 'live' on a reload (persisted) - the watch below only reacts to later
 // changes, so the initial subscription needs its own call here
-if (mode.value === 'live') mqttStore.subscribeLiveSeries()
+if (mode.value === 'live') {
+  mqttStore.subscribeLiveSeries()
+  startLiveLoadingGracePeriod()
+}
 
 // the alllivevaluesJson* feed is only worth subscribing to while live view is actually shown;
 // default the range back to the max each time live is (re-)selected
 watch(mode, (m) => {
   if (m === 'live') {
     mqttStore.subscribeLiveSeries()
+    startLiveLoadingGracePeriod()
     liveRangeMinutes.value = 120
   } else {
     mqttStore.unsubscribeLiveSeries()
+    clearTimeout(liveLoadingTimeout)
   }
   isZoomed.value = false
 })
 onUnmounted(() => {
   if (mode.value === 'live') mqttStore.unsubscribeLiveSeries()
+  clearTimeout(liveLoadingTimeout)
 })
 
 // a zoom/pan from a previously viewed day shouldn't carry over to the newly selected one
 watch(selectedDate, () => (isZoomed.value = false))
 
 const hasData = computed(() => categories.value.grid.all.length > 0)
+const isLoading = computed(() => (mode.value === 'live' ? liveIsLoading.value : dayIsLoading.value))
 
 // published so ThemeSettingsModal.vue (a sibling, not a child - rendered from the hamburger
 // menu in App.vue) can show "which categories/instances exist right now" in its "Linien"
