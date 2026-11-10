@@ -58,12 +58,8 @@
       >
 
       <div class="toggle-row">
-        <label for="tp-active">Aktiv</label>
-        <input
-          id="tp-active"
-          v-model="editing.active"
-          type="checkbox"
-        >
+        <label>Aktiv</label>
+        <BaseToggle v-model="editing.active" />
       </div>
 
       <BaseSegmentedControl
@@ -134,40 +130,18 @@
         @update="(v) => (editing!.phases_to_use = v)"
       />
 
-      <BaseSegmentedControl
-        label="Begrenzung"
-        :model-value="editing.limit.selected"
-        :options="limitOptions"
-        @update="editing.limit.selected = $event"
-      />
-      <FieldSlider
-        v-if="editing.limit.selected === 'soc'"
-        label="Ziel-SoC"
-        unit="%"
-        :min="0"
-        :max="100"
-        :model-value="editing.limit.soc"
-        @update="(v) => (editing!.limit.soc = v)"
-      />
-      <FieldSlider
-        v-if="editing.limit.selected === 'amount'"
-        label="Energiemenge"
-        unit="kWh"
-        :min="0"
-        :max="100"
-        :decimals="1"
-        :model-value="editing.limit.amount / 1000"
-        @update="(v) => (editing!.limit.amount = v * 1000)"
+      <LimitFields
+        :limit="editing.limit"
+        field-prefix="limit"
+        @set="setLimitField"
       />
 
       <div class="toggle-row">
-        <label for="tp-bat">Nur wenn Speicher-SoC erreicht</label>
-        <input
-          id="tp-bat"
-          type="checkbox"
-          :checked="editing.min_bat_soc !== null"
-          @change="toggleMinBatSoc(($event.target as HTMLInputElement).checked)"
-        >
+        <label>Nur wenn Speicher-SoC erreicht</label>
+        <BaseToggle
+          :model-value="editing.min_bat_soc !== null"
+          @update:model-value="toggleMinBatSoc"
+        />
       </div>
       <FieldSlider
         v-if="editing.min_bat_soc !== null"
@@ -192,13 +166,15 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { useMqttStore, type TimeChargingPlan } from '@/stores/mqtt-store'
+import { useMqttStore, type TimeChargingPlan, type Limit } from '@/stores/mqtt-store'
 import { convertDcCurrentToPower, convertPowerToDcCurrent } from '@/utils/format'
 import { usePlanListEditor, frequencyOptions, frequencyLabel } from '@/composables/usePlanListEditor'
 import FieldSlider from './FieldSlider.vue'
 import BaseSegmentedControl from './BaseSegmentedControl.vue'
 import BaseButton from './BaseButton.vue'
 import WeekdayToggle from './WeekdayToggle.vue'
+import LimitFields from './LimitFields.vue'
+import BaseToggle from './BaseToggle.vue'
 
 const props = defineProps<{ chargePointId: number }>()
 const mqttStore = useMqttStore()
@@ -226,14 +202,14 @@ const { editing, editingIndex, openEdit, openNew, save, remove } = usePlanListEd
   }),
 )
 
-const limitOptions = [
-  { value: 'none', label: 'Keine' },
-  { value: 'soc', label: 'SoC' },
-  { value: 'amount', label: 'Menge' },
-] as const
-
 function toggleMinBatSoc(enabled: boolean): void {
   if (!editing.value) return
   editing.value.min_bat_soc = enabled ? 50 : null
+}
+
+function setLimitField(path: string, value: unknown): void {
+  if (!editing.value) return
+  const field = path.replace('limit.', '') as keyof Limit
+  editing.value.limit[field] = value as never
 }
 </script>

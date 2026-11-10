@@ -65,100 +65,26 @@
       />
     </div>
 
-    <template v-if="showChargePoints && (activeTab !== 'alle' || (chargePointIds.length > 0 && visibleSections.has('ladepunkte')))">
-      <div
-        v-if="activeTab === 'alle'"
-        class="settings-group-label mb-2"
-      >
-        Ladepunkte
-      </div>
-      <div class="mb-6 grid grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-4">
-        <ChargePointCard
-          v-for="id in chargePointIds"
-          :key="id"
-          :charge-point-id="id"
-        />
-      </div>
-    </template>
-
-    <template v-if="showVehicles && (activeTab !== 'alle' || (vehicleIds.length > 0 && visibleSections.has('fahrzeuge')))">
-      <div
-        v-if="activeTab === 'alle'"
-        class="settings-group-label mb-2"
-      >
-        Fahrzeuge
-      </div>
-      <div class="mb-6 grid grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-4">
-        <VehicleCard
-          v-for="id in vehicleIds"
-          :key="id"
-          :vehicle-id="id"
-        />
-      </div>
-    </template>
-
-    <template v-if="showBatteries && (activeTab !== 'alle' || (batteryIds.length > 0 && visibleSections.has('speicher')))">
-      <div
-        v-if="activeTab === 'alle'"
-        class="settings-group-label mb-2"
-      >
-        Speicher
-      </div>
-      <div class="mb-6 grid grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-4">
-        <BatteryCard
-          v-for="id in batteryIds"
-          :key="id"
-          :battery-id="id"
-        />
-      </div>
-    </template>
-
-    <template v-if="showCounters && (activeTab !== 'alle' || (counterIds.length > 0 && visibleSections.has('zaehler')))">
-      <div
-        v-if="activeTab === 'alle'"
-        class="settings-group-label mb-2"
-      >
-        Zähler
-      </div>
-      <div class="mb-6 grid grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-4">
-        <CounterCard
-          v-for="id in counterIds"
-          :key="id"
-          :counter-id="id"
-        />
-      </div>
-    </template>
-
-    <template v-if="showInverters && (activeTab !== 'alle' || (inverterIds.length > 0 && visibleSections.has('wechselrichter')))">
-      <div
-        v-if="activeTab === 'alle'"
-        class="settings-group-label mb-2"
-      >
-        Wechselrichter
-      </div>
-      <div class="mb-6 grid grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-4">
-        <InverterCard
-          v-for="id in inverterIds"
-          :key="id"
-          :inverter-id="id"
-        />
-      </div>
-    </template>
-
-    <template v-if="showConsumers && (activeTab !== 'alle' || (consumerIds.length > 0 && visibleSections.has('verbraucher')))">
-      <div
-        v-if="activeTab === 'alle'"
-        class="settings-group-label mb-2"
-      >
-        Verbraucher
-      </div>
-      <div class="mb-6 grid grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-4">
-        <ConsumerCard
-          v-for="id in consumerIds"
-          :key="id"
-          :consumer-id="id"
-        />
-      </div>
+    <template
+      v-for="section in entitySections"
+      :key="section.key"
+    >
+      <template v-if="isSectionVisible(section)">
+        <div
+          v-if="activeTab === 'alle'"
+          class="settings-group-label mb-2"
+        >
+          {{ section.label }}
+        </div>
+        <div class="mb-6 grid grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-4">
+          <component
+            :is="section.component"
+            v-for="id in section.ids"
+            :key="id"
+            v-bind="{ [section.idProp]: id }"
+          />
+        </div>
+      </template>
     </template>
 
     <ThemeSettingsModal
@@ -173,7 +99,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watchEffect } from 'vue'
+import { computed, ref, watchEffect, type Component } from 'vue'
 import StatusStrip from './components/StatusStrip.vue'
 import HistoryChart from './components/HistoryChart.vue'
 import ChargePointCard from './components/ChargePointCard.vue'
@@ -210,12 +136,6 @@ const tabs = [
 ]
 const showNavMenu = ref(false)
 const activeTab = ref('alle')
-const showChargePoints = computed(() => activeTab.value === 'alle' || activeTab.value === 'ladepunkte')
-const showVehicles = computed(() => activeTab.value === 'alle' || activeTab.value === 'fahrzeuge')
-const showBatteries = computed(() => activeTab.value === 'alle' || activeTab.value === 'speicher')
-const showCounters = computed(() => activeTab.value === 'alle' || activeTab.value === 'zaehler')
-const showInverters = computed(() => activeTab.value === 'alle' || activeTab.value === 'wechselrichter')
-const showConsumers = computed(() => activeTab.value === 'alle' || activeTab.value === 'verbraucher')
 
 const { chargePointIds } = useChargePoints()
 const { vehicleIds } = useVehicles()
@@ -223,6 +143,32 @@ const { batteryIds } = useBatteries()
 const { counterIds } = useCounters()
 const { inverterIds } = useInverters()
 const { consumerIds } = useConsumers()
+
+interface EntitySection {
+  key: SectionKey
+  label: string
+  component: Component
+  ids: number[]
+  idProp: string
+}
+
+// one entry per entity-type card grid shown on the "Auswahl" overview and its own dedicated tab -
+// each grid is otherwise structurally identical, differing only in these 5 fields
+const entitySections = computed<EntitySection[]>(() => [
+  { key: 'ladepunkte', label: 'Ladepunkte', component: ChargePointCard, ids: chargePointIds.value, idProp: 'chargePointId' },
+  { key: 'fahrzeuge', label: 'Fahrzeuge', component: VehicleCard, ids: vehicleIds.value, idProp: 'vehicleId' },
+  { key: 'speicher', label: 'Speicher', component: BatteryCard, ids: batteryIds.value, idProp: 'batteryId' },
+  { key: 'zaehler', label: 'Zähler', component: CounterCard, ids: counterIds.value, idProp: 'counterId' },
+  { key: 'wechselrichter', label: 'Wechselrichter', component: InverterCard, ids: inverterIds.value, idProp: 'inverterId' },
+  { key: 'verbraucher', label: 'Verbraucher', component: ConsumerCard, ids: consumerIds.value, idProp: 'consumerId' },
+])
+
+// dedicated tab: always show, regardless of card count/visibility settings. "Auswahl": only if
+// configured (at least one instance exists) and the user hasn't hidden this section.
+function isSectionVisible(section: EntitySection): boolean {
+  if (activeTab.value === section.key) return true
+  return activeTab.value === 'alle' && section.ids.length > 0 && visibleSections.value.has(section.key)
+}
 
 // which entity-type card sections appear in the "Auswahl" overview - the dedicated per-type tabs
 // always show their full card grid regardless of this (see v-if conditions above)
@@ -255,17 +201,11 @@ function toggleSection(key: SectionKey, checked: boolean): void {
   visibleSections.value = new Set(visibleSections.value)
 }
 
-const configuredSections = computed(() => {
-  const defs: { key: SectionKey; label: string; count: number }[] = [
-    { key: 'ladepunkte', label: 'Ladepunkte', count: chargePointIds.value.length },
-    { key: 'fahrzeuge', label: 'Fahrzeuge', count: vehicleIds.value.length },
-    { key: 'speicher', label: 'Speicher', count: batteryIds.value.length },
-    { key: 'zaehler', label: 'Zähler', count: counterIds.value.length },
-    { key: 'wechselrichter', label: 'Wechselrichter', count: inverterIds.value.length },
-    { key: 'verbraucher', label: 'Verbraucher', count: consumerIds.value.length },
-  ]
-  return defs.filter((d) => d.count > 0)
-})
+const configuredSections = computed(() =>
+  entitySections.value
+    .filter((s) => s.ids.length > 0)
+    .map((s) => ({ key: s.key, label: s.label, count: s.ids.length })),
+)
 
 const STORAGE_KEY = 'quartz-dark-mode'
 const dark = ref(localStorage.getItem(STORAGE_KEY) === 'true')

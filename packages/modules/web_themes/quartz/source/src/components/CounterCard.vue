@@ -5,12 +5,10 @@
       <span class="text-[14px] font-bold">{{ name }}</span>
     </div>
 
-    <p
-      v-if="faultState > 0 && faultMessage"
-      class="mt-0 mb-2.5 text-xs text-grid"
-    >
-      {{ faultMessage }}
-    </p>
+    <FaultMessage
+      :fault-state="faultState"
+      :fault-message="faultMessage"
+    />
 
     <div class="flex gap-4 text-[13px]">
       <StatBlock
@@ -35,6 +33,7 @@ import { useMqttStore } from '@/stores/mqtt-store'
 import { formatKw, formatKwh } from '@/utils/format'
 import IconCounter from './icons/IconCounter.vue'
 import StatBlock from './StatBlock.vue'
+import FaultMessage from './FaultMessage.vue'
 
 const props = defineProps<{ counterId: number }>()
 const mqttStore = useMqttStore()

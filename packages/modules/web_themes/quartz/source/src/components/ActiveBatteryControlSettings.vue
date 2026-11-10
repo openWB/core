@@ -1,7 +1,5 @@
 <template>
-  <!-- activation (bat_control_activated) and whether a battery is controllable at all are both
-       decided outside Quartz (legacy settings UI / the module's own capability) - this section
-       only ever appears once both are already true, nothing to show/explain otherwise -->
+  <!-- activation/controllability are both decided outside Quartz - only shown once both are true -->
   <div
     v-if="activated && controllableIds.length > 0"
     class="mt-3 rounded-lg bg-bg p-3"
@@ -86,13 +84,11 @@
         Bitte in den übergreifenden Ladeeinstellungen einen Strompreis-Anbieter konfigurieren.
       </div>
       <div class="toggle-row">
-        <label for="price-limit-activated">Preisgrenze für Netzbezug statt Speicherentladung</label>
-        <input
-          id="price-limit-activated"
-          type="checkbox"
-          :checked="priceLimitActivated"
-          @change="mqttStore.setBatteryPriceLimitActivated(($event.target as HTMLInputElement).checked)"
-        >
+        <label>Preisgrenze für Netzbezug statt Speicherentladung</label>
+        <BaseToggle
+          :model-value="priceLimitActivated"
+          @update:model-value="mqttStore.setBatteryPriceLimitActivated($event)"
+        />
       </div>
       <FieldNumber
         label="Eigenregelung für Strompreise über"
@@ -109,13 +105,11 @@
         @update="mqttStore.setBatteryPowerLimitMode($event)"
       />
       <div class="toggle-row">
-        <label for="price-charge-activated">Preisgrenze für Regelmodus (aktiv laden)</label>
-        <input
-          id="price-charge-activated"
-          type="checkbox"
-          :checked="priceChargeActivated"
-          @change="mqttStore.setBatteryPriceChargeActivated(($event.target as HTMLInputElement).checked)"
-        >
+        <label>Preisgrenze für Regelmodus (aktiv laden)</label>
+        <BaseToggle
+          :model-value="priceChargeActivated"
+          @update:model-value="mqttStore.setBatteryPriceChargeActivated($event)"
+        />
       </div>
       <FieldNumber
         label="Speicher aktiv laden für Strompreise unter"
@@ -148,6 +142,7 @@ import { useMqttStore } from '@/stores/mqtt-store'
 import BaseSegmentedControl from './BaseSegmentedControl.vue'
 import FieldSlider from './FieldSlider.vue'
 import FieldNumber from './FieldNumber.vue'
+import BaseToggle from './BaseToggle.vue'
 
 const mqttStore = useMqttStore()
 

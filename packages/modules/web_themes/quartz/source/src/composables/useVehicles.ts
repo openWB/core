@@ -16,8 +16,8 @@ export function useVehicles() {
     mqttStore.unsubscribeLoadmanagementPrios()
   })
 
-  // only vehicles whose /info has actually arrived - matches koala's own vehicle-list filter,
-  // excludes ids that exist in /name but never finished publishing (transitional/broken state)
+  // only vehicles whose /info has actually arrived - excludes ids that exist in /name but
+  // never finished publishing (transitional/broken state)
   const vehicleIds = computed(() =>
     mqttStore.vehicleList.filter((v) => mqttStore.vehicleInfo(v.id) !== undefined).map((v) => v.id),
   )

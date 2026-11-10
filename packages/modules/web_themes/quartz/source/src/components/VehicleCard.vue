@@ -15,12 +15,10 @@
       {{ info?.manufacturer || 'keine Angabe' }} &middot; {{ info?.model || 'keine Angabe' }}
     </p>
 
-    <p
-      v-if="faultState > 0 && faultMessage"
-      class="mt-0 mb-2.5 text-xs text-grid"
-    >
-      {{ faultMessage }}
-    </p>
+    <FaultMessage
+      :fault-state="faultState"
+      :fault-message="faultMessage"
+    />
 
     <div class="flex flex-wrap items-center gap-1.5">
       <span
@@ -85,6 +83,7 @@ import IconRefresh from './icons/IconRefresh.vue'
 import StatBlock from './StatBlock.vue'
 import VehicleSocEditor from './VehicleSocEditor.vue'
 import BaseIconButton from './BaseIconButton.vue'
+import FaultMessage from './FaultMessage.vue'
 
 const props = defineProps<{ vehicleId: number }>()
 const mqttStore = useMqttStore()

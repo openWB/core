@@ -58,12 +58,8 @@
       >
 
       <div class="toggle-row">
-        <label for="sp-active">Aktiv</label>
-        <input
-          id="sp-active"
-          v-model="editing.active"
-          type="checkbox"
-        >
+        <label>Aktiv</label>
+        <BaseToggle v-model="editing.active" />
       </div>
 
       <BaseSegmentedControl
@@ -194,12 +190,8 @@
 
       <template v-if="editing.limit.selected === 'soc' && bidiCapable">
         <div class="toggle-row">
-          <label for="sp-bidi-enabled">Bidirektionales Überschussladen</label>
-          <input
-            id="sp-bidi-enabled"
-            v-model="editing.bidi_charging_enabled"
-            type="checkbox"
-          >
+          <label>Bidirektionales Überschussladen</label>
+          <BaseToggle v-model="editing.bidi_charging_enabled" />
         </div>
         <FieldSlider
           v-if="editing.bidi_charging_enabled"
@@ -215,12 +207,8 @@
       </template>
 
       <div class="toggle-row">
-        <label for="sp-et-active">Strompreisbasiert laden</label>
-        <input
-          id="sp-et-active"
-          v-model="editing.et_active"
-          type="checkbox"
-        >
+        <label>Strompreisbasiert laden</label>
+        <BaseToggle v-model="editing.et_active" />
       </div>
 
       <BaseButton
@@ -245,13 +233,14 @@ import BaseButton from './BaseButton.vue'
 import WeekdayToggle from './WeekdayToggle.vue'
 import IconSyncAlt from './icons/IconSyncAlt.vue'
 import IconArrowRight from './icons/IconArrowRight.vue'
+import BaseToggle from './BaseToggle.vue'
 
 const props = defineProps<{ chargePointId: number }>()
 const mqttStore = useMqttStore()
 
 const plans = computed(() => mqttStore.chargePointChargeTemplate(props.chargePointId)?.chargemode.scheduled_charging.plans ?? [])
-// same gate koala's own bidi toggle uses - the connected vehicle's EV template must support it,
-// independent of whether this chargepoint's hardware could also do it
+// the connected vehicle's EV template must support bidi, independent of whether this
+// chargepoint's hardware could also do it
 const bidiCapable = computed(() => mqttStore.chargePointConnectedVehicleBidiCapable(props.chargePointId))
 
 const acChargingEnabled = computed(() => mqttStore.chargePointChargeType(props.chargePointId) === 'AC')
@@ -285,7 +274,7 @@ function formatDateDDMMYYYY(dateString: string): string {
   return `${day}.${month}.${year}`
 }
 
-/** Next calendar date this plan will actually run on, mirroring koala's ChargePointScheduledPlanSummary.vue. */
+/** Next calendar date this plan will actually run on. */
 const nextOccurrenceLabel = computed(() => {
   if (!editing.value) return ''
   const frequency = editing.value.frequency

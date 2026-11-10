@@ -55,8 +55,8 @@ watch(
 )
 
 // a native <input type="range"> only knows a plain min/max/step range - discreteValues maps
-// that onto an index space instead (same approach as koala's SliderStandard), so the thumb can
-// only land on the configured values, e.g. "Aus" (0) + 6-16, never 1-5
+// that onto an index space instead, so the thumb can only land on the configured values,
+// e.g. "Aus" (0) + 6-16, never 1-5
 const sliderMin = computed(() => (props.discreteValues ? 0 : props.min))
 const sliderMax = computed(() => (props.discreteValues ? props.discreteValues.length - 1 : props.max))
 const sliderPosition = computed(() => {

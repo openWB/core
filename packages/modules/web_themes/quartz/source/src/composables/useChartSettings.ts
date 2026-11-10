@@ -18,10 +18,17 @@ export const categoryDefs: CategoryDef[] = [
   { key: 'chargepoint', label: 'Ladepunkte', colorVar: '--chargepoint' },
   { key: 'consumer', label: 'Verbraucher', colorVar: '--consumer' },
 ]
+const categoryKeys = categoryDefs.map((c) => c.key)
 
 export const viewOptions = [
   { value: 'day', label: 'Heute' },
   { value: 'live', label: 'Live' },
+] as const
+
+export const displayModeOptions = [
+  { value: 'flow', label: 'Fluss' },
+  { value: 'chart', label: 'Verlauf' },
+  { value: 'both', label: 'Beides' },
 ] as const
 
 export const categoryModeOptions = [
@@ -31,7 +38,7 @@ export const categoryModeOptions = [
 
 interface PersistedChartSettings {
   mode?: 'day' | 'live'
-  displayMode?: 'chart' | 'flow'
+  displayMode?: 'chart' | 'flow' | 'both'
   liveRangeMinutes?: number
   visibleSeries?: Partial<Record<CategoryKey, boolean>>
   categoryMode?: Partial<Record<CategoryKey, 'combined' | 'individual'>>
@@ -54,7 +61,7 @@ function loadPersisted(): PersistedChartSettings {
 
 function emptyCategories(): Record<CategoryKey, CategoryData> {
   const empty = { all: [], individual: [] }
-  return { pv: empty, house: empty, grid: empty, counter: empty, battery: empty, chargepoint: empty, consumer: empty }
+  return Object.fromEntries(categoryKeys.map((key) => [key, empty])) as unknown as Record<CategoryKey, CategoryData>
 }
 
 /**
@@ -72,29 +79,18 @@ function createChartSettings() {
 
   const mode = ref<'day' | 'live'>(persisted.mode ?? 'day')
   const liveRangeMinutes = ref(persisted.liveRangeMinutes ?? 120)
-  // 'chart' = the Chart.js line chart (default), 'flow' = FlowBalanceBar - an alternate,
-  // live-only snapshot presentation for the same card, toggled by clicking "Verlauf" itself
-  const displayMode = ref<'chart' | 'flow'>(persisted.displayMode ?? 'chart')
+  // 'chart' = the Chart.js line chart, 'flow' = FlowBalanceBar only, 'both' = flow above chart.
+  // Set via Theme-Einstellungen; while only one is selected, clicking the "Fluss"/"Verlauf"
+  // title itself toggles between the two (no toggle when 'both' - there's nothing to switch to).
+  const displayMode = ref<'chart' | 'flow' | 'both'>(persisted.displayMode ?? 'chart')
 
   const visibleSeries = reactive<Record<CategoryKey, boolean>>({
-    pv: true,
-    house: true,
-    grid: true,
-    counter: true,
-    battery: true,
-    chargepoint: true,
-    consumer: true,
+    ...(Object.fromEntries(categoryKeys.map((key) => [key, true])) as Record<CategoryKey, boolean>),
     ...persisted.visibleSeries,
   })
 
   const categoryMode = reactive<Record<CategoryKey, 'combined' | 'individual'>>({
-    pv: 'combined',
-    house: 'combined',
-    grid: 'combined',
-    counter: 'combined',
-    battery: 'combined',
-    chargepoint: 'combined',
-    consumer: 'combined',
+    ...(Object.fromEntries(categoryKeys.map((key) => [key, 'combined'])) as Record<CategoryKey, 'combined'>),
     ...persisted.categoryMode,
   })
 
