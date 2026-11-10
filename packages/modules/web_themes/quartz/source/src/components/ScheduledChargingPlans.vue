@@ -110,10 +110,22 @@
       </div>
       <div class="info-box mt-2">
         <strong>Nächster geplanter Termin:</strong>
-        {{ nextOccurrenceLabel }} &middot; {{ editing.time }} Uhr &middot; {{ targetLabel }}
+        {{ nextOccurrenceLabel }} &middot; {{ editing.time }} Uhr &middot;
+        <template v-if="editing.limit.selected === 'soc'">
+          {{ editing.limit.soc_scheduled }}%
+          <component
+            :is="editing.bidi_charging_enabled ? IconSyncAlt : IconArrowRight"
+            class="inline-block align-text-bottom"
+          />
+          {{ editing.limit.soc_limit }}%
+        </template>
+        <template v-else>
+          {{ targetLabel }}
+        </template>
       </div>
 
       <FieldSlider
+        v-if="acChargingEnabled"
         label="Ladestrom"
         unit="A"
         :min="6"
@@ -121,13 +133,24 @@
         :model-value="editing.current"
         @update="(v) => (editing!.current = v)"
       />
+      <FieldSlider
+        v-if="dcChargingEnabled"
+        label="Ladeleistung (DC)"
+        unit="kW"
+        :min="0"
+        :max="dcMaxPower"
+        :model-value="convertDcCurrentToPower(editing.dc_current)"
+        @update="(v) => (editing!.dc_current = convertPowerToDcCurrent(v))"
+      />
       <BaseSegmentedControl
+        v-if="acChargingEnabled"
         label="Anzahl Phasen Zielladen"
         :model-value="editing.phases_to_use"
         :options="[{ value: 1, label: '1' }, { value: 3, label: 'Maximum' }, { value: 0, label: 'Automatik' }]"
         @update="(v) => (editing!.phases_to_use = v)"
       />
       <BaseSegmentedControl
+        v-if="acChargingEnabled"
         label="Anzahl Phasen bei PV-Überschuss"
         :model-value="editing.phases_to_use_pv"
         :options="[{ value: 1, label: '1' }, { value: 3, label: 'Maximum' }, { value: 0, label: 'Automatik' }]"
@@ -169,6 +192,28 @@
         @update="(v) => (editing!.limit.amount = v * 1000)"
       />
 
+      <template v-if="editing.limit.selected === 'soc' && bidiCapable">
+        <div class="toggle-row">
+          <label for="sp-bidi-enabled">Bidirektionales Überschussladen</label>
+          <input
+            id="sp-bidi-enabled"
+            v-model="editing.bidi_charging_enabled"
+            type="checkbox"
+          >
+        </div>
+        <FieldSlider
+          v-if="editing.bidi_charging_enabled"
+          label="Bidirektionale Ladeleistung"
+          unit="kW"
+          :min="0"
+          :max="22"
+          :step="0.5"
+          :decimals="1"
+          :model-value="editing.bidi_power / 1000"
+          @update="(v) => (editing!.bidi_power = v * 1000)"
+        />
+      </template>
+
       <div class="toggle-row">
         <label for="sp-et-active">Strompreisbasiert laden</label>
         <input
@@ -190,20 +235,48 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed } from 'vue'
 import { useMqttStore, type ScheduledChargingPlan } from '@/stores/mqtt-store'
+import { convertDcCurrentToPower, convertPowerToDcCurrent } from '@/utils/format'
+import { usePlanListEditor, frequencyOptions, frequencyLabel } from '@/composables/usePlanListEditor'
 import FieldSlider from './FieldSlider.vue'
 import BaseSegmentedControl from './BaseSegmentedControl.vue'
 import BaseButton from './BaseButton.vue'
 import WeekdayToggle from './WeekdayToggle.vue'
+import IconSyncAlt from './icons/IconSyncAlt.vue'
+import IconArrowRight from './icons/IconArrowRight.vue'
 
 const props = defineProps<{ chargePointId: number }>()
 const mqttStore = useMqttStore()
 
 const plans = computed(() => mqttStore.chargePointChargeTemplate(props.chargePointId)?.chargemode.scheduled_charging.plans ?? [])
+// same gate koala's own bidi toggle uses - the connected vehicle's EV template must support it,
+// independent of whether this chargepoint's hardware could also do it
+const bidiCapable = computed(() => mqttStore.chargePointConnectedVehicleBidiCapable(props.chargePointId))
 
-const editing = ref<ScheduledChargingPlan | null>(null)
-const editingIndex = ref<number | null>(null)
+const acChargingEnabled = computed(() => mqttStore.chargePointChargeType(props.chargePointId) === 'AC')
+const dcChargingEnabled = computed(() => mqttStore.chargePointChargeType(props.chargePointId) === 'DC')
+const dcMaxPower = computed(() => mqttStore.chargePointDcMaxPower(props.chargePointId) ?? 300)
+
+const { editing, editingIndex, openEdit, openNew, save, remove } = usePlanListEditor<ScheduledChargingPlan>(
+  plans,
+  (next) => mqttStore.setChargePointChargeTemplateField(props.chargePointId, 'chargemode.scheduled_charging.plans', next),
+  (existingIds) => ({
+    active: true,
+    time: '07:00',
+    frequency: { selected: 'daily', once: new Date().toISOString().slice(0, 10), weekly: [false, false, false, false, false, false, false] },
+    current: 14,
+    dc_current: 145,
+    id: Math.max(0, ...existingIds) + 1,
+    name: 'neuer Zielladen-Plan',
+    limit: { selected: 'amount', amount: 1000, soc_limit: 90, soc_scheduled: 80 },
+    phases_to_use: 0,
+    phases_to_use_pv: 0,
+    bidi_charging_enabled: false,
+    bidi_power: 10000,
+    et_active: false,
+  }),
+)
 
 const todayDateString = computed(() => new Date().toISOString().slice(0, 10))
 
@@ -239,61 +312,8 @@ const targetLabel = computed(() => {
     : `${(limit.amount / 1000).toLocaleString(undefined, { maximumFractionDigits: 1 })} kWh`
 })
 
-const frequencyOptions = [
-  { value: 'once', label: 'Einmalig' },
-  { value: 'daily', label: 'Täglich' },
-  { value: 'weekly', label: 'Wöchentlich' },
-] as const
-
 const scheduledLimitOptions = [
   { value: 'soc', label: 'EV-SoC' },
   { value: 'amount', label: 'Energie' },
 ] as const
-
-function frequencyLabel(selected: string): string {
-  return frequencyOptions.find((o) => o.value === selected)?.label ?? selected
-}
-
-function openEdit(plan: ScheduledChargingPlan, index: number): void {
-  // plan is a Vue-reactive Proxy (sourced from the Pinia store) - structuredClone can throw
-  // on that in some engines; a JSON round-trip safely unwraps it into plain, editable data
-  editing.value = JSON.parse(JSON.stringify(plan)) as ScheduledChargingPlan
-  editingIndex.value = index
-}
-
-function openNew(): void {
-  const existingIds = plans.value.map((p) => p.id ?? 0)
-  editing.value = {
-    active: true,
-    time: '07:00',
-    frequency: { selected: 'daily', once: new Date().toISOString().slice(0, 10), weekly: [false, false, false, false, false, false, false] },
-    current: 14,
-    dc_current: 145,
-    id: Math.max(0, ...existingIds) + 1,
-    name: 'neuer Zielladen-Plan',
-    limit: { selected: 'amount', amount: 1000, soc_limit: 90, soc_scheduled: 80 },
-    phases_to_use: 0,
-    phases_to_use_pv: 0,
-    bidi_charging_enabled: false,
-    bidi_power: 10000,
-    et_active: false,
-  }
-  editingIndex.value = null
-}
-
-function save(): void {
-  if (!editing.value) return
-  const next = [...plans.value]
-  if (editingIndex.value !== null) next[editingIndex.value] = editing.value
-  else next.push(editing.value)
-  mqttStore.setChargePointChargeTemplateField(props.chargePointId, 'chargemode.scheduled_charging.plans', next)
-  editing.value = null
-}
-
-function remove(): void {
-  if (editingIndex.value === null) return
-  const next = plans.value.filter((_, i) => i !== editingIndex.value)
-  mqttStore.setChargePointChargeTemplateField(props.chargePointId, 'chargemode.scheduled_charging.plans', next)
-  editing.value = null
-}
 </script>

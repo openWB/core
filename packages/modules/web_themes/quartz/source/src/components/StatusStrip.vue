@@ -9,6 +9,8 @@
       :color="chip.color"
       :clickable="chip.clickable"
       :fault-state="chip.faultState"
+      :direction="chip.direction"
+      :direction-label="chip.directionLabel"
       @click="chip.onClick?.()"
     />
   </div>
@@ -80,7 +82,39 @@ interface Chip {
   faultState?: number
   clickable?: boolean
   onClick?: () => void
+  direction?: 'in' | 'out'
+  directionLabel?: string
 }
+
+// grid: positive = Bezug (import, 'in'), negative = Einspeisung (export, 'out') - see
+// sonnenbatterie/api.py's "export power must be negative" convention, shared by every counter.
+// battery: positive = Laden (charge, 'in'), negative = Entladen (discharge, 'out') - confirmed
+// empirically against the live bat-all-power topic (SoC visibly dropping while the value read
+// strongly negative for 30s+), NOT from driver-specific code comments - those turned out to
+// describe individual inverter drivers (Kostal/Enphase), not this aggregate topic's own
+// convention, and were backwards for this installation's actual battery.
+const gridDirection = computed<'in' | 'out' | undefined>(() => {
+  if (mqttStore.gridPower > 0) return 'in'
+  if (mqttStore.gridPower < 0) return 'out'
+  return undefined
+})
+const gridDirectionLabel = computed(() => (gridDirection.value === 'in' ? 'Bezug' : 'Einspeisung'))
+const batteryDirection = computed<'in' | 'out' | undefined>(() => {
+  if (mqttStore.batteryPower > 0) return 'in'
+  if (mqttStore.batteryPower < 0) return 'out'
+  return undefined
+})
+const batteryDirectionLabel = computed(() => (batteryDirection.value === 'in' ? 'Lädt' : 'Entlädt'))
+
+// chargepoints: positive = Lädt (into the vehicle, 'in'), negative = Entlädt (V2H/bidi discharge
+// back into the house, 'out') - same convention as battery, but only meaningful for a bidi-capable
+// setup; unverified against real V2H hardware, see plan notes.
+const chargePointDirection = computed<'in' | 'out' | undefined>(() => {
+  if (mqttStore.chargePointSumPower > 0) return 'in'
+  if (mqttStore.chargePointSumPower < 0) return 'out'
+  return undefined
+})
+const chargePointDirectionLabel = computed(() => (chargePointDirection.value === 'in' ? 'Lädt' : 'Entlädt'))
 
 const chips = computed<Chip[]>(() => {
   const result: Chip[] = [
@@ -102,6 +136,8 @@ const chips = computed<Chip[]>(() => {
       color: 'grid',
       faultState: detailInfo.value.grid.faultState,
       clickable: true,
+      direction: gridDirection.value,
+      directionLabel: gridDirectionLabel.value,
       onClick: () => (activeDetail.value = 'grid'),
     },
   ]
@@ -126,6 +162,8 @@ const chips = computed<Chip[]>(() => {
       color: 'battery',
       faultState: detailInfo.value.battery.faultState,
       clickable: true,
+      direction: batteryDirection.value,
+      directionLabel: batteryDirectionLabel.value,
       onClick: () => (activeDetail.value = 'battery'),
     },
     {
@@ -145,6 +183,8 @@ const chips = computed<Chip[]>(() => {
       color: 'chargepoint',
       faultState: detailInfo.value.chargepoint.faultState,
       clickable: true,
+      direction: chargePointDirection.value,
+      directionLabel: chargePointDirectionLabel.value,
       onClick: () => (activeDetail.value = 'chargepoint'),
     },
     {

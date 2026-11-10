@@ -81,6 +81,12 @@
         label="Leistung"
       >
         <span class="flex items-center gap-1">
+          <IconArrowDown
+            v-if="power !== 0"
+            class="shrink-0 text-muted"
+            :class="{ 'rotate-180': power < 0 }"
+            :aria-label="power > 0 ? 'Lädt' : 'Entlädt (V2H)'"
+          />
           {{ formatKw(power) }}
           <span
             v-if="phasesInUse > 0"
@@ -141,6 +147,7 @@ import IconLock from './icons/IconLock.vue'
 import IconGear from './icons/IconGear.vue'
 import IconTarget from './icons/IconTarget.vue'
 import IconClock from './icons/IconClock.vue'
+import IconArrowDown from './icons/IconArrowDown.vue'
 import ChargePointSettings from './ChargePointSettings.vue'
 import BaseIconButton from './BaseIconButton.vue'
 import BaseTabGroup from './BaseTabGroup.vue'
