@@ -8,7 +8,7 @@
 		>
 			<RadioInput
 				v-model.number="connectedVehicle"
-				:options="Object.values(vehicles).map((v) => [v.name, v.id])"
+				:options="Object.values(vehicles).filter((v) => v.visible).map((v) => [v.name, v.id])"
 			/>
 		</ConfigItem>
 		<!-- <ConfigItem
@@ -92,6 +92,7 @@ const props = defineProps<{
 
 //state
 const cp = computed(() => {
+	console.log(vehicles)
 	return chargePoints[props.chargepointId]
 })
 

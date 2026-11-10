@@ -636,19 +636,51 @@ def test_file_operation_0_start_behavior(file_operation_version, finished, expec
     assert upgrade_mock.call_count == expected_calls
 
 
-@pytest.mark.parametrize("config, expected",
-                         [pytest.param({"data_costs": True}, False, id="neue Spalte standardmäßig ausgeblendet"),
-                          pytest.param({"data_costs": True, "data_tariff_split": True}, True,
-                                       id="vorhandene Einstellung bleibt")])
-def test_upgrade_datastore_156_adds_tariff_split_column(config, expected, mock_pub):
+@pytest.mark.parametrize("provider_type, configuration, expected_configuration, updated", [
+    ("energycharts", {"surcharge": 0.0001}, {"surcharge": 0.0001, "price_cap": None}, True),
+    ("energycharts", {"price_cap": 0.0002}, {"price_cap": 0.0002}, False),
+    ("energycharts", {"price_cap": None}, {"price_cap": None}, False),
+    ("tibber", {}, {}, False),
+    (None, {}, {}, False),
+])
+def test_upgrade_datastore_156_adds_energycharts_price_cap(
+    mock_pub: Mock, provider_type, configuration, expected_configuration, updated
+):
+    topic = "openWB/optional/ep/flexible_tariff/provider"
     uc = UpdateConfig()
     uc.all_received_topics = {
-        "openWB/system/datastore_version": list(range(156)),
-        "openWB/general/charge_log_data_config": config,
+        topic: json.dumps({"type": provider_type, "configuration": configuration}).encode(),
+        "openWB/system/datastore_version": [155],
     }
 
     uc.upgrade_datastore_156()
 
+    if updated:
+        assert uc.all_received_topics[topic] == {
+            "type": provider_type, "configuration": expected_configuration
+        }
+    else:
+        assert json.loads(uc.all_received_topics[topic]) == {
+            "type": provider_type, "configuration": expected_configuration
+        }
+    updated_topics = [call.args[0] for call in mock_pub.pub.call_args_list]
+    assert (topic in updated_topics) is updated
+    assert uc.all_received_topics["openWB/system/datastore_version"] == [155, 156]
+
+
+@pytest.mark.parametrize("config, expected",
+                         [pytest.param({"data_costs": True}, False, id="neue Spalte standardmäßig ausgeblendet"),
+                          pytest.param({"data_costs": True, "data_tariff_split": True}, True,
+                                       id="vorhandene Einstellung bleibt")])
+def test_upgrade_datastore_157_adds_tariff_split_column(config, expected, mock_pub):
+    uc = UpdateConfig()
+    uc.all_received_topics = {
+        "openWB/system/datastore_version": list(range(157)),
+        "openWB/general/charge_log_data_config": config,
+    }
+
+    uc.upgrade_datastore_157()
+
     assert uc.all_received_topics["openWB/general/charge_log_data_config"]["data_tariff_split"] is expected
     assert uc.all_received_topics["openWB/general/charge_log_data_config"]["data_costs"] is True
-    assert 156 in uc.all_received_topics["openWB/system/datastore_version"]
+    assert 157 in uc.all_received_topics["openWB/system/datastore_version"]

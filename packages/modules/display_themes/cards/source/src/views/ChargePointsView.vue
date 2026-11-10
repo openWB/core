@@ -1011,6 +1011,28 @@ export default {
               >
                 Maximum
               </i-button>
+              <i-button
+                :color="
+                  mqttStore.getChargePointConnectedVehiclePvChargingMinSocPhases(
+                    modalChargePointId,
+                  ) == 0
+                    ? 'primary'
+                    : ''
+                "
+                :active="
+                  mqttStore.getChargePointConnectedVehiclePvChargingMinSocPhases(
+                    modalChargePointId,
+                  ) == 0
+                "
+                @click="
+                  setChargePointConnectedVehiclePvChargingMinSocPhases(
+                    modalChargePointId,
+                    0,
+                  )
+                "
+              >
+                Automatik
+              </i-button>
             </i-button-group>
           </i-form-group>
         </i-form>

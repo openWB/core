@@ -30,8 +30,6 @@ const v = computed({
 		return props.modelValue
 	},
 	set(value: number | string) {
-		console.log(props.options)
-		console.log('set value', value)
 		emit('update:modelValue', value)
 	},
 })

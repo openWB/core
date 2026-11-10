@@ -307,6 +307,7 @@ function processSystemMessages(topic: string, message: string) {
 				break
 			case 'inverter':
 			case 'inverter_secondary':
+			case 'external_inverter':
 				if (!pvSystems.value.has(config.id)) {
 					pvSystems.value.set(config.id, new PvSystem(config.id))
 				}
