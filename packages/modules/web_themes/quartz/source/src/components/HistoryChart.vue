@@ -3,8 +3,17 @@
     <div class="mb-3 flex flex-wrap items-center justify-between gap-3">
       <div class="flex items-center gap-2">
         <h2 class="m-0 flex items-center gap-2 text-base font-bold">
-          Verlauf ·
           <button
+            type="button"
+            class="cursor-pointer border-0 bg-transparent p-0 font-bold text-text"
+            title="Zwischen Diagramm und Fluss-Ansicht wechseln"
+            @click="displayMode = displayMode === 'chart' ? 'flow' : 'chart'"
+          >
+            {{ displayMode === 'chart' ? 'Verlauf' : 'Fluss' }}
+          </button>
+          ·
+          <button
+            v-if="displayMode === 'chart'"
             type="button"
             class="cursor-pointer rounded-full border-0 px-2.5 py-1 text-[13px] font-semibold badge-muted"
             @click="mode = mode === 'day' ? 'live' : 'day'"
@@ -12,7 +21,7 @@
             {{ mode === 'day' ? dayLabel : `Live · ${liveRangeMinutes} Min` }}
           </button>
         </h2>
-        <template v-if="mode === 'day'">
+        <template v-if="displayMode === 'chart' && mode === 'day'">
           <BaseIconButton
             size="sm"
             aria-label="Vorheriger Tag"
@@ -38,9 +47,33 @@
           >
             Heute
           </button>
+          <div class="relative h-[22px] w-[22px] flex-none">
+            <BaseIconButton
+              size="sm"
+              aria-label="Datum auswählen"
+              title="Datum auswählen"
+            >
+              <IconCalendar />
+            </BaseIconButton>
+            <!-- transparent native date input overlaid on the icon button - clicking anywhere on
+                 it opens the browser's own date picker, so the visible chip stays icon-only and
+                 doesn't widen the header row (a full-width input here used to push the legend
+                 onto its own line). The date itself is already shown by the dayLabel pill above. -->
+            <input
+              type="date"
+              aria-label="Datum auswählen"
+              class="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+              :value="dateInputValue"
+              :max="todayInputValue"
+              @change="onDateInputChange"
+            >
+          </div>
         </template>
       </div>
-      <div class="scrollbar-hide flex flex-nowrap items-center gap-4 overflow-x-auto sm:flex-wrap sm:overflow-visible">
+      <div
+        v-if="displayMode === 'chart'"
+        class="scrollbar-hide flex flex-nowrap items-center gap-4 overflow-x-auto sm:flex-wrap sm:overflow-visible"
+      >
         <button
           v-for="item in legend"
           :key="item.key"
@@ -58,7 +91,10 @@
       </div>
     </div>
 
-    <div class="relative min-h-[300px] sm:min-h-[420px]">
+    <div
+      v-if="displayMode === 'chart'"
+      class="relative min-h-[300px] sm:min-h-[420px]"
+    >
       <button
         v-if="isZoomed"
         class="absolute top-0 right-0 z-10 rounded-full border border-border bg-panel px-2.5 py-[3px] text-xs text-accent shadow-[0_2px_8px_rgba(0,0,0,0.1)]"
@@ -82,6 +118,7 @@
         Keine Daten für diesen Tag.
       </p>
     </div>
+    <FlowBalanceBar v-else />
   </div>
 </template>
 
@@ -102,11 +139,14 @@ import type { CategoryKey } from '@/types/chart'
 import BaseIconButton from './BaseIconButton.vue'
 import IconChevronLeft from './icons/IconChevronLeft.vue'
 import IconChevronRight from './icons/IconChevronRight.vue'
+import IconCalendar from './icons/IconCalendar.vue'
+import FlowBalanceBar from './FlowBalanceBar.vue'
 
 Chart.register(annotationPlugin, zoomPlugin)
 
 const {
   mode,
+  displayMode,
   liveRangeMinutes,
   visibleSeries,
   categoryMode,
@@ -183,8 +223,26 @@ const {
   goToPreviousDay,
   goToNextDay,
   goToToday,
+  goToDate,
 } = useDailyLog()
 const dayLabel = computed(() => formatChartDateLabel(selectedDate.value))
+
+// native <input type="date"> uses the fixed YYYY-MM-DD format regardless of locale, unlike
+// dateToString's YYYYMMDD (built for the MQTT topic, not for this input)
+function toDateInputValue(date: Date): string {
+  return `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}-${date
+    .getDate()
+    .toString()
+    .padStart(2, '0')}`
+}
+const dateInputValue = computed(() => toDateInputValue(selectedDate.value))
+const todayInputValue = computed(() => toDateInputValue(new Date()))
+function onDateInputChange(event: Event): void {
+  const value = (event.target as HTMLInputElement).value
+  if (!value) return
+  const [year, month, day] = value.split('-').map(Number)
+  goToDate(new Date(year, month - 1, day))
+}
 const {
   categories: liveCategories,
   batterySoc: liveBatterySoc,

@@ -31,6 +31,7 @@ export const categoryModeOptions = [
 
 interface PersistedChartSettings {
   mode?: 'day' | 'live'
+  displayMode?: 'chart' | 'flow'
   liveRangeMinutes?: number
   visibleSeries?: Partial<Record<CategoryKey, boolean>>
   categoryMode?: Partial<Record<CategoryKey, 'combined' | 'individual'>>
@@ -71,6 +72,9 @@ function createChartSettings() {
 
   const mode = ref<'day' | 'live'>(persisted.mode ?? 'day')
   const liveRangeMinutes = ref(persisted.liveRangeMinutes ?? 120)
+  // 'chart' = the Chart.js line chart (default), 'flow' = FlowBalanceBar - an alternate,
+  // live-only snapshot presentation for the same card, toggled by clicking "Verlauf" itself
+  const displayMode = ref<'chart' | 'flow'>(persisted.displayMode ?? 'chart')
 
   const visibleSeries = reactive<Record<CategoryKey, boolean>>({
     pv: true,
@@ -118,6 +122,7 @@ function createChartSettings() {
   watchEffect(() => {
     const settings: PersistedChartSettings = {
       mode: mode.value,
+      displayMode: displayMode.value,
       liveRangeMinutes: liveRangeMinutes.value,
       visibleSeries: { ...visibleSeries },
       categoryMode: { ...categoryMode },
@@ -155,6 +160,7 @@ function createChartSettings() {
 
   return {
     mode,
+    displayMode,
     liveRangeMinutes,
     visibleSeries,
     categoryMode,

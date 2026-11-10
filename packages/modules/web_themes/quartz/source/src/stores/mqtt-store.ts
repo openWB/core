@@ -2,7 +2,7 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import mqtt, { type MqttClient } from 'mqtt'
 import type { QoS } from 'mqtt-packet'
-import { eurPerWhToCtPerKwh, ctPerKwhToEurPerWh } from '@/utils/format'
+import { eurPerWhToCtPerKwh, ctPerKwhToEurPerWh, convertDcCurrentToPower } from '@/utils/format'
 
 type TopicMap = Record<string, unknown>
 type SubscriptionCounts = Record<string, number>
@@ -46,6 +46,23 @@ export interface ChargePointConnectedVehicleSoc {
   range_unit: string
   fault_state: number
   fault_str: string
+}
+export interface ChargePointConnectedVehicleConfig {
+  ev_template: number
+}
+/** openWB/vehicle/template/ev_template/<id> - only the field bidi/V2H gating needs. */
+export interface EvTemplate {
+  bidi: boolean
+}
+
+/** openWB/chargepoint/<id>/config - only the field needed to look up the hardware template. */
+export interface ChargePointConfig {
+  template: number
+}
+/** openWB/chargepoint/template/<id> - only the fields AC/DC gating and DC power conversion need. */
+export interface ChargePointTemplate {
+  charging_type: 'AC' | 'DC'
+  dc_max_current: number
 }
 
 /** A charge_template's chargemode.<mode>.limit - caps a mode by target SoC or energy amount. */
@@ -459,6 +476,16 @@ export const useMqttStore = defineStore('mqtt', () => {
     return hierarchy[0]?.type === 'counter' ? hierarchy[0].id : undefined
   }
 
+  /** Root-to-target path through the hierarchy tree, or undefined if the id isn't in it. */
+  function findHierarchyPath(nodes: Hierarchy[], targetId: number): Hierarchy[] | undefined {
+    for (const node of nodes) {
+      if (node.id === targetId) return [node]
+      const childPath = findHierarchyPath(node.children, targetId)
+      if (childPath) return [node, ...childPath]
+    }
+    return undefined
+  }
+
   /** The component hierarchy backs every entity type's id list (chargepoints/consumers/counters/inverters/batteries), not just chargepoints. */
   function subscribeComponentHierarchy(): void {
     subscribe('openWB/counter/get/hierarchy')
@@ -589,6 +616,36 @@ export const useMqttStore = defineStore('mqtt', () => {
       `openWB/chargepoint/${id}/get/connected_vehicle/soc`,
       undefined,
     )
+  }
+  function chargePointConnectedVehicleEvTemplateId(id: number): number | undefined {
+    return getValue.value<ChargePointConnectedVehicleConfig | undefined>(
+      `openWB/chargepoint/${id}/get/connected_vehicle/config`,
+      undefined,
+    )?.ev_template
+  }
+  /** Whether the vehicle currently connected to this chargepoint can do bidi/V2H at all - same
+   *  gate koala's own bidi toggle uses, not a hardware/chargepoint-side capability check. */
+  function chargePointConnectedVehicleBidiCapable(id: number): boolean {
+    const templateId = chargePointConnectedVehicleEvTemplateId(id)
+    if (templateId === undefined) return false
+    return getValue.value<EvTemplate | undefined>(`openWB/vehicle/template/ev_template/${templateId}`, undefined)
+      ?.bidi ?? false
+  }
+
+  function chargePointTemplate(id: number): ChargePointTemplate | undefined {
+    const templateId = getValue.value<ChargePointConfig | undefined>(`openWB/chargepoint/${id}/config`, undefined)
+      ?.template
+    if (templateId === undefined) return undefined
+    return getValue.value<ChargePointTemplate | undefined>(`openWB/chargepoint/template/${templateId}`, undefined)
+  }
+  /** The chargepoint hardware's own charging type - undefined while the config/template topics are still loading. */
+  function chargePointChargeType(id: number): 'AC' | 'DC' | undefined {
+    return chargePointTemplate(id)?.charging_type
+  }
+  /** DC max power in kW, converted from the template's raw dc_max_current (A). */
+  function chargePointDcMaxPower(id: number): number | undefined {
+    const dcMaxCurrent = chargePointTemplate(id)?.dc_max_current
+    return dcMaxCurrent === undefined ? undefined : convertDcCurrentToPower(dcMaxCurrent)
   }
 
   /** The full charge_template of the vehicle currently connected to this chargepoint - read AND write target. */
@@ -974,6 +1031,27 @@ export const useMqttStore = defineStore('mqtt', () => {
   function counterInstanceFaultState(id: number): number {
     return getValue.value<number>(`openWB/counter/${id}/get/fault_state`, 0)
   }
+  /**
+   * Effective home-consumption status, resolving 'auto_home_consumption' against the nearest
+   * explicitly-configured counter ancestor (mirrors
+   * counter_all.py::_is_home_consumption_counter_by_id exactly - that's also computed from the
+   * hierarchy rather than published as its own topic, so it has to be re-derived here). true means
+   * the backend already folds this counter's power into home_consumption/"Haus".
+   */
+  function counterInstanceIsHomeConsumption(id: number): boolean {
+    const hierarchy = getValue.value<Hierarchy[]>('openWB/counter/get/hierarchy', [])
+    const path = findHierarchyPath(hierarchy, id) ?? []
+    for (let i = path.length - 1; i >= 0; i--) {
+      const node = path[i]
+      if (node.type !== 'counter') break
+      const raw = getValue.value<string>(
+        `openWB/counter/${node.id}/config/is_home_consumption_counter`,
+        'auto_home_consumption',
+      )
+      if (raw !== 'auto_home_consumption') return raw === 'home_consumption'
+    }
+    return true
+  }
   function counterInstanceFaultMessage(id: number): string {
     return getValue.value<string>(`openWB/counter/${id}/get/fault_str`, '')
   }
@@ -1175,6 +1253,10 @@ export const useMqttStore = defineStore('mqtt', () => {
     chargePointConnectedVehicleInfo,
     setChargePointConnectedVehicle,
     chargePointConnectedVehicleSoc,
+    chargePointConnectedVehicleEvTemplateId,
+    chargePointConnectedVehicleBidiCapable,
+    chargePointChargeType,
+    chargePointDcMaxPower,
     chargePointChargeTemplate,
     chargePointChargeMode,
     setChargePointChargeMode,
@@ -1272,6 +1354,7 @@ export const useMqttStore = defineStore('mqtt', () => {
     counterInstancePowers,
     counterInstancePowerFactors,
     counterInstanceFaultState,
+    counterInstanceIsHomeConsumption,
     counterInstanceFaultMessage,
     inverterName,
     inverterInstancePower,

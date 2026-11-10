@@ -226,6 +226,16 @@ export function useDailyLog() {
     followToday.value = true
     selectedDate.value = startOfDay(new Date())
   }
+  function goToDate(date: Date): void {
+    const d = startOfDay(date)
+    const today = startOfDay(new Date())
+    if (d.getTime() >= today.getTime()) {
+      goToToday()
+    } else {
+      followToday.value = false
+      selectedDate.value = d
+    }
+  }
 
   const categories = computed<Record<CategoryKey, CategoryData>>(() => {
     const log = mqttStore.getValue<DailyLogResponse | undefined>(topic.value, undefined)
@@ -302,5 +312,6 @@ export function useDailyLog() {
     goToPreviousDay,
     goToNextDay,
     goToToday,
+    goToDate,
   }
 }

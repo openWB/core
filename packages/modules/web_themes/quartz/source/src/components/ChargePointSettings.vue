@@ -23,6 +23,7 @@
 
       <template v-if="mode === 'instant_charging'">
         <FieldSlider
+          v-if="acChargingEnabled"
           label="Stromstärke"
           unit="A"
           :min="6"
@@ -30,7 +31,17 @@
           :model-value="instant.current"
           @update="(v) => setField('chargemode.instant_charging.current', v)"
         />
+        <FieldSlider
+          v-if="dcChargingEnabled"
+          label="DC-Sollleistung"
+          unit="kW"
+          :min="-dcMaxPower"
+          :max="dcMaxPower"
+          :model-value="convertDcCurrentToPower(instant.dc_current)"
+          @update="(v) => setField('chargemode.instant_charging.dc_current', convertPowerToDcCurrent(v))"
+        />
         <BaseSegmentedControl
+          v-if="acChargingEnabled"
           :model-value="instant.phases_to_use"
           :options="[{ value: 1, label: '1' }, { value: 3, label: 'Maximum' }]"
           @update="(v) => setField('chargemode.instant_charging.phases_to_use', v)"
@@ -44,6 +55,7 @@
 
       <template v-else-if="mode === 'pv_charging'">
         <FieldSlider
+          v-if="acChargingEnabled"
           label="Minimaler Dauerstrom"
           unit="A"
           :min="0"
@@ -53,7 +65,17 @@
           :model-value="pv.min_current"
           @update="(v) => setField('chargemode.pv_charging.min_current', v)"
         />
+        <FieldSlider
+          v-if="dcChargingEnabled"
+          label="Minimaler DC-Dauerleistung"
+          unit="kW"
+          :min="0"
+          :max="300"
+          :model-value="convertDcCurrentToPower(pv.dc_min_current)"
+          @update="(v) => setField('chargemode.pv_charging.dc_min_current', convertPowerToDcCurrent(v))"
+        />
         <BaseSegmentedControl
+          v-if="acChargingEnabled"
           label="Anzahl Phasen bei Überschuss"
           :model-value="pv.phases_to_use"
           :options="[{ value: 1, label: '1' }, { value: 3, label: 'Maximum' }, { value: 0, label: 'Automatik' }]"
@@ -68,6 +90,7 @@
           @update="(v) => setField('chargemode.pv_charging.min_soc', v)"
         />
         <FieldSlider
+          v-if="acChargingEnabled"
           label="Mindest-SoC-Strom"
           unit="A"
           :min="6"
@@ -75,7 +98,17 @@
           :model-value="pv.min_soc_current"
           @update="(v) => setField('chargemode.pv_charging.min_soc_current', v)"
         />
+        <FieldSlider
+          v-if="dcChargingEnabled"
+          label="DC Mindest-SoC-Leistung"
+          unit="kW"
+          :min="0"
+          :max="300"
+          :model-value="convertDcCurrentToPower(pv.dc_min_soc_current)"
+          @update="(v) => setField('chargemode.pv_charging.dc_min_soc_current', convertPowerToDcCurrent(v))"
+        />
         <BaseSegmentedControl
+          v-if="acChargingEnabled"
           label="Anzahl Phasen Mindest-SoC"
           :model-value="pv.phases_to_use_min_soc"
           :options="[{ value: 1, label: '1' }, { value: 3, label: 'Maximum' }, { value: 0, label: 'Automatik' }]"
@@ -90,6 +123,7 @@
 
       <template v-else-if="mode === 'eco_charging'">
         <FieldSlider
+          v-if="acChargingEnabled"
           label="Minimaler Dauerstrom unter der Preisgrenze"
           unit="A"
           :min="6"
@@ -97,7 +131,17 @@
           :model-value="eco.current"
           @update="(v) => setField('chargemode.eco_charging.current', v)"
         />
+        <FieldSlider
+          v-if="dcChargingEnabled"
+          label="Minimale Dauerleistung unter der Preisgrenze"
+          unit="kW"
+          :min="4"
+          :max="300"
+          :model-value="convertDcCurrentToPower(eco.dc_current)"
+          @update="(v) => setField('chargemode.eco_charging.dc_current', convertPowerToDcCurrent(v))"
+        />
         <BaseSegmentedControl
+          v-if="acChargingEnabled"
           label="Anzahl Phasen bei Überschuss"
           :model-value="eco.phases_to_use"
           :options="[{ value: 1, label: '1' }, { value: 3, label: 'Maximum' }, { value: 0, label: 'Automatik' }]"
@@ -158,7 +202,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useMqttStore, type Limit } from '@/stores/mqtt-store'
-import { eurPerWhToCtPerKwh, ctPerKwhToEurPerWh } from '@/utils/format'
+import { eurPerWhToCtPerKwh, ctPerKwhToEurPerWh, convertDcCurrentToPower, convertPowerToDcCurrent } from '@/utils/format'
 import { chargeModes } from '@/utils/chargeModes'
 import BaseModal from './BaseModal.vue'
 import FieldSlider from './FieldSlider.vue'
@@ -177,6 +221,13 @@ const mqttStore = useMqttStore()
 const name = computed(() => mqttStore.chargePointName(props.chargePointId))
 const template = computed(() => mqttStore.chargePointChargeTemplate(props.chargePointId))
 const mode = computed(() => template.value?.chargemode.selected)
+
+// both false while the chargepoint's own config/template topics are still loading - matches
+// koala's real behavior (it has the same brief gap), not something to paper over with a fallback
+const acChargingEnabled = computed(() => mqttStore.chargePointChargeType(props.chargePointId) === 'AC')
+const dcChargingEnabled = computed(() => mqttStore.chargePointChargeType(props.chargePointId) === 'DC')
+// matches koala's own DC_POWER_FALLBACK - corresponds to the backend's dc_max_current default (435 A)
+const dcMaxPower = computed(() => mqttStore.chargePointDcMaxPower(props.chargePointId) ?? 300)
 
 // defaults match control/ev/charge_template.py's own dataclass defaults - only used to narrow
 // between "template still loading" and "mode === x", never actually shown unguarded

@@ -110,6 +110,7 @@
       </div>
 
       <FieldSlider
+        v-if="acChargingEnabled"
         label="Ladestrom"
         unit="A"
         :min="6"
@@ -117,7 +118,17 @@
         :model-value="editing.current"
         @update="(v) => (editing!.current = v)"
       />
+      <FieldSlider
+        v-if="dcChargingEnabled"
+        label="Ladeleistung (DC)"
+        unit="kW"
+        :min="0"
+        :max="dcMaxPower"
+        :model-value="convertDcCurrentToPower(editing.dc_current)"
+        @update="(v) => (editing!.dc_current = convertPowerToDcCurrent(v))"
+      />
       <BaseSegmentedControl
+        v-if="acChargingEnabled"
         :model-value="editing.phases_to_use"
         :options="[{ value: 1, label: '1' }, { value: 3, label: 'Maximum' }]"
         @update="(v) => (editing!.phases_to_use = v)"
@@ -180,8 +191,10 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed } from 'vue'
 import { useMqttStore, type TimeChargingPlan } from '@/stores/mqtt-store'
+import { convertDcCurrentToPower, convertPowerToDcCurrent } from '@/utils/format'
+import { usePlanListEditor, frequencyOptions, frequencyLabel } from '@/composables/usePlanListEditor'
 import FieldSlider from './FieldSlider.vue'
 import BaseSegmentedControl from './BaseSegmentedControl.vue'
 import BaseButton from './BaseButton.vue'
@@ -192,35 +205,14 @@ const mqttStore = useMqttStore()
 
 const plans = computed(() => mqttStore.chargePointChargeTemplate(props.chargePointId)?.time_charging.plans ?? [])
 
-const editing = ref<TimeChargingPlan | null>(null)
-const editingIndex = ref<number | null>(null)
+const acChargingEnabled = computed(() => mqttStore.chargePointChargeType(props.chargePointId) === 'AC')
+const dcChargingEnabled = computed(() => mqttStore.chargePointChargeType(props.chargePointId) === 'DC')
+const dcMaxPower = computed(() => mqttStore.chargePointDcMaxPower(props.chargePointId) ?? 300)
 
-const frequencyOptions = [
-  { value: 'once', label: 'Einmalig' },
-  { value: 'daily', label: 'Täglich' },
-  { value: 'weekly', label: 'Wöchentlich' },
-] as const
-
-const limitOptions = [
-  { value: 'none', label: 'Keine' },
-  { value: 'soc', label: 'SoC' },
-  { value: 'amount', label: 'Menge' },
-] as const
-
-function frequencyLabel(selected: string): string {
-  return frequencyOptions.find((o) => o.value === selected)?.label ?? selected
-}
-
-function openEdit(plan: TimeChargingPlan, index: number): void {
-  // plan is a Vue-reactive Proxy (sourced from the Pinia store) - structuredClone can throw
-  // on that in some engines; a JSON round-trip safely unwraps it into plain, editable data
-  editing.value = JSON.parse(JSON.stringify(plan)) as TimeChargingPlan
-  editingIndex.value = index
-}
-
-function openNew(): void {
-  const existingIds = plans.value.map((p) => p.id ?? 0)
-  editing.value = {
+const { editing, editingIndex, openEdit, openNew, save, remove } = usePlanListEditor<TimeChargingPlan>(
+  plans,
+  (next) => mqttStore.setChargePointChargeTemplateField(props.chargePointId, 'time_charging.plans', next),
+  (existingIds) => ({
     active: true,
     time: ['06:00', '07:00'],
     frequency: { selected: 'daily', once: [new Date().toISOString().slice(0, 10), new Date().toISOString().slice(0, 10)], weekly: [false, false, false, false, false, false, false] },
@@ -231,28 +223,17 @@ function openNew(): void {
     min_bat_soc: null,
     name: 'neuer Zeitladen-Plan',
     phases_to_use: 1,
-  }
-  editingIndex.value = null
-}
+  }),
+)
+
+const limitOptions = [
+  { value: 'none', label: 'Keine' },
+  { value: 'soc', label: 'SoC' },
+  { value: 'amount', label: 'Menge' },
+] as const
 
 function toggleMinBatSoc(enabled: boolean): void {
   if (!editing.value) return
   editing.value.min_bat_soc = enabled ? 50 : null
-}
-
-function save(): void {
-  if (!editing.value) return
-  const next = [...plans.value]
-  if (editingIndex.value !== null) next[editingIndex.value] = editing.value
-  else next.push(editing.value)
-  mqttStore.setChargePointChargeTemplateField(props.chargePointId, 'time_charging.plans', next)
-  editing.value = null
-}
-
-function remove(): void {
-  if (editingIndex.value === null) return
-  const next = plans.value.filter((_, i) => i !== editingIndex.value)
-  mqttStore.setChargePointChargeTemplateField(props.chargePointId, 'time_charging.plans', next)
-  editing.value = null
 }
 </script>
