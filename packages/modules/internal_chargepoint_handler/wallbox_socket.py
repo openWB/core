@@ -6,6 +6,7 @@ from helpermodules.utils.error_handling import ErrorTimerContext
 from modules.common.component_context import SingleComponentUpdateContext
 from modules.common.component_state import ConsumerState, CounterState
 from modules.common.fault_state import ComponentInfo, FaultState
+from modules.common.fault_state_level import FaultStateLevel
 from modules.common.hardware_check import check_meter
 from modules.common.modbus import ModbusSerialClient_, ModbusTcpClient_
 from modules.common.store import get_wallbox_socket_value_store
@@ -98,6 +99,8 @@ class WallboxSocketModule:
         return self.old_wallbox_socket_state
 
     def set_state(self, state: bool) -> None:
+        if self.fault_state.fault_state == FaultStateLevel.ERROR:
+            state = False
         with SingleComponentUpdateContext(self.fault_state, update_always=False):
             direction_pin, enable_pin = 23, 26  # BOARD numbering: BCM 11, BCM 7
             if state:
