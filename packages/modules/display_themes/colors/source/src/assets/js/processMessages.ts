@@ -232,6 +232,9 @@ function processSystemMessages(topic: string, message: string) {
 	) {
 		const config = JSON.parse(message)
 		if (config.type == 'counter') {
+			if (!(config.id in counters)) {
+				addCounter(config.id, config.type)
+			}
 			counters[config.id].name = config.name
 		}
 	} else if (topic.match(/^openWB\/system\/ip_address$/i)) {
