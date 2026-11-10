@@ -173,7 +173,7 @@ def test_get_max_id_hierarchy_by_topics(mock_pub, monkeypatch):
 def test_remove_wallbox_socket_switches_off_before_removing_topics(consumer_type, mock_pub, monkeypatch):
     order = []
     consumer = SimpleNamespace(data=SimpleNamespace(module=SimpleNamespace(type=consumer_type)), module=Mock())
-    consumer.module.switch_off.side_effect = lambda: order.append("off")
+    consumer.module.module_switch_off.side_effect = lambda: order.append("off")
     branch = Mock()
     branch.remove_topics.side_effect = lambda: order.append("remove")
     monkeypatch.setattr(command, "ProcessBrokerBranch", Mock(return_value=branch))
