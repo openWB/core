@@ -57,6 +57,7 @@ def create_consumer(config: WallboxSocket):
             voltages=parse_received_topics("voltages"),
             currents=parse_received_topics("currents"),
             temperatures=parse_received_topics("temperatures"),
+            state=parse_received_topics("state"),
             rfid=parse_received_topics("rfid"),
         )
 
