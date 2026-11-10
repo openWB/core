@@ -6,9 +6,7 @@ from math import ceil
 from typing import Dict, List, Optional as TypingOptional, Union
 from datetime import datetime
 
-from control import data
 from control.optional_data import FlexibleTariff, ForecastGet, GridFee, OptionalData, PricingGet
-from control.ocpp.ocpp_client import OcppClient
 from helpermodules import hardware_configuration
 from helpermodules.constants import NO_ERROR
 from helpermodules.pub import Pub
@@ -23,10 +21,8 @@ MQTT_PREFIX = "openWB/set/optional/ep"
 
 
 class Optional:
-    def __init__(self, ocpp_client: TypingOptional[OcppClient] = None):
+    def __init__(self):
         try:
-            if ocpp_client is not None:
-                data.data.ocpp_client = ocpp_client
             self.data = OptionalData()
             self._flexible_tariff_module: TypingOptional[ConfigurableFlexibleTariff] = None
             self._grid_fee_module: TypingOptional[ConfigurableGridFee] = None
