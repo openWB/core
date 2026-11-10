@@ -19,7 +19,7 @@ function processConsumerDeviceMessages(topic: string, message: string) {
 		return
 	}
 	if (!consumers.has(index)) {
-		console.warn('Invalid consumer id received: ' + index)
+		addConsumer(index)
 	}
 	const dev = consumers.get(index)!
 	if (topic.match(/^openWB\/consumer\/[0-9]+\/get\/power$/i)) {
