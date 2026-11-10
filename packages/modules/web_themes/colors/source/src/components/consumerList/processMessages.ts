@@ -11,6 +11,24 @@ export function processConsumerMessages(topic: string, message: string) {
 	}
 }
 
+// device messages for a consumer id not yet created by the hierarchy are buffered here and
+// replayed once registerConsumerFromHierarchy creates it, instead of being dropped or creating
+// a consumer that may not actually be in the current hierarchy (eg. a stale retained topic)
+const pendingMessages = new Map<number, { topic: string; message: string }[]>()
+
+// called from hierarchy processing - the only place a consumer may be created, so its color
+// (assigned from consumers.size at creation) stays consistent with the hierarchy order
+export function registerConsumerFromHierarchy(index: number, showInList = true) {
+	addConsumer(index, showInList)
+	const pending = pendingMessages.get(index)
+	if (pending) {
+		pendingMessages.delete(index)
+		pending.forEach(({ topic, message }) =>
+			processConsumerDeviceMessages(topic, message),
+		)
+	}
+}
+
 // Consumers device messages
 function processConsumerDeviceMessages(topic: string, message: string) {
 	const index = getIndex(topic)
@@ -19,7 +37,10 @@ function processConsumerDeviceMessages(topic: string, message: string) {
 		return
 	}
 	if (!consumers.has(index)) {
-		addConsumer(index)
+		const pending = pendingMessages.get(index) ?? []
+		pending.push({ topic, message })
+		pendingMessages.set(index, pending)
+		return
 	}
 	const dev = consumers.get(index)!
 	if (topic.match(/^openWB\/consumer\/[0-9]+\/get\/power$/i)) {
