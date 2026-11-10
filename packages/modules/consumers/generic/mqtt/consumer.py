@@ -15,6 +15,10 @@ log = logging.getLogger(__name__)
 
 
 def create_consumer(config: Mqtt):
+    def clear_rfid() -> None:
+        Pub().pub(f"openWB/mqtt/consumer/{config.id}/get/rfid", None)
+        Pub().pub(f"openWB/mqtt/consumer/{config.id}/get/rfid_timestamp", None)
+
     def update() -> ConsumerState:
         def parse_received_topics(value: str):
             return received_topics.get(f"{topic_prefix}{value}", get_default(ConsumerState, value))
@@ -31,21 +35,22 @@ def create_consumer(config: Mqtt):
 
         log.debug(f"Empfange MQTT Daten für Verbraucher {config.id}: {received_topics}")
         topic_prefix = f"openWB/mqtt/consumer/{config.id}/get/"
+        rfid = received_topics.get(f"{topic_prefix}rfid")
         try:
             power = received_topics[f"{topic_prefix}power"]
-            imported = parse_received_topics("imported")
-            exported = parse_received_topics("exported")
-            return ConsumerState(
-                power=power,
-                imported=imported,
-                exported=exported,
-                powers=parse_received_topics("powers"),
-                voltages=parse_received_topics("voltages"),
-                currents=parse_received_topics("currents"),
-                temperatures=parse_received_topics("temperatures"),
-            )
         except KeyError:
             raise KeyError("Es wurden nicht alle notwendigen Daten empfangen.")
+        return ConsumerState(
+            power=power,
+            imported=parse_received_topics("imported"),
+            exported=parse_received_topics("exported"),
+            powers=parse_received_topics("powers"),
+            voltages=parse_received_topics("voltages"),
+            currents=parse_received_topics("currents"),
+            temperatures=parse_received_topics("temperatures"),
+            rfid=str(rfid) if rfid else None,
+            rfid_timestamp=received_topics.get(f"{topic_prefix}rfid_timestamp") if rfid else None,
+        )
 
     def set_power_limit(power_limit: float, data: SetLimitData) -> None:
         Pub().pub(f"openWB/set/mqtt/consumer/{config.id}/set/power", power_limit)
@@ -69,7 +74,8 @@ def create_consumer(config: Mqtt):
                                 send_values=send_values,
                                 set_power_limit=set_power_limit,
                                 switch_on=switch_on,
-                                switch_off=switch_off)
+                                switch_off=switch_off,
+                                clear_rfid=clear_rfid)
 
 
 device_descriptor = DeviceDescriptor(configuration_factory=Mqtt)
