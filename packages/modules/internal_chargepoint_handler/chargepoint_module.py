@@ -156,7 +156,7 @@ class ChargepointModule(AbstractChargepoint):
                 raise Exception("Ladung konnte nicht gestoppt werden - Phasenumschaltung abgebrochen.")
         GPIO.output(gpio_cp, GPIO.HIGH)  # CP off
         GPIO.output(gpio_relay, GPIO.HIGH)  # 3 on/off
-        time.sleep(5)
+        time.sleep(0.5)  # Stromstossrelais, 500ms reichen locker
         GPIO.output(gpio_relay, GPIO.LOW)  # 3 on/off
         time.sleep(5)
         GPIO.output(gpio_cp, GPIO.LOW)  # CP on
