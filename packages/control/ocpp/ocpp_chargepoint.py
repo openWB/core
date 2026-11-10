@@ -33,7 +33,7 @@ from helpermodules.pub import Pub
 
 from control import data
 from modules.common.fault_state_level import FaultStateLevel
-from control.ocpp.helper import _get_formatted_time, get_cp_from_chargebox_id
+from control.ocpp.helper import _get_formatted_time, get_cp_from_chargebox_id, is_ocpp_stop_active
 from control.ocpp.helper_diagnostics import create_diagnostics, upload_diagnostics
 
 log = logging.getLogger(__name__)
@@ -454,8 +454,7 @@ class OcppChargePoint(cp):
         if (openwb_cp is None or requested_connector_id != 1 or
                 getattr(openwb_cp.data.get.ocpp, "previous_chargebox_id", None)
                 or not all(openwb_cp.data.get.ocpp.availability)
-                or any(getattr(openwb_cp.data.get.ocpp, flag, False)
-                       for flag in ("remote_stop", "rfid_stop", "reset", "unlock_stop"))):
+                or is_ocpp_stop_active(openwb_cp.data.get.ocpp)):
             return call_result.RemoteStartTransaction(
                 status=RemoteStartStopStatus.rejected
             )
