@@ -133,7 +133,6 @@ def test_save_log_keeps_existing_names_and_colors_when_writing_new_entry(monkeyp
         "entries": [{"timestamp": 1, "cp": {"cp1": {"imported": 1, "exported": 0}}}],
         "names": {"cp1": "Bestehender Ladepunkt"},
         "colors": {"cp1": "#111111"},
-        "forecast": {"1": 100.0},
     }
     mocked_file = Mock()
     mocked_file.__enter__ = Mock(return_value=mocked_file)
@@ -149,7 +148,6 @@ def test_save_log_keeps_existing_names_and_colors_when_writing_new_entry(monkeyp
     monkeypatch.setattr(write_log, "get_names", Mock(
         return_value={"cp1": "Bestehender Ladepunkt", "cp2": "Neuer Ladepunkt"}))
     monkeypatch.setattr(write_log, "get_colors", Mock(return_value={"cp1": "#111111", "cp2": "#222222"}))
-    monkeypatch.setattr(write_log, "get_forecast_values", Mock(return_value={"2": 200.0}))
     write_and_check_mock = Mock()
     monkeypatch.setattr(write_log, "write_and_check", write_and_check_mock)
 
@@ -169,47 +167,3 @@ def test_save_log_keeps_existing_names_and_colors_when_writing_new_entry(monkeyp
         "cp1": "#111111",
         "cp2": "#222222",
     }
-    assert written_content["forecast"] == {
-        "1": 100.0,
-        "2": 200.0,
-    }
-
-
-def test_get_forecast_values_reads_real_data_path(monkeypatch):
-    monkeypatch.setattr(
-        write_log.data, "data",
-        Mock(optional_data=Mock(data=Mock(forecast=Mock(get=Mock(today_values={"123": 456.0}))))))
-
-    assert write_log.get_forecast_values() == {"123": 456.0}
-
-
-def test_get_forecast_values_falls_back_to_empty_dict_on_error(monkeypatch):
-    # eg. data.data not fully initialized yet - None has no .optional_data, raising AttributeError
-    monkeypatch.setattr(write_log.data, "data", None)
-
-    assert write_log.get_forecast_values() == {}
-
-
-def test_save_log_ignores_non_dict_forecast_values(monkeypatch):
-    # a malformed/corrupted forecast value must not abort the whole daily-log write - matches
-    # the existing defensive handling for "names"/"colors" in the same function
-    existing_content = {"entries": [{"timestamp": 1}], "names": {}, "colors": {}, "forecast": {"1": 100.0}}
-    mocked_file = Mock()
-    mocked_file.__enter__ = Mock(return_value=mocked_file)
-    mocked_file.__exit__ = Mock(return_value=None)
-    mocked_file.read = Mock(return_value=json.dumps(existing_content))
-    monkeypatch.setattr("builtins.open", Mock(return_value=mocked_file))
-    monkeypatch.setattr(write_log.timecheck, "create_timestamp_YYYYMMDD", Mock(return_value="20261002"))
-    monkeypatch.setattr(write_log, "get_previous_entry", Mock(return_value=existing_content["entries"][-1]))
-    monkeypatch.setattr(write_log, "LegacySmartHomeLogData", Mock(return_value=Mock(sh_names={}, sh_dict={})))
-    monkeypatch.setattr(write_log, "create_entry", Mock(return_value={"timestamp": 2}))
-    monkeypatch.setattr(write_log, "get_names", Mock(return_value={}))
-    monkeypatch.setattr(write_log, "get_colors", Mock(return_value={}))
-    monkeypatch.setattr(write_log, "get_forecast_values", Mock(return_value=["not", "a", "dict"]))
-    write_and_check_mock = Mock()
-    monkeypatch.setattr(write_log, "write_and_check", write_and_check_mock)
-
-    write_log.save_log()
-
-    written_content = write_and_check_mock.call_args.args[1]
-    assert written_content["forecast"] == {"1": 100.0}

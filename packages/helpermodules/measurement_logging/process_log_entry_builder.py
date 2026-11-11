@@ -67,6 +67,12 @@ def create_entry(sh_log_data: Optional[LegacySmartHomeLogData], previous_entry: 
         prices_dict = {"fault_state": 0}
 
     try:
+        forecast_value = data.data.optional_data.forecast_get_current_value()
+    except Exception:
+        log.exception("Fehler im Werte-Logging-Modul für die PV-Prognose")
+        forecast_value = None
+
+    try:
         cp_dict = {"all": {"imported": data.data.cp_all_data.data.get.imported,
                            "exported": data.data.cp_all_data.data.get.exported,
                            "fault_state": data.data.cp_all_data.data.get.fault_state}}
@@ -190,6 +196,7 @@ def create_entry(sh_log_data: Optional[LegacySmartHomeLogData], previous_entry: 
         "timestamp": current_timestamp,
         "date": date,
         "prices": prices_dict,
+        "forecast": forecast_value,
         "cp": cp_dict,
         "ev": ev_dict,
         "counter": counter_dict,
