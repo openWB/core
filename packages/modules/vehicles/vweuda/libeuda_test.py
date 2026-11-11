@@ -79,15 +79,15 @@ def test_primary_zero_soc_takes_precedence_over_fallback():
     assert parse_vehicle_data({"Data": data})["soc"] == 0
 
 
-def test_generic_timestamp_is_not_used_without_car_captured_time():
+def test_generic_timestamp_fallback_uses_latest_value_without_car_captured_time():
     data = [BASE_DATA[1]] + [
         {"key": "latest", "dataFieldName": "timestamp", "value": "2026-09-15T09:00:00Z"},
         {"key": "earlier", "dataFieldName": "timestamp", "value": "2026-09-15T08:00:00Z"},
     ]
     result = parse_vehicle_data({"Data": data})
     assert result["soc"] == "55.0"
-    assert result["soc_timestamp_str"] is None
-    assert result["soc_timestamp"] is None
+    assert result["soc_timestamp_str"] == "2026-09-15T09:00:00Z"
+    assert result["soc_timestamp"] == 1789462800
 
 
 def test_car_captured_time_is_used_despite_newer_generic_timestamp():
