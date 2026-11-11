@@ -12,6 +12,7 @@ import logging
 from control import data
 from helpermodules import hardware_configuration, subdata
 from helpermodules.broker import BrokerClient
+from helpermodules.filesystem_migrations import FilesystemMigrations
 from helpermodules.pub import Pub
 from helpermodules.utils.topic_parser import decode_payload, get_index, get_index_position
 from helpermodules.update_config import UpdateConfig
@@ -1119,7 +1120,7 @@ class SetData:
             elif "openWB/set/system/datastore_version" in msg.topic:
                 self._validate_value(msg, int, [(0, UpdateConfig.DATASTORE_VERSION)], collection=list)
             elif "openWB/set/system/file_operation_version" in msg.topic:
-                self._validate_value(msg, int, [(0, UpdateConfig.FILE_OPERATION_VERSION)], collection=list)
+                self._validate_value(msg, int, [(0, FilesystemMigrations.FILE_OPERATION_VERSION)], collection=list)
             elif "openWB/set/system/GetRemoteSupport" in msg.topic:
                 # Server-Topic enthält kein json-Payload.
                 payload = msg.payload.decode("utf-8")
