@@ -41,6 +41,7 @@ from helpermodules.utils.topic_parser import decode_payload, get_index, get_seco
 from control.counter_all import counter_all, counter_all_data
 from control.bat_all import BatConsiderationMode
 from control.chargepoint.charging_type import ChargingType
+from control.chargepoint.chargepoint_data import get_ocpp_config_default
 from control.counter import get_counter_default_config, CounterMode
 from control.ev.charge_template import EcoCharging, get_charge_template_default
 from control.ev import ev
@@ -689,8 +690,21 @@ class UpdateConfig:
     ]
 
     default_topics_with_wildcards = (
-        ("openWB/chargepoint/{}/get/ocpp/connected", False),
         ("openWB/chargepoint/{}/get/ocpp/authorization_flow_status", None),
+        ("openWB/chargepoint/{}/get/ocpp/availability", [True, True]),
+        ("openWB/chargepoint/{}/get/ocpp/connected", False),
+        ("openWB/chargepoint/{}/get/ocpp/config", get_ocpp_config_default()),
+        ("openWB/chargepoint/{}/get/ocpp/last_connection_settings", None),
+        ("openWB/chargepoint/{}/get/ocpp/pending_availability", [False, False]),
+        ("openWB/chargepoint/{}/get/ocpp/pending_transactions", []),
+        ("openWB/chargepoint/{}/get/ocpp/previous_chargebox_id", None),
+        ("openWB/chargepoint/{}/get/ocpp/remote_stop", False),
+        ("openWB/chargepoint/{}/get/ocpp/reset", False),
+        ("openWB/chargepoint/{}/get/ocpp/rfid_stop", False),
+        ("openWB/chargepoint/{}/get/ocpp/tag_accepted", False),
+        ("openWB/chargepoint/{}/get/ocpp/transaction_id", None),
+        ("openWB/chargepoint/{}/get/ocpp/transaction_id_tag", None),
+        ("openWB/chargepoint/{}/get/ocpp/unlock_stop", False),
     )
 
     default_topic = (
