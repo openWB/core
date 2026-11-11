@@ -34,6 +34,106 @@ from modules.chargepoints.mqtt.config import Mqtt
 from helpermodules.logger import FORMAT_STR_DETAILED, FORMAT_STR_OCPP
 from helpermodules.logging_context import OcppContextFilter, ocpp_logging_context
 from helpermodules.timecheck import create_timestamp
+from control.ocpp.helper import report_ocpp_error
+from helpermodules.setdata import SetData
+
+
+@pytest.mark.parametrize("flow_status,expected", [
+    ("stop_pending", "Ladevorgang wird beendet."),
+    ("stop_error", "Server hat das Ende des Ladevorgangs nicht bestätigt."),
+])
+def test_stop_flow_shows_stop_message_instead_of_start_fallback(mock_data, flow_status, expected):
+    cp = Chargepoint(1, None)
+    cp.data.config.ocpp_chargebox_id = "box-1"
+    data.data.optional_data.data.ocpp.config.active = True
+    cp.data.get.plug_state = True
+    cp.data.set.rfid = "TAG"
+    cp.data.get.ocpp.transaction_id = 42
+    cp.data.get.ocpp.connected = True
+    cp.data.get.ocpp.tag_accepted = False
+    cp.data.get.ocpp.authorization_flow_status = flow_status
+
+    assert cp._is_ocpp() == (False, expected)
+
+
+@pytest.mark.parametrize("remote_stop", [False, True])
+def test_offline_transaction_warning_persists_until_reconnect(mock_data, remote_stop):
+    cp = Chargepoint(1, None)
+    cp.data.config.ocpp_chargebox_id = "box-1"
+    data.data.optional_data.data.ocpp.config.active = True
+    cp.data.get.ocpp.transaction_id = 42
+    cp.data.get.ocpp.tag_accepted = True
+    cp.data.get.ocpp.remote_stop = remote_stop
+    cp.data.get.ocpp.connected = False
+    warning = "OCPP: Verbindung zum Server unterbrochen."
+
+    for _ in range(2):
+        allowed, message = cp._is_ocpp()
+        assert allowed is (not remote_stop)
+        assert warning in message
+        if remote_stop:
+            assert "Transaktion vom OCPP-Server gestoppt" in message
+
+    cp.data.get.ocpp.connected = True
+    allowed, message = cp._is_ocpp()
+    assert allowed is (not remote_stop)
+    assert warning not in (message or "")
+
+
+@pytest.mark.parametrize("configured", [False, True])
+def test_offline_transaction_warning_requires_active_configured_ocpp(mock_data, configured):
+    cp = Chargepoint(1, None)
+    cp.data.config.ocpp_chargebox_id = "box-1" if configured else None
+    data.data.optional_data.data.ocpp.config.active = not configured
+    cp.data.get.ocpp.transaction_id = 42
+    cp.data.get.ocpp.connected = False
+
+    assert cp._is_ocpp() == (True, None)
+
+
+@pytest.mark.parametrize("message", ["Entriegelung fehlgeschlagen.", None])
+def test_backend_message_mqtt_accepts_text_and_reset(mock_pub, message):
+    handler = SetData.__new__(SetData)
+    handler.process_chargepoint_get_topics(SimpleNamespace(
+        topic="openWB/set/chargepoint/1/get/ocpp/backend_message",
+        payload=json.dumps(message).encode("utf-8"),
+    ))
+
+    mock_pub.pub.assert_any_call("openWB/chargepoint/1/get/ocpp/backend_message", message, retain=True)
+
+
+def test_backend_error_is_forwarded_to_chargepoint_topic(mock_data, mock_pub):
+    cp = Chargepoint(1, None)
+    cp.data.config.ocpp_chargebox_id = "box-1"
+    data.data.cp_data = {"cp1": cp}
+
+    report_ocpp_error("box-1", "Entriegelung fehlgeschlagen.")
+
+    mock_pub.pub.assert_any_call(
+        "openWB/set/chargepoint/1/get/ocpp/backend_message", "Entriegelung fehlgeschlagen.",
+    )
+
+
+@pytest.mark.parametrize("active", [True, False])
+def test_backend_message_is_consumed_once_without_changing_hardware_fault(mock_data, mock_pub, active):
+    cp = Chargepoint(1, None)
+    cp.data.config.ocpp_chargebox_id = "box-1"
+    cp.data.get.ocpp.backend_message = "Entriegelung fehlgeschlagen."
+    cp.data.get.fault_state = 2
+    cp.data.get.fault_str = "Hardwarefehler"
+    data.data.optional_data.data.ocpp.config.active = active
+
+    cp._process_ocpp_backend_message()
+
+    assert cp.data.get.state_str == ("OCPP: Entriegelung fehlgeschlagen." if active else None)
+    assert cp.data.get.ocpp.backend_message is None
+    assert cp.data.get.fault_state == 2
+    assert cp.data.get.fault_str == "Hardwarefehler"
+    mock_pub.pub.assert_any_call("openWB/set/chargepoint/1/get/ocpp/backend_message", None)
+
+    cp.data.get.state_str = None
+    cp._process_ocpp_backend_message()
+    assert cp.data.get.state_str is None
 
 
 @pytest.mark.parametrize("fault_state,error_code,status", [
@@ -1338,7 +1438,7 @@ def test_connect_logs_unauthorized_handshake(monkeypatch, caplog):
     monkeypatch.setattr(
         ocpp_connection_manager.data,
         "data",
-        SimpleNamespace(optional_data=SimpleNamespace(data=SimpleNamespace(ocpp=ocpp_data))),
+        SimpleNamespace(cp_data={}, optional_data=SimpleNamespace(data=SimpleNamespace(ocpp=ocpp_data))),
     )
     connection_manager = OcppConnectionManager(
         chargepoint_factory=Mock(),

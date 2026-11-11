@@ -15,7 +15,7 @@ from helpermodules.pub import Pub, pub_single
 from helpermodules.logging_context import ocpp_logging_context
 
 from control import data
-from control.ocpp.helper import get_cp_from_chargebox_id, _get_config, _get_formatted_time
+from control.ocpp.helper import get_cp_from_chargebox_id, _get_config, _get_formatted_time, report_ocpp_error
 
 from control.ocpp.ocpp_chargepoint import OcppChargePoint, get_ocpp_error_code
 from control.ocpp.ocpp_connection import OcppConnection, RegistrationState
@@ -129,6 +129,7 @@ class OcppClient:
                     pass
                 except Exception:
                     log.exception(f"Fehler in OCPP-Job: {description}")
+                    report_ocpp_error(chargebox_id, "Anfrage konnte nicht ausgeführt werden.")
 
         future.add_done_callback(done_callback)
 
@@ -245,6 +246,7 @@ class OcppClient:
 
         if response is None:
             log.error(f"Boot Notification für {chargebox_id} fehlgeschlagen")
+            report_ocpp_error(chargebox_id, "Keine Antwort bei der Anmeldung am Server.")
             return None
 
         return await self._handle_boot_response(connection, response)
@@ -260,6 +262,7 @@ class OcppClient:
         try:
             state = RegistrationState(getattr(status, "value", status))
         except ValueError:
+            report_ocpp_error(chargebox_id, "Anmeldung am Server fehlgeschlagen.")
             log.error(
                 "Unbekannter Boot-Registrierungsstatus für %s: %r",
                 chargebox_id,
@@ -271,6 +274,11 @@ class OcppClient:
         connection.cp.registration_state = state
 
         if state in (RegistrationState.PENDING, RegistrationState.REJECTED):
+            report_ocpp_error(
+                chargebox_id,
+                "Anmeldung am Server abgelehnt." if state == RegistrationState.REJECTED
+                else "Warte auf Freigabe durch den Server.",
+            )
             connection.boot_accepted = False
             self._set_connected(connection.cp, False)
             await self._stop_registration_tasks(connection)
@@ -359,6 +367,7 @@ class OcppClient:
 
                 response = await connection.cp._boot_notification()
                 if response is None:
+                    report_ocpp_error(connection.chargebox_id, "Keine Antwort bei der Anmeldung am Server.")
                     log.warning(
                         "Boot-Retry für %s erhielt keine Antwort; nächster Versuch in %ss",
                         connection.chargebox_id,
@@ -543,6 +552,7 @@ class OcppClient:
 
         except Exception:
             log.exception(f"Heartbeat für {chargebox_id} fehlgeschlagen")
+            report_ocpp_error(chargebox_id, "Verbindung zum Server unterbrochen.")
 
             # Verbindung bewusst schließen.
             # cp.start() merkt dadurch ebenfalls, dass sie weg ist.
@@ -632,6 +642,7 @@ class OcppClient:
 
         except Exception:
             log.exception(f"MeterValues-Task für {chargebox_id} fehlgeschlagen")
+            report_ocpp_error(chargebox_id, "Ladedaten konnten nicht an den Server übertragen werden.")
 
             if not connection.ws.closed:
                 await connection.ws.close()
@@ -1013,6 +1024,8 @@ class OcppClient:
             return
 
         if not transaction_stopped:
+            report_ocpp_error(
+                chargebox_id, "OCPP-Neustart abgebrochen: Server hat das Ende des Ladevorgangs nicht bestätigt.")
             log.warning(
                 f"{reset_type.value} Reset für {chargebox_id} abgebrochen: "
                 "Transaction konnte nicht gestoppt werden "
@@ -1039,6 +1052,7 @@ class OcppClient:
                 connection = await self.connection_manager.reconnect_now(chargebox_id)
 
                 if connection is None:
+                    report_ocpp_error(chargebox_id, "OCPP-Neustart fehlgeschlagen.")
                     log.warning(
                         "Soft Reset für %s: "
                         "direkter Reconnect nicht möglich",
@@ -1059,6 +1073,7 @@ class OcppClient:
                     "OCPP Soft Reset für %s fehlgeschlagen",
                     chargebox_id,
                 )
+                report_ocpp_error(chargebox_id, "OCPP-Neustart fehlgeschlagen.")
 
         else:
             # Hard reset: Transaktion beenden und Ladepunkt neu starten

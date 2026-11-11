@@ -9,7 +9,9 @@ from time import monotonic
 from helpermodules.pub import Pub
 
 from control import data
-from control.ocpp.helper import get_cp_from_chargebox_id, _get_config, _get_formatted_time, is_ocpp_stop_active
+from control.ocpp.helper import (
+    get_cp_from_chargebox_id, _get_config, _get_formatted_time, is_ocpp_stop_active, report_ocpp_error,
+)
 
 from control.ocpp.ocpp_connection import OcppConnection
 
@@ -119,6 +121,7 @@ class TransactionCoordinator:
             raise
         except Exception as exc:
             log.exception("Authorize fuer %s fehlgeschlagen", chargebox_id)
+            report_ocpp_error(chargebox_id, "RFID-Prüfung fehlgeschlagen. Bitte erneut versuchen.")
             return AuthorizationResult(error=str(exc))
 
         return AuthorizationResult(status=_get_id_tag_status(response))
@@ -711,6 +714,10 @@ class TransactionCoordinator:
 
             remaining = deadline - monotonic()
             if remaining <= 0:
+                report_ocpp_error(
+                    chargebox_id,
+                    "Ladepunkt hat das Ende des Ladevorgangs nicht bestätigt.",
+                )
                 log.error(
                     "OCPP %s: Ladestopp nach 30 s nicht zuverlässig bestätigt (%s). "
                     "StopTransaction %s verwendet letzten verfügbaren Zählerstand %s Wh. "
@@ -870,6 +877,7 @@ class TransactionCoordinator:
             return None
         entry = pending_transactions[-1]
         if not isinstance(entry, dict):
+            report_ocpp_error(chargebox_id, "Ladevorgang konnte nicht beim Server abgeschlossen werden.")
             log.error(
                 "OCPP %s: ungültiger persistierter StopTransaction-Eintrag (%r); "
                 "Eintrag bleibt zur Diagnose erhalten und wird nicht gesendet",
@@ -901,6 +909,7 @@ class TransactionCoordinator:
             and isinstance(finalized, bool)
         )
         if not valid:
+            report_ocpp_error(chargebox_id, "Ladevorgang konnte nicht beim Server abgeschlossen werden.")
             log.error(
                 "OCPP %s: ungültiger persistierter StopTransaction-Eintrag (%r); "
                 "Eintrag bleibt zur Diagnose erhalten und wird nicht gesendet",
@@ -981,6 +990,10 @@ class TransactionCoordinator:
                 "OCPP %s: persistierter StopTransaction konnte nach %s Versuchen nicht gesendet werden",
                 chargebox_id,
                 attempts,
+            )
+            report_ocpp_error(
+                chargebox_id,
+                "Server hat das Ende des Ladevorgangs auch nach mehreren Versuchen nicht bestätigt.",
             )
         except asyncio.CancelledError:
             raise
@@ -1201,15 +1214,18 @@ class TransactionCoordinator:
             TransactionState.STARTING: "start_starting",
             TransactionState.START_UNCONFIRMED: "start_unconfirmed",
             TransactionState.REJECTED: "start_rejected",
+            TransactionState.STOPPING: "stop_pending",
             TransactionState.ERROR: "start_error",
         }
         response = state_responses.get(transaction.state)
+        if transaction.state == TransactionState.ERROR and transaction.transaction_id is not None:
+            response = "stop_error"
         if (transaction.state == TransactionState.IDLE and
                 transaction.id_tag is not None and transaction.last_error is not None):
             response = "start_error"
         previous_response = getattr(ocpp_data, "authorization_flow_status", None)
         if response != previous_response and (
-            response is not None or previous_response in state_responses.values()
+            response is not None or previous_response in (*state_responses.values(), "stop_error")
         ):
             ocpp_data.authorization_flow_status = response
             Pub().pub(f"{prefix}/authorization_flow_status", response)
@@ -1264,6 +1280,7 @@ class TransactionCoordinator:
 
         except Exception as exc:
             transaction.last_error = str(exc)
+            report_ocpp_error(chargebox_id, "Server hat das Ende des Ladevorgangs nicht bestätigt.")
 
             transaction.pending_stop = (request)
 

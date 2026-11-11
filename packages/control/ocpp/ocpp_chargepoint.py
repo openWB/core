@@ -33,7 +33,7 @@ from helpermodules.pub import Pub
 
 from control import data
 from modules.common.fault_state_level import FaultStateLevel
-from control.ocpp.helper import _get_formatted_time, get_cp_from_chargebox_id, is_ocpp_stop_active
+from control.ocpp.helper import _get_formatted_time, get_cp_from_chargebox_id, is_ocpp_stop_active, report_ocpp_error
 from control.ocpp.helper_diagnostics import create_diagnostics, upload_diagnostics
 
 log = logging.getLogger(__name__)
@@ -270,6 +270,7 @@ class OcppChargePoint(cp):
 
         except Exception:
             log.exception("Fehler bei ChangeAvailability für %s", self.chargebox_id)
+            report_ocpp_error(self.chargebox_id, "Ändern der Verfügbarkeit fehlgeschlagen.")
             return call_result.ChangeAvailability(
                 status=AvailabilityStatus.rejected
             )
@@ -541,9 +542,12 @@ class OcppChargePoint(cp):
                 result = await self.unlock_callback(self.chargebox_id)
                 status = {"unlocked": UnlockStatus.unlocked,
                           "not_supported": UnlockStatus.not_supported}.get(result, UnlockStatus.unlock_failed)
+                if status == UnlockStatus.unlock_failed:
+                    report_ocpp_error(self.chargebox_id, "Entriegelung fehlgeschlagen.")
                 return call_result.UnlockConnector(status=status)
             except Exception:
                 log.exception("UnlockConnector failed for %s", self.chargebox_id)
+                report_ocpp_error(self.chargebox_id, "Entriegelung fehlgeschlagen.")
                 return call_result.UnlockConnector(status=UnlockStatus.unlock_failed)
 
     @on(Action.clear_cache)
@@ -598,6 +602,7 @@ class OcppChargePoint(cp):
                 "OCPP Reset-Callback für %s ist fehlgeschlagen",
                 self.chargebox_id,
             )
+            report_ocpp_error(self.chargebox_id, "Neustart fehlgeschlagen.")
 
     def _track_background_task(self, task: asyncio.Task) -> None:
         self._background_tasks.add(task)
@@ -683,6 +688,7 @@ class OcppChargePoint(cp):
             raise
         except Exception as e:
             log.exception("Fehler beim Hochladen der Diagnosedatei: %s", e)
+            report_ocpp_error(self.chargebox_id, "Hochladen der Diagnosedatei fehlgeschlagen.")
             await self._try_diagnostics_status(DiagnosticsStatus.upload_failed)
         finally:
             try:
@@ -793,6 +799,7 @@ class OcppChargePoint(cp):
             await self.trigger_msg_callback(self, requested_message, connector_id)
         except Exception:
             log.exception("Weiterleitung der TriggerMessage für %s ist fehlgeschlagen", self.chargebox_id)
+            report_ocpp_error(self.chargebox_id, "Anfrage des Servers konnte nicht ausgeführt werden.")
 
 
 def get_ocpp_error_code(fault_state: int) -> ChargePointErrorCode:
