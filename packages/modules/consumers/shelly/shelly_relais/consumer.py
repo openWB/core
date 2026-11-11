@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 from modules.common import req
 from typing import Optional, Dict
+from requests.auth import AuthBase, HTTPBasicAuth, HTTPDigestAuth
 from modules.common.abstract_device import DeviceDescriptor
 from modules.common.component_state import ConsumerState
 from modules.common.component_type import ComponentType
@@ -23,6 +24,15 @@ def create_consumer(config: ShellyRelais):
     def error_handler() -> None:
         initializer()
 
+    def get_auth() -> Optional[AuthBase]:
+        if not config.configuration.password:
+            return None
+        if generation == 1:
+            if config.configuration.username:
+                return HTTPBasicAuth(config.configuration.username, config.configuration.password)
+            return None
+        return HTTPDigestAuth("admin", config.configuration.password)
+
     def switch_on() -> None:
         if generation == 1:
             url = f"http://{config.configuration.ip_address}/relay/{config.configuration.channel}?turn=on"
@@ -30,11 +40,7 @@ def create_consumer(config: ShellyRelais):
             chan = config.configuration.channel
             # gen 2 will das als on cmd /rpc/Switch.Set?id=100&on=true
             url = f"http://{config.configuration.ip_address}/rpc/Switch.Set?id={chan}&on=true"
-        if config.configuration.username and config.configuration.password:
-            auth = (config.configuration.username, config.configuration.password)
-        else:
-            auth = None
-        req.get_http_session().get(url, auth=auth, timeout=3)
+        req.get_http_session().get(url, auth=get_auth(), timeout=3)
 
     def switch_off() -> None:
         if generation == 1:
@@ -43,14 +49,10 @@ def create_consumer(config: ShellyRelais):
             chan = config.configuration.channel
             # gen 2 will das als on cmd /rpc/Switch.Set?id=100&on=true
             url = f"http://{config.configuration.ip_address}/rpc/Switch.Set?id={chan}&on=false"
-        if config.configuration.username and config.configuration.password:
-            auth = (config.configuration.username, config.configuration.password)
-        else:
-            auth = None
-        req.get_http_session().get(url, auth=auth, timeout=3)
+        req.get_http_session().get(url, auth=get_auth(), timeout=3)
 
     def update() -> ConsumerState:
-        status = request_status(config.configuration.ip_address, generation)
+        status = request_status(config.configuration.ip_address, generation, auth=get_auth())
         state = parse_state(status)
         return ConsumerState(
             state=state
