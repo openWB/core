@@ -63,7 +63,7 @@ NO_MODULE = {"type": None, "configuration": {}}
 
 class UpdateConfig:
 
-    DATASTORE_VERSION = 157
+    DATASTORE_VERSION = 158
 
     valid_topic = [
         "^openWB/bat/config/bat_control_activated$",
@@ -4187,3 +4187,31 @@ class UpdateConfig:
 
         self._loop_all_received_topics(upgrade)
         self._append_datastore_version(157)
+
+    def upgrade_datastore_158(self) -> None:
+        """E3DC: Speicher-Konfiguration um die für die aktive Speichersteuerung per RSCP nötigen
+        Zugangsdaten ergänzen (portal_username/portal_password/rscp_key), falls noch nicht vorhanden."""
+        def upgrade(topic: str, payload) -> Optional[dict]:
+            if re.search("^openWB/system/device/[0-9]+/config$", topic) is not None:
+                payload_device = decode_payload(payload)
+                if payload_device["type"] == "e3dc":
+                    index = get_index(topic)
+                    modified_topics = {}
+                    for topic_component, payload_component in self.all_received_topics.items():
+                        if re.search(f"^openWB/system/device/{index}/component/[0-9]+/config$",
+                                     topic_component) is not None:
+                            payload_component = decode_payload(payload_component)
+                            if payload_component["type"] == "bat":
+                                config = payload_component["configuration"]
+                                changed = False
+                                for key in ("portal_username", "portal_password", "rscp_key"):
+                                    if key not in config:
+                                        config[key] = None
+                                        changed = True
+                                if changed:
+                                    modified_topics[topic_component] = payload_component
+                    return modified_topics
+            return None
+
+        self._loop_all_received_topics(upgrade)
+        self._append_datastore_version(158)
