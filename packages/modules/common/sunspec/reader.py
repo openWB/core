@@ -33,4 +33,17 @@ def read_point(client: ModbusClient, model: SunSpecModelLocation, point: Point, 
     if point.type == "uint16" and raw == NOT_IMPLEMENTED_UINT16:
         return None
     sf = client.read_holding_registers(model.base_address + point.sf_offset, ModbusDataType.INT_16, unit=unit)
+    if sf == NOT_IMPLEMENTED_INT16:
+        return None
     return raw * (10 ** sf)
+
+
+# Common Model (1): "Mn" (Manufacturer), 16 registers at data-relative offset 0.
+MANUFACTURER_LENGTH = 16
+
+
+def read_manufacturer(client: ModbusClient, model: SunSpecModelLocation, unit: int = 1) -> str:
+    words = client.read_holding_registers(
+        model.base_address, [ModbusDataType.UINT_16] * MANUFACTURER_LENGTH, unit=unit)
+    raw = b"".join(word.to_bytes(2, "big") for word in words)
+    return raw.decode("ascii", errors="ignore").rstrip("\x00").strip()

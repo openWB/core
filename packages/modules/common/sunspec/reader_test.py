@@ -6,14 +6,20 @@ import pytest
 from modules.common.modbus import ModbusDataType
 from modules.common.sunspec.discovery import SunSpecModelLocation
 from modules.common.sunspec.points import Point
-from modules.common.sunspec.reader import read_point
+from modules.common.sunspec.reader import read_manufacturer, read_point
 
 
 class FakeSunSpecClient:
     def __init__(self, registers: Dict[int, int]):
         self.registers = registers
 
-    def read_holding_registers(self, address: int, data_type: ModbusDataType, unit: int = 1):
+    def read_holding_registers(self, address: int, data_type, unit: int = 1):
+        if isinstance(data_type, list):
+            values = []
+            for t in data_type:
+                values.append(self.read_holding_registers(address, t, unit=unit))
+                address += 1
+            return values
         if data_type == ModbusDataType.FLOAT_32:
             high, low = self.registers[address], self.registers[address + 1]
             return struct.unpack(">f", struct.pack(">HH", high, low))[0]
@@ -90,3 +96,19 @@ def test_reads_acc32_point_scaled_by_sf():
     point = Point(offset=22, type="acc32", sf_offset=24)
 
     assert read_point(FakeSunSpecClient(registers), MODEL, point) == pytest.approx(220572.38)
+
+
+def test_sf_not_implemented_sentinel_is_none():
+    registers = {}
+    registers.update(_int_registers(40072 + 12, 1234))
+    registers.update(_int_registers(40072 + 13, -32768))
+    point = Point(offset=12, type="int16", sf_offset=13)
+
+    assert read_point(FakeSunSpecClient(registers), MODEL, point) is None
+
+
+def test_reads_manufacturer_string():
+    text = b"Fronius".ljust(32, b"\x00")
+    registers = {40072 + i: (text[2 * i] << 8) | text[2 * i + 1] for i in range(16)}
+
+    assert read_manufacturer(FakeSunSpecClient(registers), MODEL) == "Fronius"

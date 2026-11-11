@@ -14,6 +14,9 @@ class Point:
     sf_offset: Optional[int] = None  # nur int16/uint16/acc32: zugehöriges sunssf-Register
 
 
+# Common Model - immer das erste Modell der Kette, trägt u.a. den Hersteller-String.
+COMMON_MODEL = 1
+
 # Inverter int+SF (101 einphasig, 102 Split-Phase, 103 dreiphasig - identisches Layout).
 INVERTER_INT_SF = {
     "W": Point(offset=12, type="int16", sf_offset=13),
@@ -74,6 +77,6 @@ METER_FLOAT_MODELS = (213, 212, 211)
 # Battery Base Model (802): Lade-/Entladeleistung und Ladezustand des Speichers.
 BATTERY_MODELS = (802,)
 BATTERY = {
-    "SoC": Point(offset=11, type="uint16", sf_offset=56),
-    "W": Point(offset=47, type="int16", sf_offset=63),
+    "SoC": Point(offset=9, type="uint16", sf_offset=54),
+    "W": Point(offset=45, type="int16", sf_offset=61),
 }

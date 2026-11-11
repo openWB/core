@@ -55,11 +55,10 @@ def _registers_with_float_meter(base: int, values: Dict[str, float]) -> Dict[int
     return registers
 
 
-def _registers_with_int_sf_meter(base: int, w: int, w_sf: int, exported: int, imported: int,
-                                 energy_sf: int) -> Dict[int, int]:
-    registers = {base: SUNS_MARKER >> 16, base + 1: SUNS_MARKER & 0xFFFF}
-    registers.update({base + 2: 203, base + 3: 105})
-    model_base = base + 4
+def _meter_model_registers(header: int, w: int, w_sf: int, exported: int, imported: int,
+                           energy_sf: int) -> Dict[int, int]:
+    registers = {header: 203, header + 1: 105}
+    model_base = header + 2
     registers[model_base + points.METER_INT_SF["W"].offset] = w & 0xFFFF
     registers[model_base + points.METER_INT_SF["W"].sf_offset] = w_sf & 0xFFFF
     exp_offset = points.METER_INT_SF["TotWhExp"].offset
@@ -70,6 +69,22 @@ def _registers_with_int_sf_meter(base: int, w: int, w_sf: int, exported: int, im
     registers[model_base + imp_offset + 1] = imported & 0xFFFF
     registers[model_base + points.METER_INT_SF["TotWhExp"].sf_offset] = energy_sf & 0xFFFF
     registers.update({model_base + 105: 0xFFFF, model_base + 106: 0})
+    return registers
+
+
+def _registers_with_int_sf_meter(base: int, w: int, w_sf: int, exported: int, imported: int,
+                                 energy_sf: int) -> Dict[int, int]:
+    registers = {base: SUNS_MARKER >> 16, base + 1: SUNS_MARKER & 0xFFFF}
+    registers.update(_meter_model_registers(base + 2, w, w_sf, exported, imported, energy_sf))
+    return registers
+
+
+def _common_model_registers(header: int, manufacturer: str) -> Dict[int, int]:
+    registers = {header: 1, header + 1: 16}
+    text = manufacturer.encode("ascii").ljust(32, b"\x00")
+    model_base = header + 2
+    for i in range(16):
+        registers[model_base + i] = (text[2 * i] << 8) | text[2 * i + 1]
     return registers
 
 
@@ -115,3 +130,50 @@ def test_reads_power_and_energy_from_int_sf_meter_model():
     assert state.power == pytest.approx(-500.0)
     assert state.exported == pytest.approx(1200000.0)
     assert state.imported == pytest.approx(300000.0)
+
+
+def test_int_sf_meter_power_factor_is_percentage_scaled_to_ratio():
+    registers = _registers_with_int_sf_meter(
+        40000, w=-5000, w_sf=-1, exported=12000000, imported=3000000, energy_sf=-1)
+    model_base = 40000 + 2 + 2
+    registers[model_base + points.METER_INT_SF["PFphA"].offset] = 95
+    registers[model_base + points.METER_INT_SF["PFphA"].sf_offset] = 0
+
+    counter = _counter(registers)
+    counter.update()
+
+    assert counter.store.set.call_args[0][0].power_factors[0] == pytest.approx(0.95)
+
+
+def test_single_phase_meter_with_unimplemented_phases_does_not_crash():
+    registers = _registers_with_int_sf_meter(
+        40000, w=-5000, w_sf=-1, exported=12000000, imported=3000000, energy_sf=-1)
+    model_base = 40000 + 2 + 2
+    registers[model_base + points.METER_INT_SF["AphA"].offset] = 10
+    registers[model_base + points.METER_INT_SF["AphA"].sf_offset] = 0
+    registers[model_base + points.METER_INT_SF["PhVphA"].offset] = 2400
+    registers[model_base + points.METER_INT_SF["PhVphA"].sf_offset] = -1
+    registers[model_base + points.METER_INT_SF["WphA"].offset] = -5000 & 0xFFFF
+    for name in ("AphB", "AphC", "PhVphB", "PhVphC", "WphB", "WphC", "PFphB", "PFphC"):
+        registers[model_base + points.METER_INT_SF[name].offset] = 0x8000
+
+    counter = _counter(registers)
+    counter.update()
+
+    state = counter.store.set.call_args[0][0]
+    assert state.currents == [pytest.approx(-10.0), 0.0, 0.0]
+    assert state.voltages == [pytest.approx(240.0), 230.0, 230.0]
+    assert state.powers == [pytest.approx(-500.0), 0.0, 0.0]
+    assert state.power_factors == [0.0, 0.0, 0.0]
+
+
+def test_fronius_meter_power_direction_is_inverted():
+    registers = _common_model_registers(40000 + 2, "Fronius")
+    registers.update({40000: SUNS_MARKER >> 16, 40000 + 1: SUNS_MARKER & 0xFFFF})
+    registers.update(_meter_model_registers(
+        40000 + 2 + 18, w=-5000, w_sf=-1, exported=12000000, imported=3000000, energy_sf=-1))
+
+    counter = _counter(registers)
+    counter.update()
+
+    assert counter.store.set.call_args[0][0].power == pytest.approx(500.0)
