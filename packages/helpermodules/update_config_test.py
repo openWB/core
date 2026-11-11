@@ -704,6 +704,24 @@ def test_upgrade_datastore_156_adds_energycharts_price_cap(
     assert uc.all_received_topics["openWB/system/datastore_version"] == [155, 156]
 
 
+@pytest.mark.parametrize("config, expected",
+                         [pytest.param({"data_costs": True}, False, id="neue Spalte standardmäßig ausgeblendet"),
+                          pytest.param({"data_costs": True, "data_tariff_split": True}, True,
+                                       id="vorhandene Einstellung bleibt")])
+def test_upgrade_datastore_158_adds_tariff_split_column(config, expected, mock_pub):
+    uc = UpdateConfig()
+    uc.all_received_topics = {
+        "openWB/system/datastore_version": list(range(158)),
+        "openWB/general/charge_log_data_config": config,
+    }
+
+    uc.upgrade_datastore_158()
+
+    assert uc.all_received_topics["openWB/general/charge_log_data_config"]["data_tariff_split"] is expected
+    assert uc.all_received_topics["openWB/general/charge_log_data_config"]["data_costs"] is True
+    assert 158 in uc.all_received_topics["openWB/system/datastore_version"]
+
+
 def test_start_filesystem_migrations_launches_one_worker(monkeypatch):
     updater = UpdateConfig()
     popen = Mock()
