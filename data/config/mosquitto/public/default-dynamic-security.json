@@ -81,7 +81,7 @@
 	"anonymousGroup": "anonymous",
 	"roles": [
 		{
-			"rolename": "openwb-version:13",
+			"rolename": "openwb-version:14",
 			"textname": "openWB Versionsnummer",
 			"textdescription": "Diese Rolle ist ein Platzhalter für die openWB Versionsnummer und wird automatisch aktualisiert. Sie hat keine direkten Berechtigungen.",
 			"acls": []
@@ -969,6 +969,12 @@
 				{
 					"acltype": "publishClientSend",
 					"topic": "openWB/set/general/legacy_smarthome_active",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/chargepoint/+/config",
 					"priority": 0,
 					"allow": true
 				},

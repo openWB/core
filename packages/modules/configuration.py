@@ -5,6 +5,7 @@ from typing import Dict, List, Optional
 
 import dataclass_utils
 from helpermodules.pub import Pub
+from modules.devices.vendors import READABLE_GROUP_NAME as READABLE_VENDOR_GROUP_NAME, VendorGroup
 from modules.io_actions.groups import READABLE_GROUP_NAME, ActionGroup
 import sys
 log = logging.getLogger(__name__)
@@ -237,16 +238,6 @@ def _get_configurable_devices_components(component_pattern: List[str]) -> Option
         return dictionary
 
     def get_vendor_groups() -> Dict:
-        def get_vendor_group_name(group: str) -> str:
-            # ToDo: find a better way to lookup the group names in "devices/vendors.py"
-            if group == "generic":
-                return "herstellerunabhängig"
-            if group == "openwb":
-                return "openWB"
-            if group == "vendors":
-                return "andere Hersteller"
-            return group
-
         vendor_groups = {}
         path_list = Path(_get_packages_path()/"modules"/"devices").glob('**/vendor.py')
         for path in path_list:
@@ -259,7 +250,7 @@ def _get_configurable_devices_components(component_pattern: List[str]) -> Option
                     f".devices.{vendor_path}.vendor", "modules").vendor_descriptor.configuration_factory()
                 entry = {
                     vendor_info.group: {
-                        "group_name": get_vendor_group_name(vendor_info.group),
+                        "group_name": READABLE_VENDOR_GROUP_NAME[VendorGroup(vendor_info.group)],
                         "vendors": {
                             vendor_path: {
                                 "vendor_name": vendor_info.vendor,
@@ -484,16 +475,6 @@ def _pub_configurable_consumers() -> None:
                     log.exception(f"Fehler im configuration-Modul: devices: {path}")
             return consumers
 
-        def get_vendor_group_name(group: str) -> str:
-            # ToDo: find a better way to lookup the group names in "devices/vendors.py"
-            if group == "generic":
-                return "herstellerunabhängig"
-            if group == "openwb":
-                return "openWB"
-            if group == "vendors":
-                return "andere Hersteller"
-            return group
-
         vendor_groups = {}
         path_list = Path(_get_packages_path()/"modules"/"consumers").glob('**/vendor.py')
         for path in path_list:
@@ -506,7 +487,7 @@ def _pub_configurable_consumers() -> None:
                     f".consumers.{vendor_path}.vendor", "modules").vendor_descriptor.configuration_factory()
                 vendor_groups = update_nested_dict(vendor_groups, {
                     vendor_info.group: {
-                        "group_name": get_vendor_group_name(vendor_info.group),
+                        "group_name": READABLE_VENDOR_GROUP_NAME[VendorGroup(vendor_info.group)],
                         "vendors": {
                             vendor_path: {
                                 "vendor_name": vendor_info.vendor,

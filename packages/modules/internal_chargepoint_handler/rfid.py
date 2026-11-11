@@ -129,6 +129,7 @@ class RfidReader:
                             if len(key_string) > 0:
                                 log.debug(f"RFID-String: {key_string}")
                                 Pub().pub("openWB/set/internal_chargepoint/last_tag", key_string)
+                                Pub().pub("openWB/set/internal_socket/data/last_tag", key_string)
                                 key_string = ""
                         else:
                             log.debug(f"new key: {data.scancode} - {ecodes.KEY[data.scancode]}")
