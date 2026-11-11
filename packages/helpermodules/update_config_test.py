@@ -436,6 +436,59 @@ def test_upgrade_datastore_155_removes_only_obsolete_template_prio(mock_pub: Moc
     mock_pub.pub.assert_not_called()
 
 
+def test_upgrade_datastore_157_moves_fixed_hours_weekdays_into_active_times(mock_pub: Mock):
+    uc = UpdateConfig()
+    uc.all_received_topics = {
+        # von 2.2.x über upgrade_datastore_133 migriert: Wochentage neben active_times
+        "openWB/optional/ep/flexible_tariff/provider": (
+            b'{"type": "fixed_hours", "configuration": {"default_price": 0.0003, "tariffs": [{"name": "NT", '
+            b'"price": 0.0002, "active_times": {"dates": [["01-01", "31-12"]], "times": [["00:00", "07:00"]]}, '
+            b'"weekdays": [0, 1, 2, 3, 4, 5, 6]}]}}'),
+        # nach der Migration in der Oberfläche gespeichert: active_times["weekdays"] bleibt
+        "openWB/optional/ep/grid_fee/provider": {
+            "type": "fixed_hours",
+            "configuration": {"tariffs": [{"name": "Modul 3", "price": 0.0001,
+                                           "active_times": {"dates": [["01-01", "31-12"]],
+                                                            "times": [["17:00", "20:00"]],
+                                                            "weekdays": [0, 1, 2, 3, 4]},
+                                           "weekdays": [0, 1, 2, 3, 4, 5, 6]}]}},
+        "openWB/system/datastore_version": list(range(157)),
+    }
+
+    uc.upgrade_datastore_157()
+
+    flexible_tariff = uc.all_received_topics["openWB/optional/ep/flexible_tariff/provider"]["configuration"][
+        "tariffs"][0]
+    assert flexible_tariff == {"name": "NT", "price": 0.0002,
+                               "active_times": {"dates": [["01-01", "31-12"]], "times": [["00:00", "07:00"]],
+                                                "weekdays": [0, 1, 2, 3, 4, 5, 6]}}
+    grid_fee_tariff = uc.all_received_topics["openWB/optional/ep/grid_fee/provider"]["configuration"]["tariffs"][0]
+    assert "weekdays" not in grid_fee_tariff
+    assert grid_fee_tariff["active_times"]["weekdays"] == [0, 1, 2, 3, 4]
+    assert uc.all_received_topics["openWB/system/datastore_version"] == list(range(158))
+    assert mock_pub.pub.call_count == 3
+
+    mock_pub.reset_mock()
+    uc.upgrade_datastore_157()
+    mock_pub.pub.assert_not_called()
+
+
+def test_upgrade_datastore_157_keeps_other_providers(mock_pub: Mock):
+    uc = UpdateConfig()
+    tibber = {"type": "tibber", "configuration": {"token": "x", "home_id": "y"}}
+    uc.all_received_topics = {
+        "openWB/optional/ep/flexible_tariff/provider": tibber,
+        "openWB/optional/ep/grid_fee/provider": {"type": None, "configuration": {}},
+        "openWB/system/datastore_version": list(range(157)),
+    }
+
+    uc.upgrade_datastore_157()
+
+    assert uc.all_received_topics["openWB/optional/ep/flexible_tariff/provider"] == tibber
+    assert uc.all_received_topics["openWB/system/datastore_version"] == list(range(158))
+    assert mock_pub.pub.call_count == 1  # nur Datastore-Version
+
+
 def test_upgrade_datastore_149_removes_not_controlled_consumers(mock_pub: Mock):
     uc = UpdateConfig()
     uc.all_received_topics = {
@@ -672,15 +725,15 @@ def test_upgrade_datastore_156_adds_energycharts_price_cap(
                          [pytest.param({"data_costs": True}, False, id="neue Spalte standardmäßig ausgeblendet"),
                           pytest.param({"data_costs": True, "data_tariff_split": True}, True,
                                        id="vorhandene Einstellung bleibt")])
-def test_upgrade_datastore_157_adds_tariff_split_column(config, expected, mock_pub):
+def test_upgrade_datastore_158_adds_tariff_split_column(config, expected, mock_pub):
     uc = UpdateConfig()
     uc.all_received_topics = {
-        "openWB/system/datastore_version": list(range(157)),
+        "openWB/system/datastore_version": list(range(158)),
         "openWB/general/charge_log_data_config": config,
     }
 
-    uc.upgrade_datastore_157()
+    uc.upgrade_datastore_158()
 
     assert uc.all_received_topics["openWB/general/charge_log_data_config"]["data_tariff_split"] is expected
     assert uc.all_received_topics["openWB/general/charge_log_data_config"]["data_costs"] is True
-    assert 157 in uc.all_received_topics["openWB/system/datastore_version"]
+    assert 158 in uc.all_received_topics["openWB/system/datastore_version"]
