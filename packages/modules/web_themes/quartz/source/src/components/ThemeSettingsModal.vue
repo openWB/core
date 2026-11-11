@@ -10,14 +10,16 @@
         Darstellung
       </div>
 
-      <div class="mb-2 text-[13px] text-muted">
-        Anzeige
-      </div>
-      <BaseTabGroup
-        dense
-        :model-value="displayMode"
-        :options="displayModeOptions"
-        @update="displayMode = $event"
+      <label class="mb-2 block text-[13px] text-muted">Fluss anzeigen</label>
+      <BaseToggle
+        :model-value="showFlow"
+        @update:model-value="showFlow = $event"
+      />
+
+      <label class="mt-3 mb-2 block text-[13px] text-muted">Verlauf anzeigen</label>
+      <BaseToggle
+        :model-value="showChart"
+        @update:model-value="showChart = $event"
       />
 
       <DarkModeToggle
@@ -143,7 +145,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useMqttStore } from '@/stores/mqtt-store'
-import { useChartSettings, categoryDefs, viewOptions, displayModeOptions } from '@/composables/useChartSettings'
+import { useChartSettings, categoryDefs, viewOptions } from '@/composables/useChartSettings'
 import { useVehicles } from '@/composables/useVehicles'
 import { getCssColor } from '@/utils/color'
 import type { CategoryKey } from '@/types/chart'
@@ -171,7 +173,8 @@ defineEmits<{
 const mqttStore = useMqttStore()
 const {
   mode,
-  displayMode,
+  showFlow,
+  showChart,
   liveRangeMinutes,
   socCategoryMode,
   isInstanceVisible,

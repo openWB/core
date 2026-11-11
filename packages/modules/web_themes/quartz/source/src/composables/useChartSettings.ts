@@ -25,12 +25,6 @@ export const viewOptions = [
   { value: 'live', label: 'Live' },
 ] as const
 
-export const displayModeOptions = [
-  { value: 'flow', label: 'Fluss' },
-  { value: 'chart', label: 'Verlauf' },
-  { value: 'both', label: 'Beides' },
-] as const
-
 export const categoryModeOptions = [
   { value: 'combined', label: 'Gesamt' },
   { value: 'individual', label: 'Einzeln' },
@@ -38,7 +32,8 @@ export const categoryModeOptions = [
 
 interface PersistedChartSettings {
   mode?: 'day' | 'live'
-  displayMode?: 'chart' | 'flow' | 'both'
+  showFlow?: boolean
+  showChart?: boolean
   liveRangeMinutes?: number
   visibleSeries?: Partial<Record<CategoryKey, boolean>>
   categoryMode?: Partial<Record<CategoryKey, 'combined' | 'individual'>>
@@ -79,11 +74,9 @@ function createChartSettings() {
 
   const mode = ref<'day' | 'live'>(persisted.mode ?? 'day')
   const liveRangeMinutes = ref(persisted.liveRangeMinutes ?? 120)
-  // 'chart' = the Chart.js line chart, 'flow' = FlowBalanceBar only, 'both' = flow above chart
-  // (the default). Set via Theme-Einstellungen; while only one is selected, clicking the
-  // "Fluss"/"Verlauf" title itself toggles between the two (no toggle when 'both' - there's
-  // nothing to switch to).
-  const displayMode = ref<'chart' | 'flow' | 'both'>(persisted.displayMode ?? 'both')
+  // independent on/off switches (both default true) - set via Theme-Einstellungen
+  const showFlow = ref(persisted.showFlow ?? true)
+  const showChart = ref(persisted.showChart ?? true)
 
   const visibleSeries = reactive<Record<CategoryKey, boolean>>({
     ...(Object.fromEntries(categoryKeys.map((key) => [key, true])) as Record<CategoryKey, boolean>),
@@ -124,7 +117,8 @@ function createChartSettings() {
   watchEffect(() => {
     const settings: PersistedChartSettings = {
       mode: mode.value,
-      displayMode: displayMode.value,
+      showFlow: showFlow.value,
+      showChart: showChart.value,
       liveRangeMinutes: liveRangeMinutes.value,
       visibleSeries: { ...visibleSeries },
       categoryMode: { ...categoryMode },
@@ -162,7 +156,8 @@ function createChartSettings() {
 
   return {
     mode,
-    displayMode,
+    showFlow,
+    showChart,
     liveRangeMinutes,
     visibleSeries,
     categoryMode,
