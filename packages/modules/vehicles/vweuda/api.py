@@ -4,6 +4,7 @@ import io
 import json
 import re
 import zipfile
+import zlib
 from html.parser import HTMLParser
 from typing import Optional, Union
 from urllib.parse import urlencode, urljoin, urlparse
@@ -247,6 +248,6 @@ class EudaApiClient:
                     if member is None:
                         raise DatasetError("No JSON inside downloaded dataset")
                     data = json.loads(archive.read(member).decode("utf-8"))
-            except (zipfile.BadZipFile, ValueError) as error:
+            except (zipfile.BadZipFile, zlib.error, ValueError) as error:
                 raise DatasetError("Could not read downloaded dataset") from error
         return name.removesuffix(".zip") + ".json", data

@@ -7,7 +7,8 @@ from urllib.parse import parse_qs
 import pytest
 from modules.common.req import get_http_session
 
-from modules.vehicles.vweuda import api
+from modules.vehicles.vweuda import api, libeuda
+from modules.vehicles.vweuda.config import VWEUDAConfiguration
 
 
 UNIVERSAL_FORM = ('<form method="post" {action}><input name="state" value="flow-state">'
@@ -164,3 +165,35 @@ def test_download_session_expiry_preserves_zip_decoding(requests_mock, monkeypat
         assert name == "data.json"
         assert data == payload
         login.assert_called_once()
+
+
+def test_poll_skips_corrupt_deflate_member_and_does_not_retry_it(requests_mock, monkeypatch):
+    vin = "WVW00000000000001"
+    payload = {"vin": vin, "Data": [
+        {"key": "ac1108b1-b8cc-3db9-a663-03d387e42223", "dataFieldName": "soc", "value": 55},
+        {"key": "ts", "dataFieldName": "car_captured_time", "value": "2026-11-11T10:00:00Z"},
+    ]}
+    buffer = io.BytesIO()
+    with zipfile.ZipFile(buffer, "w", compression=zipfile.ZIP_DEFLATED) as archive:
+        archive.writestr("data.json", json.dumps(payload))
+    valid = buffer.getvalue()
+    corrupt = bytearray(valid)
+    # Keep the ZIP structure intact, but use the reserved DEFLATE block type.
+    data_offset = 30 + len("data.json")
+    corrupt[data_offset] = 0x07
+    url = api.BASE_URL + api.DOWNLOAD_PATH.format(vin=vin, identifier="id")
+    downloads = requests_mock.get(url, [{"content": bytes(corrupt)}, {"content": valid}])
+    portal = libeuda.EudaVehicle(VWEUDAConfiguration(user_id="test@example.com", password="password", vin=vin), 1)
+    with get_http_session() as session:
+        client = api.EudaApiClient(session, "test@example.com", "password")
+        client._logged_in = True
+        monkeypatch.setattr(client, "get_metadata", Mock(return_value={"Identifier": "id"}))
+        monkeypatch.setattr(client, "list_datasets", Mock(return_value=[
+            {"name": "corrupt.zip", "createdOn": "2026-11-11T11:00:00Z"},
+            {"name": "valid.zip", "createdOn": "2026-11-11T10:00:00Z"},
+        ]))
+        portal._poll(client)
+        assert portal._result["soc"] == 55
+        assert [request.headers["filename"] for request in downloads.request_history] == ["corrupt.zip", "valid.zip"]
+        portal._poll(client)
+        assert downloads.call_count == 2
