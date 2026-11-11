@@ -11,6 +11,14 @@ log = logging.getLogger(__name__)
 
 
 class ChargepointOcppMixin:
+    def _process_ocpp_backend_message(self) -> None:
+        message = self.data.get.ocpp.backend_message
+        if message is not None:
+            if data.data.optional_data.data.ocpp.config.active and get_chargebox_id(self):
+                self.set_state_and_log(f"OCPP: {message}")
+            self.data.get.ocpp.backend_message = None
+            Pub().pub(f"openWB/set/chargepoint/{self.num}/get/ocpp/backend_message", None)
+
     def _process_ocpp_start(self) -> None:
         """Verarbeitet OCPP-Startanforderungen und das Zurücksetzen der Startsperre."""
         chargebox_id = get_chargebox_id(self)
@@ -132,6 +140,8 @@ class ChargepointOcppMixin:
                 "start_starting": "RFID akzeptiert. OCPP-Transaktion wird gestartet.",
                 "start_rejected": "Keine Ladung: OCPP Authorisierung abgelehnt.",
                 "start_error": "Keine Ladung: Fehler beim OCPP-Transaktionstart.",
+                "stop_pending": "Ladevorgang wird beendet.",
+                "stop_error": "Server hat das Ende des Ladevorgangs nicht bestätigt.",
             }.get(self.data.get.ocpp.authorization_flow_status)
             if message is None and self.data.get.plug_state:
                 if self.data.set.rfid or self.data.get.rfid or self.data.get.vehicle_id:
@@ -141,6 +151,13 @@ class ChargepointOcppMixin:
             state = False
         else:
             message = None
+
+        # Eine laufende Transaktion darf offline weiterladen. Den Hinweis
+        # trotzdem jeden Zyklus anzeigen, auch neben bestehenden Sperrmeldungen.
+        if not self.data.get.ocpp.connected and self.data.get.ocpp.transaction_id is not None:
+            message = " ".join(text for text in (
+                message, "OCPP: Verbindung zum Server unterbrochen.",
+            ) if text)
         return state, message
 
     def _chargepoint_stop_ocpp(self) -> None:

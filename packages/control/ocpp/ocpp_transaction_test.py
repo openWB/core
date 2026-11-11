@@ -77,6 +77,29 @@ def transaction_setup(monkeypatch):
     return coordinator, connection, openwb_cp
 
 
+@pytest.mark.parametrize("state,transaction_id,expected", [
+    (TransactionState.STOPPING, 42, "stop_pending"),
+    (TransactionState.ERROR, 42, "stop_error"),
+    (TransactionState.ERROR, None, "start_error"),
+])
+def test_transaction_flow_distinguishes_start_and_stop_and_clears_on_completion(
+        transaction_setup, mock_pub, state, transaction_id, expected):
+    coordinator, _, cp = transaction_setup
+    transaction = coordinator._get_transaction("box-1")
+    transaction.transaction_id = transaction_id
+    transaction.id_tag = "TAG"
+
+    coordinator._transition("box-1", transaction, state)
+
+    assert cp.data.get.ocpp.authorization_flow_status == expected
+    mock_pub.pub.assert_any_call("openWB/set/chargepoint/1/get/ocpp/authorization_flow_status", expected)
+
+    transaction.reset()
+    coordinator._commit("box-1", transaction)
+    assert cp.data.get.ocpp.authorization_flow_status is None
+    mock_pub.pub.assert_any_call("openWB/set/chargepoint/1/get/ocpp/authorization_flow_status", None)
+
+
 def test_start_rejected_when_ocpp_disabled(transaction_setup, monkeypatch):
     coordinator, connection, cp = transaction_setup
     monkeypatch.setattr(data.data.optional_data.data.ocpp.config, "active", False)
