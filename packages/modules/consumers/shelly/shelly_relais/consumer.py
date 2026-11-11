@@ -1,37 +1,30 @@
 #!/usr/bin/env python3
 from modules.common import req
 from typing import Optional, Dict
-from requests.auth import AuthBase, HTTPBasicAuth, HTTPDigestAuth
+from requests.auth import AuthBase
 from modules.common.abstract_device import DeviceDescriptor
 from modules.common.component_state import ConsumerState
 from modules.common.component_type import ComponentType
 from modules.common.configurable_consumer import ConfigurableConsumer
 from modules.common.simcount._simcounter import SimCounterConsumer
 from modules.consumers.shelly.shelly_relais.config import ShellyRelais
-from modules.devices.shelly.shelly.status_handler import get_generation, request_status
+from modules.devices.shelly.shelly.status_handler import get_auth, get_generation, request_status
 
 
 def create_consumer(config: ShellyRelais):
     sim_counter: Optional[SimCounterConsumer] = None
     model: Optional[str] = None
     generation: int = 1
+    auth: Optional[AuthBase] = None
 
     def initializer():
-        nonlocal sim_counter, generation, model
+        nonlocal sim_counter, generation, model, auth
         sim_counter = SimCounterConsumer(config.id, ComponentType.CONSUMER)
         generation, model = get_generation(config.configuration.ip_address)
+        auth = get_auth(generation, config.configuration.username, config.configuration.password)
 
     def error_handler() -> None:
         initializer()
-
-    def get_auth() -> Optional[AuthBase]:
-        if not config.configuration.password:
-            return None
-        if generation == 1:
-            if config.configuration.username:
-                return HTTPBasicAuth(config.configuration.username, config.configuration.password)
-            return None
-        return HTTPDigestAuth("admin", config.configuration.password)
 
     def switch_on() -> None:
         if generation == 1:
@@ -40,7 +33,7 @@ def create_consumer(config: ShellyRelais):
             chan = config.configuration.channel
             # gen 2 will das als on cmd /rpc/Switch.Set?id=100&on=true
             url = f"http://{config.configuration.ip_address}/rpc/Switch.Set?id={chan}&on=true"
-        req.get_http_session().get(url, auth=get_auth(), timeout=3)
+        req.get_http_session().get(url, auth=auth, timeout=3)
 
     def switch_off() -> None:
         if generation == 1:
@@ -49,10 +42,10 @@ def create_consumer(config: ShellyRelais):
             chan = config.configuration.channel
             # gen 2 will das als on cmd /rpc/Switch.Set?id=100&on=true
             url = f"http://{config.configuration.ip_address}/rpc/Switch.Set?id={chan}&on=false"
-        req.get_http_session().get(url, auth=get_auth(), timeout=3)
+        req.get_http_session().get(url, auth=auth, timeout=3)
 
     def update() -> ConsumerState:
-        status = request_status(config.configuration.ip_address, generation, auth=get_auth())
+        status = request_status(config.configuration.ip_address, generation, auth=auth)
         state = parse_state(status)
         return ConsumerState(
             state=state

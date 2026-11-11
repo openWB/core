@@ -1,23 +1,28 @@
 #!/usr/bin/env python3
+from typing import Optional
+from requests.auth import AuthBase
 from modules.common.abstract_device import DeviceDescriptor
 from modules.common.component_state import ConsumerState
 from modules.common.configurable_consumer import ConfigurableConsumer
 from modules.consumers.shelly.shelly_em.config import ShellyEM
-from modules.devices.shelly.shelly.status_handler import get_generation, request_status, parse_data, parse_temperatures
+from modules.devices.shelly.shelly.status_handler import (
+    get_auth, get_generation, request_status, parse_data, parse_temperatures)
 
 
 def create_consumer(config: ShellyEM):
     generation: int = 1
+    auth: Optional[AuthBase] = None
 
     def initializer():
-        nonlocal generation
+        nonlocal generation, auth
         generation, _ = get_generation(config.configuration.ip_address)
+        auth = get_auth(generation, config.configuration.username, config.configuration.password)
 
     def error_handler() -> None:
         initializer()
 
     def update() -> ConsumerState:
-        status = request_status(config.configuration.ip_address, generation)
+        status = request_status(config.configuration.ip_address, generation, auth=auth)
         powers, voltages, currents, _, power, _ = parse_data(1, config.configuration.factor, status)
         consumer_state = ConsumerState(
             power=power,

@@ -1,7 +1,7 @@
 import logging
 from typing import Dict
 from typing import Tuple, List, Optional
-from requests.auth import AuthBase
+from requests.auth import AuthBase, HTTPBasicAuth, HTTPDigestAuth
 
 from modules.common import req
 
@@ -22,6 +22,14 @@ def get_generation(address: str) -> Tuple[int, str]:
         model = str(device_info['type'])
     log.debug(f"Device {model} at {address} is generation {generation}")
     return generation, model
+
+
+def get_auth(generation: int, username: Optional[str], password: Optional[str]) -> Optional[AuthBase]:
+    if not password:
+        return None
+    if generation == 1:
+        return HTTPBasicAuth(username, password) if username else None
+    return HTTPDigestAuth("admin", password)
 
 
 def request_status(address: str, generation: Optional[int], auth: Optional[AuthBase] = None) -> Dict:
