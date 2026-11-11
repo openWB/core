@@ -63,7 +63,7 @@ NO_MODULE = {"type": None, "configuration": {}}
 
 class UpdateConfig:
 
-    DATASTORE_VERSION = 156
+    DATASTORE_VERSION = 157
 
     FILE_OPERATION_VERSION = 0
 
@@ -4214,3 +4214,29 @@ class UpdateConfig:
 
         self._loop_all_received_topics(upgrade)
         self._append_datastore_version(156)
+
+    def upgrade_datastore_157(self) -> None:
+        """upgrade_datastore_133 hat die Wochentage der Festen Tarifstunden neben active_times statt darin angelegt,
+        ausgewertet wird active_times["weekdays"] (KeyError 'weekdays').
+        Bereits migrierte Konfigurationen reparieren."""
+        def upgrade(topic: str, payload) -> Optional[dict]:
+            if ("openWB/optional/ep/flexible_tariff/provider" == topic or
+                    "openWB/optional/ep/grid_fee/provider" == topic):
+                provider = decode_payload(payload)
+                if provider.get("type") != "fixed_hours":
+                    return None
+                changed = False
+                for tariff in (provider.get("configuration") or {}).get("tariffs") or []:
+                    if tariff.pop("weekdays", None) is not None:
+                        changed = True
+                    active_times = tariff.get("active_times")
+                    if isinstance(active_times, dict) and active_times.get("weekdays") is None:
+                        # ohne Wochentage galt der Zeitraum an allen Tagen, so legt es auch upgrade_datastore_133 an
+                        active_times["weekdays"] = list(range(7))
+                        changed = True
+                if changed:
+                    return {topic: provider}
+            return None
+
+        self._loop_all_received_topics(upgrade)
+        self._append_datastore_version(157)
