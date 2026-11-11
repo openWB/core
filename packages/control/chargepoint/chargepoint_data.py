@@ -1,4 +1,5 @@
 from dataclasses import dataclass, field
+from dataclass_utils import asdict
 from threading import Event
 from control.chargemode import Chargemode
 from control.chargepoint.chargepoint_state import ChargepointState
@@ -113,6 +114,10 @@ class OcppConfig:
 
 def ocpp_config_factory() -> OcppConfig:
     return OcppConfig()
+
+
+def get_ocpp_config_default() -> dict:
+    return asdict(OcppConfig())
 
 
 def normalize_ocpp_connector_values(value: List[bool]) -> List[bool]:
