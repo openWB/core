@@ -8,6 +8,7 @@ from time import monotonic
 
 from helpermodules.pub import Pub
 
+from control import data
 from control.ocpp.helper import get_cp_from_chargebox_id, _get_config, _get_formatted_time, is_ocpp_stop_active
 
 from control.ocpp.ocpp_connection import OcppConnection
@@ -129,6 +130,9 @@ class TransactionCoordinator:
         id_tag: str,
         imported: int,
     ) -> bool:
+        if not data.data.optional_data.data.ocpp.config.active:
+            return False
+
         if not chargebox_id or not id_tag:
             return False
 
@@ -468,6 +472,9 @@ class TransactionCoordinator:
         )
 
     def _can_continue_start(self, chargebox_id: str) -> bool:
+        if not data.data.optional_data.data.ocpp.config.active:
+            return False
+
         if chargebox_id in self._start_blocked:
             return False
 

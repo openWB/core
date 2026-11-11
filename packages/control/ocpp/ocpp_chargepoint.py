@@ -437,6 +437,11 @@ class OcppChargePoint(cp):
 
     @on(Action.remote_start_transaction)
     async def remote_start_transaction(self, id_tag: str, connector_id: Optional[int] = None, **kwargs):
+        if not data.data.optional_data.data.ocpp.config.active:
+            return call_result.RemoteStartTransaction(
+                status=RemoteStartStopStatus.rejected
+            )
+
         if getattr(self.registration_state, "value", self.registration_state) == "Pending":
             return call_result.RemoteStartTransaction(
                 status=RemoteStartStopStatus.rejected

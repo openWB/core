@@ -196,8 +196,12 @@ class Chargepoint(ChargepointRfidMixin, ChargepointOcppMixin, Load):
         self.data.set.charging_ev_data.reset_phase_switch_delay(self.data.control_parameter)
         self.reset_control_parameter_at_charge_stop()
         data.data.counter_all_data.get_evu_counter().reset_switch_on_off(self)
-        if ((self.data.get.plug_state is False and self.data.set.plug_state_prev is True) or
-                is_ocpp_stop_active(self.data.get.ocpp)):
+        if ((self.data.get.plug_state is False and self.data.set.plug_state_prev is True)
+            or (
+            data.data.optional_data.data.ocpp.config.active
+            and get_chargebox_id(self)
+            and is_ocpp_stop_active(self.data.get.ocpp)
+        )):
             charging_ev = data.data.ev_data[f"ev{self.data.config.ev}"]
             chargelog.save_and_reset_data(self, charging_ev)
             self.data.control_parameter = control_parameter_factory()

@@ -39,6 +39,9 @@ def ocpp_config_for_test():
 
 @pytest.fixture
 def transaction_setup(monkeypatch):
+    if not hasattr(data, "data"):
+        data.data_init(Mock())
+    monkeypatch.setattr(data.data.optional_data.data.ocpp.config, "active", True)
     openwb_cp = SimpleNamespace(
         num=1,
         data=SimpleNamespace(
@@ -72,6 +75,46 @@ def transaction_setup(monkeypatch):
     )
     monkeypatch.setattr(ocpp_transaction_coordinator, "get_cp_from_chargebox_id", lambda _: openwb_cp)
     return coordinator, connection, openwb_cp
+
+
+def test_start_rejected_when_ocpp_disabled(transaction_setup, monkeypatch):
+    coordinator, connection, cp = transaction_setup
+    monkeypatch.setattr(data.data.optional_data.data.ocpp.config, "active", False)
+
+    assert asyncio.run(coordinator.start("box-1", 1, "TAG", 100)) is False
+    coordinator._ensure_connected.assert_not_awaited()
+    connection.cp._authorize.assert_not_awaited()
+    connection.cp._start_transaction.assert_not_awaited()
+    assert cp.data.get.ocpp.transaction_id is None
+
+
+def test_start_aborted_when_ocpp_disabled_during_authorize(transaction_setup, monkeypatch):
+    coordinator, connection, cp = transaction_setup
+
+    async def authorize(**kwargs):
+        monkeypatch.setattr(data.data.optional_data.data.ocpp.config, "active", False)
+        return SimpleNamespace(id_tag_info={"status": "Accepted"})
+
+    connection.cp._authorize.side_effect = authorize
+
+    assert asyncio.run(coordinator.start("box-1", 1, "TAG", 100)) is False
+    connection.cp._authorize.assert_awaited_once()
+    connection.cp._start_transaction.assert_not_awaited()
+    assert cp.data.get.ocpp.transaction_id is None
+    assert coordinator.get_state("box-1") == TransactionState.IDLE
+
+
+def test_remote_start_rejected_when_ocpp_disabled(transaction_setup, monkeypatch, mock_pub):
+    monkeypatch.setattr(data.data.optional_data.data.ocpp.config, "active", False)
+
+    async def check():
+        cp = OcppChargePoint("box-1", Mock())
+        return await cp.remote_start_transaction("TAG", connector_id=1)
+
+    response = asyncio.run(check())
+
+    assert response.status == RemoteStartStopStatus.rejected
+    mock_pub.pub.assert_not_called()
 
 
 @pytest.mark.parametrize("interrupted_at", ["preparation", "connection", "send"])
@@ -1948,7 +1991,10 @@ def test_remote_start_checks_both_connector_availabilities(handler_setup, monkey
     openwb_cp.data.get.ocpp.availability = availability
     openwb_cp.template = SimpleNamespace(data=SimpleNamespace(valid_tags=["TAG"]))
     monkeypatch.setattr(data, "data", SimpleNamespace(
-        optional_data=SimpleNamespace(data=SimpleNamespace(rfid=SimpleNamespace(active=True))),
+        optional_data=SimpleNamespace(data=SimpleNamespace(
+            rfid=SimpleNamespace(active=True),
+            ocpp=SimpleNamespace(config=SimpleNamespace(active=True)),
+        )),
         ev_data={},
     ), raising=False)
 
@@ -1974,7 +2020,10 @@ def test_remote_start_requires_local_rfid_permission(
     openwb_cp.template = (SimpleNamespace(data=SimpleNamespace(valid_tags=template_tags))
                           if template_tags is not None else None)
     monkeypatch.setattr(data, "data", SimpleNamespace(
-        optional_data=SimpleNamespace(data=SimpleNamespace(rfid=SimpleNamespace(active=rfid_active))),
+        optional_data=SimpleNamespace(data=SimpleNamespace(
+            rfid=SimpleNamespace(active=rfid_active),
+            ocpp=SimpleNamespace(config=SimpleNamespace(active=True)),
+        )),
         ev_data={"ev1": SimpleNamespace(data=SimpleNamespace(tag_id=vehicle_tags))},
     ), raising=False)
 
@@ -1997,7 +2046,10 @@ def test_remote_start_rejects_stop_flags_without_forwarding_tag(handler_setup, m
     cp.template = SimpleNamespace(data=SimpleNamespace(valid_tags=["TAG"]))
     setattr(cp.data.get.ocpp, stop_flag, True)
     monkeypatch.setattr(data, "data", SimpleNamespace(
-        optional_data=SimpleNamespace(data=SimpleNamespace(rfid=SimpleNamespace(active=True))),
+        optional_data=SimpleNamespace(data=SimpleNamespace(
+            rfid=SimpleNamespace(active=True),
+            ocpp=SimpleNamespace(config=SimpleNamespace(active=True)),
+        )),
         ev_data={},
     ), raising=False)
 
