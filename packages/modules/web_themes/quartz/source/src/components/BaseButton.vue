@@ -1,7 +1,8 @@
 <template>
   <button
     type="button"
-    :class="['rounded-full border px-[11px] py-[5px] text-xs', variantClasses[variant]]"
+    :disabled="disabled"
+    :class="['rounded-full border px-[11px] py-[5px] text-xs', variantClasses[variant], disabled && 'opacity-40']"
     @click="$emit('click')"
   >
     <slot />
@@ -9,7 +10,10 @@
 </template>
 
 <script setup lang="ts">
-withDefaults(defineProps<{ variant?: 'primary' | 'secondary' | 'danger' }>(), { variant: 'secondary' })
+withDefaults(defineProps<{ variant?: 'primary' | 'secondary' | 'danger'; disabled?: boolean }>(), {
+  variant: 'secondary',
+  disabled: false,
+})
 defineEmits<{ click: [] }>()
 
 const variantClasses: Record<'primary' | 'secondary' | 'danger', string> = {

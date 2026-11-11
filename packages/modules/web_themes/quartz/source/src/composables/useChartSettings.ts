@@ -79,18 +79,24 @@ function createChartSettings() {
 
   const mode = ref<'day' | 'live'>(persisted.mode ?? 'day')
   const liveRangeMinutes = ref(persisted.liveRangeMinutes ?? 120)
-  // 'chart' = the Chart.js line chart, 'flow' = FlowBalanceBar only, 'both' = flow above chart.
-  // Set via Theme-Einstellungen; while only one is selected, clicking the "Fluss"/"Verlauf"
-  // title itself toggles between the two (no toggle when 'both' - there's nothing to switch to).
-  const displayMode = ref<'chart' | 'flow' | 'both'>(persisted.displayMode ?? 'chart')
+  // 'chart' = the Chart.js line chart, 'flow' = FlowBalanceBar only, 'both' = flow above chart
+  // (the default). Set via Theme-Einstellungen; while only one is selected, clicking the
+  // "Fluss"/"Verlauf" title itself toggles between the two (no toggle when 'both' - there's
+  // nothing to switch to).
+  const displayMode = ref<'chart' | 'flow' | 'both'>(persisted.displayMode ?? 'both')
 
   const visibleSeries = reactive<Record<CategoryKey, boolean>>({
     ...(Object.fromEntries(categoryKeys.map((key) => [key, true])) as Record<CategoryKey, boolean>),
     ...persisted.visibleSeries,
   })
 
+  // default to "Einzeln" for the categories that usually have more than one real instance
+  // (chargepoints/consumers/counters), "Gesamt" for the rest
+  const INDIVIDUAL_BY_DEFAULT: CategoryKey[] = ['chargepoint', 'consumer', 'counter']
   const categoryMode = reactive<Record<CategoryKey, 'combined' | 'individual'>>({
-    ...(Object.fromEntries(categoryKeys.map((key) => [key, 'combined'])) as Record<CategoryKey, 'combined'>),
+    ...(Object.fromEntries(
+      categoryKeys.map((key) => [key, INDIVIDUAL_BY_DEFAULT.includes(key) ? 'individual' : 'combined']),
+    ) as Record<CategoryKey, 'combined' | 'individual'>),
     ...persisted.categoryMode,
   })
 

@@ -1,10 +1,10 @@
 <template>
   <label class="flex cursor-pointer items-center gap-2.5 text-[13px] text-muted">
-    {{ modelValue ? 'Dunkel' : 'Hell' }}
     <BaseToggle
       :model-value="modelValue"
       @update:model-value="emit('update:modelValue', $event)"
     />
+    {{ modelValue ? 'Dunkel' : 'Hell' }}
   </label>
 </template>
 

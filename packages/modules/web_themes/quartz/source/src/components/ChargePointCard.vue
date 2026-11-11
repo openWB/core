@@ -46,7 +46,7 @@
         @change="onVehicleChange(($event.target as HTMLSelectElement).value)"
       >
         <option
-          v-for="vehicle in mqttStore.vehicleList"
+          v-for="vehicle in vehicleList"
           :key="vehicle.id"
           :value="vehicle.id"
         >
@@ -138,6 +138,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useMqttStore } from '@/stores/mqtt-store'
+import { useVehicles } from '@/composables/useVehicles'
 import { formatKw, formatKwh } from '@/utils/format'
 import { chargeModes as modes } from '@/utils/chargeModes'
 import { stateBadgeClass as stateBadgeClassFor } from '@/utils/badge'
@@ -156,6 +157,7 @@ import StatBlock from './StatBlock.vue'
 
 const props = defineProps<{ chargePointId: number }>()
 const mqttStore = useMqttStore()
+const { vehicleList } = useVehicles()
 
 const showSettings = ref(false)
 
