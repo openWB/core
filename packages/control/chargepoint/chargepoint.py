@@ -764,6 +764,7 @@ class Chargepoint(ChargepointRfidMixin, ChargepointOcppMixin, Load):
                 self.data.set.soc_timestamp_force_update_prev_ev = soc_update_target_ev
                 log.debug("SoC nach Anstecken")
             self.set_state_and_log(message)
+            self._process_ocpp_backend_message()
         except Exception:
             log.exception(f"Fehler bei Ladepunkt {self.num}")
 

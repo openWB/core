@@ -129,6 +129,7 @@ def normalize_ocpp_connector_values(value: List[bool]) -> List[bool]:
 @dataclass
 class Ocpp:
     connected: bool = False
+    backend_message: Optional[str] = None
     # Herkunft offener Vorgänge auch nach Backend-Neustart erhalten.
     last_connection_settings: Optional[Dict[str, str]] = None
     # neu erzeugte CPs sind per default erstmal available

@@ -167,6 +167,7 @@ class UpdateConfig:
         "^openWB/chargepoint/[0-9]+/get/rfid_timestamp$",
         "^openWB/chargepoint/[0-9]+/get/ocpp/availability$",
         "^openWB/chargepoint/[0-9]+/get/ocpp/authorization_flow_status$",
+        "^openWB/chargepoint/[0-9]+/get/ocpp/backend_message$",
         "^openWB/chargepoint/[0-9]+/get/ocpp/config$",
         "^openWB/chargepoint/[0-9]+/get/ocpp/last_connection_settings$",
         "^openWB/chargepoint/[0-9]+/get/ocpp/pending_availability$",
@@ -690,6 +691,7 @@ class UpdateConfig:
     ]
 
     default_topics_with_wildcards = (
+        ("openWB/chargepoint/{}/get/ocpp/backend_message", None),
         ("openWB/chargepoint/{}/get/ocpp/authorization_flow_status", None),
         ("openWB/chargepoint/{}/get/ocpp/availability", [True, True]),
         ("openWB/chargepoint/{}/get/ocpp/connected", False),

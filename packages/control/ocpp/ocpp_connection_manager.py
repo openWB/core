@@ -11,7 +11,7 @@ with ImportErrorContext():
     from websockets.exceptions import InvalidStatusCode
 
 from control import data
-from control.ocpp.helper import get_cp_from_chargebox_id
+from control.ocpp.helper import get_cp_from_chargebox_id, report_ocpp_error
 from control.ocpp.ocpp_chargepoint import OcppChargePoint
 from control.ocpp.ocpp_connection import OcppConnection
 from helpermodules.pub import Pub
@@ -69,6 +69,10 @@ class OcppConnectionManager:
         except asyncio.CancelledError:
             raise
         except InvalidStatusCode as error:
+            report_ocpp_error(
+                chargebox_id,
+                "Serverzugang abgelehnt. OCPP-Zugangsdaten prüfen.",
+            )
             if error.status_code == 401:
                 log.error(
                     "OCPP-Authentifizierung für %s abgelehnt (HTTP 401); "
@@ -94,6 +98,7 @@ class OcppConnectionManager:
                 "OCPP-Verbindung zu %s konnte nicht aufgebaut werden",
                 chargebox_id,
             )
+            report_ocpp_error(chargebox_id, "Verbindung zum Server konnte nicht aufgebaut werden.")
             self._schedule_reconnect(chargebox_id)
             return None
 

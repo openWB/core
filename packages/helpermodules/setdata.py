@@ -620,7 +620,8 @@ class SetData:
         elif ("/get/version" in msg.topic or
               "/get/current_branch" in msg.topic or
               "/get/current_commit" in msg.topic or
-              "/get/ocpp/authorization_flow_status" in msg.topic):
+              "/get/ocpp/authorization_flow_status" in msg.topic or
+              msg.topic.endswith("/get/ocpp/backend_message")):
             self._validate_value(msg, str)
         elif ("/get/error_timestamp" in msg.topic or
                 "/get/rfid_timestamp" in msg.topic):
