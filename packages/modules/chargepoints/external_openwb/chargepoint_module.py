@@ -107,7 +107,7 @@ class ChargepointModule(AbstractChargepoint):
                         self.store.set(chargepoint_state)
                     except KeyError as e:
                         if received_topics.get(f"{topic_prefix}fault_state", 0) == 2:
-                            self.fault_state.error(received_topics.get(
+                            raise Exception(received_topics.get(
                                 f"{topic_prefix}fault_str", "Fehlerstatus vom internen Ladepunkt"))
                         else:
                             raise KeyError(f"Es wurden nicht alle notwendigen Daten empfangen: {e}")
