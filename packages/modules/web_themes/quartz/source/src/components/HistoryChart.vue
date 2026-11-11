@@ -3,18 +3,6 @@
     v-if="showFlow"
     class="panel relative mb-6 px-3 pt-4 pb-3 sm:px-6"
   >
-    <h2 class="m-0 mb-2 text-base font-bold">
-      <span v-if="displayMode === 'both'">Fluss</span>
-      <button
-        v-else
-        type="button"
-        class="cursor-pointer border-0 bg-transparent p-0 font-bold text-text"
-        title="Zwischen Diagramm und Fluss-Ansicht wechseln"
-        @click="displayMode = 'chart'"
-      >
-        Fluss
-      </button>
-    </h2>
     <FlowBalanceBar />
   </div>
 
@@ -25,16 +13,7 @@
     <div class="mb-3 flex flex-wrap items-center justify-between gap-3">
       <div class="flex items-center gap-2">
         <h2 class="m-0 flex items-center gap-2 text-base font-bold">
-          <span v-if="displayMode === 'both'">Verlauf</span>
-          <button
-            v-else
-            type="button"
-            class="cursor-pointer border-0 bg-transparent p-0 font-bold text-text"
-            title="Zwischen Diagramm und Fluss-Ansicht wechseln"
-            @click="displayMode = 'flow'"
-          >
-            Verlauf
-          </button>
+          Verlauf
           ·
           <button
             type="button"
@@ -169,7 +148,8 @@ Chart.register(annotationPlugin, zoomPlugin)
 
 const {
   mode,
-  displayMode,
+  showFlow,
+  showChart,
   liveRangeMinutes,
   visibleSeries,
   categoryMode,
@@ -182,9 +162,6 @@ const {
   batterySoc: publishedBatterySoc,
   selectedVehicleSoc: publishedSelectedVehicleSoc,
 } = useChartSettings()
-
-const showChart = computed(() => displayMode.value !== 'flow')
-const showFlow = computed(() => displayMode.value !== 'chart')
 
 const chartRef = ref<{ chart?: Chart } | null>(null)
 const isZoomed = ref(false)
