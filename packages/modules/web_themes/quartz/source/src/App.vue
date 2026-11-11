@@ -10,6 +10,7 @@
         class="pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[15px] font-semibold text-muted"
       >{{ clockLabel }}</span>
       <div class="flex items-center gap-2">
+        <ConnectionIndicator />
         <LoginWidget />
         <BasePopover
           v-model="showNavMenu"
@@ -121,6 +122,7 @@ import BaseTabGroup from './components/BaseTabGroup.vue'
 import BaseIconButton from './components/BaseIconButton.vue'
 import BasePopover from './components/BasePopover.vue'
 import ThemeSettingsModal from './components/ThemeSettingsModal.vue'
+import ConnectionIndicator from './components/ConnectionIndicator.vue'
 import LoginWidget from './components/LoginWidget.vue'
 import IconMenu from './components/icons/IconMenu.vue'
 import { useChargePoints } from './composables/useChargePoints'

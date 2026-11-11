@@ -122,7 +122,7 @@ const chartData = computed<ChartData<'line', { x: number; y: number }[]>>(() => 
       backgroundColor: 'transparent',
       stepped: true,
       pointRadius: 0,
-      borderWidth: 2,
+      borderWidth: 1.5,
     })
   }
   if (tariffPoints.value.length > 0) {
@@ -133,7 +133,7 @@ const chartData = computed<ChartData<'line', { x: number; y: number }[]>>(() => 
       backgroundColor: 'transparent',
       stepped: true,
       pointRadius: 0,
-      borderWidth: 1.5,
+      borderWidth: 1.25,
     })
   }
   if (gridFeePoints.value.length > 0) {
@@ -144,7 +144,7 @@ const chartData = computed<ChartData<'line', { x: number; y: number }[]>>(() => 
       backgroundColor: 'transparent',
       stepped: true,
       pointRadius: 0,
-      borderWidth: 1.5,
+      borderWidth: 1.25,
     })
   }
   return { datasets }
