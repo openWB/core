@@ -1,6 +1,7 @@
 from unittest.mock import Mock
 
 import pytest
+import requests
 
 from modules.common import store
 from modules.common.abstract_vehicle import VehicleUpdateData
@@ -42,7 +43,9 @@ class TestPleos:
         assert result.warning is None
 
     def test_target_soc_below_100_sets_warning(self):
-        api.get_battery.return_value = {"charge": {"stateOfCharge": 50, "targetStateOfCharge": {"standard": 80}}}
+        api.get_battery.return_value = {
+            "charge": {"stateOfCharge": 50, "targetStateOfCharge": {"standard": 80}},
+            "timestamp": "2026-10-02T13:51:37Z"}
 
         self._vehicle().update(VehicleUpdateData())
 
@@ -62,3 +65,51 @@ class TestPleos:
         self._vehicle().update(VehicleUpdateData())
 
         assert str(dummy_error) in str(self.mock_context_exit.call_args[0][1])
+
+    def test_missing_timestamp_is_not_reported_as_fresh(self):
+        api.get_battery.return_value = {"charge": {"stateOfCharge": 72.5}}
+
+        self._vehicle().update(VehicleUpdateData())
+
+        assert self.mock_value_store.set.call_count == 0
+        assert "Zeitstempel" in str(self.mock_context_exit.call_args[0][1])
+
+    def test_range_failure_does_not_drop_soc(self):
+        api.get_distance_to_empty_km.side_effect = Exception("boom")
+
+        self._vehicle().update(VehicleUpdateData())
+
+        result = self.mock_value_store.set.call_args[0][0]
+        assert result.soc == 72.5
+        assert result.range is None
+
+    def test_odometer_failure_does_not_drop_soc(self):
+        api.get_odometer_km.side_effect = Exception("boom")
+
+        self._vehicle().update(VehicleUpdateData())
+
+        result = self.mock_value_store.set.call_args[0][0]
+        assert result.soc == 72.5
+        assert result.odometer is None
+
+    def test_null_target_soc_does_not_drop_soc(self):
+        api.get_battery.return_value = {
+            "charge": {"stateOfCharge": 72.5, "targetStateOfCharge": None},
+            "timestamp": "2026-10-02T13:51:37Z"}
+
+        self._vehicle().update(VehicleUpdateData())
+
+        result = self.mock_value_store.set.call_args[0][0]
+        assert result.soc == 72.5
+        assert result.warning is None
+
+    def test_refreshes_token_and_retries_once_on_401(self, monkeypatch):
+        unauthorized = requests.HTTPError(response=Mock(status_code=401))
+        battery = {"charge": {"stateOfCharge": 60}, "timestamp": "2026-10-02T13:51:37Z"}
+        api.get_battery.side_effect = [unauthorized, battery]
+        monkeypatch.setattr(api, "request_token", Mock(return_value=PleosToken(access_token="fresh")))
+
+        self._vehicle().update(VehicleUpdateData())
+
+        assert api.get_battery.call_count == 2
+        assert self.mock_value_store.set.call_args[0][0].soc == 60

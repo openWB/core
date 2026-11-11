@@ -17,10 +17,10 @@ _UNIT_TO_KM = {"km": 1, "mile": 1.609344, "miles": 1.609344, "meter": 0.001, "fe
 def validate_token(brand: str, client_id: str, client_secret: str, token: PleosToken) -> PleosToken:
     if token.access_token is not None and time.time() < token.created_at + token.expires_in:
         return token
-    return _request_token(brand, client_id, client_secret)
+    return request_token(brand, client_id, client_secret)
 
 
-def _request_token(brand: str, client_id: str, client_secret: str) -> PleosToken:
+def request_token(brand: str, client_id: str, client_secret: str) -> PleosToken:
     response = req.get_http_session().post(
         BASE_URL + "/auth/personal-token",
         json={"clientId": client_id, "clientSecret": client_secret},

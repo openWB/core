@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 import logging
 
+import requests
+
 from modules.common.abstract_device import DeviceDescriptor
 from modules.common.abstract_vehicle import VehicleUpdateData
 from modules.common.component_state import CarState
@@ -11,20 +13,40 @@ from modules.vehicles.pleos.config import Pleos
 log = logging.getLogger(__name__)
 
 
+def _get_battery_with_token_refresh(config) -> dict:
+    try:
+        return api.get_battery(config.brand, config.vin, config.token)
+    except requests.HTTPError as e:
+        if e.response is None or e.response.status_code != 401:
+            raise
+        config.token = api.request_token(config.brand, config.client_id, config.client_secret)
+        return api.get_battery(config.brand, config.vin, config.token)
+
+
 def fetch(vehicle_config: Pleos, vehicle_update_data: VehicleUpdateData) -> CarState:
     config = vehicle_config.configuration
     if not config.vin:
         raise Exception("Pleos: VIN muss konfiguriert sein.")
     config.token = api.validate_token(config.brand, config.client_id, config.client_secret, config.token)
-    battery = api.get_battery(config.brand, config.vin, config.token)
+    battery = _get_battery_with_token_refresh(config)
     charge = battery.get('charge', {})
     soc = float(charge['stateOfCharge'])
     soc_timestamp = api.parse_timestamp(battery.get('timestamp'))
-    target_soc = charge.get('targetStateOfCharge', {}).get('standard')
+    if soc_timestamp is None:
+        raise Exception("Pleos: Zeitstempel des Ladezustands fehlt oder ist ungültig.")
+    target_soc = (charge.get('targetStateOfCharge') or {}).get('standard')
     warning = (f"Das Fahrzeug begrenzt die Ladung selbst auf {target_soc}%."
                if target_soc and target_soc < 100 else None)
-    range = api.get_distance_to_empty_km(config.brand, config.vin, config.token)
-    odometer = api.get_odometer_km(config.brand, config.vin, config.token)
+    try:
+        range = api.get_distance_to_empty_km(config.brand, config.vin, config.token)
+    except Exception as e:
+        log.debug(f"Pleos: Reichweite nicht verfügbar: {e}")
+        range = None
+    try:
+        odometer = api.get_odometer_km(config.brand, config.vin, config.token)
+    except Exception as e:
+        log.debug(f"Pleos: Kilometerstand nicht verfügbar: {e}")
+        odometer = None
     return CarState(soc=soc, range=range, soc_timestamp=soc_timestamp, odometer=odometer, warning=warning)
 
 

@@ -1,6 +1,8 @@
 import time
 from unittest.mock import Mock
 
+import pytest
+
 from modules.vehicles.pleos import api
 from modules.vehicles.pleos.config import PleosToken
 
@@ -39,11 +41,8 @@ class TestValidateToken:
         session = _session_returning({"data": {}})
         monkeypatch.setattr(api.req, "get_http_session", lambda: session)
 
-        try:
+        with pytest.raises(Exception):
             api.validate_token("kia", "cid", "csec", PleosToken())
-            assert False, "expected Exception"
-        except Exception:
-            pass
 
 
 class TestGetBattery:
