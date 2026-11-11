@@ -1164,12 +1164,15 @@ export const useMqttStore = defineStore('mqtt', () => {
 
   // --- consumers ---
 
-  function consumerName(id: number): string {
-    return getComponentConfiguration(id)?.name ?? `Verbraucher ${id}`
+  /** Consumers get their own top-level config topic - unlike pv/bat/counter, they have none under device/component. */
+  function consumerModuleConfig(id: number): ComponentConfiguration | undefined {
+    return getValue.value<ComponentConfiguration | undefined>(`openWB/consumer/${id}/module`, undefined)
   }
-  /** See accessChargePointAllowed - same ACL-driven "config never arrives" access check. */
+  function consumerName(id: number): string {
+    return consumerModuleConfig(id)?.name ?? `Verbraucher ${id}`
+  }
   function accessConsumerAllowed(id: number): boolean {
-    return getComponentConfiguration(id) !== undefined
+    return consumerModuleConfig(id) !== undefined
   }
   /** Current power in kW (the raw topic is in W). */
   function consumerInstancePower(id: number): number {

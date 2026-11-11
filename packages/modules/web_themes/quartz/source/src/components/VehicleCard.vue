@@ -34,6 +34,11 @@
         v-if="socValue !== undefined"
         class="ml-auto flex items-center gap-1 text-[13px] font-bold"
       >
+        <IconAlert
+          v-if="faultState === 1"
+          class="text-warning"
+          :title="faultMessage"
+        />
         <BaseIconButton
           size="sm"
           aria-label="SoC jetzt abrufen"
@@ -78,6 +83,7 @@
 import { computed } from 'vue'
 import { useMqttStore } from '@/stores/mqtt-store'
 import { stateBadgeClass as stateBadgeClassFor } from '@/utils/badge'
+import IconAlert from './icons/IconAlert.vue'
 import IconCar from './icons/IconCar.vue'
 import IconRefresh from './icons/IconRefresh.vue'
 import StatBlock from './StatBlock.vue'
