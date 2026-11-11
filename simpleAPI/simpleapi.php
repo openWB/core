@@ -254,6 +254,7 @@ class SimpleAPI
             'get_chargepoint_pv_charging_min_current',
             'get_chargepoint_soc',
             'get_chargepoint_state_str',
+            'get_chargepoint_limit',
             'get_chargepoint_fault_str',
             'get_chargepoint_fault_state',
             'get_chargepoint_phases_in_use',
@@ -332,6 +333,8 @@ class SimpleAPI
             // IO - Ausgaenge
             'get_io_output_all',
             'get_io_output',
+            // IO - Eingaenge
+            'get_io_input_all',
             // System - Werte
             'get_lastlivevaluesjson'
         ];
@@ -477,6 +480,9 @@ class SimpleAPI
     {
         if (strpos($param, 'chargepoint') !== false || strpos($param, 'get_chargepoint') !== false) {
             return 'chargepoint';
+        } elseif ($param === 'get_io_input_all') {
+            // Eingaenge: auch Geraete ohne Ausgaenge finden (siehe MqttClient::getAuxiliaryScanConfig)
+            return 'io_input';
         } elseif (strpos($param, 'io') !== false) {
             return 'io';
         } elseif (strpos($param, 'battery') !== false) {
@@ -515,6 +521,8 @@ class SimpleAPI
             'get_battery_currents',
             'get_pv_currents',
             'get_io_output_all',
+            'get_io_input_all',
+            'get_chargepoint_limit',
             'get_consumer_all',
             'get_consumer',
             'consumer',
