@@ -576,6 +576,8 @@ const chartOptions = computed<ChartOptions<'line'>>(() => {
   void props.theme
   const mutedColor = getCssColor('--muted')
   const borderColor = getCssColor('--border')
+  const panelColor = getCssColor('--panel')
+  const textColor = getCssColor('--text')
   return {
     responsive: true,
     maintainAspectRatio: false,
@@ -589,6 +591,15 @@ const chartOptions = computed<ChartOptions<'line'>>(() => {
       legend: { display: false },
       tooltip: {
         enabled: true,
+        // Chart.js' own default is a hardcoded near-black box regardless of app theme - themed to
+        // match Quartz's own panel/text/border tokens instead, so light mode gets a light tooltip
+        backgroundColor: panelColor,
+        titleColor: textColor,
+        bodyColor: textColor,
+        borderColor,
+        borderWidth: 1,
+        padding: 8,
+        cornerRadius: 8,
         callbacks: {
           title: (items) => {
             const x = items[0]?.parsed.x
