@@ -9,12 +9,8 @@
       <div class="settings-group-label mb-2">
         Darstellung
       </div>
-      <DarkModeToggle
-        :model-value="dark"
-        @update:model-value="$emit('update:dark', $event)"
-      />
 
-      <div class="settings-group-label mt-3">
+      <div class="mb-2 text-[13px] text-muted">
         Anzeige
       </div>
       <BaseTabGroup
@@ -23,6 +19,28 @@
         :options="displayModeOptions"
         @update="displayMode = $event"
       />
+
+      <DarkModeToggle
+        class="mt-3"
+        :model-value="dark"
+        @update:model-value="$emit('update:dark', $event)"
+      />
+
+      <div class="mt-3">
+        <label class="mb-2 block text-[13px] text-muted">Uhrzeit anzeigen</label>
+        <BaseToggle
+          :model-value="showClock"
+          @update:model-value="$emit('update:showClock', $event)"
+        />
+      </div>
+
+      <div class="mt-3">
+        <label class="mb-2 block text-[13px] text-muted">Standard-Fahrzeug anzeigen</label>
+        <BaseToggle
+          :model-value="!hideStandardVehicle"
+          @update:model-value="hideStandardVehicle = !$event"
+        />
+      </div>
     </div>
 
     <div
@@ -126,23 +144,27 @@
 import { computed } from 'vue'
 import { useMqttStore } from '@/stores/mqtt-store'
 import { useChartSettings, categoryDefs, viewOptions, displayModeOptions } from '@/composables/useChartSettings'
+import { useVehicles } from '@/composables/useVehicles'
 import { getCssColor } from '@/utils/color'
 import type { CategoryKey } from '@/types/chart'
 import BaseModal from './BaseModal.vue'
 import BaseTabGroup from './BaseTabGroup.vue'
 import DarkModeToggle from './DarkModeToggle.vue'
+import BaseToggle from './BaseToggle.vue'
 import CategoryLinesColumn from './CategoryLinesColumn.vue'
 import LineGroup from './LineGroup.vue'
 
 defineProps<{
   modelValue: boolean
   dark: boolean
+  showClock: boolean
   configuredSections: { key: string; label: string }[]
   visibleSections: Set<string>
 }>()
 defineEmits<{
   'update:modelValue': [value: boolean]
   'update:dark': [value: boolean]
+  'update:showClock': [value: boolean]
   'toggle-section': [key: string, checked: boolean]
 }>()
 
@@ -158,6 +180,7 @@ const {
   batterySoc,
   selectedVehicleSoc,
 } = useChartSettings()
+const { hideStandardVehicle } = useVehicles()
 
 // mirrors HistoryChart.vue's own categoryHasComponent/visibleCategoryDefs - re-derived here
 // from the same published 'categories' snapshot rather than duplicated as more published refs,

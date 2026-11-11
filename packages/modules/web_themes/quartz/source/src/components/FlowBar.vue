@@ -5,8 +5,8 @@
       :class="position === 'above' ? 'order-1 mb-1.5' : 'order-2 mt-1.5'"
     >
       <span class="flex flex-none items-center gap-1.5 text-[11px] whitespace-nowrap text-muted sm:text-[13px]">
-        <span class="legend-dot bg-car" />
-        <b class="text-xs font-bold text-car sm:text-sm">{{ formatKw(total) }}</b>
+        <span class="legend-dot bg-warning" />
+        <b class="text-xs font-bold text-warning sm:text-sm">{{ formatKw(total) }}</b>
         Gesamt
       </span>
       <span
@@ -56,14 +56,19 @@ function pct(value: number): number {
 
 // a diagonal white-stripe overlay on top of the segment's own solid color - distinguishes
 // segments that deliberately share one color (Zähler reuses --grid, same as Netz) without
-// introducing a whole new color just for that one case
+// introducing a whole new color just for that one case. An explicit small backgroundSize tile
+// (the standard CSS diagonal-stripe recipe) forces the browser to rasterize one small repeating
+// tile instead of computing a single gradient across the segment's full width - without it, a
+// wide segment showed visible seam/banding artifacts (subpixel drift accumulating over a long
+// unconstrained repeating-linear-gradient).
 function segmentStyle(seg: FlowSegment): Record<string, string> {
   const color = `var(--${seg.colorVar})`
   if (!seg.hatched) return { background: color }
   return {
     backgroundColor: color,
     backgroundImage:
-      'repeating-linear-gradient(45deg, rgba(255,255,255,0.45) 0, rgba(255,255,255,0.45) 2px, transparent 2px, transparent 5px)',
+      'repeating-linear-gradient(45deg, rgba(255,255,255,0.45) 0, rgba(255,255,255,0.45) 25%, transparent 25%, transparent 50%)',
+    backgroundSize: '8px 8px',
   }
 }
 </script>

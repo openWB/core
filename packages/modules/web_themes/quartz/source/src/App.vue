@@ -5,52 +5,59 @@
         href="/openWB/web/"
         class="text-[18px] font-bold tracking-[-0.01em] text-text no-underline"
       >openWB</a>
-      <BasePopover
-        v-model="showNavMenu"
-        panel-class="top-[calc(100%_+_8px)] right-0 flex w-56 max-w-[calc(100vw-2rem)] flex-col gap-0.5 p-2"
-      >
-        <template #trigger="{ toggle }">
-          <BaseIconButton
-            aria-label="Menü öffnen"
-            title="Menü öffnen"
-            @click="toggle"
-          >
-            <IconMenu />
-          </BaseIconButton>
-        </template>
-        <a
-          v-if="mqttStore.accessStatusAllowed()"
-          href="/openWB/web/settings/#/Status"
-          class="rounded-lg px-3 py-2 text-sm font-semibold text-accent no-underline"
-          @click="showNavMenu = false"
-        >Status</a>
-        <a
-          v-if="mqttStore.accessChartAllowed()"
-          href="/openWB/web/settings/#/Logging/Chart"
-          class="rounded-lg px-3 py-2 text-sm font-medium text-text no-underline"
-          @click="showNavMenu = false"
-        >Auswertungen</a>
-        <a
-          v-if="mqttStore.accessChargeLogAllowed()"
-          href="/openWB/web/settings/#/Logging/ChargeLog"
-          class="rounded-lg px-3 py-2 text-sm font-medium text-text no-underline"
-          @click="showNavMenu = false"
-        >Ladeprotokoll</a>
-        <a
-          v-if="mqttStore.accessSettingsAllowed()"
-          href="/openWB/web/settings/"
-          class="rounded-lg px-3 py-2 text-sm font-medium text-text no-underline"
-          @click="showNavMenu = false"
-        >Einstellungen</a>
-        <div class="my-1 border-t border-border" />
-        <button
-          type="button"
-          class="rounded-lg border-0 bg-transparent px-3 py-2 text-left text-sm font-medium text-text"
-          @click="showThemeSettings = true; showNavMenu = false"
+      <span
+        v-if="showClock"
+        class="pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[15px] font-semibold text-muted"
+      >{{ clockLabel }}</span>
+      <div class="flex items-center gap-2">
+        <LoginWidget />
+        <BasePopover
+          v-model="showNavMenu"
+          panel-class="top-[calc(100%_+_8px)] right-0 flex w-56 max-w-[calc(100vw-2rem)] flex-col gap-0.5 p-2"
         >
-          Theme-Einstellungen
-        </button>
-      </BasePopover>
+          <template #trigger="{ toggle }">
+            <BaseIconButton
+              aria-label="Menü öffnen"
+              title="Menü öffnen"
+              @click="toggle"
+            >
+              <IconMenu />
+            </BaseIconButton>
+          </template>
+          <a
+            v-if="mqttStore.accessStatusAllowed()"
+            href="/openWB/web/settings/#/Status"
+            class="rounded-lg px-3 py-2 text-sm font-semibold text-accent no-underline"
+            @click="showNavMenu = false"
+          >Status</a>
+          <a
+            v-if="mqttStore.accessChartAllowed()"
+            href="/openWB/web/settings/#/Logging/Chart"
+            class="rounded-lg px-3 py-2 text-sm font-medium text-text no-underline"
+            @click="showNavMenu = false"
+          >Auswertungen</a>
+          <a
+            v-if="mqttStore.accessChargeLogAllowed()"
+            href="/openWB/web/settings/#/Logging/ChargeLog"
+            class="rounded-lg px-3 py-2 text-sm font-medium text-text no-underline"
+            @click="showNavMenu = false"
+          >Ladeprotokoll</a>
+          <a
+            v-if="mqttStore.accessSettingsAllowed()"
+            href="/openWB/web/settings/"
+            class="rounded-lg px-3 py-2 text-sm font-medium text-text no-underline"
+            @click="showNavMenu = false"
+          >Einstellungen</a>
+          <div class="my-1 border-t border-border" />
+          <button
+            type="button"
+            class="rounded-lg border-0 bg-transparent px-3 py-2 text-left text-sm font-medium text-text"
+            @click="showThemeSettings = true; showNavMenu = false"
+          >
+            Theme-Einstellungen
+          </button>
+        </BasePopover>
+      </div>
     </nav>
 
     <StatusStrip />
@@ -90,16 +97,18 @@
     <ThemeSettingsModal
       v-model="showThemeSettings"
       :dark="dark"
+      :show-clock="showClock"
       :configured-sections="configuredSections"
       :visible-sections="visibleSections"
       @update:dark="dark = $event"
+      @update:show-clock="showClock = $event"
       @toggle-section="(key, checked) => toggleSection(key as SectionKey, checked)"
     />
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watchEffect, type Component } from 'vue'
+import { computed, ref, watchEffect, onMounted, onUnmounted, type Component } from 'vue'
 import StatusStrip from './components/StatusStrip.vue'
 import HistoryChart from './components/HistoryChart.vue'
 import ChargePointCard from './components/ChargePointCard.vue'
@@ -112,6 +121,7 @@ import BaseTabGroup from './components/BaseTabGroup.vue'
 import BaseIconButton from './components/BaseIconButton.vue'
 import BasePopover from './components/BasePopover.vue'
 import ThemeSettingsModal from './components/ThemeSettingsModal.vue'
+import LoginWidget from './components/LoginWidget.vue'
 import IconMenu from './components/icons/IconMenu.vue'
 import { useChargePoints } from './composables/useChargePoints'
 import { useVehicles } from './composables/useVehicles'
@@ -223,4 +233,25 @@ watchEffect(() => {
     // ignore storage errors (private browsing etc.)
   }
 })
+
+const CLOCK_STORAGE_KEY = 'quartz-show-clock'
+const showClock = ref(localStorage.getItem(CLOCK_STORAGE_KEY) === 'true')
+watchEffect(() => {
+  try {
+    localStorage.setItem(CLOCK_STORAGE_KEY, String(showClock.value))
+  } catch {
+    // ignore storage errors (private browsing etc.)
+  }
+})
+
+// minute granularity is enough for a clock display, no need for a per-second tick
+const now = ref(new Date())
+let clockTimer: ReturnType<typeof setInterval> | undefined
+onMounted(() => {
+  clockTimer = setInterval(() => {
+    now.value = new Date()
+  }, 20_000)
+})
+onUnmounted(() => clearInterval(clockTimer))
+const clockLabel = computed(() => now.value.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }))
 </script>

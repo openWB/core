@@ -3,6 +3,7 @@ import { ref, computed } from 'vue'
 import mqtt, { type MqttClient } from 'mqtt'
 import type { QoS } from 'mqtt-packet'
 import { eurPerWhToCtPerKwh, ctPerKwhToEurPerWh, convertDcCurrentToPower } from '@/utils/format'
+import { getCookie, setCookie, removeCookie } from '@/utils/cookies'
 
 type TopicMap = Record<string, unknown>
 type SubscriptionCounts = Record<string, number>
@@ -218,20 +219,38 @@ export const useMqttStore = defineStore('mqtt', () => {
   const topics = ref<TopicMap>({})
   const subscriptions = ref<SubscriptionCounts>({})
   const connected = ref(false)
+  const authFailureMessage = ref('')
+  const defaultCredentialsWarning = ref(false)
+
+  /** The 'mqtt' cookie holds "username:password" (colon-separated, URL-encoded by the cookie
+   *  helper's own encode/decode) - these two halves are passed directly as the MQTT CONNECT
+   *  packet's username/password fields; mosquitto's dynamic-security plugin validates them
+   *  broker-side, nothing to verify client-side. */
+  function mqttCredentials(): { username?: string; password?: string } {
+    const raw = getCookie('mqtt')
+    const match = raw?.match(/^([^:]+):(.+)$/)
+    return match ? { username: match[1], password: match[2] } : {}
+  }
 
   function initialize(): void {
     const protocol = location.protocol === 'https:' ? 'wss' : 'ws'
     const port = parseInt(location.port) || (location.protocol === 'https:' ? 443 : 80)
     const connectUrl = `${protocol}://${location.hostname}:${port}/ws`
+    const { username, password } = mqttCredentials()
     client = mqtt.connect(connectUrl, {
       connectTimeout: 4000,
       reconnectPeriod: 4000,
       clean: false,
       clientId,
+      username,
+      password,
     })
     client.on('connect', () => {
       connected.value = true
       Object.keys(subscriptions.value).forEach((topic) => client?.subscribe(topic, { qos: 0 }))
+      if (username === 'admin' && password === 'openwb') {
+        defaultCredentialsWarning.value = true
+      }
     })
     client.on('close', () => {
       connected.value = false
@@ -241,6 +260,15 @@ export const useMqttStore = defineStore('mqtt', () => {
     })
     client.on('error', (error) => {
       console.error('MQTT error', error)
+      // v3.1.1/v4 CONNACK return codes (this client doesn't set protocolVersion, so it never sees
+      // MQTT v5's 135/137 reason codes - mqtt.js still wraps the rejection in ErrorWithReasonCode
+      // either way, see node_modules/mqtt/build/lib/handlers/connack.js): 4 = bad username/password,
+      // 5 = not authorized.
+      if (username !== undefined && error instanceof mqtt.ErrorWithReasonCode && [4, 5].includes(error.code)) {
+        client?.end()
+        removeCookie('mqtt')
+        authFailureMessage.value = 'Die Anmeldeinformationen waren ungültig und wurden entfernt. Bitte die Seite neu laden.'
+      }
     })
     client.on('message', (topic, payload) => {
       if (payload.length === 0) {
@@ -402,6 +430,12 @@ export const useMqttStore = defineStore('mqtt', () => {
   // Published per logged-in session by the backend's own auth system - a user with restricted
   // access simply never receives 'true' for a section they're not allowed to see.
 
+  function userManagementActive(): boolean {
+    return getValue.value<boolean>('openWB/system/security/user_management_active', false)
+  }
+  function dataProtectionAcknowledged(): boolean {
+    return getValue.value<boolean>('openWB/system/dataprotection_acknowledged', false)
+  }
   function accessAllowed(): boolean {
     return getValue.value<boolean>('openWB/system/security/access_allowed', false)
   }
@@ -416,6 +450,33 @@ export const useMqttStore = defineStore('mqtt', () => {
   }
   function accessChartAllowed(): boolean {
     return getValue.value<boolean>('openWB/system/security/access/Chart', false)
+  }
+
+  // --- login / user management ---
+
+  // derived from the cookie, not reactive topic state - not reactive to cookie mutation
+  // mid-session, but login()/logout() always follow a cookie write/removal with
+  // location.reload(), so a stale read between those two never matters
+  const loggedIn = computed(() => getCookie('mqtt') !== undefined)
+  const username = computed(() => mqttCredentials().username ?? '')
+
+  /** Always answered with the same neutral message by the backend regardless of whether the
+   *  user/email exists (deliberate anti-enumeration design, see command.py::createPasswordResetToken) -
+   *  there's no real completion signal to listen for, so callers show a static message immediately. */
+  function requestPasswordResetToken(resetUsername: string): void {
+    sendCommand('createPasswordResetToken', { username: resetUsername })
+  }
+  function resetUserPassword(resetUsername: string, token: string, newPassword: string): void {
+    sendCommand('resetUserPassword', { username: resetUsername, token, newPassword })
+  }
+
+  function login(loginUsername: string, loginPassword: string): void {
+    setCookie('mqtt', `${loginUsername}:${loginPassword}`, 30)
+    location.reload()
+  }
+  function logout(): void {
+    removeCookie('mqtt')
+    location.reload()
   }
 
   // --- live view (recent rolling window, finer-grained than the 5-min daily log) ---
@@ -1174,6 +1235,8 @@ export const useMqttStore = defineStore('mqtt', () => {
   return {
     topics,
     connected,
+    authFailureMessage,
+    defaultCredentialsWarning,
     initialize,
     subscribe,
     unsubscribe,
@@ -1202,11 +1265,19 @@ export const useMqttStore = defineStore('mqtt', () => {
     forecastFaultMessage,
     forecastSeries,
     currentForecastPower,
+    userManagementActive,
+    dataProtectionAcknowledged,
     accessAllowed,
     accessSettingsAllowed,
     accessStatusAllowed,
     accessChargeLogAllowed,
     accessChartAllowed,
+    loggedIn,
+    username,
+    requestPasswordResetToken,
+    resetUserPassword,
+    login,
+    logout,
     fetchDailyLog,
     liveSeriesRaw,
     subscribeLiveSeries,
