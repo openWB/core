@@ -1,6 +1,7 @@
 import logging
 from typing import Dict
 from typing import Tuple, List, Optional
+from requests.auth import AuthBase, HTTPBasicAuth, HTTPDigestAuth
 
 from modules.common import req
 
@@ -23,12 +24,20 @@ def get_generation(address: str) -> Tuple[int, str]:
     return generation, model
 
 
-def request_status(address: str, generation: Optional[int]) -> Dict:
+def get_auth(generation: int, username: Optional[str], password: Optional[str]) -> Optional[AuthBase]:
+    if not password:
+        return None
+    if generation == 1:
+        return HTTPBasicAuth(username, password) if username else None
+    return HTTPDigestAuth("admin", password)
+
+
+def request_status(address: str, generation: Optional[int], auth: Optional[AuthBase] = None) -> Dict:
     if generation == 1:
         status_url = "http://" + address + "/status"
     else:
         status_url = "http://" + address + "/rpc/Shelly.GetStatus"
-    return req.get_http_session().get(status_url, timeout=3).json()
+    return req.get_http_session().get(status_url, auth=auth, timeout=3).json()
 
 
 def parse_temperatures(status: Dict, generation: int) -> Optional[List[float]]:
