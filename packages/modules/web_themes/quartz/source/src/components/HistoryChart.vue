@@ -369,23 +369,32 @@ function resampleToTimestamps(points: { x: number; y: number }[], timestamps: nu
 
 // whole-day forecast for the day currently selected in day mode. Today, unchanged from before:
 // the live MQTT snapshot (mqttStore.forecastSeries), the continuously-refining forecast for a day
-// that hasn't ended yet. Past days instead read the daily_log's own "forecast" field (see
-// write_log.py::get_forecast_values), a snapshot frozen once that day ended - the live topic has
-// long since moved on to today's values by then, so it's the only source history can use; older
-// days (or days forecast wasn't configured for) simply have none. History can be flat/missing
-// (component in error state) while the forecast is already known in full; only meaningful next to
-// the day view's combined PV line.
+// that hasn't ended yet. Past days instead read each daily_log entry's own "forecast" value (see
+// process_log_entry_builder.py::create_entry) - the value as it stood at that entry's own
+// timestamp, not a retroactively-refined whole-day curve; the live topic has long since moved on
+// to today's values by then, so this is the only source history can use. Older days (or days
+// forecast wasn't configured for) simply have none. History can be flat/missing (component in
+// error state) while the forecast is already known in full; only meaningful next to the day
+// view's combined PV line.
 // Split from forecastDay (the actually-drawn series) so the legend item can stay present and
 // clickable even while forecastVisible is off - otherwise toggling it hides the only way back on.
 const forecastSeriesDay = computed(() => {
   if (mode.value !== 'day' || categoryMode.pv !== 'combined') return []
-  if (!isToday.value) return dayForecast.value.map((entry) => ({ x: entry.timestamp, y: entry.power }))
-  if (!mqttStore.forecastConfigured) return []
-  const startOfToday = new Date().setHours(0, 0, 0, 0)
-  const endOfToday = new Date().setHours(23, 59, 59, 999)
-  const raw = mqttStore.forecastSeries
-    .filter((entry) => entry.timestamp >= startOfToday && entry.timestamp <= endOfToday)
-    .map((entry) => ({ x: entry.timestamp, y: entry.power }))
+  let raw: { x: number; y: number }[]
+  if (!isToday.value) {
+    // past days: entries where no forecast value was logged that cycle (see buildForecast's
+    // numeric-only filter) are simply absent here, same gap case the resampling below already
+    // has to handle for today (a system switched on mid-day) - so it applies uniformly below
+    // rather than returning this raw, unaligned array straight away.
+    raw = dayForecast.value.map((entry) => ({ x: entry.timestamp, y: entry.power }))
+  } else {
+    if (!mqttStore.forecastConfigured) return []
+    const startOfToday = new Date().setHours(0, 0, 0, 0)
+    const endOfToday = new Date().setHours(23, 59, 59, 999)
+    raw = mqttStore.forecastSeries
+      .filter((entry) => entry.timestamp >= startOfToday && entry.timestamp <= endOfToday)
+      .map((entry) => ({ x: entry.timestamp, y: entry.power }))
+  }
   // only resample the elapsed portion (where real power data exists and needs shared-index
   // tooltip alignment) - grid.all has no entries for the future, so resampling the whole series
   // onto it would silently cut the forecast off at "now" instead of showing the rest of the day.
@@ -449,10 +458,17 @@ const legend = computed(() => {
   return items
 })
 
-// x-axis bounds: the whole day for the day view, or the selected rolling window for live view
+// x-axis bounds: the whole day for the day view, or the selected rolling window for live view.
+// Live's min is the earliest point actually held (categories.value.grid.all is already
+// cutoff-filtered to the window by useLiveView) rather than always the full window start, so a
+// freshly (re)started backend's axis grows from "what we have" up to the full range instead of
+// showing an empty gap for data that hasn't been collected yet - same as koala's HistoryChart.vue
+// (chartLabels' minTimestamp = selectedData[0]?.timestamp).
 const xRange = computed(() => {
   if (mode.value === 'live') {
-    return { min: now.value - liveRangeMinutes.value * 60 * 1000, max: now.value }
+    const windowStart = now.value - liveRangeMinutes.value * 60 * 1000
+    const earliest = categories.value.grid.all[0]?.timestamp
+    return { min: earliest !== undefined ? Math.max(earliest, windowStart) : windowStart, max: now.value }
   }
   return {
     min: new Date(selectedDate.value).setHours(0, 0, 0, 0),

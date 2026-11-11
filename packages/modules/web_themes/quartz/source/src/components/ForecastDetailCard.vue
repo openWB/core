@@ -122,7 +122,7 @@ const chartData = computed<ChartData<'line', { x: number; y: number }[]>>(() => 
         backgroundColor: hexToRgba(color, 0.18),
         fill: true,
         pointRadius: 0,
-        borderWidth: 2,
+        borderWidth: 1.5,
         tension: 0.2,
       },
     ],

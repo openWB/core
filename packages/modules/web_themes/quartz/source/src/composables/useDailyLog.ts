@@ -32,13 +32,14 @@ interface DailyLogEntry {
   consumer?: Record<string, FlowEntry>
   hc?: Record<string, FlowEntry>
   ev?: Record<string, VehicleLogEntry>
+  /** The forecast value (W) as it stood at this entry's own timestamp - not a whole-day curve, so
+   *  past days never show a retroactively-refined forecast (see process_log_entry_builder.py::create_entry). */
+  forecast?: number | null
 }
 
 interface DailyLogResponse {
   entries: DailyLogEntry[]
   names?: Record<string, string>
-  /** PV forecast for this day, keyed by timestamp (seconds) -> power (W) - see write_log.py::get_forecast_values. */
-  forecast?: Record<string, number>
 }
 
 function dateToString(date: Date): string {
@@ -168,10 +169,10 @@ function buildBatterySoc(entries: DailyLogEntry[], names: Record<string, string>
 }
 
 /** Same unit conversion as mqttStore.forecastSeries (W -> kW), so both feed the chart identically. */
-function buildForecast(log: DailyLogResponse | undefined): InstancePoint[] {
-  return Object.entries(log?.forecast ?? {})
-    .map(([timestamp, watts]) => ({ timestamp: Number(timestamp) * 1000, power: watts / 1000 }))
-    .sort((a, b) => a.timestamp - b.timestamp)
+function buildForecast(entries: DailyLogEntry[]): InstancePoint[] {
+  return entries
+    .filter((entry): entry is DailyLogEntry & { forecast: number } => typeof entry.forecast === 'number')
+    .map((entry) => ({ timestamp: entry.timestamp * 1000, power: entry.forecast / 1000 }))
 }
 
 function buildVehicleSoc(entries: DailyLogEntry[], names: Record<string, string>): SocSeries[] {
@@ -255,7 +256,7 @@ export function useDailyLog() {
 
   const batterySoc = computed<SocCategoryData>(() => buildBatterySoc(entries.value, names.value))
   const vehicleSocAll = computed<SocSeries[]>(() => buildVehicleSoc(entries.value, names.value))
-  const forecast = computed<InstancePoint[]>(() => buildForecast(log.value))
+  const forecast = computed<InstancePoint[]>(() => buildForecast(entries.value))
 
   // get_daily_log() always returns at least {entries: [], names: {}} (see process_log.py), even
   // for a day with no log file - so the topic is guaranteed to eventually hold *something* once

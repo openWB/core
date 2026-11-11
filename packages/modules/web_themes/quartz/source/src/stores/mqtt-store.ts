@@ -555,10 +555,10 @@ export const useMqttStore = defineStore('mqtt', () => {
     unsubscribe('openWB/counter/get/hierarchy')
   }
 
-  const chargePointIds = computed(() => getObjectIds('cp'))
-  const batteryIds = computed(() => getObjectIds('bat'))
+  const chargePointIds = computed(() => getObjectIds('cp').filter(accessChargePointAllowed))
+  const batteryIds = computed(() => getObjectIds('bat').filter(accessBatteryAllowed))
   const inverterIds = computed(() => getObjectIds('inverter'))
-  const consumerIds = computed(() => getObjectIds('consumer'))
+  const consumerIds = computed(() => getObjectIds('consumer').filter(accessConsumerAllowed))
   const counterIds = computed(() => getObjectIds('counter'))
 
   /** The device id isn't known client-side, hence the '+' - a real single-level MQTT wildcard, unlike
@@ -579,6 +579,12 @@ export const useMqttStore = defineStore('mqtt', () => {
   }
   function chargePointName(id: number): string {
     return chargePointConfig(id)?.name ?? `Ladepunkt ${id}`
+  }
+  /** Mosquitto's dynamic-security ACL simply never delivers this id's config topic to a
+   *  restricted MQTT user, so "config not (yet) received" doubles as the access check - same
+   *  mechanism koala's accessChargePointAllowed relies on. */
+  function accessChargePointAllowed(id: number): boolean {
+    return chargePointConfig(id) !== undefined
   }
 
   function chargePointPlugState(id: number): boolean {
@@ -864,6 +870,10 @@ export const useMqttStore = defineStore('mqtt', () => {
 
   function batteryName(id: number): string {
     return getComponentConfiguration(id)?.name ?? `Speicher ${id}`
+  }
+  /** See accessChargePointAllowed - same ACL-driven "config never arrives" access check. */
+  function accessBatteryAllowed(id: number): boolean {
+    return getComponentConfiguration(id) !== undefined
   }
   function batteryInstanceSoc(id: number): number | undefined {
     return getValue.value<number | undefined>(`openWB/bat/${id}/get/soc`, undefined)
@@ -1157,6 +1167,10 @@ export const useMqttStore = defineStore('mqtt', () => {
   function consumerName(id: number): string {
     return getComponentConfiguration(id)?.name ?? `Verbraucher ${id}`
   }
+  /** See accessChargePointAllowed - same ACL-driven "config never arrives" access check. */
+  function accessConsumerAllowed(id: number): boolean {
+    return getComponentConfiguration(id) !== undefined
+  }
   /** Current power in kW (the raw topic is in W). */
   function consumerInstancePower(id: number): number {
     return getValue.value<number>(`openWB/consumer/${id}/get/power`, 0) / 1000
@@ -1286,6 +1300,7 @@ export const useMqttStore = defineStore('mqtt', () => {
     subscribeComponentHierarchy,
     unsubscribeComponentHierarchy,
     chargePointName,
+    accessChargePointAllowed,
     chargePointPlugState,
     chargePointChargeState,
     chargePointPower,
@@ -1347,6 +1362,7 @@ export const useMqttStore = defineStore('mqtt', () => {
     consumerIds,
     getComponentConfiguration,
     batteryName,
+    accessBatteryAllowed,
     batteryInstanceSoc,
     batteryInstancePower,
     batteryInstanceDailyImported,
@@ -1424,6 +1440,7 @@ export const useMqttStore = defineStore('mqtt', () => {
     inverterInstanceFaultMessage,
     pvFaultStateTotal,
     consumerName,
+    accessConsumerAllowed,
     consumerInstancePower,
     consumerInstanceDailyImported,
     consumerInstanceVoltages,
