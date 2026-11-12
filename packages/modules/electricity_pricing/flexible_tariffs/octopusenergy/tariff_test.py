@@ -129,8 +129,8 @@ def test_build_tariff_state_all_day_slot_with_equal_bounds(monkeypatch):
 
     prices = build_tariff_state(data)
 
+    assert len(prices) == 28
     assert all(price == pytest.approx(0.0002) for price in prices.values())
-    assert len(prices) > 0
 
 
 def test_build_tariff_state_prefers_unit_rate_forecast_for_dynamic_tariffs(monkeypatch):
@@ -148,12 +148,13 @@ def test_build_tariff_state_prefers_unit_rate_forecast_for_dynamic_tariffs(monke
          'validFrom': '2026-01-01T00:00:00+00:00',
          'validTo': None}]}]}}}
     datetime_mock = MagicMock(wraps=datetime)
-    datetime_mock.now.return_value = datetime(2026, 11, 2, 13, 3, 0, tzinfo=timezone.utc)
+    datetime_mock.now.return_value = datetime(2026, 11, 2, 12, 3, 0, tzinfo=timezone.utc)
     monkeypatch.setattr(tariff, "datetime", datetime_mock)
 
     prices = build_tariff_state(data)
 
-    assert prices['1793624400'] == pytest.approx(0.0008)  # 2026-11-02 13:03 UTC, from the forecast (80 ct)
+    assert prices['1793620800'] == pytest.approx(0.0004)  # 2026-11-02 12:03 UTC, first forecast interval (40 ct)
+    assert prices['1793624400'] == pytest.approx(0.0008)  # 2026-11-02 13:03 UTC, second forecast interval (80 ct)
 
 
 # --- Zusätzliche Tests für die Fehlerbehandlung bei fehlenden/kaputten API-Daten ---

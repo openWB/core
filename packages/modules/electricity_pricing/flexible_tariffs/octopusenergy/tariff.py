@@ -168,18 +168,19 @@ def get_rate_from_time_of_use_product(unit_rate_info: dict, hour_time_utc: datet
     local_hour_time = hour_time_utc.astimezone(GERMAN_TZ).time()  # hour_time is UTC, time of use returns local time
 
     for rate_info in unit_rate_info['rates']:
-        active_from = datetime.strptime(rate_info['timeslotActivationRules'][0]['activeFromTime'], '%H:%M:%S').time()
-        active_to = datetime.strptime(rate_info['timeslotActivationRules'][0]['activeToTime'], '%H:%M:%S').time()
-        if active_from == active_to:
-            in_slot = True
-        elif active_from < active_to:
-            in_slot = active_from <= local_hour_time < active_to
-        else:
-            # Mitternachts-Überlauf
-            in_slot = local_hour_time >= active_from or local_hour_time < active_to
+        for rule in rate_info['timeslotActivationRules']:
+            active_from = datetime.strptime(rule['activeFromTime'], '%H:%M:%S').time()
+            active_to = datetime.strptime(rule['activeToTime'], '%H:%M:%S').time()
+            if active_from == active_to:
+                in_slot = True
+            elif active_from < active_to:
+                in_slot = active_from <= local_hour_time < active_to
+            else:
+                # Mitternachts-Überlauf
+                in_slot = local_hour_time >= active_from or local_hour_time < active_to
 
-        if in_slot:
-            return float(rate_info['latestGrossUnitRateCentsPerKwh']) / 100 / 1000
+            if in_slot:
+                return float(rate_info['latestGrossUnitRateCentsPerKwh']) / 100 / 1000
     return None
 
 
@@ -212,8 +213,9 @@ def process_agreement(agreement: dict, hour_time_utc: datetime, prices: Dict[str
         local_hour_time = hour_time_utc.astimezone(GERMAN_TZ)
         timestamp = str(int(local_hour_time.replace(minute=0, second=0, microsecond=0).timestamp()))
         forecast = agreement.get('unitRateForecast')
-        rate = (get_rate_from_forecast(forecast, hour_time_utc) if forecast
-                else get_rate_from_unit_rate_info(agreement['unitRateInformation'], hour_time_utc))
+        rate = get_rate_from_forecast(forecast, hour_time_utc) if forecast else None
+        if rate is None:
+            rate = get_rate_from_unit_rate_info(agreement['unitRateInformation'], hour_time_utc)
         if rate is not None:
             log.debug(f"Adding rate: {rate} for timestamp: {timestamp} with hour_time_utc: {hour_time_utc}")
             prices[timestamp] = rate
