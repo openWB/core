@@ -100,11 +100,19 @@ case $(dpkg --print-architecture) in
 	arm64)
 		evdev_source=${OPENWB_EVDEV_SOURCE:-/usr/lib/python3/dist-packages}
 		site_packages=$("$new_env/bin/python" -c 'import sysconfig; print(sysconfig.get_path("purelib"))')
-		if [[ ! -d "$evdev_source/evdev" || ! -d "$evdev_source/evdev-1.9.1.dist-info" ]]; then
+		evdev_metadata=
+		for metadata_suffix in dist-info egg-info; do
+			candidate="$evdev_source/evdev-1.9.1.$metadata_suffix"
+			if [[ -d "$candidate" ]]; then
+				evdev_metadata=$candidate
+				break
+			fi
+		done
+		if [[ ! -d "$evdev_source/evdev" || -z "$evdev_metadata" ]]; then
 			echo "Debian python3-evdev 1.9.1 is required on ARM64" >&2
 			exit 1
 		fi
-		cp -a "$evdev_source/evdev" "$evdev_source/evdev-1.9.1.dist-info" "$site_packages/"
+		cp -a "$evdev_source/evdev" "$evdev_metadata" "$site_packages/"
 		;;
 	arm*) ;;
 	*) binary_options+=(--no-binary=evdev) ;;
