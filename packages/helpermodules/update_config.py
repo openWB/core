@@ -63,7 +63,7 @@ NO_MODULE = {"type": None, "configuration": {}}
 
 class UpdateConfig:
 
-    DATASTORE_VERSION = 158
+    DATASTORE_VERSION = 159
 
     valid_topic = [
         "^openWB/bat/config/bat_control_activated$",
@@ -4215,3 +4215,17 @@ class UpdateConfig:
 
         self._loop_all_received_topics(upgrade)
         self._append_datastore_version(158)
+
+    def upgrade_datastore_159(self) -> None:
+        """Vorgabe des pvnode-Teams: Schreibweise des Anbieternamens vereinheitlicht."""
+        def upgrade(topic: str, payload) -> Optional[dict]:
+            if topic == "openWB/optional/forecast/provider":
+                provider = decode_payload(payload)
+                if (isinstance(provider, dict) and provider.get("type") == "pvnode"
+                        and provider.get("name") == "PVNode V2"):
+                    provider["name"] = "pvnode V2"
+                    return {topic: provider}
+            return None
+
+        self._loop_all_received_topics(upgrade)
+        self._append_datastore_version(159)

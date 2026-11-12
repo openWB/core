@@ -10,7 +10,7 @@ class PvNodeConfiguration:
 
 @dataclass
 class PvNode:
-    name: str = "PVNode V2"
+    name: str = "pvnode V2"
     type: str = "pvnode"
     official: bool = False
     configuration: PvNodeConfiguration = field(default_factory=PvNodeConfiguration)
