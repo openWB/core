@@ -6,6 +6,7 @@
 .DS_Store
 .ftp*
 .venv
+.venvs/
 .pyenv
 .vite
 .vimrc

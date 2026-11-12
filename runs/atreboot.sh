@@ -33,6 +33,11 @@ chmod 666 "$LOGFILE"
 		exit
 	fi
 
+	mkdir -p "${OPENWBBASEDIR}/.venvs"
+	if [[ ! -e "${OPENWBBASEDIR}/.venvs/.migrated" && ! -f "${OPENWBBASEDIR}/.venv/.openwb-ready" && -e /etc/systemd/system/openwb2.service ]]; then
+		touch "${OPENWBBASEDIR}/.venvs/.legacy"
+	fi
+
 	# check for rc.local bug
 	if grep -Fq "do_expand_rootfs" /etc/rc.local.bak; then
 		echo "fixing rc.local bug"
@@ -160,11 +165,23 @@ chmod 666 "$LOGFILE"
 		echo "path '/etc/apt/apt.conf.d' is missing! unsupported system!"
 	fi
 	if ((hasInet == 1)); then
-		# remove urllib3 version to avoid conflicts
-		pip uninstall urllib3 -y
-		"${OPENWBBASEDIR}/runs/install_packages.sh"
+		if ! "${OPENWBBASEDIR}/runs/install_packages.sh"; then
+			echo "System package installation failed; Python environment prerequisites may be missing" >&2
+		fi
 	else
 		echo "no internet connection, skipping package installation"
+	fi
+
+	if ! bash "${OPENWBBASEDIR}/runs/setup_python_venv.sh" "$OPENWBBASEDIR" 0 --boot-cleanup "$(cat /proc/sys/kernel/random/boot_id)"; then
+		echo "Python environment boot cleanup failed" >&2
+	fi
+	venv_status=0
+	bash "${OPENWBBASEDIR}/runs/setup_python_venv.sh" "$OPENWBBASEDIR" "$hasInet" || venv_status=$?
+	if ((venv_status != 0 && venv_status != 10)); then
+		echo "Python environment setup failed; retaining the previous environment" >&2
+		message="Bei der Installation der benötigten Python-Bibliotheken ist ein Fehler aufgetreten! Bitte die Logdateien prüfen."
+		payload=$(printf '{"source": "system", "type": "danger", "message": "%s", "timestamp": %d}' "$message" "$(date +"%s")")
+		mosquitto_pub -p 1886 -t "openWB/system/messages/$(date +"%s%3N")" -r -m "$payload"
 	fi
 
 	# check for openwb cron jobs
@@ -220,6 +237,21 @@ chmod 666 "$LOGFILE"
 			sudo systemctl daemon-reload
 			sudo systemctl enable openwbRemoteSupport
 			sudo systemctl restart openwbRemoteSupport
+		fi
+	fi
+
+	unit_hash=$(sha256sum "${OPENWBBASEDIR}/data/config/openwb2.service" "${OPENWBBASEDIR}/data/config/openwb-simpleAPI.service" "${OPENWBBASEDIR}/data/config/openwbRemoteSupport.service" | sha256sum | cut -d ' ' -f 1)
+	previous_unit_hash=$(cat "${OPENWBBASEDIR}/.venvs/.unit-hash" 2>/dev/null || true)
+	if [[ "$unit_hash" != "$previous_unit_hash" ]]; then
+		sudo systemctl daemon-reload
+	fi
+	if ((venv_status == 10)) || [[ "$unit_hash" != "$previous_unit_hash" ]]; then
+		if sudo systemd-run --unit="openwb-python-restart-$$" --collect /bin/bash -c \
+			'tail --pid="$1" -f /dev/null; systemctl reset-failed openwb2.service openwb-simpleAPI.service openwbRemoteSupport.service; systemctl restart openwb2.service openwb-simpleAPI.service openwbRemoteSupport.service || rm -f "$2"' \
+			openwb-python-restart "$$" "${OPENWBBASEDIR}/.venvs/.unit-hash"; then
+			printf '%s\n' "$unit_hash" > "${OPENWBBASEDIR}/.venvs/.unit-hash"
+		else
+			echo "Failed to schedule Python service restart" >&2
 		fi
 	fi
 
@@ -312,21 +344,6 @@ chmod 666 "$LOGFILE"
 	# check for home configuration
 	if [[ ! -f "/home/openwb/configuration.json" ]]; then
 		sudo cp -a "${OPENWBBASEDIR}/data/config/configuration.json" "/home/openwb/configuration.json"
-	fi
-
-	# check for python dependencies
-	if ((hasInet == 1)); then
-		echo "install required python packages with 'pip3'..."
-		if pip3 install --only-binary :all: -r "${OPENWBBASEDIR}/requirements.txt"; then
-			echo "done"
-		else
-			echo "failed!"
-			message="Bei der Installation der benötigten Python-Bibliotheken ist ein Fehler aufgetreten! Bitte die Logdateien prüfen."
-			payload=$(printf '{"source": "system", "type": "danger", "message": "%s", "timestamp": %d}' "$message" "$(date +"%s")")
-			mosquitto_pub -p 1886 -t "openWB/system/messages/$(date +"%s%3N")" -r -m "$payload"
-		fi
-	else
-		echo "no internet connection, skipping python package installation"
 	fi
 
 	# collect some hardware info
