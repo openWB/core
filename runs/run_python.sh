@@ -14,6 +14,7 @@ if [[ -f "$base_dir/.venvs/.lock" ]]; then
 				exec 8<"$venv/.openwb-lock"
 				flock -s 8
 				exec 9<&-
+				export PATH="$venv/bin:$PATH"
 				exec "$venv/bin/python" "$@"
 				;;
 		esac
