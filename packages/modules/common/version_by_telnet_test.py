@@ -1,10 +1,33 @@
 import socket
+import builtins
+import importlib
+import sys
 from threading import Event, Thread
+from types import ModuleType
 from unittest.mock import MagicMock, Mock
 
 import pytest
 
 from modules.common import version_by_telnet
+
+
+def test_falls_back_to_stdlib_telnetlib_when_telnetlib3_is_missing(monkeypatch):
+    stdlib_telnetlib = ModuleType("telnetlib")
+    original_import = builtins.__import__
+
+    def import_without_telnetlib3(name, globals=None, locals=None, fromlist=(), level=0):
+        if name == "telnetlib3":
+            raise ModuleNotFoundError("No module named 'telnetlib3'", name="telnetlib3")
+        return original_import(name, globals, locals, fromlist, level)
+
+    try:
+        with monkeypatch.context() as patch:
+            patch.setattr(builtins, "__import__", import_without_telnetlib3)
+            patch.setitem(sys.modules, "telnetlib", stdlib_telnetlib)
+            importlib.reload(version_by_telnet)
+            assert version_by_telnet.telnetlib is stdlib_telnetlib
+    finally:
+        importlib.reload(version_by_telnet)
 
 
 @pytest.fixture
