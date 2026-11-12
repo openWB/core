@@ -52,7 +52,8 @@ class SolaxBat(AbstractBat):
     def update(self) -> None:
         unit = self.device_config.configuration.modbus_id
 
-        if self.component_config.configuration.battery_index == 2:
+        version = SolaxVersion(self.device_config.configuration.version)
+        if self.component_config.configuration.battery_index == 2 and version == SolaxVersion.G5:
             power = self.__tcp_client.read_input_registers(297, ModbusDataType.INT_16, unit=unit)
             soc = self.__tcp_client.read_input_registers(302, ModbusDataType.UINT_16, unit=unit)
         else:
