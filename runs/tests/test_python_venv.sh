@@ -319,13 +319,13 @@ Components: main
 EOF
 cat > "$workdir/apt-bin/sudo" <<'EOF'
 #!/bin/bash
-if [[ "$1" == cp ]]; then
-	exec "$@"
-fi
 if [[ "$1" == apt-get && " $* " == *" ${FAIL_APT_STEP} "* ]]; then
 	exit 42
 fi
-exit 0
+if [[ "$1" == mv && ${FAIL_SOURCE_RENAME:-0} == 1 ]]; then
+	exit 42
+fi
+exec "$@"
 EOF
 chmod +x "$workdir/apt-bin/sudo"
 for step in update install; do
@@ -347,4 +347,15 @@ if [[ $(. /etc/os-release; printf '%s' "${VERSION_CODENAME:-}") == bullseye ]]; 
 	grep -q '^deb http://security.debian.org/debian-security bullseye-security main$' "$workdir/apt/sources.list.openwb-backup"
 	! grep -q 'Updated Bullseye security source' "$workdir/apt-install.log"
 fi
+mkdir -p "$workdir/apt-rename-failure/sources.list.d"
+cat > "$workdir/apt-rename-failure/sources.list" <<'EOF'
+deb http://security.debian.org/debian-security bullseye-security main
+EOF
+cp "$workdir/apt/sources.list.d/security.sources" "$workdir/apt-rename-failure/sources.list.d/security.sources"
+if PATH="$workdir/apt-bin:$PATH" OPENWB_APT_DIR="$workdir/apt-rename-failure" FAIL_SOURCE_RENAME=1 \
+	bash "$script_dir/install_packages.sh" > "$workdir/apt-rename-failure.log" 2>&1; then
+	exit 1
+fi
+grep -q '^deb http://security.debian.org/debian-security bullseye-security main$' "$workdir/apt-rename-failure/sources.list"
+[[ $(find "$workdir/apt-rename-failure" -maxdepth 1 -name 'sources.list.openwb.*' | wc -l) == 0 ]]
 echo 'Python environment bootstrap tests passed'
