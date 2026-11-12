@@ -21,6 +21,10 @@ if [[ "${1:-}" == --probe ]]; then
 	printf '%s\n' "$0"
 	exit 0
 fi
+if [[ "${1:-}" == --show-python-path ]]; then
+	command -v python3
+	exit 0
+fi
 if [[ "${1:-}" == --hold ]]; then
 	printf 'ready\n'
 	read -r
@@ -43,6 +47,7 @@ fi
 exit 0
 PYTHON
 	chmod +x "$3/bin/python"
+	ln -s python "$3/bin/python3"
 else
 	exit 1
 fi
@@ -59,6 +64,7 @@ first_env=$(readlink -f "$workdir/openwb/.venv")
 [[ $(stat -c '%a' "$first_env") == 755 ]]
 [[ -f "$workdir/openwb/.venvs/.migrated" ]]
 [[ $(bash "$workdir/openwb/runs/run_python.sh" --probe) == "$first_env/bin/python" ]]
+[[ $(bash "$workdir/openwb/runs/run_python.sh" --show-python-path) == "$first_env/bin/python3" ]]
 bash "$script_dir/setup_python_venv.sh" "$workdir/openwb" 0 --boot-cleanup boot-one
 coproc HOLDER { bash "$workdir/openwb/runs/run_python.sh" --hold; }
 holder_pid=$HOLDER_PID
