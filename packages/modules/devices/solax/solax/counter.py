@@ -70,13 +70,21 @@ class SolaxCounter(AbstractCounter):
                 130, [ModbusDataType.INT_32] * 3, wordorder=Endian.Little, unit=unit)]
             exported, imported = [value * 10 for value in self.__tcp_client.read_input_registers(
                 0x0048, [ModbusDataType.UINT_32] * 2, wordorder=Endian.Little, unit=unit)]
-            voltages = [value / 10 for value in self.__tcp_client.read_input_registers(
-                202, [ModbusDataType.UINT_16] * 3, unit=unit)]
-            # von Solax beobachtete Kodierung negativer Ströme als Offset von 65535
-            currents = [(65535 - value) / 10 for value in self.__tcp_client.read_input_registers(
-                206, [ModbusDataType.UINT_16] * 3, unit=unit)]
-            power_factors = [value / 100 for value in self.__tcp_client.read_input_registers(
-                197, [ModbusDataType.UINT_16] * 3, unit=unit)]
+            try:
+                voltages = [value / 10 for value in self.__tcp_client.read_input_registers(
+                    202, [ModbusDataType.UINT_16] * 3, unit=unit)]
+            except Exception:
+                voltages = None
+            try:
+                currents = [value / 10 for value in self.__tcp_client.read_input_registers(
+                    206, [ModbusDataType.INT_16] * 3, unit=unit)]
+            except Exception:
+                currents = None
+            try:
+                power_factors = [value / 100 for value in self.__tcp_client.read_input_registers(
+                    197, [ModbusDataType.UINT_16] * 3, unit=unit)]
+            except Exception:
+                power_factors = None
 
         else:
             power = self.__tcp_client.read_input_registers(

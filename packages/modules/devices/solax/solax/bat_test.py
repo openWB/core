@@ -43,25 +43,44 @@ def test_power_limit_controllable_false_for_g4() -> None:
     assert solax_bat.power_limit_controllable() is False
 
 
-def test_update_reads_first_battery_registers_by_default() -> None:
+def test_update_stores_first_battery_values_by_default() -> None:
     client = Mock()
     client.read_input_registers.side_effect = [500, 80]
     solax_bat = _create_solax_bat(SolaxVersion.G5, battery_index=1, client=client)
     solax_bat.initialize()
+    solax_bat.store = Mock()
 
     solax_bat.update()
 
     client.read_input_registers.assert_any_call(0x0016, bat.ModbusDataType.INT_16, unit=1)
     client.read_input_registers.assert_any_call(0x001C, bat.ModbusDataType.UINT_16, unit=1)
+    bat_state = solax_bat.store.set.call_args.args[0]
+    assert (bat_state.power, bat_state.soc) == (500, 80)
 
 
-def test_update_reads_second_battery_registers_when_configured() -> None:
+def test_update_stores_second_battery_values_when_configured_on_g5() -> None:
     client = Mock()
     client.read_input_registers.side_effect = [500, 80]
     solax_bat = _create_solax_bat(SolaxVersion.G5, battery_index=2, client=client)
     solax_bat.initialize()
+    solax_bat.store = Mock()
 
     solax_bat.update()
 
     client.read_input_registers.assert_any_call(297, bat.ModbusDataType.INT_16, unit=1)
     client.read_input_registers.assert_any_call(302, bat.ModbusDataType.UINT_16, unit=1)
+    bat_state = solax_bat.store.set.call_args.args[0]
+    assert (bat_state.power, bat_state.soc) == (500, 80)
+
+
+def test_update_ignores_battery_index_2_on_non_g5() -> None:
+    client = Mock()
+    client.read_input_registers.side_effect = [500, 80]
+    solax_bat = _create_solax_bat(SolaxVersion.G3, battery_index=2, client=client)
+    solax_bat.initialize()
+    solax_bat.store = Mock()
+
+    solax_bat.update()
+
+    client.read_input_registers.assert_any_call(0x0016, bat.ModbusDataType.INT_16, unit=1)
+    client.read_input_registers.assert_any_call(0x001C, bat.ModbusDataType.UINT_16, unit=1)
