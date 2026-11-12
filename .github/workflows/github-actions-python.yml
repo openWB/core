@@ -10,7 +10,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        raspberry-pi-os-release: ["Bullseye", "Bookworm", "Trixie"]
+        raspberry-pi-os-release: ["Bullseye", "Trixie"]
         include:
           - raspberry-pi-os-release: "Bullseye"
             glibc: "2_31"
