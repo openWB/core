@@ -31,7 +31,24 @@ if [[ ${VERSION_CODENAME:-} == bullseye ]]; then
 			exit 1
 		fi
 		if ! cmp -s "$source_file" "$temporary_source"; then
-			if ! sudo cp -p -- "$source_file" "$source_file.openwb-backup" || ! sudo cp -- "$temporary_source" "$source_file"; then
+			source_temporary=$(sudo mktemp "${source_file}.openwb.XXXXXX") || {
+				rm -f "$temporary_source"
+				exit 1
+			}
+			if ! sudo cp -- "$temporary_source" "$source_temporary" ||
+				! sudo chown --reference="$source_file" "$source_temporary" ||
+				! sudo chmod --reference="$source_file" "$source_temporary"; then
+				sudo rm -f -- "$source_temporary"
+				rm -f "$temporary_source"
+				exit 1
+			fi
+			if ! sudo cp -p -- "$source_file" "$source_file.openwb-backup"; then
+				sudo rm -f -- "$source_temporary"
+				rm -f "$temporary_source"
+				exit 1
+			fi
+			if ! sudo mv -fT -- "$source_temporary" "$source_file"; then
+				sudo rm -f -- "$source_temporary"
 				rm -f "$temporary_source"
 				exit 1
 			fi
