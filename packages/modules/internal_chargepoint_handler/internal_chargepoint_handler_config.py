@@ -57,3 +57,4 @@ class InternalChargepoint:
 @dataclass
 class RfidData:
     last_tag: str = ""
+    last_tag_timestamp: Optional[float] = None

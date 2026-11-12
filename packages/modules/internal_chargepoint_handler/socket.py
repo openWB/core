@@ -2,7 +2,7 @@ from enum import IntEnum
 import functools
 import logging
 import time
-from typing import Callable
+from typing import Callable, Optional
 
 from helpermodules.hardware_configuration import get_hardware_configuration_setting
 from helpermodules.logger import ModifyLoglevelContext
@@ -69,11 +69,12 @@ class Socket(ChargepointModule):
                 if actor == ActorState.OPENED and self.chargepoint_state.plug_state is True:
                     raise ValueError("Buchse hat nicht verriegelt, obwohl ein Fahrzeug angesteckt ist.")
 
-    def get_values(self, phase_switch_cp_active: bool, last_tag: str) -> ChargepointState:
+    def get_values(self, phase_switch_cp_active: bool, last_tag: str,
+                   last_tag_timestamp: Optional[float] = None) -> ChargepointState:
         with self.client_error_context:
             actor = ActorState(GPIO.input(19))
             log.debug("Actor: "+str(actor))
-            self.chargepoint_state = super().get_values(phase_switch_cp_active, last_tag)
+            self.chargepoint_state = super().get_values(phase_switch_cp_active, last_tag, last_tag_timestamp)
             self.chargepoint_state.max_evse_current = self.socket_max_current
             if phase_switch_cp_active:
                 log.debug("Keine Actor-Bewegung, da CP-Unterbrechung oder Phasenumschaltung aktiv.")

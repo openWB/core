@@ -168,6 +168,7 @@ class ChargepointModule(AbstractChargepoint):
                 ip_address = self.config.configuration.ip_address
                 pub.pub_single("openWB/set/isss/ClearRfid", 1, hostname=ip_address)
                 pub.pub_single("openWB/set/internal_chargepoint/last_tag", None, hostname=ip_address)
+                pub.pub_single("openWB/set/internal_chargepoint/last_tag_timestamp", None, hostname=ip_address)
 
 
 chargepoint_descriptor = DeviceDescriptor(configuration_factory=OpenWBSeries)
