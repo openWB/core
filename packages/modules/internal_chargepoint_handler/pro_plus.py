@@ -1,4 +1,5 @@
 import requests
+from typing import Optional
 from helpermodules.subdata import SubData
 from modules.chargepoints.openwb_pro.chargepoint_module import ChargepointModule
 from modules.chargepoints.openwb_pro.config import OpenWBPro, OpenWBProConfiguration
@@ -29,7 +30,8 @@ class ProPlus(ChargepointModule):
         super().__init__(OpenWBPro(id=hierarchy_id, configuration=OpenWBProConfiguration(ip_address="192.168.192.50")))
         self.set_internal_context_handlers(hierarchy_id, internal_cp)
 
-    def get_values(self, phase_switch_cp_active: bool, last_tag: str) -> ChargepointState:
+    def get_values(self, phase_switch_cp_active: bool, last_tag: str,
+                   last_tag_timestamp: Optional[float] = None) -> ChargepointState:
         def store_state(chargepoint_state: ChargepointState) -> None:
             self.store.set(chargepoint_state)
             self.store.update()
@@ -41,6 +43,7 @@ class ProPlus(ChargepointModule):
             chargepoint_state = self.request_values()
             if chargepoint_state is not None and last_tag is not None and last_tag != "":
                 chargepoint_state.rfid = last_tag
+                chargepoint_state.rfid_timestamp = last_tag_timestamp
             if chargepoint_state is not None:
                 chargepoint_state.version = self.version
                 chargepoint_state.current_branch = self.current_branch

@@ -1,6 +1,7 @@
 import logging
 
 import time
+from typing import Optional
 from helpermodules.broker import BrokerClient
 
 from helpermodules.utils import run_command
@@ -75,7 +76,8 @@ class ChargepointModule(AbstractChargepoint):
         with SingleComponentUpdateContext(self.fault_state, update_always=False):
             self._client.evse_client.set_current(current, phases_in_use=self.old_phases_in_use)
 
-    def get_values(self, phase_switch_cp_active: bool, last_tag: str) -> ChargepointState:
+    def get_values(self, phase_switch_cp_active: bool, last_tag: str,
+                   last_tag_timestamp: Optional[float] = None) -> ChargepointState:
         def store_state(chargepoint_state: ChargepointState) -> None:
             self.store.set(chargepoint_state)
             self.store.update()
@@ -121,6 +123,8 @@ class ChargepointModule(AbstractChargepoint):
                 phases_in_use=phases_in_use,
                 power_factors=counter_state.power_factors,
                 rfid=last_tag,
+                # Timestamp nur übernehmen, wenn ein Tag vorhanden ist
+                rfid_timestamp=last_tag_timestamp if last_tag else None,
                 evse_current=evse_state.set_current,
                 serial_number=counter_state.serial_number,
                 max_evse_current=evse_state.max_current,

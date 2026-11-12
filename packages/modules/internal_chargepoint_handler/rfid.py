@@ -3,6 +3,7 @@ import logging
 
 from evdev import InputDevice, ecodes, list_devices, categorize
 from helpermodules.pub import Pub
+from helpermodules import timecheck
 log = logging.getLogger(__name__)
 
 
@@ -128,6 +129,8 @@ class RfidReader:
                         if data.scancode in (ecodes.KEY_ENTER, ecodes.KEY_KPENTER):
                             if len(key_string) > 0:
                                 log.debug(f"RFID-String: {key_string}")
+                                Pub().pub("openWB/set/internal_chargepoint/last_tag_timestamp",
+                                          timecheck.create_timestamp())
                                 Pub().pub("openWB/set/internal_chargepoint/last_tag", key_string)
                                 key_string = ""
                         else:

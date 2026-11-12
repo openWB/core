@@ -15,6 +15,247 @@ from control.chargepoint.chargepoint_template import CpTemplate
 from control.ev.ev import Ev
 
 
+@pytest.mark.parametrize("same_card", [False, True])
+def test_quittierung_eines_scans_behaelt_neueren_scan_am_partner(duo, rfid_tag, same_card):
+    cp, partner = duo.chargepoints
+    timestamp = duo.clock.return_value
+    cp.data.get.rfid = rfid_tag
+    cp.data.get.rfid_timestamp = timestamp
+    newer_tag = rfid_tag if same_card else "ABC"
+    partner.data.get.rfid = newer_tag
+    partner.data.get.rfid_timestamp = timestamp + 1
+
+    cp._clear_pending_rfid(rfid_tag, partner, timestamp)
+
+    assert cp.data.get.rfid is None
+    assert cp.data.get.rfid_timestamp is None
+    assert partner.data.get.rfid == newer_tag
+    assert partner.data.get.rfid_timestamp == timestamp + 1
+    assert all(point.chargepoint_module.clear_rfid.call_count == 0 for point in duo.chargepoints)
+
+
+@pytest.mark.parametrize("selected_index", [0, 1])
+@pytest.mark.parametrize("reverse_order", [False, True])
+@pytest.mark.parametrize("replay_offset", [0, -1], ids=["Gleicher-Scan", "Aelterer-Scan"])
+def test_duo_reader_timestamp_verhindert_zweite_freigabe(
+        duo, rfid_tag, selected_index, reverse_order, replay_offset, mock_pub):
+    from helpermodules.changed_values_handler import ChangedValuesHandler
+
+    selected = duo.chargepoints[selected_index]
+    other = duo.chargepoints[1 - selected_index]
+    order = list(reversed(duo.chargepoints)) if reverse_order else duo.chargepoints
+    selected.data.get.plug_state = True
+    selected.data.set.plug_time = duo.clock.return_value - 10
+    scanned_at = duo.clock.return_value - 2
+
+    def process():
+        for cp in order:
+            cp._validate_rfid()
+            if cp.data.get.rfid is not None and cp.data.get.plug_state:
+                cp._link_rfid_to_cp()
+            cp.is_charging_possible()
+
+    previous_set = copy.deepcopy(selected.data.set)
+    duo.reader.scan(rfid_tag, scanned_at)
+    process()
+    assert selected.data.set.rfid == rfid_tag
+    assert selected.data.set.rfid_timestamp == scanned_at
+    # Beide Felder werden gemeinsam über den bestehenden Änderungs-Handler veröffentlicht.
+    handler = object.__new__(ChangedValuesHandler)
+    handler._update_value(f"openWB/set/chargepoint/{selected.num}/", previous_set, selected.data.set)
+    mock_pub.pub.assert_any_call(f"openWB/set/chargepoint/{selected.num}/set/rfid", rfid_tag)
+    mock_pub.pub.assert_any_call(f"openWB/set/chargepoint/{selected.num}/set/rfid_timestamp", scanned_at)
+
+    # Wie im Fehlerlog: nach der Quittierung trifft der alte Scan erneut ein.
+    duo.clock.return_value += 10
+    duo.reader.scan(rfid_tag, scanned_at + replay_offset)
+    process()
+    assert all(cp.data.get.rfid is None for cp in duo.chargepoints)
+    assert all(cp.data.get.rfid_timestamp is None for cp in duo.chargepoints)
+    assert other.data.set.rfid is None
+    assert other.data.set.manual_lock is True
+    assert sum(cp.chargepoint_module.clear_rfid.call_count for cp in duo.chargepoints) == 1
+
+    other.data.get.plug_state = True
+    other.data.set.plug_time = duo.clock.return_value
+    process()
+    assert other.data.set.rfid is None
+    assert other.data.set.manual_lock is True
+
+    # Erst ein echter neuer Scan derselben Karte gibt den anderen LP frei.
+    duo.clock.return_value += 1
+    duo.reader.scan(rfid_tag, duo.clock.return_value)
+    process()
+    assert other.data.set.rfid == rfid_tag
+    assert other.data.set.rfid_timestamp == duo.clock.return_value
+    assert selected.data.set.rfid_timestamp == scanned_at
+    assert sum(cp.chargepoint_module.clear_rfid.call_count for cp in duo.chargepoints) == 2
+
+
+@pytest.mark.parametrize("new_first", [False, True])
+def test_duo_alte_wiederholung_loescht_keinen_neueren_scan_am_partner(duo, rfid_tag, new_first):
+    cp, partner = duo.chargepoints
+    cp.data.set.rfid_timestamp = duo.clock.return_value - 10
+    cp.data.get.rfid = rfid_tag
+    cp.data.get.rfid_timestamp = cp.data.set.rfid_timestamp
+    partner.data.get.rfid = rfid_tag
+    partner.data.get.rfid_timestamp = duo.clock.return_value
+
+    (partner if new_first else cp)._validate_rfid()
+
+    # Bei Verarbeitung des neuen Scans darf dieser an beiden leeren LP warten.
+    assert cp.data.get.rfid == (rfid_tag if new_first else None)
+    assert cp.data.get.rfid_timestamp == (duo.clock.return_value if new_first else None)
+    assert partner.data.get.rfid == rfid_tag
+    assert partner.data.get.rfid_timestamp == duo.clock.return_value
+    assert all(point.chargepoint_module.clear_rfid.call_count == 0 for point in duo.chargepoints)
+
+
+@pytest.mark.parametrize("duo_mode", [False, True], ids=["Einzel-LP", "Duo"])
+def test_alter_reader_ohne_timestamp_bleibt_nutzbar(duo, rfid_tag, duo_mode):
+    cp, partner = duo.chargepoints
+    if not duo_mode:
+        data.data.cp_data.pop(f"cp{partner.num}")
+    cp.data.set.rfid_timestamp = duo.clock.return_value - 100
+    cp.data.get.plug_state = True
+    cp.data.set.plug_time = duo.clock.return_value - 10
+    duo.reader.scan(rfid_tag)
+
+    cp._validate_rfid()
+    assert cp.data.get.rfid_timestamp == duo.clock.return_value
+    cp._link_rfid_to_cp()
+
+    assert cp.data.set.rfid == rfid_tag
+    assert cp.data.set.rfid_timestamp == duo.clock.return_value
+
+
+@pytest.mark.parametrize("duo_mode", [False, True], ids=["Einzel-LP", "Duo"])
+def test_reader_timestamp_startet_frist_am_scan(duo, rfid_tag, duo_mode):
+    cp, partner = duo.chargepoints
+    if not duo_mode:
+        data.data.cp_data.pop(f"cp{partner.num}")
+    scanned_at = duo.clock.return_value - 299
+    duo.reader.scan(rfid_tag, scanned_at)
+    cp._validate_rfid()
+    assert cp.data.get.rfid_timestamp == scanned_at
+    duo.clock.return_value += 2
+    cp._validate_rfid()
+    assert cp.data.get.rfid is None
+    assert "verworfen" in cp.data.get.state_str
+
+
+def test_reader_erzeugt_pro_scan_neuen_timestamp(duo, monkeypatch):
+    import asyncio
+    from modules.internal_chargepoint_handler import rfid as reader_module
+
+    async def events():
+        # Zweimal dieselbe Karte, jeweils mit Enter abgeschlossen.
+        for scancode in (reader_module.ecodes.KEY_1, reader_module.ecodes.KEY_ENTER) * 2:
+            yield SimpleNamespace(type=reader_module.ecodes.EV_KEY, keystate=1, scancode=scancode)
+
+    monkeypatch.setattr(reader_module, "categorize", lambda event: event)
+    monkeypatch.setattr(reader_module, "Pub", Mock(return_value=duo.mqtt))
+    duo.clock.side_effect = [1_700_000_000.125, 1_700_000_001.25]
+    reader = object.__new__(reader_module.RfidReader)
+    device = SimpleNamespace(path="test-reader", async_read_loop=events)
+
+    asyncio.run(reader._read_events(device))
+
+    assert [call.args for call in duo.mqtt.pub.call_args_list] == [
+        ("openWB/set/internal_chargepoint/last_tag_timestamp", 1_700_000_000.125),
+        ("openWB/set/internal_chargepoint/last_tag", "1"),
+        ("openWB/set/internal_chargepoint/last_tag_timestamp", 1_700_000_001.25),
+        ("openWB/set/internal_chargepoint/last_tag", "1"),
+    ]
+
+
+def test_scan_timestamp_topics_validieren_und_uebernehmen(duo, mock_pub, monkeypatch):
+    import json
+    from helpermodules.setdata import SetData
+    from helpermodules.subdata import SubData
+    from modules.internal_chargepoint_handler.internal_chargepoint_handler_config import RfidData
+
+    cp = duo.chargepoints[0]
+    monkeypatch.setattr(SubData, "cp_data", {f"cp{cp.num}": SimpleNamespace(chargepoint=cp)})
+    setter = object.__new__(SetData)
+    subscriber = object.__new__(SubData)
+    reader_data = RfidData()
+    timestamp = duo.clock.return_value + 0.125
+    for topic, target, attribute, process in (
+            ("openWB/set/internal_chargepoint/last_tag_timestamp", reader_data,
+             "last_tag_timestamp", setter.process_internal_chargepoint_topic),
+            (f"openWB/set/chargepoint/{cp.num}/set/rfid_timestamp", cp.data.set,
+             "rfid_timestamp", setter.process_chargepoint_topic)):
+        for value in (timestamp, None):
+            message = SimpleNamespace(topic=topic, payload=json.dumps(value).encode())
+            process(message)
+            published_topic = topic.replace("set/", "", 1)
+            mock_pub.pub.assert_any_call(published_topic, value, retain=True)
+            subscriber.set_json_payload_class(target, SimpleNamespace(
+                topic=published_topic, payload=message.payload))
+            assert getattr(target, attribute) == value
+
+
+def test_interner_ladepunkt_reicht_scan_timestamp_unveraendert_durch(duo, rfid_tag, monkeypatch, mock_pub):
+    from unittest.mock import MagicMock
+    from modules.common.component_state import ChargepointState, CounterState
+    from modules.common.store._chargepoint_internal import InternalChargepointValueStore
+    from modules.internal_chargepoint_handler import chargepoint_module as internal_module
+
+    monkeypatch.setattr(internal_module.time, "sleep", Mock())
+    module = object.__new__(internal_module.ChargepointModule)
+    module.store = Mock()
+    module.store_internal = InternalChargepointValueStore(0)
+    module.fault_state = Mock()
+    module.old_chargepoint_state = ChargepointState(
+        phases_in_use=3, imported=0, exported=0, power=0, currents=[0]*3,
+        charge_state=False, plug_state=True)
+    module.old_phases_in_use = 3
+    module.client_error_context = MagicMock()
+    module.client_error_context.error_counter_exceeded.return_value = False
+    module._client = Mock()
+    module._client.request_and_check_hardware.return_value = (
+        SimpleNamespace(plug_state=True, charge_state=False, set_current=0, max_current=32), CounterState())
+    module.version, module.current_branch, module.current_commit = "test", "test", "test"
+    scanned_at = duo.clock.return_value - 1.125
+
+    for _ in range(2):
+        state = module.get_values(False, rfid_tag, scanned_at)
+        assert state.rfid == rfid_tag
+        assert state.rfid_timestamp == scanned_at
+        mock_pub.pub.assert_any_call("openWB/set/internal_chargepoint/0/get/rfid_timestamp", scanned_at)
+
+    # Nach der Quittierung darf kein alter Scanzeitstempel retained bleiben.
+    module.get_values(False, None, None)
+    mock_pub.pub.assert_any_call("openWB/set/internal_chargepoint/0/get/rfid_timestamp", None)
+
+
+def test_verarbeiteter_scan_bleibt_nach_abstecken_gesperrt(duo, rfid_tag, monkeypatch):
+    cp, partner = duo.chargepoints
+    cp.data.get.plug_state = True
+    cp.data.set.plug_time = duo.clock.return_value - 10
+    scanned_at = duo.clock.return_value
+    duo.reader.scan(rfid_tag, scanned_at)
+    cp._validate_rfid()
+    cp._link_rfid_to_cp()
+    cp.data.set.plug_state_prev = True
+    cp.data.get.plug_state = False
+    monkeypatch.setattr(data.data.counter_all_data, "get_evu_counter", Mock(return_value=Mock()))
+    monkeypatch.setattr(chargepoint_module, "Pub", Mock(return_value=duo.mqtt))
+    monkeypatch.setattr(chargepoint_module.chargelog, "save_and_reset_data",
+                        Mock(side_effect=lambda point, ev: point.reset_log_data()))
+
+    cp._process_charge_stop()
+
+    assert cp.data.set.rfid is None
+    assert cp.data.set.rfid_timestamp == scanned_at
+    duo.reader.scan(rfid_tag, scanned_at)
+    for point in (cp, partner):
+        point._validate_rfid()
+        assert point.data.get.rfid is None
+        assert point.data.set.rfid is None
+
+
 @pytest.fixture()
 def mock_data() -> None:
     data.data_init(Mock())
@@ -117,10 +358,12 @@ def duo(monkeypatch, rfid_tag):
         data.data.cp_data[f"cp{number}"] = cp
         chargepoints.append(cp)
 
-    def scan(tag):
+    def scan(tag, timestamp=None):
         # Der gemeinsame Leser meldet denselben Scan an beide Duo-Ladepunkte.
         for cp in chargepoints:
             cp.data.get.rfid = tag
+            if timestamp is not None:
+                cp.data.get.rfid_timestamp = timestamp
 
     reader = Mock(name="rfid_reader", spec=["scan"])
     reader.scan.side_effect = scan

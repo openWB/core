@@ -11,6 +11,31 @@ log = logging.getLogger(__name__)
 
 
 class ChargepointRfidMixin:
+    def _discard_processed_rfid(self: ChargepointProtocol, cp2_data=None) -> bool:
+        """Verspätete Wiederholungen anhand des zuletzt zugeordneten Scans verwerfen."""
+        chargepoints = [cp for cp in (self, cp2_data) if cp is not None]
+        processed = [cp.data.set.rfid_timestamp for cp in chargepoints
+                     if cp.data.set.rfid_timestamp is not None]
+        timestamp = self.data.get.rfid_timestamp
+        if not processed:
+            return False
+        last_processed = max(processed)
+        already_processed = timestamp is not None and timestamp <= last_processed
+        for cp in chargepoints:
+            pending_timestamp = cp.data.get.rfid_timestamp
+            if (cp.data.get.rfid is not None and pending_timestamp is not None and
+                    pending_timestamp <= last_processed):
+                log.info("LP %s: RFID-Tag %s verworfen: Scanzeitstempel %s ist nicht neuer als der zuletzt "
+                         "verarbeitete Zeitstempel %s (bereits verarbeitet oder veraltet).",
+                         cp.num, cp.data.get.rfid, pending_timestamp, last_processed)
+                cp.data.get.rfid = None
+                cp.data.get.rfid_timestamp = None
+                Pub().pub(f"openWB/set/chargepoint/{cp.num}/get/rfid", None)
+                Pub().pub(f"openWB/set/chargepoint/{cp.num}/get/rfid_timestamp", None)
+        # Der Leser wurde bei der ursprünglichen Zuordnung bereits quittiert.
+        # Erneutes Quittieren könnte einen inzwischen neu gescannten Tag löschen.
+        return already_processed
+
     def _rfid_target(self: ChargepointProtocol, cp2_data, rfid_timestamp=None):
         """Nur unzugeordnete Duo-LP ohne begonnenen Ladevorgang berücksichtigen."""
         candidates = [cp for cp in (self, cp2_data)
@@ -32,15 +57,27 @@ class ChargepointRfidMixin:
         # Wenn beim Scan beide Autos bereit stehen, das letzte wählen.
         return first if (t2 - t1) < 0 else second
 
-    def _clear_pending_rfid(self: ChargepointProtocol, rfid: str, cp2_data=None) -> None:
+    def _clear_pending_rfid(self: ChargepointProtocol, rfid: str, cp2_data=None,
+                            rfid_timestamp: Optional[float] = None) -> None:
         """Gemeinsamen Scan einmal quittieren, verbindliche Zuordnungen behalten."""
+        if rfid_timestamp is None:
+            rfid_timestamp = self.data.get.rfid_timestamp
+        newer_scan_waiting = False
         for cp in (self, cp2_data):
-            if cp is not None and cp.data.get.rfid == rfid:
+            if cp is None:
+                continue
+            pending_timestamp = cp.data.get.rfid_timestamp
+            if (cp.data.get.rfid is not None and pending_timestamp is not None and
+                    rfid_timestamp is not None and pending_timestamp > rfid_timestamp):
+                newer_scan_waiting = True
+            if (cp.data.get.rfid == rfid and
+                    (pending_timestamp is None or rfid_timestamp is None or pending_timestamp == rfid_timestamp)):
                 cp.data.get.rfid = None
                 Pub().pub(f"openWB/set/chargepoint/{cp.num}/get/rfid", None)
                 cp.data.get.rfid_timestamp = None
                 Pub().pub(f"openWB/set/chargepoint/{cp.num}/get/rfid_timestamp", None)
-        self.chargepoint_module.clear_rfid()
+        if not newer_scan_waiting:
+            self.chargepoint_module.clear_rfid()
 
     def _link_rfid_to_cp(self: ChargepointProtocol) -> None:
         """ tested
@@ -57,11 +94,13 @@ class ChargepointRfidMixin:
             target = self._rfid_target(cp2_data, self.data.get.rfid_timestamp)
             if target is not None:
                 target.data.set.rfid = rfid
-                self._clear_pending_rfid(rfid, cp2_data)
+                target.data.set.rfid_timestamp = self.data.get.rfid_timestamp
+                self._clear_pending_rfid(rfid, cp2_data, self.data.get.rfid_timestamp)
             return
 
         # Einzel-LP:
         self.data.set.rfid = rfid
+        self.data.set.rfid_timestamp = self.data.get.rfid_timestamp
         self.chargepoint_module.clear_rfid()
 
         self.data.get.rfid = None
@@ -85,10 +124,18 @@ class ChargepointRfidMixin:
                 if data.data.cp_data.get(f"cp{self.num}") is not self:
                     return
 
+                if self._discard_processed_rfid(cp2_data):
+                    return
+
+                # Der Zeitstempel gehört zum eigenen Tag, nicht zum Scan des Partners.
+                timestamp = self.data.get.rfid_timestamp
+                if timestamp is None:
+                    timestamp = timecheck.create_timestamp()
+
                 # Beide Ladepunkte sind bereits zugeordnet oder laden. Es wird kein weiterer ID-Tag akzeptiert.
                 if all(cp.data.get.plug_state and
                        (cp.data.set.rfid is not None or cp.data.get.charge_state) for cp in (self, cp2_data)):
-                    self._clear_pending_rfid(rfid, cp2_data)
+                    self._clear_pending_rfid(rfid, cp2_data, timestamp)
                     for cp in (self, cp2_data):
                         cp.set_state_and_log("Beide Ladepunkte sind bereits zugeordnet oder laden."
                                              " Es wird kein weiterer ID-Tag akzeptiert.")
@@ -98,17 +145,13 @@ class ChargepointRfidMixin:
                                (cp.data.set.rfid is None and not cp.data.get.charge_state and
                                 (cp.data.set.log.imported_at_plugtime == 0 or
                                  cp.data.set.log.imported_at_plugtime == cp.data.get.imported))]
-                # Beide Eingänge verwenden den frühesten vorhandenen Scanzeitpunkt.
-                timestamps = [cp.data.get.rfid_timestamp for cp in (self, cp2_data)
-                              if cp.data.get.rfid is not None and cp.data.get.rfid_timestamp is not None]
-                timestamp = min(timestamps) if timestamps else timecheck.create_timestamp()
                 target = self._rfid_target(cp2_data, timestamp)
                 if target is not None:
                     allowed_cps = [target]
 
                 # Ist Liste leer -> Abbrechen
                 if not allowed_cps:
-                    self._clear_pending_rfid(rfid, cp2_data)
+                    self._clear_pending_rfid(rfid, cp2_data, timestamp)
                     return
                 if not data.data.optional_data.data.rfid.active:
                     msg = "Identifikation von Fahrzeugen ist nicht aktiviert."
@@ -131,7 +174,7 @@ class ChargepointRfidMixin:
                            f"der ID-Tag {rfid} zugeordnet werden kann. Daher wird dieser verworfen.")
                 # Ablehnung und Timeout haben denselben Abschluss.
                 if msg:
-                    self._clear_pending_rfid(rfid, cp2_data)
+                    self._clear_pending_rfid(rfid, cp2_data, timestamp)
                     for cp in allowed_cps:
                         cp.set_state_and_log(msg)
                     return
@@ -139,9 +182,11 @@ class ChargepointRfidMixin:
                 # Gültigen Scan nur an den erlaubten LP behalten. Am Partner
                 # gegebenenfalls denselben vorläufigen Scan entfernen.
                 for cp in (self, cp2_data):
-                    if cp in allowed_cps and cp.data.get.rfid in (None, rfid):
+                    same_scan = (cp.data.get.rfid == rfid and
+                                 cp.data.get.rfid_timestamp in (None, timestamp))
+                    if cp in allowed_cps and (cp.data.get.rfid is None or same_scan):
                         pending_tag, pending_timestamp = rfid, timestamp
-                    elif cp.data.get.rfid == rfid:
+                    elif same_scan:
                         pending_tag, pending_timestamp = None, None
                     else:
                         continue
@@ -155,6 +200,8 @@ class ChargepointRfidMixin:
                                              " angesteckt wird, wird der ID-Tag verworfen.")
                 return
             # Einzel-LP:
+            if self._discard_processed_rfid():
+                return
             if data.data.optional_data.data.rfid.active:
                 if (rfid in self.template.data.valid_tags or
                         any(rfid in v.data.tag_id for v in data.data.ev_data.values())):
