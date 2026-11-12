@@ -6,6 +6,7 @@ from pathlib import Path
 from threading import Event
 from typing import List, Optional, Tuple
 import re
+from urllib.parse import urlsplit
 import paho.mqtt.client as mqtt
 
 import logging
@@ -22,6 +23,16 @@ log = logging.getLogger(__name__)
 mqtt_log = logging.getLogger("mqtt")
 
 TIMESTAMP_2100 = 4102441200  # 01.01.2100 00:00:00
+
+
+def _is_valid_display_url(value: str) -> bool:
+    if not value:
+        return True
+    try:
+        parsed_url = urlsplit(value)
+    except ValueError:
+        return False
+    return parsed_url.scheme.lower() in ("http", "https") and bool(parsed_url.hostname)
 
 
 class SetData:
@@ -957,6 +968,13 @@ class SetData:
                 self._validate_value(msg, bool)
             elif "openWB/set/optional/int_display/pin_code" in msg.topic:
                 self._validate_value(msg, str)
+            elif "openWB/set/optional/int_display/display_url" in msg.topic:
+                display_url = decode_payload(msg.payload)
+                if isinstance(display_url, str) and not _is_valid_display_url(display_url):
+                    log.error("Payload ungültig: Topic %s, display URL must use HTTP or HTTPS.", msg.topic)
+                    Pub().pub(msg.topic, "")
+                else:
+                    self._validate_value(msg, str)
             elif "openWB/set/optional/int_display/standby" in msg.topic:
                 self._validate_value(msg, int, [(0, 600)])
             elif "openWB/set/optional/int_display/theme" in msg.topic:

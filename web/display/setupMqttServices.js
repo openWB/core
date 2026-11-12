@@ -20,6 +20,7 @@ var secondaryTopicsToSubscribe = {
 	"openWB/system/current_branch": false,
 	"openWB/system/current_commit": false,
 	"openWB/general/extern_display_mode": false,
+	"openWB/optional/int_display/display_url": false,
 	"openWB/internal_chargepoint/global_data": false,
 	"openWB/internal_chargepoint/0/data/parent_cp": false,
 	"openWB/internal_chargepoint/1/data/parent_cp": false,
