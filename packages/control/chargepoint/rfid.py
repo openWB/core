@@ -12,7 +12,7 @@ log = logging.getLogger(__name__)
 
 class ChargepointRfidMixin:
     def _discard_processed_rfid(self: ChargepointProtocol, cp2_data=None) -> bool:
-        """Verspätete Wiederholungen anhand des zuletzt zugeordneten Scans verwerfen."""
+        """Verspätete Wiederholungen anhand des zuletzt abschließend verarbeiteten Scans verwerfen."""
         chargepoints = [cp for cp in (self, cp2_data) if cp is not None]
         processed = [cp.data.set.rfid_timestamp for cp in chargepoints
                      if cp.data.set.rfid_timestamp is not None]
@@ -32,7 +32,7 @@ class ChargepointRfidMixin:
                 cp.data.get.rfid_timestamp = None
                 Pub().pub(f"openWB/set/chargepoint/{cp.num}/get/rfid", None)
                 Pub().pub(f"openWB/set/chargepoint/{cp.num}/get/rfid_timestamp", None)
-        # Der Leser wurde bei der ursprünglichen Zuordnung bereits quittiert.
+        # Der Leser wurde bei der ursprünglichen Verarbeitung bereits quittiert.
         # Erneutes Quittieren könnte einen inzwischen neu gescannten Tag löschen.
         return already_processed
 
@@ -50,10 +50,11 @@ class ChargepointRfidMixin:
         t1, t2 = first.data.set.plug_time, second.data.set.plug_time
         if t1 is None or t2 is None or t1 == t2:
             return None
-        # Scan vor dem Anstecken: das erste Auto bekommt den wartenden Tag,
-        # auch wenn bis zur Verarbeitung bereits beide Autos eingesteckt sind.
+        # plug_time wird erst bei der Verarbeitung gesetzt, nicht beim physischen Anstecken.
+        # Liegt sie nach dem Scan, ist die Reihenfolge unklar: keinen der beiden LP wählen.
+        # Ein erneuter Scan nach beiden plug_time-Werten erlaubt wieder eine eindeutige Auswahl.
         if rfid_timestamp is not None and max(t1, t2) > rfid_timestamp:
-            return first if t1 < t2 else second
+            return None
         # Wenn beim Scan beide Autos bereit stehen, das letzte wählen.
         return first if (t2 - t1) < 0 else second
 
@@ -62,6 +63,13 @@ class ChargepointRfidMixin:
         """Gemeinsamen Scan einmal quittieren, verbindliche Zuordnungen behalten."""
         if rfid_timestamp is None:
             rfid_timestamp = self.data.get.rfid_timestamp
+        # Auch endgültig abgelehnte Scans dürfen später keine Freigabe auslösen.
+        # Die verbindliche Kartenzuordnung bleibt dabei unverändert.
+        # Bei einer Duo reicht das Setzen an einem CP, da die Wiederholungsprüfung
+        # den höchsten verarbeiteten Zeitstempel beider Partner berücksichtigt.
+        if (rfid_timestamp is not None and
+                (self.data.set.rfid_timestamp is None or rfid_timestamp > self.data.set.rfid_timestamp)):
+            self.data.set.rfid_timestamp = rfid_timestamp
         newer_scan_waiting = False
         for cp in (self, cp2_data):
             if cp is None:

@@ -742,6 +742,9 @@ class Chargepoint(ChargepointRfidMixin, Load):
                 # Starte nur Transaction wenn auch die chargepoint ID im Backend gesetzt wurde
                 if self.data.config.ocpp_chargebox_id:
                     # Starte nur Transaction wenn bereits ein RFID Tag oder die Fahrzeug ID erkannt wurde
+                    rfid = self.data.set.rfid
+                    if self.find_duo_partner() is None or not self.data.get.plug_state:
+                        rfid = rfid or self.data.get.rfid
                     if (rfid or self.data.get.vehicle_id):
                         self.data.set.ocpp_transaction_id = data.data.optional_data.start_transaction(
                             self.data.config.ocpp_chargebox_id,

@@ -15,6 +15,64 @@ from control.chargepoint.chargepoint_template import CpTemplate
 from control.ev.ev import Ev
 
 
+@pytest.mark.parametrize("processing_index", [0, 1])
+def test_duo_abgelehnter_scan_bleibt_nach_wiederanstecken_gesperrt(duo, rfid_tag, processing_index):
+    cp = duo.chargepoints[processing_index]
+    partner = duo.chargepoints[1 - processing_index]
+    timestamp = duo.clock.return_value
+    for point, tag in zip((cp, partner), (rfid_tag, "ABC")):
+        point.data.get.plug_state = True
+        point.data.set.rfid = tag
+        point.data.set.rfid_timestamp = timestamp - 10
+    for point in duo.chargepoints:
+        point.template.data.valid_tags.append("C")
+
+    duo.reader.scan("C", timestamp)
+    cp._validate_rfid()
+
+    assert cp.data.set.rfid == rfid_tag
+    assert partner.data.set.rfid == "ABC"
+    assert cp.data.set.rfid_timestamp == timestamp
+    assert partner.data.set.rfid_timestamp == timestamp - 10
+    assert all(point.data.get.rfid is None for point in duo.chargepoints)
+    cp.chargepoint_module.clear_rfid.assert_called_once_with()
+
+    # Der Partner ist nach Ab-/Wiederanstecken wieder unzugeordnet.
+    partner.data.set.rfid = None
+    partner.data.set.manual_lock = True
+    partner.data.get.plug_state = True
+    duo.clock.return_value += 600
+    partner.data.set.plug_time = duo.clock.return_value
+    duo.reader.scan("C", timestamp)
+    partner._validate_rfid()
+    cp._validate_rfid()
+
+    assert partner.data.set.rfid is None
+    assert partner.data.set.manual_lock is True
+    assert all(point.data.get.rfid is None for point in duo.chargepoints)
+    assert cp.data.set.rfid == rfid_tag
+
+    # Ein echter neuer Scan derselben Karte darf weiterhin zugeordnet werden.
+    duo.clock.return_value += 1
+    duo.reader.scan("C", duo.clock.return_value)
+    partner._validate_rfid()
+    partner._link_rfid_to_cp()
+    assert partner.data.set.rfid == "C"
+    assert partner.data.set.rfid_timestamp == duo.clock.return_value
+    assert cp.data.set.rfid == rfid_tag
+
+
+def test_quittierung_setzt_verarbeitungsgrenze_nicht_zurueck(duo, rfid_tag):
+    cp, partner = duo.chargepoints
+    timestamp = duo.clock.return_value
+    cp.data.set.rfid_timestamp = timestamp + 10
+    duo.reader.scan(rfid_tag, timestamp)
+
+    cp._clear_pending_rfid(rfid_tag, partner, timestamp)
+
+    assert cp.data.set.rfid_timestamp == timestamp + 10
+
+
 @pytest.mark.parametrize("same_card", [False, True])
 def test_quittierung_eines_scans_behaelt_neueren_scan_am_partner(duo, rfid_tag, same_card):
     cp, partner = duo.chargepoints
@@ -960,15 +1018,16 @@ def test_duo_zwei_wartende_autos_nacheinander_freigeben_ohne_energiebezug(
 
 @pytest.mark.parametrize("first_index", [0, 1])
 @pytest.mark.parametrize("reverse_order", [False, True])
-def test_duo_scan_vor_beiden_autos_erstes_auto_auch_bei_verzoegerter_verarbeitung(
-        duo, rfid_tag, first_index, reverse_order):
+@pytest.mark.parametrize("first_plug_offset", [-10, 10], ids=["Ein-Auto-wartet", "Beide-spaeter-erkannt"])
+def test_duo_unklare_ansteckreihenfolge_wartet_bis_neuem_scan(
+        duo, rfid_tag, first_index, reverse_order, first_plug_offset):
     duo.reader.scan(rfid_tag)
     for cp in duo.chargepoints:
         cp._validate_rfid()
     scanned_at = duo.clock.return_value
     for index, cp in enumerate(duo.chargepoints):
         cp.data.get.plug_state = True
-        cp.data.set.plug_time = scanned_at + (10 if index == first_index else 20)
+        cp.data.set.plug_time = scanned_at + (first_plug_offset if index == first_index else 20)
     duo.clock.return_value += 30
     order = list(reversed(duo.chargepoints)) if reverse_order else duo.chargepoints
     for _ in range(2):
@@ -976,8 +1035,18 @@ def test_duo_scan_vor_beiden_autos_erstes_auto_auch_bei_verzoegerter_verarbeitun
             cp._validate_rfid()
             if cp.data.get.rfid is not None:
                 cp._link_rfid_to_cp()
-    assert duo.chargepoints[first_index].data.set.rfid == rfid_tag
-    assert duo.chargepoints[1 - first_index].data.set.rfid is None
+    assert all(cp.data.set.rfid is None for cp in duo.chargepoints)
+    assert all(cp.data.set.rfid_timestamp is None for cp in duo.chargepoints)
+    assert all(cp.data.get.rfid == rfid_tag for cp in duo.chargepoints)
+    assert sum(cp.chargepoint_module.clear_rfid.call_count for cp in duo.chargepoints) == 0
+
+    duo.reader.scan(rfid_tag, duo.clock.return_value)
+    for cp in order:
+        cp._validate_rfid()
+        if cp.data.get.rfid is not None:
+            cp._link_rfid_to_cp()
+    assert duo.chargepoints[1 - first_index].data.set.rfid == rfid_tag
+    assert duo.chargepoints[first_index].data.set.rfid is None
     assert sum(cp.chargepoint_module.clear_rfid.call_count for cp in duo.chargepoints) == 1
 
 
@@ -1206,11 +1275,17 @@ def test_duo_fahrzeug_tag_ohne_lp_berechtigung_belegt_keinen_platz_neuer_tag_moe
             cp._link_rfid_to_cp()
     assert all(cp.data.set.rfid is None for cp in duo.chargepoints)
     assert all(cp.data.set.manual_lock for cp in duo.chargepoints)
-    assert all(cp.data.get.rfid is None for cp in duo.chargepoints)
-    assert "nicht gültig" in target.data.get.state_str
+    if scan_before_plug:
+        # Ohne eindeutige zeitliche Zuordnung bleibt der Scan vorläufig erhalten.
+        assert all(cp.data.get.rfid == "NUR-ANDERER-LP" for cp in duo.chargepoints)
+        assert all(cp.data.set.rfid_timestamp is None for cp in duo.chargepoints)
+    else:
+        assert all(cp.data.get.rfid is None for cp in duo.chargepoints)
+        assert "nicht gültig" in target.data.get.state_str
 
-    # Vorher war der Scan ungültig, also bleibt der Platz für eine gültige Karte frei.
-    duo.reader.scan("ABC")
+    # Weder ein abgelehnter noch ein zeitlich unklarer Scan belegt einen Platz.
+    duo.clock.return_value += 1
+    duo.reader.scan("ABC", duo.clock.return_value)
     for _ in range(2):
         for cp in order:
             cp._validate_rfid()
