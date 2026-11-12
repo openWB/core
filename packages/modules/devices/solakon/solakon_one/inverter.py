@@ -38,8 +38,6 @@ class SolakonOneInverter(AbstractInverter):
         power = self.client.read_holding_registers(39118, ModbusDataType.INT_32, unit=unit) * -1
         # Gesamte DC PV Produktion in Wh
         exported = self.client.read_holding_registers(39601, ModbusDataType.UINT_32, unit=unit) * 10
-        # Gerät hat keinen Zähler für AC-seitigen Bezug (z.B. Eigenverbrauch des WR selbst) - simulieren,
-        # damit die Hybrid-Berechnung in PurgeInverterState.fix_hybrid_values() einen Wert hat.
         imported, _ = self.sim_counter.sim_count(power)
 
         imported, exported = self.peak_filter.check_values(power, imported, exported)
