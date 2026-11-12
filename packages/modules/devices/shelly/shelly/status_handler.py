@@ -73,6 +73,8 @@ def parse_data(phase: int, factor: float, status: Dict, channel: Optional[int] =
             voltages = [0.0, 0.0, 0.0]
             meters = status['meters']  # einphasiger shelly?
             if channel is not None:
+                if not 0 <= channel < len(meters):
+                    raise KeyError(f"unsupported meter channel: {channel}")
                 # Einzelnen Verbraucherkanal auf die konfigurierte Phase abbilden.
                 meters = [meters[channel]]
             for i in range(0, min(3, len(meters))):
@@ -140,6 +142,8 @@ def parse_data(phase: int, factor: float, status: Dict, channel: Optional[int] =
             if 'freq' in meters:
                 frequency = meters['freq']
         else:
+            if channel is not None and channel != 0:
+                raise KeyError(f"unsupported meter channel: {channel}")
             log.debug("single phase shelly")
             powers = [0.0, 0.0, 0.0]
             currents = [0.0, 0.0, 0.0]

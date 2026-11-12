@@ -49,14 +49,43 @@ def test_gen1_device_parser_still_sums_all_channels_by_default():
     assert power == 1150
 
 
-def test_missing_configured_channel_does_not_use_channel_zero(requests_mock):
+@pytest.mark.parametrize("meters, channel", [
+    ([{"power": 230}], 1),
+    ([{"power": 230}], -1),
+    ([], 0),
+])
+def test_gen1_invalid_channel_raises_unsupported_device(meters, channel):
+    with pytest.raises(Exception, match=r"^unsupported shelly device\?$") as error:
+        parse_data(1, 1, {"meters": meters}, channel=channel)
+
+    assert not isinstance(error.value, IndexError)
+
+
+@pytest.mark.parametrize("extra_status", [
+    {},
+    {"em1:0": {"act_power": 920, "voltage": 230, "current": 4, "pf": 1, "freq": 50}},
+])
+def test_missing_configured_channel_does_not_use_channel_zero(requests_mock, extra_status):
     address = "192.0.2.1"
     requests_mock.get(f"http://{address}/shelly", json={"gen": 2})
     requests_mock.get(f"http://{address}/rpc/Shelly.GetStatus", json={
         "switch:0": {"apower": 230, "voltage": 230, "current": 1},
+        **extra_status,
     })
     device = consumer.create_consumer(ShellyPM(configuration=ShellyConfiguration(
         ip_address=address, channel=1)))
 
     with pytest.raises(Exception, match="unsupported shelly device"):
         device.module_updater()
+
+
+@pytest.mark.parametrize("channel", [None, 0])
+def test_em1_channel_zero_remains_supported(channel):
+    status = {"em1:0": {"act_power": 920, "voltage": 230, "current": 4, "pf": 1, "freq": 50}}
+
+    _, voltages, currents, _, power, frequency = parse_data(1, 1, status, channel=channel)
+
+    assert power == 920
+    assert voltages == [230, 0, 0]
+    assert currents == [4, 0, 0]
+    assert frequency == 50
