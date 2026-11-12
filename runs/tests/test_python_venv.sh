@@ -12,7 +12,11 @@ cat > "$workdir/bin/python" <<'EOF'
 #!/bin/bash
 set -e
 if [[ "$1" == -c ]]; then
-	echo 'mock Python 3.9'
+	if [[ "$2" == *'os.path.realpath(sys.executable)'* ]]; then
+		printf '%s\n' "$OPENWB_PYTHON mock Python 3.9"
+	else
+		echo 'mock Python 3.9'
+	fi
 elif [[ "$1 $2" == '-m venv' ]]; then
 	mkdir -p "$3/bin"
 	cat > "$3/bin/python" <<'PYTHON'
@@ -103,6 +107,11 @@ if FAIL_INSTALL=1 bash "$script_dir/setup_python_venv.sh" "$workdir/openwb" 1; t
 	exit 1
 fi
 [[ $(readlink -f "$workdir/openwb/.venv") == "$first_env" ]]
+if bash "$workdir/openwb/runs/run_python.sh" --probe > "$workdir/stale.out" 2> "$workdir/stale.err"; then
+	exit 1
+fi
+[[ ! -s "$workdir/stale.out" ]]
+grep -q 'does not match the current requirements' "$workdir/stale.err"
 [[ $(find "$workdir/openwb/.venvs" -maxdepth 1 -type d -name 'env.*' | wc -l) == 1 ]]
 
 for validation in pip-check import-probe; do
@@ -175,8 +184,14 @@ bash "$script_dir/setup_python_venv.sh" "$workdir/legacy" 0 --boot-cleanup boot-
 
 mkdir -p "$workdir/real/runs" "$workdir/real/.venvs/env.REAL0001/bin"
 cp "$script_dir/run_python.sh" "$workdir/real/runs/"
+printf 'example==1\n' > "$workdir/real/requirements.txt"
 ln -s /usr/bin/python3 "$workdir/real/.venvs/env.REAL0001/bin/python"
-touch "$workdir/real/.venvs/.lock" "$workdir/real/.venvs/env.REAL0001/.openwb-lock" "$workdir/real/.venvs/env.REAL0001/.openwb-ready"
+touch "$workdir/real/.venvs/.lock" "$workdir/real/.venvs/env.REAL0001/.openwb-lock"
+real_fingerprint=$({
+	sha256sum "$workdir/real/requirements.txt"
+	"$OPENWB_PYTHON" -c 'import os, sys; print(os.path.realpath(sys.executable), sys.version)'
+} | sha256sum | cut -d ' ' -f 1)
+printf '%s\n' "$real_fingerprint" > "$workdir/real/.venvs/env.REAL0001/.openwb-ready"
 ln -s "$workdir/real/.venvs/env.REAL0001" "$workdir/real/.venv"
 coproc REAL_HOLDER { bash "$workdir/real/runs/run_python.sh" -u -c 'import sys; print("ready", flush=True); sys.stdin.readline()'; }
 real_holder_pid=$REAL_HOLDER_PID
