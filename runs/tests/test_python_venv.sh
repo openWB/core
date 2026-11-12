@@ -161,6 +161,27 @@ wait "$second_pid" || second_status=$?
 [[ $((first_status + second_status)) == 10 ]]
 [[ $(find "$workdir/concurrent/.venvs" -maxdepth 1 -type d -name 'env.*' | wc -l) == 1 ]]
 
+mkdir "$workdir/activation-bin" "$workdir/activation"
+cp "$workdir/openwb/requirements.txt" "$workdir/activation/requirements.txt"
+cat > "$workdir/activation-bin/mv" <<'EOF'
+#!/bin/bash
+/bin/mv "$@"
+status=$?
+target=
+for argument in "$@"; do target=$argument; done
+if [[ $status == 0 && "$target" == */.venv ]]; then
+	kill -TERM "$PPID"
+fi
+exit "$status"
+EOF
+chmod +x "$workdir/activation-bin/mv"
+activation_status=0
+PATH="$workdir/activation-bin:$PATH" bash "$script_dir/setup_python_venv.sh" "$workdir/activation" 1 > "$workdir/activation.log" 2>&1 || activation_status=$?
+[[ "$activation_status" != 0 ]]
+[[ -L "$workdir/activation/.venv" ]]
+activated_env=$(readlink -f "$workdir/activation/.venv")
+[[ -d "$activated_env" && -f "$activated_env/.openwb-ready" ]]
+
 mkdir "$workdir/arch-bin"
 mkdir -p "$workdir/system-evdev/evdev" "$workdir/system-evdev/evdev-1.9.1.dist-info"
 cat > "$workdir/arch-bin/dpkg" <<'EOF'

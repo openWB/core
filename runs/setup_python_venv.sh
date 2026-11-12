@@ -85,7 +85,10 @@ new_env=$(mktemp -d "$venv_dir/env.XXXXXXXX")
 temporary_link=
 cleanup() {
 	if [[ -n "$new_env" ]]; then
-		rm -rf -- "$new_env"
+		active_env=$(readlink -f "$venv_link" 2>/dev/null || true)
+		if [[ "$active_env" != "$new_env" ]]; then
+			rm -rf -- "$new_env"
+		fi
 	fi
 	if [[ -n "$temporary_link" ]]; then
 		rm -f -- "$temporary_link"
