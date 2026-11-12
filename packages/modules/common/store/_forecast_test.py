@@ -5,18 +5,10 @@ from unittest.mock import Mock
 
 import pytest
 
-from control import data
-from control.optional import Optional
 from modules.common.component_state import ForecastState
 from modules.common.store import _forecast
 from modules.common.store._api import LoggingValueStore
 from modules.common.store._forecast import ForecastValueStore
-
-
-@pytest.fixture(autouse=True)
-def mock_data() -> None:
-    data.data_init(Mock())
-    data.data.optional_data = Optional()
 
 
 def _patch_now(monkeypatch: pytest.MonkeyPatch, fixed_now: datetime) -> None:
@@ -28,12 +20,18 @@ def _patch_now(monkeypatch: pytest.MonkeyPatch, fixed_now: datetime) -> None:
     monkeypatch.setattr(_forecast, "datetime", FixedDateTime)
 
 
-def _get() -> _forecast.ForecastValueStore:
-    return data.data.optional_data.data.forecast.get
+def _published(pub: Mock, field: str):
+    for call in pub.call_args_list:
+        topic, payload = call.args[0], call.args[1]
+        if topic.rsplit("/", 1)[-1] == field:
+            return payload
+    raise AssertionError(f"no publish for field {field!r}")
 
 
 def test_update_splits_by_current_calendar_day(monkeypatch: pytest.MonkeyPatch):
     _patch_now(monkeypatch, datetime(2026, 10, 20, 8, 0, 0))
+    pub = Mock()
+    monkeypatch.setattr(_forecast, "pub_to_broker", pub)
     values = {
         str(int(datetime(2026, 10, 20, 10, 0, 0).timestamp())): 500.0,
         str(int(datetime(2026, 10, 21, 10, 0, 0).timestamp())): 700.0,
@@ -43,10 +41,10 @@ def test_update_splits_by_current_calendar_day(monkeypatch: pytest.MonkeyPatch):
 
     store.update()
 
-    assert data.data.optional_data.data.forecast.get.today_kwh == 3.5
-    assert data.data.optional_data.data.forecast.get.tomorrow_kwh == 4.2
-    assert list(data.data.optional_data.data.forecast.get.today_values.values()) == [500.0]
-    assert list(data.data.optional_data.data.forecast.get.tomorrow_values.values()) == [700.0]
+    assert _published(pub, "today_kwh") == 3.5
+    assert _published(pub, "tomorrow_kwh") == 4.2
+    assert list(_published(pub, "today_values").values()) == [500.0]
+    assert list(_published(pub, "tomorrow_values").values()) == [700.0]
 
 
 def test_update_reruns_split_after_midnight_without_new_fetch(monkeypatch: pytest.MonkeyPatch):
@@ -60,15 +58,19 @@ def test_update_reruns_split_after_midnight_without_new_fetch(monkeypatch: pytes
     store = ForecastValueStore()
     store.set(ForecastState(forecast_values=values, daily_kwh=daily_kwh))
 
+    pub = Mock()
+    monkeypatch.setattr(_forecast, "pub_to_broker", pub)
+
     _patch_now(monkeypatch, datetime(2026, 10, 20, 23, 50, 0))
     store.update()
-    assert data.data.optional_data.data.forecast.get.today_kwh == 3.5
-    assert data.data.optional_data.data.forecast.get.tomorrow_kwh == 4.2
+    assert _published(pub, "today_kwh") == 3.5
+    assert _published(pub, "tomorrow_kwh") == 4.2
 
+    pub.reset_mock()
     _patch_now(monkeypatch, datetime(2026, 10, 21, 0, 5, 0))
     store.update()
-    assert data.data.optional_data.data.forecast.get.today_kwh == 4.2
-    assert data.data.optional_data.data.forecast.get.tomorrow_kwh == 0.0
+    assert _published(pub, "today_kwh") == 4.2
+    assert _published(pub, "tomorrow_kwh") == 0.0
 
 
 def test_update_before_first_fetch_raises_attribute_error():
@@ -93,6 +95,8 @@ def test_dst_transition_does_not_shift_day_boundary(monkeypatch: pytest.MonkeyPa
     monkeypatch.setenv("TZ", "Europe/Berlin")
     time.tzset()
     try:
+        pub = Mock()
+        monkeypatch.setattr(_forecast, "pub_to_broker", pub)
         values = {
             str(int(datetime(2026, 10, 25, 23, 30, 0).timestamp())): 100.0,
             str(int(datetime(2026, 10, 26, 0, 30, 0).timestamp())): 200.0,
@@ -103,7 +107,7 @@ def test_dst_transition_does_not_shift_day_boundary(monkeypatch: pytest.MonkeyPa
         _patch_now(monkeypatch, datetime(2026, 10, 25, 20, 0, 0))
         store.update()
 
-        assert list(data.data.optional_data.data.forecast.get.today_values.values()) == [100.0]
-        assert list(data.data.optional_data.data.forecast.get.tomorrow_values.values()) == [200.0]
+        assert list(_published(pub, "today_values").values()) == [100.0]
+        assert list(_published(pub, "tomorrow_values").values()) == [200.0]
     finally:
         time.tzset()
