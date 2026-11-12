@@ -1,4 +1,45 @@
 #!/bin/bash
+. /etc/os-release
+if [[ ${VERSION_CODENAME:-} == bullseye ]]; then
+	echo "Checking Bullseye security archive sources..."
+	apt_dir=${OPENWB_APT_DIR:-/etc/apt}
+	for source_file in "$apt_dir/sources.list" "$apt_dir/sources.list.d/"*.list "$apt_dir/sources.list.d/"*.sources; do
+		[[ -f "$source_file" ]] || continue
+		temporary_source=$(mktemp) || exit 1
+		if ! awk '
+			function flush() {
+				if (block ~ /(^|\n)Suites:[ \t]*bullseye-security[ \t]*(\n|$)/) {
+					gsub(/https?:\/\/security\.debian\.org\/(debian-security|debian\/security)\/?/,
+						"https://archive.debian.org/debian-security", block)
+				}
+				printf "%s", block
+				block = ""
+			}
+			FILENAME ~ /\.sources$/ {
+				if ($0 ~ /^[ \t]*$/) { flush(); print; next }
+				block = block $0 "\n"
+				next
+			}
+			/^[ \t]*deb(-src)?[ \t]/ && /[ \t]bullseye-security[ \t]/ {
+				sub(/https?:\/\/security\.debian\.org\/(debian-security|debian\/security)\/?[ \t]/,
+					"https://archive.debian.org/debian-security ")
+			}
+			{ print }
+			END { flush() }
+		' "$source_file" > "$temporary_source"; then
+			rm -f "$temporary_source"
+			exit 1
+		fi
+		if ! cmp -s "$source_file" "$temporary_source"; then
+			if ! sudo cp -p -- "$source_file" "$source_file.openwb-backup" || ! sudo cp -- "$temporary_source" "$source_file"; then
+				rm -f "$temporary_source"
+				exit 1
+			fi
+			echo "Updated Bullseye security source in $source_file"
+		fi
+		rm -f "$temporary_source"
+	done
+fi
 echo "add required repositories..."
 # add mosquitto repository
 if [ ! -f /etc/apt/sources.list.d/mosquitto.list ]; then
@@ -11,17 +52,33 @@ fi
 echo "done"
 
 echo "install required packages with 'apt-get'..."
-sudo apt-get -q update
-sudo apt-get -q -y install \
+python_build_packages=()
+python_binary_packages=()
+case $(dpkg --print-architecture) in
+	arm64) python_binary_packages=(python3-evdev) ;;
+	arm*) ;;
+	*) python_build_packages=(gcc python3-dev) ;;
+esac
+if ! sudo apt-get -q -o APT::Update::Error-Mode=any update; then
+	echo "Failed to refresh package indexes; aborting package installation" >&2
+	exit 1
+fi
+if ! sudo apt-get -q -y install \
 	vim bc jq curl socat sshpass sudo ssl-cert mmc-utils inotify-tools iptables \
 	apache2 libapache2-mod-php \
 	php php-gd php-curl php-xml php-json \
 	git \
 	mosquitto mosquitto-clients \
 	python3-pip \
+	python3-venv \
+	"${python_build_packages[@]}" \
+	"${python_binary_packages[@]}" \
 	python3-urllib3 \
 	xserver-xorg x11-xserver-utils openbox-lxde-session lightdm lightdm-autologin-greeter accountsservice \
-	chromium chromium-l10n
+	chromium chromium-l10n; then
+	echo "Failed to install required system packages" >&2
+	exit 1
+fi
 echo "done"
 
 # Apply the PHP 7.4 package fix for php2shell on supported Debian 11 platforms.

@@ -28,8 +28,9 @@ Workflow-Lauf für alle drei Einträge ist hier nicht belegt.
 
 ## Behobene Blocker
 
-- `evdev==1.6.1` ersetzt 1.5.0. Der Import funktioniert ab Python 3.11; echte
-  RFID-Dekodierung wird durch Regressionstests geprüft.
+- `evdev==1.9.1` ersetzt 1.6.1. Die RFID-Dekodierung wird durch
+  Regressionstests geprüft; unter Trixie/ARM64 wird das vorkompilierte
+  Debian-Paket derselben Version verwendet.
 - `jq==1.10.0` ersetzt die nicht kompatiblen älteren Pins. JSON-Filter und
   Gerätewerte werden durch Tests mit der echten jq-Bibliothek geprüft.
 - `telnetlib3==5.0.1` stellt die entfernte Standardbibliothek `telnetlib` für
@@ -96,6 +97,53 @@ echte Interpreter 3.9 bis 3.15, AST- und Mindestversionsanalysen sowie
 gezielte Installations- und Verhaltenstests. Die tatsächlich geprüfte
 Supportgrenze ist seitdem durch die oben genannten Änderungen erweitert;
 Python 3.15 bleibt offen.
+
+## Python-Umgebung im Betrieb
+
+Die Python-Dienste und der Modbus-Test verwenden das isolierte VEnv unter
+`/var/www/html/openWB/.venv`. Der Bootstrap erstellt es mit dem System-Python
+und installiert die Requirements über den Interpreter des VEnvs. Für die
+Erstellung muss das Debian-Paket `python3-venv` verfügbar sein. Zusätzlich zur
+bestehenden pip-Konfiguration wird piwheels als Paketquelle verwendet, da nicht
+alle benötigten Wheels auf PyPI verfügbar sind. System- und Benutzerpakete
+werden nicht deinstalliert.
+
+Auf ARM werden keine Pakete kompiliert. Für ARMv7 stehen Wheels für
+`evdev==1.9.1` bei piwheels bereit. Unter Trixie/ARM64 wird das vorkompilierte
+Debian-Paket `python3-evdev` in das VEnv kopiert; das VEnv bleibt ansonsten von
+Systempaketen isoliert. Der Bootstrap prüft dessen Version und schlägt bei
+einem fehlenden oder abweichenden Paket fehl. Auf anderen Architekturen wird
+`evdev` aus dem Quellpaket gebaut; dafür werden `gcc` und `python3-dev`
+benötigt. Alle anderen Abhängigkeiten werden ausschließlich als Wheels
+installiert.
+
+Bei einer Bestandsinstallation bleibt bei fehlgeschlagenem erstem Aufbau
+übergangsweise der bisherige Interpreter aktiv; eine Neuinstallation setzt einen
+erfolgreichen Aufbau voraus. Nach erfolgreicher Migration gibt es keinen
+automatischen Rückfall auf System-Python. Ohne Netzwerk wird ein bereits
+passendes VEnv weiterverwendet. Fehler und ausstehende Aktualisierungen stehen
+im Hauptlog und werden als Systemmeldung veröffentlicht.
+
+Neue Environments werden unter `/var/www/html/openWB/.venvs` angelegt und erst
+nach Installation, Abhängigkeits- und Importprüfung über `.venv` aktiviert.
+Der Launcher hält während der Ausführung eine Sperre auf dem verwendeten
+Environment. Beim ersten openWB-Start nach einem vollständigen System-Reboot
+werden alte, nicht mehr gesperrte Environments automatisch entfernt. Ein
+reiner Dienstneustart oder ein Paketupdate löst keine Bereinigung aus. Bei der
+ersten Erfassung der System-Boot-ID findet noch keine Bereinigung statt.
+Prozesse,
+die den Interpreter direkt statt über den Launcher starten, halten diese Sperre
+nicht und werden bei der Bereinigung nicht berücksichtigt. Für längere manuelle
+Aufrufe deshalb ebenfalls den Launcher verwenden. Environments aus älteren
+Installationen ohne Sperrüberwachung bleiben vorsichtshalber erhalten und können
+nach Prüfung der laufenden Prozesse manuell entfernt werden. Ein fremdes
+`.venv`-Verzeichnis wird nicht überschrieben.
+
+Zur Diagnose `systemctl status openwb2 openwb-simpleAPI openwbRemoteSupport`
+und das Hauptlog prüfen. Ein erneuter Aufbau wird bei bestehender Verbindung
+beim nächsten Start versucht. Da ein VEnv vom System-Interpreter abhängt, muss
+es nach einem Python- oder Betriebssystemwechsel gegebenenfalls neu aufgebaut
+werden; es ist keine eigenständige Python-Laufzeit.
 
 ## Nächste Schritte
 
