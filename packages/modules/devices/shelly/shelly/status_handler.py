@@ -57,13 +57,14 @@ def parse_temperatures(status: Dict, generation: int) -> Optional[List[float]]:
     return temperatures if len(temperatures) > 0 else None
 
 
-def parse_data(phase: int, factor: float, status: Dict) -> Tuple[
+def parse_data(phase: int, factor: float, status: Dict, channel: Optional[int] = None) -> Tuple[
         List[float], Optional[List[float]], Optional[List[float]], Optional[List[float]], float, Optional[float]]:
     try:
         currents: Optional[List[float]] = None
         voltages: Optional[List[float]] = None
         power_factors: Optional[List[float]] = None
         frequency: Optional[float] = None
+        switch_key = f'switch:{channel if channel is not None else 0}'
 
         # GEN 1
         if "meters" in status:
@@ -71,6 +72,9 @@ def parse_data(phase: int, factor: float, status: Dict) -> Tuple[
             powers = [0.0, 0.0, 0.0]
             voltages = [0.0, 0.0, 0.0]
             meters = status['meters']  # einphasiger shelly?
+            if channel is not None:
+                # Einzelnen Verbraucherkanal auf die konfigurierte Phase abbilden.
+                meters = [meters[channel]]
             for i in range(0, min(3, len(meters))):
                 powers[(i+phase-1) % 3] = float(meters[i].get('power', 0)) * factor
                 currents[(i+phase-1) % 3] = (float(meters[i].get('power', 0)) * factor) / 230
@@ -120,13 +124,13 @@ def parse_data(phase: int, factor: float, status: Dict) -> Tuple[
             power_factors[phase-1] = meters.get('pf', 0)
             power = meters['apower'] * factor
             frequency = meters['freq']
-        elif 'switch:0' in status and 'apower' in status['switch:0']:
+        elif switch_key in status and 'apower' in status[switch_key]:
             log.debug("single phase shelly")
             powers = [0.0, 0.0, 0.0]
             currents = [0.0, 0.0, 0.0]
             voltages = [0.0, 0.0, 0.0]
             power_factors = [0.0, 0.0, 0.0]
-            meters = status['switch:0']
+            meters = status[switch_key]
             powers[phase-1] = meters['apower'] * factor
             voltages[phase-1] = meters['voltage']
             currents[phase-1] = meters['current'] * factor
