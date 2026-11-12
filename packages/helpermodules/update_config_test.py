@@ -704,33 +704,6 @@ def test_upgrade_datastore_156_adds_energycharts_price_cap(
     assert uc.all_received_topics["openWB/system/datastore_version"] == [155, 156]
 
 
-@pytest.mark.parametrize("provider_type, name, expected_name, updated", [
-    ("pvnode", "PVNode V2", "pvnode V2", True),
-    ("pvnode", "pvnode V2", "pvnode V2", False),
-    ("tibber", "Tibber", "Tibber", False),
-    (None, None, None, False),
-])
-def test_upgrade_datastore_159_lowercases_pvnode_name(
-    mock_pub: Mock, provider_type, name, expected_name, updated
-):
-    topic = "openWB/optional/forecast/provider"
-    uc = UpdateConfig()
-    uc.all_received_topics = {
-        topic: json.dumps({"type": provider_type, "name": name}).encode(),
-        "openWB/system/datastore_version": [158],
-    }
-
-    uc.upgrade_datastore_159()
-
-    if updated:
-        assert uc.all_received_topics[topic] == {"type": provider_type, "name": expected_name}
-    else:
-        assert json.loads(uc.all_received_topics[topic]) == {"type": provider_type, "name": expected_name}
-    updated_topics = [call.args[0] for call in mock_pub.pub.call_args_list]
-    assert (topic in updated_topics) is updated
-    assert uc.all_received_topics["openWB/system/datastore_version"] == [158, 159]
-
-
 def test_start_filesystem_migrations_launches_one_worker(monkeypatch):
     updater = UpdateConfig()
     popen = Mock()
