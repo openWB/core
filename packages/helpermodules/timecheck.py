@@ -210,6 +210,13 @@ def check_end_time(plan: Union[ScheduledPlanConsumer, ScheduledChargingPlan, Tim
     neg: Zeitpunkt vorbei
     pos: verbleibende Sekunden
     """
+    return check_end_time_with_deadline(plan, buffer)[0]
+
+
+def check_end_time_with_deadline(
+        plan: Union[ScheduledPlanConsumer, ScheduledChargingPlan, TimeChargingPlanConsumer, TimepointPlan],
+        buffer: float = 0) -> Tuple[float, float]:
+    """Return the remaining time and the selected deadline as a Unix timestamp."""
     now = datetime.datetime.today()
     end = datetime.datetime.strptime(plan.time, '%H:%M')
     if plan.frequency.selected == "once":
@@ -235,7 +242,7 @@ def check_end_time(plan: Union[ScheduledPlanConsumer, ScheduledChargingPlan, Tim
             remaining_time = end - now
     else:
         raise TypeError(f'Unbekannte Häufigkeit {plan.frequency.selected}')
-    return remaining_time.total_seconds()
+    return remaining_time.total_seconds(), end.timestamp()
 
 
 def check_end_time_current_occurrence(plan: TimepointPlan) -> float:

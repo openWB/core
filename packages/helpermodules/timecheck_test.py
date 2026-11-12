@@ -47,6 +47,9 @@ def test_check_end_time(time: str,
 
     # evaluation
     assert remaining_time == expected_remaining_time
+    remaining, deadline = timecheck.check_end_time_with_deadline(plan, 1200)
+    assert remaining == expected_remaining_time
+    assert deadline == (datetime.datetime.today() + datetime.timedelta(seconds=expected_remaining_time)).timestamp()
 
 
 @pytest.mark.parametrize(

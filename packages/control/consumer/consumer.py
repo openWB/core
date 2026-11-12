@@ -178,7 +178,8 @@ class Consumer(ConsumerRfidMixin, Load):
     BUFFER_START_EARLIER = 600  # 10 Min vor dem geplanten Start kann begonnen werden
 
     def scheduled_charging(self) -> Tuple[float, Optional[str], Chargemode]:
-        plan_data, remaining_time, duration = self._find_recent_plan(self.data.usage.scheduled_charging.plans)
+        plan_data, remaining_time, duration, deadline = self._find_recent_plan(
+            self.data.usage.scheduled_charging.plans)
         if plan_data:
             self.data.control_parameter.current_plan = plan_data.id
         else:
@@ -186,32 +187,34 @@ class Consumer(ConsumerRfidMixin, Load):
         return self.scheduled_charging_calc_current(
             plan_data,
             remaining_time,
-            duration)
+            duration,
+            deadline)
 
     def _find_recent_plan(self,
-                          plans: List[ScheduledPlanConsumer]) -> Tuple[Optional[ScheduledPlanConsumer], float, float]:
-        plans_diff_end_date: List[Dict[int, float]] = []
+                          plans: List[ScheduledPlanConsumer]
+                          ) -> Tuple[Optional[ScheduledPlanConsumer], float, float, Optional[float]]:
+        plans_diff_end_date: List[Dict[int, Tuple[float, float]]] = []
         for p in plans:
             try:
                 plans_diff_end_date.append(
-                    {p.id: timecheck.check_end_time(p, self.BUFFER_AFTER_END_TIME)})
+                    {p.id: timecheck.check_end_time_with_deadline(p, self.BUFFER_AFTER_END_TIME)})
                 log.debug(f"Verbleibende Zeit bis zum Zieltermin [s]: {plans_diff_end_date}")
             except Exception:
                 log.exception("Fehler im ev-Modul "+str(self.num))
         if plans_diff_end_date:
-            filtered_plans = [d for d in plans_diff_end_date if list(d.values())[0] > self.BUFFER_AFTER_END_TIME]
+            filtered_plans = [d for d in plans_diff_end_date if list(d.values())[0][0] > self.BUFFER_AFTER_END_TIME]
             if filtered_plans:
-                sorted_plans = sorted(filtered_plans, key=lambda x: list(x.values())[0])
+                sorted_plans = sorted(filtered_plans, key=lambda x: list(x.values())[0][0])
                 for p in sorted_plans:
-                    if self.BUFFER_AFTER_END_TIME < list(p.values())[0]:
+                    if self.BUFFER_AFTER_END_TIME < list(p.values())[0][0]:
                         plan_dict = p
                         break
                 else:
-                    return None, 0, 0
+                    return None, 0, 0, None
             else:
-                return None, 0, 0
+                return None, 0, 0, None
             plan_id = list(plan_dict.keys())[0]
-            diff_end_date = list(plan_dict.values())[0]
+            diff_end_date, deadline = list(plan_dict.values())[0]
 
             for p in plans:
                 if p.id == plan_id:
@@ -222,8 +225,8 @@ class Consumer(ConsumerRfidMixin, Load):
 
             remaining_time, duration = self._calc_remaining_time(plan, diff_end_date)
 
-            return plan, remaining_time, duration
-        return None, 0, 0
+            return plan, remaining_time, duration, deadline
+        return None, 0, 0, None
 
     def _calc_remaining_time(self,
                              plan: ScheduledPlanConsumer,
@@ -247,7 +250,8 @@ class Consumer(ConsumerRfidMixin, Load):
             self,
             plan: Optional[ScheduledPlanConsumer],
             remaining_time: float,
-            duration: float) -> Tuple[float, Optional[str], Chargemode]:
+            duration: float,
+            deadline: Optional[float]) -> Tuple[float, Optional[str], Chargemode]:
         required_current = 0
         message = None
         if plan is None:
@@ -309,7 +313,12 @@ class Consumer(ConsumerRfidMixin, Load):
                     loading_message = "Eingeschaltet wird " + "".join(parts)
                     return loading_message + '.'
 
-                hour_list = data.data.optional_data.ep_get_loading_hours(duration, duration + remaining_time)
+                if deadline is None:
+                    raise ValueError("Für den Verbraucherplan fehlt der Zieltermin.")
+                hour_list = data.data.optional_data.ep_get_loading_hours({
+                    "deadline": deadline,
+                    "chargeDuration": duration,
+                })
 
                 log.debug(f"Günstige Einschaltzeiten: {hour_list}")
                 if data.data.optional_data.ep_is_charging_allowed_hours_list(hour_list):

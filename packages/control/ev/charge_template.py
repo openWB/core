@@ -127,6 +127,7 @@ class SelectedPlan:
     missing_amount: float = 0
     phases: int = 1
     plan: Optional[ScheduledChargingPlan] = None
+    deadline: Optional[float] = None
 
 
 @dataclass
@@ -366,23 +367,23 @@ class ChargeTemplate:
                                      f"oder im Plan {p.name} als Begrenzung Energie einstellen.")
                 try:
                     plans_diff_end_date.append(
-                        {p.id: timecheck.check_end_time(p, self.BUFFER_AFTER_END_TIME)})
+                        {p.id: timecheck.check_end_time_with_deadline(p, self.BUFFER_AFTER_END_TIME)})
                     log.debug(f"Verbleibende Zeit bis zum Zieltermin [s]: {plans_diff_end_date}")
                 except Exception:
                     log.exception("Fehler im ev-Modul "+str(self.data.id))
         if plans_diff_end_date:
             # ermittle den Key vom kleinsten value in plans_diff_end_date
-            filtered_plans = [d for d in plans_diff_end_date if list(d.values())[0] is not None]
+            filtered_plans = [d for d in plans_diff_end_date if list(d.values())[0][0] is not None]
             if filtered_plans:
-                sorted_plans = sorted(filtered_plans, key=lambda x: list(x.values())[0])
+                sorted_plans = sorted(filtered_plans, key=lambda x: list(x.values())[0][0])
                 for plan in sorted_plans:
-                    if self.BUFFER_AFTER_END_TIME < list(plan.values())[0]:
+                    if self.BUFFER_AFTER_END_TIME < list(plan.values())[0][0]:
                         plan_dict = plan
                         break
                 else:
                     return None
                 plan_id = list(plan_dict.keys())[0]
-                plan_end_time = list(plan_dict.values())[0]
+                plan_end_time, deadline = list(plan_dict.values())[0]
 
                 for p in plans:
                     if p.id == plan_id:
@@ -396,7 +397,8 @@ class ChargeTemplate:
                                     duration=duration,
                                     missing_amount=missing_amount,
                                     phases=phases,
-                                    plan=plan)
+                                    plan=plan,
+                                    deadline=deadline)
             else:
                 return None
 
@@ -689,8 +691,12 @@ class ChargeTemplate:
                     loading_message = "Geladen wird " + "".join(parts)
                     return loading_message + '.'
 
-                hour_list = data.data.optional_data.ep_get_loading_hours(
-                    selected_plan.duration, selected_plan.duration + selected_plan.remaining_time)
+                if selected_plan.deadline is None:
+                    raise ValueError("Für den Ladeplan fehlt der Zieltermin.")
+                hour_list = data.data.optional_data.ep_get_loading_hours({
+                    "deadline": selected_plan.deadline,
+                    "chargeDuration": selected_plan.duration,
+                })
 
                 log.debug(f"Günstige Ladezeiten: {hour_list}")
                 if data.data.optional_data.ep_is_charging_allowed_hours_list(hour_list):

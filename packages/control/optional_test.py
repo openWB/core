@@ -249,10 +249,39 @@ def test_ep_get_loading_hours(granularity,
     )
 
     # execution
-    loading_hours = opt.ep_get_loading_hours(duration=duration, remaining_time=remaining_time)
+    loading_hours = opt.ep_get_loading_hours({
+        "chargeDuration": duration,
+        "deadline": now_ts + remaining_time,
+    })
 
     # evaluation
     assert loading_hours == expected_loading_hours
+
+
+@pytest.mark.no_mock_full_hour
+@pytest.mark.parametrize(
+    "deadline_offset, expected_start",
+    [(0, 1698228900), (0.1, 1698229800)],
+)
+def test_loading_hours_exclude_slot_starting_at_deadline(deadline_offset, expected_start, monkeypatch):
+    start = 1698226200
+    opt = Optional()
+    opt.data.electricity_pricing.configured = True
+    opt.data.electricity_pricing.get.prices = {
+        str(start): 10,
+        str(start + 900): 10,
+        str(start + 1800): 10,
+        str(start + 2700): 1,
+        str(start + 3600): 0,
+    }
+    monkeypatch.setattr(timecheck, "create_timestamp", Mock(return_value=start + 0.1))
+
+    hours = opt.ep_get_loading_hours({
+        "deadline": start + 3600 + deadline_offset,
+        "chargeDuration": 900,
+    })
+
+    assert hours == [expected_start]
 
 
 @pytest.mark.parametrize(

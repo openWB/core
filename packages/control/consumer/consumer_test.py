@@ -483,25 +483,27 @@ def test_scheduled_charging_recent_plan(end_time_mock,
     # setup
     calculate_duration_mock = Mock(return_value=(100, 500))
     monkeypatch.setattr(Consumer, "_calc_remaining_time", calculate_duration_mock)
-    check_end_time_mock = Mock(side_effect=end_time_mock)
-    monkeypatch.setattr(timecheck, "check_end_time", check_end_time_mock)
+    check_end_time_mock = Mock(side_effect=[(remaining, 123456 + i) for i, remaining in enumerate(end_time_mock)])
+    monkeypatch.setattr(timecheck, "check_end_time_with_deadline", check_end_time_mock)
     plan_mock_0 = Mock(spec=ScheduledPlanConsumer, active=True, id=0)
     plan_mock_1 = Mock(spec=ScheduledPlanConsumer, active=True, id=1)
     plan_mock_2 = Mock(spec=ScheduledPlanConsumer, active=True, id=2)
     plans = [plan_mock_0, plan_mock_1, plan_mock_2]
 
     # execution
-    selected_plan, remaining_time, duration = consumer._find_recent_plan(plans)
+    selected_plan, remaining_time, duration, deadline = consumer._find_recent_plan(plans)
 
     # evaluation
     if selected_plan:
         assert selected_plan.id == expected_plan_num
         assert remaining_time == 100
         assert duration == 500
+        assert deadline == 123456 + expected_plan_num
     else:
         assert selected_plan is None
         assert remaining_time == 0
         assert duration == 0
+        assert deadline is None
 
 
 @pytest.mark.parametrize(
@@ -532,7 +534,7 @@ def test_scheduled_charging_calc_current(plan: Optional[ScheduledPlanConsumer],
     consumer.data.usage.scheduled_charging.plans = [plan]
 
     # execution
-    ret = consumer.scheduled_charging_calc_current(plan, remaining_time, duration)
+    ret = consumer.scheduled_charging_calc_current(plan, remaining_time, duration, None)
 
     # evaluation
     assert ret == expected
@@ -540,7 +542,7 @@ def test_scheduled_charging_calc_current(plan: Optional[ScheduledPlanConsumer],
 
 def test_scheduled_charging_calc_current_no_plans(consumer: Consumer):
     # execution
-    ret = consumer.scheduled_charging_calc_current(None, 0, 0)
+    ret = consumer.scheduled_charging_calc_current(None, 0, 0, None)
 
     # evaluation
     assert ret == (0, Consumer.SCHEDULED_CHARGING_NO_PLANS_CONFIGURED, Chargemode.STOP)
@@ -606,10 +608,11 @@ def test_scheduled_charging_calc_current_electricity_tariff(
     data.data.optional_data.data.electricity_pricing.configured = True
 
     # execution
-    ret = consumer.scheduled_charging_calc_current(plan, remaining_time=601, duration=3600)
+    ret = consumer.scheduled_charging_calc_current(plan, remaining_time=601, duration=3600, deadline=123456)
 
     # evaluation
     assert ret == expected
+    mock_ep_get_loading_hours.assert_called_once_with({"deadline": 123456, "chargeDuration": 3600})
 
 
 @pytest.mark.parametrize(
