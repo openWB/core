@@ -284,8 +284,8 @@ def test_scheduled_charging_recent_plan(end_time_mock,
     # setup
     calculate_duration_mock = Mock(return_value=(100, 3000, 3, 500))
     monkeypatch.setattr(ChargeTemplate, "_calc_remaining_time", calculate_duration_mock)
-    check_end_time_mock = Mock(side_effect=end_time_mock)
-    monkeypatch.setattr(timecheck, "check_end_time", check_end_time_mock)
+    check_end_time_mock = Mock(side_effect=[(remaining, 123456 + i) for i, remaining in enumerate(end_time_mock)])
+    monkeypatch.setattr(timecheck, "check_end_time_with_deadline", check_end_time_mock)
     control_parameter = ControlParameter()
     ct = ChargeTemplate()
     plan_mock_0 = Mock(spec=ScheduledChargingPlan, active=True, current=14, id=0, limit=Limit(selected="amount"))
@@ -300,6 +300,7 @@ def test_scheduled_charging_recent_plan(end_time_mock,
     # evaluation
     if selected_plan:
         assert selected_plan.plan.id == expected_plan_num
+        assert selected_plan.deadline == 123456 + expected_plan_num
     else:
         assert selected_plan is None
 
@@ -495,8 +496,27 @@ def test_scheduled_charging_calc_current_electricity_tariff(
 
     # execution
     ret = ct.scheduled_charging_calc_current(
-        SelectedPlan(plan=plan, remaining_time=601, phases=3, duration=3600),
+        SelectedPlan(plan=plan, remaining_time=601, phases=3, duration=3600, deadline=123456),
         current_soc, 0, 3, 3, 6, 0, ChargingType.AC.value, EvTemplate(), BidiState.BIDI_CAPABLE, True)
 
     # evaluation
     assert ret == expected
+    if mock_ep_get_loading_hours.called:
+        mock_ep_get_loading_hours.assert_called_once_with({"deadline": 123456, "chargeDuration": 3600})
+
+
+def test_scheduled_charging_missing_deadline(monkeypatch, caplog):
+    ct = ChargeTemplate()
+    plan = ScheduledChargingPlan(
+        active=True, et_active=True,
+        limit=ScheduledLimit(selected="soc", soc_scheduled=80, soc_limit=90))
+    get_loading_hours = Mock()
+    monkeypatch.setattr(data.data.optional_data, "ep_get_loading_hours", get_loading_hours)
+
+    result = ct.scheduled_charging_calc_current(
+        SelectedPlan(plan=plan, remaining_time=601, phases=3, duration=3600),
+        50, 0, 3, 3, 6, 0, ChargingType.AC.value, EvTemplate(), BidiState.BIDI_CAPABLE, True)
+
+    assert result == (0, Chargemode.STOP, ct.SCHEDULED_CHARGING_MISSING_DEADLINE, 3)
+    assert ct.SCHEDULED_CHARGING_MISSING_DEADLINE in caplog.text
+    get_loading_hours.assert_not_called()
