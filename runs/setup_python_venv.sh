@@ -31,11 +31,18 @@ fi
 
 remove_unused_envs() {
 	local active_env candidate
-	active_env=$(readlink -f "$venv_link")
+	active_env=$(readlink -f "$venv_link" 2>/dev/null || true)
 	for candidate in "$venv_dir"/env.*; do
 		[[ -d "$candidate" && ! -L "$candidate" && "$candidate" != "$active_env" ]] || continue
 		[[ ${candidate##*/} =~ ^env\.[a-zA-Z0-9]{8}$ ]] || continue
-		[[ -f "$candidate/.openwb-ready" && -f "$candidate/.openwb-lock" && ! -e "$candidate/.openwb-unprotected" ]] || continue
+		if [[ ! -f "$candidate/.openwb-ready" ]]; then
+			echo "Removing incomplete Python environment $candidate"
+			if ! rm -rf -- "$candidate"; then
+				echo "Failed to remove incomplete Python environment $candidate" >&2
+			fi
+			continue
+		fi
+		[[ -f "$candidate/.openwb-lock" && ! -e "$candidate/.openwb-unprotected" ]] || continue
 		if ! exec 8<"$candidate/.openwb-lock"; then
 			echo "Cannot lock Python environment $candidate" >&2
 			continue
@@ -58,7 +65,7 @@ if [[ ${3:-} == --boot-cleanup ]]; then
 	fi
 	if [[ "$boot_id" != "$previous_boot_id" ]]; then
 		printf '%s\n' "$boot_id" > "$venv_dir/.cleanup-boot-id"
-		if [[ -n "$previous_boot_id" && -L "$venv_link" && -f "$venv_link/.openwb-ready" && -f "$venv_link/.openwb-lock" && -x "$venv_link/bin/python" ]]; then
+		if [[ -n "$previous_boot_id" ]]; then
 			remove_unused_envs
 		fi
 	fi
