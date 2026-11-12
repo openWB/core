@@ -503,3 +503,20 @@ def test_scheduled_charging_calc_current_electricity_tariff(
     assert ret == expected
     if mock_ep_get_loading_hours.called:
         mock_ep_get_loading_hours.assert_called_once_with({"deadline": 123456, "chargeDuration": 3600})
+
+
+def test_scheduled_charging_missing_deadline(monkeypatch, caplog):
+    ct = ChargeTemplate()
+    plan = ScheduledChargingPlan(
+        active=True, et_active=True,
+        limit=ScheduledLimit(selected="soc", soc_scheduled=80, soc_limit=90))
+    get_loading_hours = Mock()
+    monkeypatch.setattr(data.data.optional_data, "ep_get_loading_hours", get_loading_hours)
+
+    result = ct.scheduled_charging_calc_current(
+        SelectedPlan(plan=plan, remaining_time=601, phases=3, duration=3600),
+        50, 0, 3, 3, 6, 0, ChargingType.AC.value, EvTemplate(), BidiState.BIDI_CAPABLE, True)
+
+    assert result == (0, Chargemode.STOP, ct.SCHEDULED_CHARGING_MISSING_DEADLINE, 3)
+    assert ct.SCHEDULED_CHARGING_MISSING_DEADLINE in caplog.text
+    get_loading_hours.assert_not_called()
