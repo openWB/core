@@ -4,7 +4,7 @@ Stand: 2026-11-03. Geprüfter Repository-Stand: `c0c18da80`.
 
 ## Ergebnis
 
-Der aktuelle Stand ist für Python 3.9, 3.11 und 3.13 auf Linux x86_64 geprüft.
+Der aktuelle Stand ist für Python 3.9 und 3.13 auf Linux x86_64 geprüft.
 Die vollständige Testsuite besteht in den dokumentierten Kandidatenläufen mit
 jeweils **1.492 Tests**. Die Abhängigkeiten wurden installiert und geprüft;
 zusätzlich wurden die EVCC-gRPC-Aufrufe mit grpcio 1.73.0 getestet.
@@ -12,19 +12,16 @@ Das ist keine Produktionsfreigabe für alle Plattformen: Raspberry-Pi-Wheels
 werden heruntergeladen, aber nicht auf ARM ausgeführt; echte Hardware- und
 Updatepfade bleiben ungeprüft.
 
-Die CI-Matrix in
-[github-actions-python.yml](../.github/workflows/github-actions-python.yml)
-konfiguriert derzeit:
+Für die betrachteten Zielsysteme gelten folgende Kombinationen:
 
 | Raspberry-Pi-OS | glibc | Python | ARM-Wheel-Ziel |
 | --- | --- | --- | --- |
 | Bullseye | 2.31 | 3.9 | 3.9.2 |
-| Bookworm | 2.36 | 3.11 | 3.11 |
 | Trixie | 2.41 | 3.13 | 3.13 |
 
-Die Matrix prüft Installation und Tests auf Ubuntu x86_64 sowie den binären
-ARMv7-Download der vollständigen Anforderungsliste. Ein erfolgreicher
-Workflow-Lauf für alle drei Einträge ist hier nicht belegt.
+Die Kompatibilitätsprüfung umfasst Installation und Tests auf Ubuntu x86_64
+sowie binäre ARM-Wheel-Downloads. Ein erfolgreicher Workflow-Lauf für beide
+Zielkombinationen ist hier nicht belegt.
 
 ## Behobene Blocker
 
@@ -39,7 +36,7 @@ Workflow-Lauf für alle drei Einträge ist hier nicht belegt.
   [version_by_telnet.py](../packages/modules/common/version_by_telnet.py).
 - `grpcio==1.73.0` ersetzt 1.60.1. Damit steht ein CPython-3.13-Wheel bereit;
   der vorherige Quellbuild-Fehler mit `pkg_resources` entfällt. Die Version
-  besitzt außerdem geprüfte ARMv7-Wheels für CPython 3.9, 3.11 und 3.13.
+  besitzt außerdem geprüfte ARMv7-Wheels für CPython 3.9 und 3.13.
   Die EVCC-Methoden `New` und `SoC`, einschließlich TLS- und Fehlerpfaden,
   wurden mit dieser Version geprüft.
 - `cryptography==50.0.0` unterstützt Python 3.9.2 und höher, nicht 3.9.0 oder
@@ -83,7 +80,6 @@ Workflow-Lauf für alle drei Einträge ist hier nicht belegt.
 | Python | Ergebnis |
 | --- | --- |
 | 3.9 | Vollständige Kandidateninstallation und Abhängigkeitsprüfung; 1.492 Tests bestanden. ARMv7-Wheels für Bullseye wurden geprüft. |
-| 3.11 | Vollständige Kandidateninstallation und Abhängigkeitsprüfung; 1.492 Tests bestanden. ARMv7-Wheels für Bookworm wurden geprüft. |
 | 3.13 | Vollständige Kandidateninstallation und Abhängigkeitsprüfung; 1.492 Tests bestanden. grpcio-1.73.0-EVCC-Aufrufe und ARMv7-Wheels für Trixie wurden geprüft. |
 | 3.15 | Nicht freigegeben: Typing-Extensions-Pin, feste Zeittarife und fehlende Wheels. |
 
