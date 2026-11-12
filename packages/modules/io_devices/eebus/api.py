@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
+from copy import deepcopy
 from pathlib import Path
 import logging
 import platform
 import subprocess
-from threading import Thread
+from threading import Lock
 from typing import Optional
 
 from control import data
@@ -12,7 +13,6 @@ from helpermodules import timecheck
 from helpermodules.broker import BrokerClient
 from helpermodules.pub import Pub
 from helpermodules.utils.run_command import run_command
-from helpermodules.utils._thread_handler import is_thread_alive, thread_handler
 from helpermodules.utils.topic_parser import decode_payload
 from modules.common.abstract_device import DeviceDescriptor
 from modules.common.component_state import IoState
@@ -57,56 +57,63 @@ def get_executable_path() -> Optional[str]:
 def create_io(config: Eebus):
     received_topics = {}
     broker = None
-    thread_exception = None  # Shared state für Thread-Exceptions
+    process = None
+    stopped = False
+    process_lock = Lock()
 
     def run_eebus():
-        def run():
-            nonlocal thread_exception
-            try:
-                log.debug(f"Starte EEbus-Client für Steuerbox mit ID {config.id} und "
-                          f"SKI {config.configuration.remote_ski}")
-                subprocess.run(
-                    [get_executable_path(),
-                        str(config.configuration.port),
-                        config.configuration.remote_ski,
-                        f"{cert_path}/hems-cert-{config.id}.pem",
-                        f"{cert_path}/hems-key-{config.id}.pem",
-                        str(config.id),
-                        f"{Path(__file__).resolve().parents[4]}/ramdisk/eebus_hems_client.log"],
+        nonlocal process
+        log.debug(f"Starte EEbus-Client für Steuerbox mit ID {config.id} und "
+                  f"SKI {config.configuration.remote_ski}")
+        process = None
+        executable = get_executable_path()
+        if executable is None:
+            raise FileNotFoundError("EEBus-Client für diese Plattform nicht gefunden.")
+        process = subprocess.Popen(
+            [executable,
+             str(config.configuration.port),
+             config.configuration.remote_ski,
+             f"{cert_path}/hems-cert-{config.id}.pem",
+             f"{cert_path}/hems-key-{config.id}.pem",
+             str(config.id),
+             f"{Path(__file__).resolve().parents[4]}/ramdisk/eebus_hems_client.log"],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL
+        )
 
-                    check=True,
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.PIPE,
-                    text=True
-                )
-            except subprocess.CalledProcessError as e:
-                if e.returncode == 2:
-                    msg = ("Zertifikat oder Key ungültig. Wenn das Zertifikat abgelaufen ist, bitte in "
-                           "den Einstellungen ein neues Zertifikat generieren und den SKI beim VNB "
-                           "aktualisieren.")
-                    control_command_log.error(msg)
-                    thread_exception = ValueError(msg)
-                else:
-                    control_command_log.error(f"Fehlercode: {e.returncode}, Fehler: {e.stderr}")
-                    thread_exception = ValueError(f"Fehlercode: {e.returncode}, Fehler: {e.stderr}")
-            except Exception as e:
-                control_command_log.error(f"Fehler im EEbus-Client: {e}")
-                thread_exception = e
-        thread_handler(Thread(
-            target=run,
-            args=(),
-            name="eebus_binary"))
+    def shutdown():
+        nonlocal stopped, process
+        with process_lock:
+            stopped = True
+            if process is not None:
+                if process.poll() is None:
+                    process.terminate()
+                try:
+                    process.wait(timeout=5)
+                except subprocess.TimeoutExpired:
+                    process.kill()
+                    process.wait()
+            process = None
+        if broker is not None:
+            broker.disconnect()
 
     def read():
-        nonlocal thread_exception
-
-        if is_thread_alive("eebus_binary") is False:
-            run_eebus()
-            if thread_exception is not None:
-                exception_to_raise = thread_exception
-                thread_exception = None
-                raise exception_to_raise
-        broker.start_finite_loop()
+        with process_lock:
+            if stopped:
+                raise RuntimeError("EEBus-Client wurde beendet.")
+            returncode = process.poll() if process is not None else None
+            if process is None or returncode is not None:
+                run_eebus()
+                if returncode:
+                    if returncode == 2:
+                        msg = ("Zertifikat oder Key ungültig. Wenn das Zertifikat abgelaufen ist, bitte in "
+                               "den Einstellungen ein neues Zertifikat generieren und den SKI beim VNB "
+                               "aktualisieren.")
+                    else:
+                        msg = f"EEBus-Client beendet mit Fehlercode: {returncode}"
+                    control_command_log.error(msg)
+                    raise ValueError(msg)
+            broker.start_finite_loop()
         log.debug(f"Empfange MQTT Daten für EEBus {config.id}: {received_topics}")
         io_state = IoState()
         io_state.analog_input = getattr(io_state, "analog_input", None) or {}
@@ -148,7 +155,6 @@ def create_io(config: Eebus):
         nonlocal broker
         nonlocal received_topics
         Path(f"{Path(__file__).resolve().parents[4]}/ramdisk/eebus_hems_client.log").touch(exist_ok=True)
-        run_eebus()
 
         def on_connect(client, userdata, flags, rc):
             client.subscribe(f"openWB/eebus/{config.id}/#")
@@ -159,8 +165,12 @@ def create_io(config: Eebus):
         received_topics = {}
         broker = BrokerClient(f"subscribeMqttEebus{config.id}",
                               on_connect, on_message)
+        # Initialize the broker even if starting the binary fails, so read() can retry later.
+        with process_lock:
+            run_eebus()
 
-    return ConfigurableIo(config=config, component_reader=read, component_writer=lambda: None, initializer=initializer)
+    return ConfigurableIo(config=config, component_reader=read, component_writer=lambda: None,
+                          initializer=initializer, shutdown_handler=shutdown)
 
 
 device_descriptor = DeviceDescriptor(configuration_factory=Eebus)
@@ -195,7 +205,7 @@ def create_pub_cert_ski(id: int):
             cert_info.subject = line.strip()[len("Subject: "):].strip()
     if "" == cert_info.client_ski:
         raise ValueError("SKI nicht gefunden")
-    config: Eebus = data.data.system_data[f"io{id}"].config
+    config: Eebus = deepcopy(data.data.system_data[f"io{id}"].config)
     config.configuration.cert_info = cert_info
     with open(f"{cert_path}/ski-{id}", "w") as ski_file:
         ski_file.write(cert_info.client_ski)
