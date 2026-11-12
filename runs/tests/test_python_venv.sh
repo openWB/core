@@ -30,6 +30,17 @@ if [[ "${1:-}" == --hold ]]; then
 	read -r
 	exit 0
 fi
+if [[ -n "${MOCK_PYTHON_LOG:-}" ]]; then
+	printf '%s\n' "$*" >> "$MOCK_PYTHON_LOG"
+fi
+if [[ "$*" == '-m pip check' ]]; then
+	[[ ${PIP_CHECK_RESULT:-0} == 0 ]]
+	exit $?
+fi
+if [[ "$1" == -c && "$2" == 'import aiohttp, evdev, grpc, jq, lxml, paho.mqtt.client, pymodbus, telnetlib3' ]]; then
+	[[ ${IMPORT_PROBE_RESULT:-0} == 0 ]]
+	exit $?
+fi
 if [[ "${1:-}" == -c && "${2:-}" == *sysconfig* ]]; then
 	mkdir -p "$(dirname "$0")/../site-packages"
 	cd "$(dirname "$0")/../site-packages" && pwd
@@ -93,6 +104,25 @@ if FAIL_INSTALL=1 bash "$script_dir/setup_python_venv.sh" "$workdir/openwb" 1; t
 fi
 [[ $(readlink -f "$workdir/openwb/.venv") == "$first_env" ]]
 [[ $(find "$workdir/openwb/.venvs" -maxdepth 1 -type d -name 'env.*' | wc -l) == 1 ]]
+
+for validation in pip-check import-probe; do
+	validation_root="$workdir/failed-$validation"
+	mkdir "$validation_root"
+	cp "$workdir/openwb/requirements.txt" "$validation_root/requirements.txt"
+	status=0
+	if [[ "$validation" == pip-check ]]; then
+		PIP_CHECK_RESULT=1 MOCK_PYTHON_LOG="$validation_root/python.log" \
+			bash "$script_dir/setup_python_venv.sh" "$validation_root" 1 > "$validation_root/setup.log" 2>&1 || status=$?
+		grep -q '^-m pip check$' "$validation_root/python.log"
+	else
+		IMPORT_PROBE_RESULT=1 MOCK_PYTHON_LOG="$validation_root/python.log" \
+			bash "$script_dir/setup_python_venv.sh" "$validation_root" 1 > "$validation_root/setup.log" 2>&1 || status=$?
+		grep -q '^-c import aiohttp, evdev, grpc, jq, lxml, paho.mqtt.client, pymodbus, telnetlib3$' "$validation_root/python.log"
+	fi
+	[[ "$status" != 0 ]]
+	[[ ! -e "$validation_root/.venv" && ! -L "$validation_root/.venv" ]]
+	[[ $(find "$validation_root/.venvs" -maxdepth 1 -type d -name 'env.*' | wc -l) == 0 ]]
+done
 
 status=0
 bash "$script_dir/setup_python_venv.sh" "$workdir/openwb" 1 || status=$?
