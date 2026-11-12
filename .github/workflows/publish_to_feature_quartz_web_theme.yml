@@ -1,0 +1,43 @@
+name: Publish to feature_quartz_web_theme
+on:
+  push:
+    paths:
+      - packages/modules/web_themes/quartz/source/**
+    branches:
+      - feature_quartz_web_theme
+
+jobs:
+  build-and-push-theme:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v5
+
+      - name: Setup Node.js v24
+        uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: packages/modules/web_themes/quartz/source/package-lock.json
+
+      - name: Install dependencies and build
+        run: |
+          cd packages/modules/web_themes/quartz/source
+          npm install
+          npm run build --if-present
+
+      - name: Commit and push built theme
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+
+          git add packages/modules/web_themes/quartz/web/
+
+          if ! git diff --cached --quiet; then
+            git commit -m "Build Quartz web theme"
+            git push
+          else
+            echo "No changes to commit."
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
