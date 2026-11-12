@@ -43,7 +43,10 @@ class SunspecBat(AbstractBat):
             return read_point(self.client, self.battery_model, points.BATTERY[name], unit=unit)
 
         # SunSpec W ist negativ beim Laden, positiv beim Entladen - umgekehrt zur openWB-Konvention.
-        power = read("W") * -1
+        power = read("W")
+        if power is None:
+            raise ValueError("SunSpec Speicher liefert keinen gültigen Leistungs-Wert")
+        power *= -1
         soc = read("SoC")
 
         self.peak_filter.check_values(power)

@@ -57,8 +57,9 @@ class SunspecCounter(AbstractCounter):
 
         sign = -1 if self.invert_power_direction else 1
         power = read("W")
-        if power is not None:
-            power *= sign
+        if power is None:
+            raise ValueError("SunSpec Zähler liefert keinen gültigen Leistungs-Wert")
+        power *= sign
         imported = read("TotWhImp")
         exported = read("TotWhExp")
         # single-/split-phase meters leave unused phases as None (sentinel) - default them so

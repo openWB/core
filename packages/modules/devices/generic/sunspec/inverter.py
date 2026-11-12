@@ -45,7 +45,10 @@ class SunspecInverter(AbstractInverter):
         def read(name: str):
             return read_point(self.client, self.model, self.points[name], unit=unit)
 
-        power = read("W") * -1
+        power = read("W")
+        if power is None:
+            raise ValueError("SunSpec Wechselrichter liefert keinen gültigen Leistungs-Wert")
+        power *= -1
         exported = read("WH")
 
         _, exported = self.peak_filter.check_values(power, None, exported)
