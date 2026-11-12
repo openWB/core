@@ -533,3 +533,25 @@ class TestForecastModule:
 
         assert opt.data.forecast.get.values == {"1": 1.0}
         assert opt.data.forecast.get.today_kwh == 5.0
+
+
+class TestForecastGetCurrentValue:
+    def test_returns_closest_past_or_current_value(self, monkeypatch):
+        opt = Optional()
+        opt.data.forecast.get.today_values = {"100": 1.0, "200": 2.0, "300": 3.0}
+        monkeypatch.setattr(timecheck, "create_timestamp", Mock(return_value=250))
+
+        assert opt.forecast_get_current_value() == 2.0
+
+    def test_returns_none_when_today_values_empty(self):
+        opt = Optional()
+        opt.data.forecast.get.today_values = {}
+
+        assert opt.forecast_get_current_value() is None
+
+    def test_returns_none_when_all_timestamps_are_in_the_future(self, monkeypatch):
+        opt = Optional()
+        opt.data.forecast.get.today_values = {"100": 1.0, "200": 2.0}
+        monkeypatch.setattr(timecheck, "create_timestamp", Mock(return_value=50))
+
+        assert opt.forecast_get_current_value() is None
