@@ -65,8 +65,12 @@ def create_io(config: Eebus):
         nonlocal process
         log.debug(f"Starte EEbus-Client für Steuerbox mit ID {config.id} und "
                   f"SKI {config.configuration.remote_ski}")
+        process = None
+        executable = get_executable_path()
+        if executable is None:
+            raise FileNotFoundError("EEBus-Client für diese Plattform nicht gefunden.")
         process = subprocess.Popen(
-            [get_executable_path(),
+            [executable,
              str(config.configuration.port),
              config.configuration.remote_ski,
              f"{cert_path}/hems-cert-{config.id}.pem",
@@ -74,8 +78,7 @@ def create_io(config: Eebus):
              str(config.id),
              f"{Path(__file__).resolve().parents[4]}/ramdisk/eebus_hems_client.log"],
             stdout=subprocess.DEVNULL,
-            stderr=subprocess.PIPE,
-            text=True
+            stderr=subprocess.DEVNULL
         )
 
     def shutdown():
@@ -86,10 +89,10 @@ def create_io(config: Eebus):
                 if process.poll() is None:
                     process.terminate()
                 try:
-                    process.communicate(timeout=5)
+                    process.wait(timeout=5)
                 except subprocess.TimeoutExpired:
                     process.kill()
-                    process.communicate()
+                    process.wait()
             process = None
         if broker is not None:
             broker.disconnect()
@@ -100,9 +103,6 @@ def create_io(config: Eebus):
                 raise RuntimeError("EEBus-Client wurde beendet.")
             returncode = process.poll() if process is not None else None
             if process is None or returncode is not None:
-                stderr = ""
-                if process is not None:
-                    _, stderr = process.communicate()
                 run_eebus()
                 if returncode:
                     if returncode == 2:
@@ -110,10 +110,10 @@ def create_io(config: Eebus):
                                "den Einstellungen ein neues Zertifikat generieren und den SKI beim VNB "
                                "aktualisieren.")
                     else:
-                        msg = f"Fehlercode: {returncode}, Fehler: {stderr}"
+                        msg = f"EEBus-Client beendet mit Fehlercode: {returncode}"
                     control_command_log.error(msg)
                     raise ValueError(msg)
-        broker.start_finite_loop()
+            broker.start_finite_loop()
         log.debug(f"Empfange MQTT Daten für EEBus {config.id}: {received_topics}")
         io_state = IoState()
         io_state.analog_input = getattr(io_state, "analog_input", None) or {}
@@ -155,8 +155,6 @@ def create_io(config: Eebus):
         nonlocal broker
         nonlocal received_topics
         Path(f"{Path(__file__).resolve().parents[4]}/ramdisk/eebus_hems_client.log").touch(exist_ok=True)
-        with process_lock:
-            run_eebus()
 
         def on_connect(client, userdata, flags, rc):
             client.subscribe(f"openWB/eebus/{config.id}/#")
@@ -167,6 +165,9 @@ def create_io(config: Eebus):
         received_topics = {}
         broker = BrokerClient(f"subscribeMqttEebus{config.id}",
                               on_connect, on_message)
+        # Initialize the broker even if starting the binary fails, so read() can retry later.
+        with process_lock:
+            run_eebus()
 
     return ConfigurableIo(config=config, component_reader=read, component_writer=lambda: None,
                           initializer=initializer, shutdown_handler=shutdown)
