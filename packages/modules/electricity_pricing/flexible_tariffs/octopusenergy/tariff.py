@@ -123,6 +123,27 @@ class OctopusEnergyClient:
                       }
                     }
                   }
+                  unitRateForecast {
+                    validFrom
+                    validTo
+                    unitRateInformation {
+                      ... on SimpleProductUnitRateInformation {
+                        __typename
+                        latestGrossUnitRateCentsPerKwh
+                      }
+                      ... on TimeOfUseProductUnitRateInformation {
+                        __typename
+                        rates {
+                          latestGrossUnitRateCentsPerKwh
+                          timeslotName
+                          timeslotActivationRules {
+                            activeFromTime
+                            activeToTime
+                          }
+                        }
+                      }
+                    }
+                  }
                   validFrom
                   validTo
                 }
@@ -149,14 +170,33 @@ def get_rate_from_time_of_use_product(unit_rate_info: dict, hour_time_utc: datet
     for rate_info in unit_rate_info['rates']:
         active_from = datetime.strptime(rate_info['timeslotActivationRules'][0]['activeFromTime'], '%H:%M:%S').time()
         active_to = datetime.strptime(rate_info['timeslotActivationRules'][0]['activeToTime'], '%H:%M:%S').time()
-        # Mitternachts-Überlauf korrekt behandeln
-        if active_from <= active_to:
+        if active_from == active_to:
+            in_slot = True
+        elif active_from < active_to:
             in_slot = active_from <= local_hour_time < active_to
         else:
+            # Mitternachts-Überlauf
             in_slot = local_hour_time >= active_from or local_hour_time < active_to
 
         if in_slot:
             return float(rate_info['latestGrossUnitRateCentsPerKwh']) / 100 / 1000
+    return None
+
+
+def get_rate_from_unit_rate_info(unit_rate_info: dict, hour_time_utc: datetime) -> Optional[float]:
+    if unit_rate_info['__typename'] == 'SimpleProductUnitRateInformation':
+        return get_rate_from_simple_product(unit_rate_info)
+    elif unit_rate_info['__typename'] == 'TimeOfUseProductUnitRateInformation':
+        return get_rate_from_time_of_use_product(unit_rate_info, hour_time_utc)
+    return None
+
+
+def get_rate_from_forecast(forecast: list, hour_time_utc: datetime) -> Optional[float]:
+    for entry in forecast:
+        valid_from = parse_datetime(entry['validFrom'])
+        valid_to = parse_datetime(entry['validTo']) if entry.get('validTo') else None
+        if valid_from <= hour_time_utc and (valid_to is None or hour_time_utc < valid_to):
+            return get_rate_from_unit_rate_info(entry['unitRateInformation'], hour_time_utc)
     return None
 
 
@@ -169,16 +209,14 @@ def process_agreement(agreement: dict, hour_time_utc: datetime, prices: Dict[str
         valid = valid_from <= hour_time_utc <= valid_to
 
     if valid:
-        unit_rate_info = agreement['unitRateInformation']
         local_hour_time = hour_time_utc.astimezone(GERMAN_TZ)
         timestamp = str(int(local_hour_time.replace(minute=0, second=0, microsecond=0).timestamp()))
-        if unit_rate_info['__typename'] == 'SimpleProductUnitRateInformation':
-            prices[timestamp] = get_rate_from_simple_product(unit_rate_info)
-        elif unit_rate_info['__typename'] == 'TimeOfUseProductUnitRateInformation':
-            rate = get_rate_from_time_of_use_product(unit_rate_info, hour_time_utc)
-            if rate is not None:
-                log.debug(f"Adding rate: {rate} for timestamp: {timestamp} with hour_time_utc: {hour_time_utc}")
-                prices[timestamp] = rate
+        forecast = agreement.get('unitRateForecast')
+        rate = (get_rate_from_forecast(forecast, hour_time_utc) if forecast
+                else get_rate_from_unit_rate_info(agreement['unitRateInformation'], hour_time_utc))
+        if rate is not None:
+            log.debug(f"Adding rate: {rate} for timestamp: {timestamp} with hour_time_utc: {hour_time_utc}")
+            prices[timestamp] = rate
 
 
 def build_tariff_state(data: dict) -> Dict[str, float]:
