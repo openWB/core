@@ -1,17 +1,17 @@
 # don't update python distribution packages in here
 typing-extensions==4.13.2
 jq==1.10.0
-paho_mqtt==1.6.1
+paho-mqtt==1.6.1
 pymodbus==2.5.3
 pytest==8.4.2
-requests_mock==1.9.3
+requests-mock==1.9.3
 lxml==6.1.0
 aiohttp==3.13.4
 schedule==1.1.0
 PyJWT==2.13.0
 bs4==0.0.1
 pkce==1.0.3
-evdev==1.6.1
+evdev==1.9.1
 cryptography==50.0.0
 msal==1.37.0
 python-dateutil==2.8.2

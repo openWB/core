@@ -29,6 +29,13 @@ Hier gibt es eine kurze Übersicht: [https://www.raspberrypi.com/news/coding-on-
 
 Für Live-Debugging eine Remote-Session starten, openwb2.service beenden und main.py direkt in VSCode über 'Ausführen und Debuggen' starten. Ggf. muss hier einmalig die passende Umgebung (SSH) ausgewählt werden.
 
+Auf einer installierten openWB liegt der Python-Interpreter unter
+`/var/www/html/openWB/.venv/bin/python`. Die Umgebung wird beim Start anhand der
+Requirements aktualisiert und sollte nicht manuell verändert werden. Für eigene
+Entwicklungen empfiehlt sich ein separates VEnv. Längere Diagnose-Skripte auf
+der Anlage über `/var/www/html/openWB/runs/run_python.sh` mit `bash` starten,
+damit ihr Environment während der Ausführung nicht automatisch entfernt wird.
+
 ## Flake8
 
 Nach dem Erstellen eines PRs gegen das offizielle Repo werden automatisiert einige Tests durchgeführt. Schlagen diese fehl, muss der PR korrigiert werden.
