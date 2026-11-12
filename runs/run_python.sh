@@ -22,7 +22,12 @@ if [[ -f "$base_dir/.venvs/.lock" ]]; then
 	exec 9<&-
 fi
 if [[ -f "$base_dir/.venvs/.legacy" && ! -e "$base_dir/.venvs/.migrated" ]]; then
-	exec /usr/bin/python3 "$@"
+	legacy_python=${OPENWB_LEGACY_PYTHON:-/usr/bin/python3}
+	if [[ -x "$legacy_python" ]] && "$legacy_python" -c 'import importlib.util,sys; sys.exit(0 if importlib.util.find_spec("telnetlib3") is not None or importlib.util.find_spec("telnetlib") is not None else 1)' >/dev/null 2>&1; then
+		exec "$legacy_python" "$@"
+	fi
+	echo "Cannot use the legacy Python interpreter: neither telnetlib3 nor telnetlib is available" >&2
+	exit 1
 fi
 
 echo "No usable openWB Python environment is available" >&2

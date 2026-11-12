@@ -1,5 +1,11 @@
 import socket
-from telnetlib3 import telnetlib
+
+try:
+    from telnetlib3 import telnetlib
+except ModuleNotFoundError as error:
+    if error.name != "telnetlib3":
+        raise
+    import telnetlib
 
 
 def get_version_by_telnet(expected_bytearray: str, ip_address: str, port: int = 8898):

@@ -55,6 +55,16 @@ EOF
 chmod +x "$workdir/bin/python"
 export OPENWB_PYTHON="$workdir/bin/python"
 export PIP_TARGET=/unexpected PIP_PREFIX=/unexpected PIP_ROOT=/unexpected PIP_USER=1
+cat > "$workdir/bin/legacy-python" <<'EOF'
+#!/bin/bash
+if [[ "$1" == -c && "$2" == *find_spec* ]]; then
+	[[ ${LEGACY_TELNET_AVAILABLE:-0} == 1 ]]
+	exit $?
+fi
+printf 'legacy interpreter: %s\n' "$*"
+EOF
+chmod +x "$workdir/bin/legacy-python"
+export OPENWB_LEGACY_PYTHON="$workdir/bin/legacy-python"
 
 status=0
 bash "$script_dir/setup_python_venv.sh" "$workdir/openwb" 1 || status=$?
@@ -210,7 +220,13 @@ if bash "$workdir/openwb/runs/run_python.sh" -c 'pass'; then
 	exit 1
 fi
 rm "$workdir/openwb/.venvs/.migrated"
-bash "$workdir/openwb/runs/run_python.sh" -c 'pass'
+if bash "$workdir/openwb/runs/run_python.sh" --probe > "$workdir/legacy.out" 2> "$workdir/legacy.err"; then
+	exit 1
+fi
+[[ ! -s "$workdir/legacy.out" ]]
+grep -q 'neither telnetlib3 nor telnetlib is available' "$workdir/legacy.err"
+LEGACY_TELNET_AVAILABLE=1 bash "$workdir/openwb/runs/run_python.sh" --probe > "$workdir/legacy.out"
+grep -q 'legacy interpreter: --probe' "$workdir/legacy.out"
 
 mkdir "$workdir/openwb/.venv"
 if bash "$script_dir/setup_python_venv.sh" "$workdir/openwb" 1; then
