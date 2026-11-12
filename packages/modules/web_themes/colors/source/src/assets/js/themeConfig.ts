@@ -49,7 +49,7 @@ export class Config {
 	zoomGraph = false
 	zoomedWidget = 1
 	countersToShow: number[] = []
-	vehiclesWithSocToShow: number[] = []
+	vehiclesWithSocToShow: number[] | undefined = undefined
 	priorities: Map<number, number> = new Map()
 	constructor() {}
 	get showRelativeArcs() {
