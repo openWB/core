@@ -71,7 +71,7 @@ class ChargepointRfidMixin:
                     else:
                         msg = "Nach Ladestart wird kein anderer ID-Tag akzeptiert."
                 else:
-                    msg = f"Der ID-Tag {rfid} ist an diesem Ladepunkt nicht gültig."
+                    msg = f"Der ID-Tag {rfid} ist hier keinem Ladepunkt-Profil oder Fahrzeug zugeordnet."
             else:
                 msg = "Identifikation von Fahrzeugen ist nicht aktiviert."
             self.data.get.rfid = None

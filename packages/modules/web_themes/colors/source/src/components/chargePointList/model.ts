@@ -6,7 +6,7 @@ import {
 	type EnergyData,
 	type PowerItem,
 } from '@/assets/js/types'
-import { globalConfig } from '@/assets/js/themeConfig'
+import { globalConfig, savePrefs } from '@/assets/js/themeConfig'
 import { getColor } from '@/assets/js/model'
 export class ChargePoint implements PowerItem {
 	id: number
@@ -392,6 +392,7 @@ export class Vehicle {
 	private _chargeTemplateId = 0
 	isSocConfigured = false
 	isSocManual = false
+	private _showSoc = true
 	get chargeTemplateId() {
 		return this._chargeTemplateId
 	}
@@ -426,6 +427,13 @@ export class Vehicle {
 			this.name != '__invalid' &&
 			(this.id != 0 || globalConfig.showStandardVehicle)
 		)
+	}
+	get showSoc(): boolean {
+		return this._showSoc
+	}
+	set showSoc(b: boolean) {
+		this._showSoc = b
+		savePrefs()
 	}
 }
 export interface ConnectedVehicleConfig {
@@ -582,13 +590,15 @@ export const topVehicles = computed(() => {
 		.filter(
 			(cp) =>
 				vehicles[cp.connectedVehicle] &&
-				vehicles[cp.connectedVehicle].isSocConfigured,
+				vehicles[cp.connectedVehicle].isSocConfigured &&
+				vehicles[cp.connectedVehicle].showSoc,
 		)
 		.map((cp) => cp.connectedVehicle)
 	const otherVehicles = Object.values(vehicles).filter(
 		(v) =>
 			v.visible &&
 			v.isSocConfigured &&
+			v.showSoc &&
 			!connectedVehiclesWithSoc.includes(v.id),
 	)
 	result = connectedVehiclesWithSoc

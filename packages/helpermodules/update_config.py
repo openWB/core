@@ -63,7 +63,7 @@ NO_MODULE = {"type": None, "configuration": {}}
 
 class UpdateConfig:
 
-    DATASTORE_VERSION = 156
+    DATASTORE_VERSION = 159
 
     FILE_OPERATION_VERSION = 0
 
@@ -225,6 +225,12 @@ class UpdateConfig:
         "^openWB/consumer/[0-9]+/control_parameter/timestamp_switch_on_off$",
         "^openWB/consumer/[0-9]+/get/charge_state$",
         "^openWB/consumer/[0-9]+/get/currents$",
+        "^openWB/consumer/[0-9]+/get/rfid$",
+        "^openWB/consumer/[0-9]+/get/rfid_timestamp$",
+        "^openWB/consumer/[0-9]+/set/rfid$",
+        "^openWB/consumer/[0-9]+/set/rfid_timestamp$",
+        "^openWB/consumer/[0-9]+/set/rfid_power_end$",
+        "^openWB/consumer/[0-9]+/set/rfid_power_seen$",
         "^openWB/consumer/[0-9]+/get/exported$",
         "^openWB/consumer/[0-9]+/get/fault_state$",
         "^openWB/consumer/[0-9]+/get/fault_str$",
@@ -388,6 +394,8 @@ class UpdateConfig:
         "^openWB/mqtt/chargepoint/[0-9]+/get/power_factors$",
         "^openWB/mqtt/chargepoint/[0-9]+/get/rfid$",
         "^openWB/mqtt/consumer/[0-9]+/get/currents$",
+        "^openWB/mqtt/consumer/[0-9]+/get/rfid$",
+        "^openWB/mqtt/consumer/[0-9]+/get/rfid_timestamp$",
         "^openWB/mqtt/consumer/[0-9]+/get/imported$",
         "^openWB/mqtt/consumer/[0-9]+/get/exported$",
         "^openWB/mqtt/consumer/[0-9]+/get/power$",
@@ -834,11 +842,11 @@ class UpdateConfig:
         try:
             # erst breaking changes auflösen, sonst sind alte Topics schon gelöscht
             self.__solve_breaking_changes()
-            self.__solve_breaking_changes_filesystem()
             self.__remove_outdated_topics()
             self._remove_invalid_topics()
             self.__pub_missing_defaults()
             self.__update_version()
+            self.__start_filesystem_migrations()
         except Exception:
             log.exception("Fehler bei der Aktualisierung des Brokers.")
             pub_system_message({}, "Fehler bei der Aktualisierung der Konfiguration des Brokers.", MessageType.ERROR)
@@ -935,66 +943,21 @@ class UpdateConfig:
                 pub_system_message(
                     {}, "Fehler bei der Aktualisierung der Konfiguration des Brokers.", MessageType.ERROR)
 
-    def __solve_breaking_changes_filesystem(self) -> None:
-        """Führt dateisystembezogene Migrationen anhand der file_operation_version aus."""
-        file_operation_version = decode_payload(self.all_received_topics.get("openWB/system/file_operation_version"))
-        if file_operation_version is None:
-            # Neues Topic (z.B. bei Upgrade von älteren Versionen): alle File-Operation-Upgrades ausführen.
-            file_operation_version = []
-            self.__update_topic("openWB/system/file_operation_version", file_operation_version)
-        elif isinstance(file_operation_version, int):
-            # Legacy-Format (int): bereits ausgeführte Upgrades als Liste abbilden.
-            file_operation_version = list(range(file_operation_version))
-            self.__update_topic("openWB/system/file_operation_version", file_operation_version)
-
-        log.debug(f"current file operation version: {file_operation_version}")
-        log.debug(f"target file operation version: {self.FILE_OPERATION_VERSION}")
-        for version in list(range(self.FILE_OPERATION_VERSION+1)):
-            try:
-                operation_required = version not in file_operation_version
-                if version == 0:
-                    # Version 0 erneut ausführen, solange die Hintergrund-Generierung der Tages-/Monatssummen
-                    # noch nicht erfolgreich abgeschlossen ist (Flag ist nicht True).
-                    log_totals_generation_finished = decode_payload(
-                        self.all_received_topics.get("openWB/system/log_data_ready"))
-                    operation_required = operation_required or log_totals_generation_finished is not True
-
-                if operation_required:
-                    log.debug(f"upgrading File Operation version '{version}'")
-                    getattr(self, f"upgrade_file_operation_{version}")()
-            except AttributeError:
-                log.error(f"missing upgrade function! '{version}'")
-            except Exception:
-                log.exception("Fehler bei der Aktualisierung des Brokers.")
-                pub_system_message(
-                    {}, "Fehler bei der Aktualisierung der Konfiguration des Brokers.", MessageType.ERROR)
-
-    def upgrade_file_operation_0(self) -> None:
+    def __start_filesystem_migrations(self) -> None:
         """
-        Generiere die Totals-Summen für Tage und Monate
+        Startet in einem eigen Prozess die Filesystem_Migration
+        -> alle folgenden upgrade_file_operation_X werden nacheinander und nicht parallel abgearbeitet
         """
-
-        self.__update_topic("openWB/system/log_data_ready", False)
-        try:
-            _generate_totals_subprocess = subprocess.Popen(
-                [
-                    sys.executable,
-                    "-m",
-                    "helpermodules.measurement_logging.generate_totals_subprocess"
-                ],
-                cwd="/var/www/html/openWB/packages",
-                start_new_session=True,
-                stdin=subprocess.DEVNULL,
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL,
-                close_fds=True
-            )
-
-            log.debug("generate_totals_subprocess gestartet, PID: %s", _generate_totals_subprocess.pid)
-            self._append_file_operation_version(0)
-        except Exception:
-            _generate_totals_subprocess = None
-            log.exception("Fehler beim Starten des generate_totals_subprocess.")
+        process = subprocess.Popen(
+            [sys.executable, "-m", "helpermodules.filesystem_migrations"],
+            cwd=self.base_path / "packages",
+            start_new_session=True,
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            close_fds=True,
+        )
+        log.debug("Dateisystem-Migrationen gestartet, PID: %s", process.pid)
 
     def _loop_all_received_topics(self, callback) -> None:
         modified_topics = {}
@@ -1013,12 +976,6 @@ class UpdateConfig:
         if version not in datastore_versions:
             datastore_versions.append(version)
             self.__update_topic("openWB/system/datastore_version", datastore_versions)
-
-    def _append_file_operation_version(self, version: int) -> None:
-        file_operation_versions = decode_payload(self.all_received_topics.get("openWB/system/file_operation_version"))
-        if version not in file_operation_versions:
-            file_operation_versions.append(version)
-            self.__update_topic("openWB/system/file_operation_version", file_operation_versions)
 
     def upgrade_datastore_0(self) -> None:
         def upgrade(topic: str, payload) -> Optional[dict]:
@@ -4193,6 +4150,75 @@ class UpdateConfig:
         self._append_datastore_version(155)
 
     def upgrade_datastore_156(self) -> None:
+        """Optionale Preisobergrenze für Energy-Charts ergänzen."""
+        def upgrade(topic: str, payload) -> Optional[dict]:
+            if topic == "openWB/optional/ep/flexible_tariff/provider":
+                provider = decode_payload(payload)
+                if provider.get("type") == "energycharts":
+                    config = provider["configuration"]
+                    if "price_cap" not in config:
+                        config["price_cap"] = None
+                        return {topic: provider}
+            return None
+
+        self._loop_all_received_topics(upgrade)
+        self._append_datastore_version(156)
+
+    def upgrade_datastore_157(self) -> None:
+        """upgrade_datastore_133 hat die Wochentage der Festen Tarifstunden neben active_times statt darin angelegt,
+        ausgewertet wird active_times["weekdays"] (KeyError 'weekdays').
+        Bereits migrierte Konfigurationen reparieren."""
+        def upgrade(topic: str, payload) -> Optional[dict]:
+            if ("openWB/optional/ep/flexible_tariff/provider" == topic or
+                    "openWB/optional/ep/grid_fee/provider" == topic):
+                provider = decode_payload(payload)
+                if provider.get("type") != "fixed_hours":
+                    return None
+                changed = False
+                for tariff in (provider.get("configuration") or {}).get("tariffs") or []:
+                    if tariff.pop("weekdays", None) is not None:
+                        changed = True
+                    active_times = tariff.get("active_times")
+                    if isinstance(active_times, dict) and active_times.get("weekdays") is None:
+                        # ohne Wochentage galt der Zeitraum an allen Tagen, so legt es auch upgrade_datastore_133 an
+                        active_times["weekdays"] = list(range(7))
+                        changed = True
+                if changed:
+                    return {topic: provider}
+            return None
+
+        self._loop_all_received_topics(upgrade)
+        self._append_datastore_version(157)
+
+    def upgrade_datastore_158(self) -> None:
+        """E3DC: Speicher-Konfiguration um die für die aktive Speichersteuerung per RSCP nötigen
+        Zugangsdaten ergänzen (portal_username/portal_password/rscp_key), falls noch nicht vorhanden."""
+        def upgrade(topic: str, payload) -> Optional[dict]:
+            if re.search("^openWB/system/device/[0-9]+/config$", topic) is not None:
+                payload_device = decode_payload(payload)
+                if payload_device["type"] == "e3dc":
+                    index = get_index(topic)
+                    modified_topics = {}
+                    for topic_component, payload_component in self.all_received_topics.items():
+                        if re.search(f"^openWB/system/device/{index}/component/[0-9]+/config$",
+                                     topic_component) is not None:
+                            payload_component = decode_payload(payload_component)
+                            if payload_component["type"] == "bat":
+                                config = payload_component["configuration"]
+                                changed = False
+                                for key in ("portal_username", "portal_password", "rscp_key"):
+                                    if key not in config:
+                                        config[key] = None
+                                        changed = True
+                                if changed:
+                                    modified_topics[topic_component] = payload_component
+                    return modified_topics
+            return None
+
+        self._loop_all_received_topics(upgrade)
+        self._append_datastore_version(158)
+
+    def upgrade_datastore_159(self) -> None:
         """Fronius SunSpec Speicher: mppt_index in mppt_index_charge/mppt_index_discharge aufgeteilt."""
         def upgrade(topic: str, payload) -> Optional[dict]:
             match = re.fullmatch(r"openWB/system/device/([0-9]+)/component/[0-9]+/config", topic)
@@ -4214,4 +4240,4 @@ class UpdateConfig:
             return {topic: config}
 
         self._loop_all_received_topics(upgrade)
-        self._append_datastore_version(156)
+        self._append_datastore_version(159)

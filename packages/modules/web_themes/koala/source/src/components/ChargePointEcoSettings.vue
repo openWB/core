@@ -3,7 +3,7 @@
     v-if="acChargingEnabled"
     title="Minimaler Dauerstrom unter der Preisgrenze"
     :min="6"
-    :max="16"
+    :max="32"
     :step="1"
     unit="A"
     v-model="current"

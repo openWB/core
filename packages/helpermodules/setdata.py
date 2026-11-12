@@ -12,6 +12,7 @@ import logging
 from control import data
 from helpermodules import hardware_configuration, subdata
 from helpermodules.broker import BrokerClient
+from helpermodules.filesystem_migrations import FilesystemMigrations
 from helpermodules.pub import Pub
 from helpermodules.utils.topic_parser import decode_payload, get_index, get_index_position
 from helpermodules.update_config import UpdateConfig
@@ -551,6 +552,7 @@ class SetData:
         elif "/control_parameter/current_plan" in msg.topic:
             self._validate_value(msg, int)
         elif ("/control_parameter/min_current" in msg.topic or
+                "/control_parameter/reserved_power" in msg.topic or
                 "/control_parameter/timestamp_switch_on_off" in msg.topic or
                 "/control_parameter/timestamp_charge_start" in msg.topic or
                 "/control_parameter/timestamp_chargemode_changed" in msg.topic or
@@ -1118,7 +1120,7 @@ class SetData:
             elif "openWB/set/system/datastore_version" in msg.topic:
                 self._validate_value(msg, int, [(0, UpdateConfig.DATASTORE_VERSION)], collection=list)
             elif "openWB/set/system/file_operation_version" in msg.topic:
-                self._validate_value(msg, int, [(0, UpdateConfig.FILE_OPERATION_VERSION)], collection=list)
+                self._validate_value(msg, int, [(0, FilesystemMigrations.FILE_OPERATION_VERSION)], collection=list)
             elif "openWB/set/system/GetRemoteSupport" in msg.topic:
                 # Server-Topic enthält kein json-Payload.
                 payload = msg.payload.decode("utf-8")
@@ -1294,13 +1296,16 @@ class SetData:
                     self._validate_value(msg, "json")
                 elif re.search("openWB/set/consumer/[0-9]+/extra_meter$", msg.topic) is not None:
                     self._validate_value(msg, int)
-                elif (re.search("consumer/[0-9]+/get/power$", msg.topic) is not None or
-                        re.search("consumer/[0-9]+/set/power$", msg.topic) is not None or
+                elif (re.search("consumer/[0-9]+/set/power$", msg.topic) is not None or
                         re.search("consumer/[0-9]+/set/current$", msg.topic) is not None or
                         re.search("consumer/[0-9]+/set/on_time$", msg.topic) is not None or
                         re.search("consumer/[0-9]+/set/plug_time$", msg.topic) is not None or
+                        re.search("consumer/[0-9]+/set/rfid_power_end$", msg.topic) is not None or
                         re.search("consumer/[0-9]+/set/timestamp_last_current_set$", msg.topic) is not None or
                         re.search("consumer/[0-9]+/set/timestamp_wrote_last_on_time$", msg.topic) is not None or
+                        re.search("consumer/[0-9]+/set/rfid_timestamp$", msg.topic) is not None or
+                        re.search("consumer/[0-9]+/get/power$", msg.topic) is not None or
+                        re.search("consumer/[0-9]+/get/rfid_timestamp$", msg.topic) is not None or
                         re.search("consumer/[0-9]+/get/set_power$", msg.topic) is not None):
                     self._validate_value(msg, float)
                 elif (re.search("consumer/[0-9]+/get/currents$", msg.topic) is not None or
@@ -1319,10 +1324,13 @@ class SetData:
                 elif (re.search("consumer/get/fault_str$", msg.topic) is not None or
                       re.search("consumer/[0-9]+/get/fault_str$", msg.topic) is not None or
                       re.search("consumer/[0-9]+/get/state_str$", msg.topic) is not None or
+                      re.search("consumer/[0-9]+/get/rfid$", msg.topic) is not None or
+                      re.search("consumer/[0-9]+/set/rfid$", msg.topic) is not None or
                       re.search("consumer/[0-9]+/set/wait_for_start_state$", msg.topic) is not None):
                     self._validate_value(msg, str)
                 elif (re.search("consumer/[0-9]+/get/charge_state$", msg.topic) is not None or
                       re.search("consumer/[0-9]+/get/plug_state$", msg.topic) is not None or
+                      re.search("consumer/[0-9]+/set/rfid_power_seen$", msg.topic) is not None or
                       re.search("consumer/[0-9]+/get/state$", msg.topic) is not None):
                     self._validate_value(msg, bool)
                 elif re.search("consumer/[0-9]+/set/phases_to_use$", msg.topic) is not None:

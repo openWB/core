@@ -33,7 +33,8 @@ class ConfigurableConsumer(Generic[T_CONSUMER]):
                  send_values: Optional[Callable[[CurrentValues], None]] = lambda _values: None,
                  set_power_limit: Optional[Callable] = lambda: None,
                  switch_on: Optional[Callable] = lambda: None,
-                 switch_off: Optional[Callable] = lambda: None,) -> None:
+                 switch_off: Optional[Callable] = lambda: None,
+                 clear_rfid: Optional[Callable] = lambda: None,) -> None:
         self.config = consumer_config
         self.module_initializer = initializer
         self.module_error_handler = error_handler
@@ -42,6 +43,7 @@ class ConfigurableConsumer(Generic[T_CONSUMER]):
         self.module_set_power_limit = set_power_limit
         self.module_switch_on = switch_on
         self.module_switch_off = switch_off
+        self.module_clear_rfid = clear_rfid
 
         self.error_timestamp = None
         self.sim_counter = SimCounterConsumer(self.config.id, ComponentType.CONSUMER)
@@ -75,18 +77,25 @@ class ConfigurableConsumer(Generic[T_CONSUMER]):
         with SingleComponentUpdateContext(self.fault_state):
             if self.module_updater is not None:
                 consumer_state = self.module_updater()
-                imported, exported = self.peak_filter.check_values(
-                    consumer_state.power,
-                    consumer_state.imported,
-                    consumer_state.exported)
-                if consumer_state.imported is None or consumer_state.exported is None:
-                    simulated_imported, simulated_exported = self.sim_counter.sim_count(consumer_state.power)
+                if consumer_state.power is None:
+                    consumer_state.power = 0
                     if consumer_state.imported is None:
-                        imported = simulated_imported
+                        consumer_state.imported = 0
                     if consumer_state.exported is None:
-                        exported = simulated_exported
-                consumer_state.imported = imported
-                consumer_state.exported = exported
+                        consumer_state.exported = 0
+                else:
+                    imported, exported = self.peak_filter.check_values(
+                        consumer_state.power,
+                        consumer_state.imported,
+                        consumer_state.exported)
+                    if consumer_state.imported is None or consumer_state.exported is None:
+                        simulated_imported, simulated_exported = self.sim_counter.sim_count(consumer_state.power)
+                        if consumer_state.imported is None:
+                            imported = simulated_imported
+                        if consumer_state.exported is None:
+                            exported = simulated_exported
+                    consumer_state.imported = imported
+                    consumer_state.exported = exported
                 self.store.set(consumer_state)
 
     def set_power_limit(self, power_limit: float, data: SetLimitData) -> None:
@@ -104,3 +113,7 @@ class ConfigurableConsumer(Generic[T_CONSUMER]):
     def send_values(self, values: CurrentValues) -> None:
         with SingleComponentUpdateContext(self.fault_state):
             self.module_send_values(values)
+
+    def clear_rfid(self) -> None:
+        with SingleComponentUpdateContext(self.fault_state):
+            self.module_clear_rfid()

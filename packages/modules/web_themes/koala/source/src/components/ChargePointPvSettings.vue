@@ -117,6 +117,7 @@ const phaseOptions = [
 const phaseOptionsMinSoc = [
   { value: 1, label: '1' },
   { value: 3, label: 'Maximum' },
+  { value: 0, label: 'Automatik' },
 ];
 
 const pvMinCurrent = computed(() =>

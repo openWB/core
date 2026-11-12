@@ -74,7 +74,7 @@ class FroniusSunspecBat(AbstractBat):
         imported = imported_raw * (10 ** energy_scale)
         exported = exported_raw * (10 ** energy_scale)
 
-        self.peak_filter.check_values(power)
+        imported, exported = self.peak_filter.check_values(power, imported, exported)
         bat_state = BatState(
             power=power,
             soc=soc,
@@ -113,11 +113,8 @@ class FroniusSunspecBat(AbstractBat):
                 self.last_mode = 'stop'
         elif power_limit < 0:
             if self.last_mode != 'discharge':
-                self.__tcp_client.write_register(40359, 0, data_type=ModbusDataType.UINT_16, unit=unit)  # StorCtl_Mod
-                self.__tcp_client.write_register(40367, -100, data_type=ModbusDataType.INT_16, unit=unit)  # InWRte
                 self.__tcp_client.write_register(
-                    40359, STOR_CTL_MOD_CHARGE | STOR_CTL_MOD_DISCHARGE,
-                    data_type=ModbusDataType.UINT_16, unit=unit)  # StorCtl_Mod
+                    40359, STOR_CTL_MOD_DISCHARGE, data_type=ModbusDataType.UINT_16, unit=unit)  # StorCtl_Mod
                 self.last_mode = 'discharge'
             log.debug(f"Aktive Batteriesteuerung. Batterie wird mit {abs(power_limit)} W "
                       "entladen für den Hausverbrauch")
@@ -127,11 +124,11 @@ class FroniusSunspecBat(AbstractBat):
             if self.last_mode != 'charge':
                 self.__tcp_client.write_register(40371, 1, data_type=ModbusDataType.UINT_16, unit=unit)  # ChaGriSet
                 self.__tcp_client.write_register(
-                    40359, STOR_CTL_MOD_DISCHARGE, data_type=ModbusDataType.UINT_16, unit=unit)  # StorCtl_Mod
+                    40359, STOR_CTL_MOD_CHARGE, data_type=ModbusDataType.UINT_16, unit=unit)  # StorCtl_Mod
                 self.last_mode = 'charge'
             log.debug(f"Aktive Batteriesteuerung. Batterie wird mit {power_limit} W geladen")
             self.__tcp_client.write_register(
-                40366, -self._rate_percent(power_limit, unit), data_type=ModbusDataType.INT_16, unit=unit)  # OutWRte
+                40367, self._rate_percent(power_limit, unit), data_type=ModbusDataType.INT_16, unit=unit)  # InWRte
 
     def power_limit_controllable(self) -> bool:
         return True

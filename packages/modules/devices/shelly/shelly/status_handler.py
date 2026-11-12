@@ -1,6 +1,7 @@
 import logging
 from typing import Dict
 from typing import Tuple, List, Optional
+from requests.auth import AuthBase, HTTPBasicAuth, HTTPDigestAuth
 
 from modules.common import req
 
@@ -23,21 +24,47 @@ def get_generation(address: str) -> Tuple[int, str]:
     return generation, model
 
 
-def request_status(address: str, generation: Optional[int]) -> Dict:
+def get_auth(generation: int, username: Optional[str], password: Optional[str]) -> Optional[AuthBase]:
+    if not password:
+        return None
+    if generation == 1:
+        return HTTPBasicAuth(username, password) if username else None
+    return HTTPDigestAuth("admin", password)
+
+
+def request_status(address: str, generation: Optional[int], auth: Optional[AuthBase] = None) -> Dict:
     if generation == 1:
         status_url = "http://" + address + "/status"
     else:
         status_url = "http://" + address + "/rpc/Shelly.GetStatus"
-    return req.get_http_session().get(status_url, timeout=3).json()
+    return req.get_http_session().get(status_url, auth=auth, timeout=3).json()
 
 
-def parse_data(phase: int, factor: float, status: Dict) -> Tuple[
+def parse_temperatures(status: Dict, generation: int) -> Optional[List[float]]:
+    temperatures: List[float] = []
+    for index in range(3):
+        try:
+            if generation == 1:
+                entry = status['ext_temperature'][str(index)]
+            else:
+                entry = status[f'temperature:{100 + index}']
+        except (KeyError, TypeError):
+            continue
+        try:
+            temperatures.append(float(entry['tC']))
+        except (KeyError, TypeError, ValueError):
+            log.exception(f"Error parsing temperature for index {index} in status: {status}")
+    return temperatures if len(temperatures) > 0 else None
+
+
+def parse_data(phase: int, factor: float, status: Dict, channel: Optional[int] = None) -> Tuple[
         List[float], Optional[List[float]], Optional[List[float]], Optional[List[float]], float, Optional[float]]:
     try:
         currents: Optional[List[float]] = None
         voltages: Optional[List[float]] = None
         power_factors: Optional[List[float]] = None
         frequency: Optional[float] = None
+        switch_key = f'switch:{channel if channel is not None else 0}'
 
         # GEN 1
         if "meters" in status:
@@ -45,6 +72,11 @@ def parse_data(phase: int, factor: float, status: Dict) -> Tuple[
             powers = [0.0, 0.0, 0.0]
             voltages = [0.0, 0.0, 0.0]
             meters = status['meters']  # einphasiger shelly?
+            if channel is not None:
+                if not 0 <= channel < len(meters):
+                    raise KeyError(f"unsupported meter channel: {channel}")
+                # Einzelnen Verbraucherkanal auf die konfigurierte Phase abbilden.
+                meters = [meters[channel]]
             for i in range(0, min(3, len(meters))):
                 powers[(i+phase-1) % 3] = float(meters[i].get('power', 0)) * factor
                 currents[(i+phase-1) % 3] = (float(meters[i].get('power', 0)) * factor) / 230
@@ -94,13 +126,13 @@ def parse_data(phase: int, factor: float, status: Dict) -> Tuple[
             power_factors[phase-1] = meters.get('pf', 0)
             power = meters['apower'] * factor
             frequency = meters['freq']
-        elif 'switch:0' in status and 'apower' in status['switch:0']:
+        elif switch_key in status and 'apower' in status[switch_key]:
             log.debug("single phase shelly")
             powers = [0.0, 0.0, 0.0]
             currents = [0.0, 0.0, 0.0]
             voltages = [0.0, 0.0, 0.0]
             power_factors = [0.0, 0.0, 0.0]
-            meters = status['switch:0']
+            meters = status[switch_key]
             powers[phase-1] = meters['apower'] * factor
             voltages[phase-1] = meters['voltage']
             currents[phase-1] = meters['current'] * factor
@@ -110,6 +142,8 @@ def parse_data(phase: int, factor: float, status: Dict) -> Tuple[
             if 'freq' in meters:
                 frequency = meters['freq']
         else:
+            if channel is not None and channel != 0:
+                raise KeyError(f"unsupported meter channel: {channel}")
             log.debug("single phase shelly")
             powers = [0.0, 0.0, 0.0]
             currents = [0.0, 0.0, 0.0]

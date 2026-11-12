@@ -3,8 +3,10 @@
 import base64
 from datetime import datetime
 import json
+import re
 import uuid
 import hashlib
+import hmac
 import requests
 import urllib.parse as urlparse
 from urllib.parse import parse_qs
@@ -630,6 +632,66 @@ def getAuthCode(username: str, password: str, brand: str,
 
     return auth_code
 
+
+# ---------- CCI fingerprint gate (seit 2026-10-14) ----------
+# Ohne X-Fingerprint-HMAC: 9035/9036/9037. Schema + Secrets aus
+# hyundai_kia_connect_api#1352/#1355 (Android-OneApp-1.4.0-Build).
+
+_FINGERPRINT_KEYS = {
+    'hyundai': ('OsZDfDuCyVX', 'yfqjCoA2JbX', '2MrLpGwNBC'),
+    'kia': ('yb4Z1n2nlKe', 'ukNilE7QEdb', 'KB34nStPVa'),
+}
+
+_GATE_REJECTION_CODES = frozenset({9035, 9036, 9037})
+
+
+def computeXFingerprint(headers: dict, brand: str, body: str = "") -> str:
+    lower = {k.lower(): v for k, v in headers.items()}
+    identity = "".join(lower.get(name, "") for name in
+                       ('client-id', 'client-name', 'client-version', 'client-os-code'))
+    pieces = _FINGERPRINT_KEYS[brand]
+    msg = (identity + lower.get('client-os-version', '') + lower.get('x-timestamp', '') +
+           re.sub(r'\s+', '', body or '', flags=re.ASCII))
+    key = identity + ''.join(pieces)
+    return hmac.new(key.encode(), msg.encode(), hashlib.sha256).hexdigest()
+
+
+def isGateRejection(status_code: int, text: str) -> bool:
+    if not 400 <= status_code < 500:
+        return False
+    try:
+        return json.loads(text).get('code') in _GATE_REJECTION_CODES
+    except (ValueError, AttributeError):
+        return False
+
+
+def getCciFpHeaders(brand: str, device_id: str, body: str = "") -> dict:
+    # Gate prüft gegen diese Android-OneApp-1.4.0-Identität, nicht die
+    # iOS-Legacy-Header aus getCciHeaders() (bleiben für den Fallback).
+    offset = datetime.now().astimezone().strftime("%z")
+    headers = {
+        'client-id': getString("cci_package_id", brand),
+        'client-name': brand.capitalize() + 'EU',
+        'client-version': '1.4.0',
+        'client-os-code': 'android',
+        'client-os-version': '14',
+        'client-device-id': device_id,
+        'client-device-model': 'SM-S918B',
+        'client-notification-provider-type': 'FCM',
+        'locale': 'DE',
+        'timezone': (offset[:3] + ':' + offset[3:]) if offset else '+00:00',
+        'App-Request-Id': uuid.uuid4().hex[:24].upper() + '_' + device_id.replace('-', '') + '_AOS',
+        'X-Brand': brand.capitalize(),
+        'X-Region': 'eu',
+        'User-Agent': 'okhttp/4.12.0',
+        'Accept': '*/*',
+        'Accept-Language': 'de',
+    }
+    headers['X-Timestamp'] = str(int(time.time() * 1000))
+    headers['X-Fingerprint'] = computeXFingerprint(headers, brand, body)
+    return headers
+
+
 # ---------- OneApp/CCI token exchange ----------
 
 
@@ -669,11 +731,18 @@ def getCciHeaders(brand: str, device_id: str, cci_access_token: str = "",
 def exchangeCciToken(auth_code: str, device_id: str, brand: str) -> dict:
     log.info("Kia/Hyundai: Exchanging OneApp auth code for CCI token")
 
-    cci_domain_api_url = getString("cci_api_url", brand) + '/domain/api/'
-    headers = getCciHeaders(brand, device_id)
-    response = requests.post(cci_domain_api_url + 'v1/auth/token',
+    cci_api_url = getString("cci_api_url", brand)
+    headers = getCciFpHeaders(brand, device_id)
+    response = requests.post(cci_api_url + '/auth/v1/token',
                              params={'code': auth_code}, headers=headers,
                              timeout=30)
+    if response.status_code != 200 and isGateRejection(response.status_code, response.text):
+        log.warning("kia.exchangeCciToken: Fingerprint-Gate hat signierte Anfrage abgelehnt "
+                    "(HTTP %d), Fallback auf Legacy-Route.", response.status_code)
+        headers = getCciHeaders(brand, device_id)
+        response = requests.post(cci_api_url + '/domain/api/v1/auth/token',
+                                 params={'code': auth_code}, headers=headers,
+                                 timeout=30)
     if response.status_code != 200:
         log.error("kia.exchangeCciToken: CCI-Token-Austausch fehlgeschlagen, StatusCode: " +
                   str(response.status_code) + ': ' + response.text[:200])
@@ -694,13 +763,25 @@ def exchangeCcsToken(device_id: str, cci_access_token: str, non_ccs_token: str,
                      exchangeable_token: str, brand: str) -> str:
     log.info("Kia/Hyundai: Exchanging CCI token for CCS token")
 
-    cci_domain_api_url = getString("cci_api_url", brand) + '/domain/api/'
-    headers = getCciHeaders(brand, device_id, cci_access_token=cci_access_token,
-                            non_ccs_token=non_ccs_token,
-                            exchangeable_token=exchangeable_token)
-    response = requests.post(cci_domain_api_url + 'v1/auth/token-exchange',
+    cci_api_url = getString("cci_api_url", brand)
+    headers = getCciFpHeaders(brand, device_id)
+    headers['authorization'] = 'Bearer ' + cci_access_token.removeprefix('Bearer ').strip()
+    headers['Authentication'] = non_ccs_token
+    if exchangeable_token:
+        headers['exchangeable-token'] = exchangeable_token
+        headers['non-ccs-token'] = non_ccs_token
+    response = requests.post(cci_api_url + '/auth/v1/token-exchange',
                              params={'serviceType': 'CCS'}, headers=headers,
                              timeout=30)
+    if response.status_code != 200 and isGateRejection(response.status_code, response.text):
+        log.warning("kia.exchangeCcsToken: Fingerprint-Gate hat signierte Anfrage abgelehnt "
+                    "(HTTP %d), Fallback auf Legacy-Route.", response.status_code)
+        headers = getCciHeaders(brand, device_id, cci_access_token=cci_access_token,
+                                non_ccs_token=non_ccs_token,
+                                exchangeable_token=exchangeable_token)
+        response = requests.post(cci_api_url + '/domain/api/v1/auth/token-exchange',
+                                 params={'serviceType': 'CCS'}, headers=headers,
+                                 timeout=30)
     if response.status_code != 200:
         log.error("kia.exchangeCcsToken: CCS-Token-Austausch fehlgeschlagen, StatusCode: " +
                   str(response.status_code) + ': ' + response.text[:200])
@@ -717,12 +798,7 @@ def refreshCciToken(token: dict, brand: str) -> dict:
     log.info("Kia/Hyundai: CCI token refresh starting")
 
     device_id = token.get('deviceId', '')
-    cci_domain_api_url = getString("cci_api_url", brand) + '/domain/api/'
-    headers = getCciHeaders(brand, device_id,
-                            cci_access_token=token.get('cciAccessToken', ''),
-                            non_ccs_token=token.get('nonCcsToken', ''),
-                            exchangeable_token=token.get('exchangeableAccessToken', ''),
-                            content_type='application/json')
+    cci_api_url = getString("cci_api_url", brand)
     body = {
         'accessToken': token.get('cciAccessToken', '').removeprefix('Bearer '),
         'refreshToken': token.get('cciRefreshToken', ''),
@@ -732,8 +808,21 @@ def refreshCciToken(token: dict, brand: str) -> dict:
         'nonCcsRefreshToken': token.get('nonCcsRefreshToken', ''),
         'idToken': token.get('idToken', ''),
     }
-    response = requests.post(cci_domain_api_url + 'v2/auth/token-refresh',
-                             json=body, headers=headers, timeout=30)
+    payload = json.dumps(body)
+    headers = getCciFpHeaders(brand, device_id, body=payload)
+    headers['Content-Type'] = 'application/json'
+    response = requests.post(cci_api_url + '/auth/v2/token-refresh',
+                             data=payload, headers=headers, timeout=30)
+    if response.status_code != 200 and isGateRejection(response.status_code, response.text):
+        log.warning("kia.refreshCciToken: Fingerprint-Gate hat signierte Anfrage abgelehnt "
+                    "(HTTP %d), Fallback auf Legacy-Route.", response.status_code)
+        headers = getCciHeaders(brand, device_id,
+                                cci_access_token=token.get('cciAccessToken', ''),
+                                non_ccs_token=token.get('nonCcsToken', ''),
+                                exchangeable_token=token.get('exchangeableAccessToken', ''),
+                                content_type='application/json')
+        response = requests.post(cci_api_url + '/domain/api/v2/auth/token-refresh',
+                                 json=body, headers=headers, timeout=30)
     if response.status_code != 200:
         log.error("kia.refreshCciToken: CCI-Token-Refresh fehlgeschlagen, StatusCode: " +
                   str(response.status_code) + ': ' + response.text[:200])

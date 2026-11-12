@@ -220,6 +220,20 @@ class Optional(OcppMixin):
         else:
             raise Exception("Kein Anbieter für strompreisbasiertes Laden konfiguriert.")
 
+    def forecast_get_current_value(self) -> TypingOptional[float]:
+        """Liefert den aktuellen Prognosewert. Anders als bei den Strompreisen enthält
+        today_values auch bereits vergangene Stunden des Tages, es wird also hier (statt schon
+        beim Speichern) nach dem letzten Zeitstempel <= jetzt gefiltert."""
+        today_values = self.data.forecast.get.today_values
+        if not today_values:
+            return None
+        now = timecheck.create_timestamp()
+        past_or_current = [timestamp for timestamp in today_values if float(timestamp) <= now]
+        if not past_or_current:
+            return None
+        closest_timestamp = max(past_or_current, key=float)
+        return today_values[closest_timestamp]
+
     def __calculate_price_timeslot_length(self, prices: dict) -> int:
         first_timestamps = sorted(list(prices.keys()))[:2]
         return float(first_timestamps[1]) - float(first_timestamps[0])

@@ -172,16 +172,17 @@ function transformRow(currentRow: RawDayGraphDataItem): GraphDataItem {
 	currentItem.consumers = 0
 	Object.entries(currentRow.consumer).forEach(([id, values]) => {
 		if (id != 'all') {
-			currentItem[id] = values.power_imported ?? 0
-			if (!registry.keys().includes(id)) {
-				const consumer = consumers.get(+id.slice(8))
-				if (!consumer) {
-					addConsumer(+id.slice(8), false)
+			registry.duplicateItem(id, <PowerItem>consumers.get(+id.slice(8)))
+			if (!consumers.get(+id.slice(8))?.countAsHouse) {
+				currentItem[id] = values.power_imported ?? 0
+				if (!registry.keys().includes(id)) {
+					const consumer = consumers.get(+id.slice(8))
+					if (!consumer) {
+						addConsumer(+id.slice(8), false)
+					}
 				}
-
-				registry.duplicateItem(id, <PowerItem>consumers.get(+id.slice(8)))
+				currentItem.consumers += values.power_imported ?? 0
 			}
-			currentItem.consumers += values.power_imported ?? 0
 		}
 	})
 	// Prices
