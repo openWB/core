@@ -270,3 +270,17 @@ def test_process_optional_topic_forecast_provider_none_clears_state(mock_pub):
     assert var.data.forecast.configured is False
     assert var.data.forecast.provider is None
     assert var.data.forecast.get.values == {}
+
+
+@pytest.mark.parametrize("field", ["values", "today_values", "tomorrow_values", "daily_kwh"])
+def test_process_optional_topic_forecast_get_dict_fields_store_whole_payload(field, mock_pub):
+    subdata = SubData.__new__(SubData)
+    subdata.event_subdata_initialized = Mock()
+    subdata.event_subdata_initialized.is_set.return_value = True
+    var = Optional()
+    payload = {"1794500000": 1.5, "1794500900": 2.5}
+    msg = Mock(topic=f"openWB/set/optional/forecast/get/{field}", payload=json.dumps(payload).encode())
+
+    subdata.process_optional_topic(var, msg)
+
+    assert getattr(var.data.forecast.get, field) == payload
