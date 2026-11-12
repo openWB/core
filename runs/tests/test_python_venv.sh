@@ -176,6 +176,16 @@ for architecture in armhf arm64 amd64; do
 		[[ -d "$workdir/$architecture/.venv/site-packages/evdev-1.9.1.dist-info" ]]
 	fi
 done
+mkdir -p "$workdir/system-evdev-egg/evdev" "$workdir/system-evdev-egg/evdev-1.9.1.egg-info" "$workdir/arm64-egg"
+cp "$workdir/openwb/requirements.txt" "$workdir/arm64-egg/requirements.txt"
+status=0
+PATH="$workdir/arch-bin:$PATH" TEST_ARCH=arm64 PIP_CAPTURE="$workdir/arm64-egg/pip.log" \
+	OPENWB_EVDEV_SOURCE="$workdir/system-evdev-egg" \
+	bash "$script_dir/setup_python_venv.sh" "$workdir/arm64-egg" 1 || status=$?
+[[ "$status" == 10 ]]
+egg_env=$(readlink -f "$workdir/arm64-egg/.venv")
+[[ -d "$egg_env/site-packages/evdev-1.9.1.egg-info" ]]
+[[ ! -e "$egg_env/site-packages/evdev-1.9.1.dist-info" ]]
 
 mkdir -p "$workdir/missing-deb" "$workdir/wrong-evdev/evdev" "$workdir/wrong-evdev/evdev-1.6.1.dist-info"
 cp "$workdir/openwb/requirements.txt" "$workdir/missing-deb/requirements.txt"
