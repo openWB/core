@@ -123,6 +123,27 @@ class OctopusEnergyClient:
                       }
                     }
                   }
+                  unitRateForecast {
+                    validFrom
+                    validTo
+                    unitRateInformation {
+                      ... on SimpleProductUnitRateInformation {
+                        __typename
+                        latestGrossUnitRateCentsPerKwh
+                      }
+                      ... on TimeOfUseProductUnitRateInformation {
+                        __typename
+                        rates {
+                          latestGrossUnitRateCentsPerKwh
+                          timeslotName
+                          timeslotActivationRules {
+                            activeFromTime
+                            activeToTime
+                          }
+                        }
+                      }
+                    }
+                  }
                   validFrom
                   validTo
                 }
@@ -147,42 +168,80 @@ def get_rate_from_time_of_use_product(unit_rate_info: dict, hour_time_utc: datet
     local_hour_time = hour_time_utc.astimezone(GERMAN_TZ).time()  # hour_time is UTC, time of use returns local time
 
     for rate_info in unit_rate_info['rates']:
-        active_from = datetime.strptime(rate_info['timeslotActivationRules'][0]['activeFromTime'], '%H:%M:%S').time()
-        active_to = datetime.strptime(rate_info['timeslotActivationRules'][0]['activeToTime'], '%H:%M:%S').time()
-        # Mitternachts-Überlauf korrekt behandeln
-        if active_from <= active_to:
-            in_slot = active_from <= local_hour_time < active_to
-        else:
-            in_slot = local_hour_time >= active_from or local_hour_time < active_to
+        for rule in rate_info['timeslotActivationRules']:
+            active_from = datetime.strptime(rule['activeFromTime'], '%H:%M:%S').time()
+            active_to = datetime.strptime(rule['activeToTime'], '%H:%M:%S').time()
+            if active_from == active_to:
+                in_slot = True
+            elif active_from < active_to:
+                in_slot = active_from <= local_hour_time < active_to
+            else:
+                # Mitternachts-Überlauf
+                in_slot = local_hour_time >= active_from or local_hour_time < active_to
 
-        if in_slot:
-            return float(rate_info['latestGrossUnitRateCentsPerKwh']) / 100 / 1000
+            if in_slot:
+                return float(rate_info['latestGrossUnitRateCentsPerKwh']) / 100 / 1000
     return None
 
 
-def process_agreement(agreement: dict, hour_time_utc: datetime, prices: Dict[str, float]):
-    if agreement['validTo'] is None:
-        valid = True
-    else:
-        valid_from = parse_datetime(agreement['validFrom'])
-        valid_to = parse_datetime(agreement['validTo'])
-        valid = valid_from <= hour_time_utc <= valid_to
+def get_rate_from_unit_rate_info(unit_rate_info: dict, hour_time_utc: datetime) -> Optional[float]:
+    if unit_rate_info['__typename'] == 'SimpleProductUnitRateInformation':
+        return get_rate_from_simple_product(unit_rate_info)
+    elif unit_rate_info['__typename'] == 'TimeOfUseProductUnitRateInformation':
+        return get_rate_from_time_of_use_product(unit_rate_info, hour_time_utc)
+    return None
 
-    if valid:
-        unit_rate_info = agreement['unitRateInformation']
-        local_hour_time = hour_time_utc.astimezone(GERMAN_TZ)
-        timestamp = str(int(local_hour_time.replace(minute=0, second=0, microsecond=0).timestamp()))
-        if unit_rate_info['__typename'] == 'SimpleProductUnitRateInformation':
-            prices[timestamp] = get_rate_from_simple_product(unit_rate_info)
-        elif unit_rate_info['__typename'] == 'TimeOfUseProductUnitRateInformation':
-            rate = get_rate_from_time_of_use_product(unit_rate_info, hour_time_utc)
+
+def agreement_active_at(agreement: dict, time_utc: datetime) -> bool:
+    if agreement['validTo'] is None:
+        return True
+    valid_from = parse_datetime(agreement['validFrom'])
+    valid_to = parse_datetime(agreement['validTo'])
+    return valid_from <= time_utc <= valid_to
+
+
+def process_agreement(agreement: dict, current_utc: datetime, horizon_utc: datetime, prices: Dict[str, float]):
+    forecast = agreement.get('unitRateForecast') or []
+    forecast_intervals = []
+    for entry in forecast:
+        valid_from = parse_datetime(entry['validFrom'])
+        valid_to = parse_datetime(entry['validTo']) if entry.get('validTo') else horizon_utc
+        if valid_to <= current_utc or valid_from >= horizon_utc:
+            continue
+        forecast_intervals.append((valid_from, valid_to))
+        if agreement_active_at(agreement, valid_from):
+            rate = get_rate_from_unit_rate_info(entry['unitRateInformation'], valid_from)
             if rate is not None:
-                log.debug(f"Adding rate: {rate} for timestamp: {timestamp} with hour_time_utc: {hour_time_utc}")
+                timestamp = str(int(valid_from.astimezone(GERMAN_TZ).timestamp()))
                 prices[timestamp] = rate
+
+    # Lücken im Forecast (oder sein komplettes Fehlen) werden mit unitRateInformation aufgefüllt, im selben
+    # Takt wie der Forecast - sonst leitet ep_get_loading_hours() aus den ersten beiden Preisen eine falsche,
+    # global geltende Slot-Länge ab.
+    if forecast_intervals:
+        step = forecast_intervals[0][1] - forecast_intervals[0][0]
+        round_to_hour = False
+    else:
+        step = timedelta(hours=1)
+        round_to_hour = True
+
+    offset = timedelta()
+    while current_utc + offset < horizon_utc:
+        time_utc = current_utc + offset
+        if (not any(start <= time_utc < end for start, end in forecast_intervals)
+                and agreement_active_at(agreement, time_utc)):
+            rate = get_rate_from_unit_rate_info(agreement['unitRateInformation'], time_utc)
+            if rate is not None:
+                local_time = time_utc.astimezone(GERMAN_TZ)
+                if round_to_hour:
+                    local_time = local_time.replace(minute=0, second=0, microsecond=0)
+                prices[str(int(local_time.timestamp()))] = rate
+        offset += step
 
 
 def build_tariff_state(data: dict) -> Dict[str, float]:
     current_utc = datetime.now(timezone.utc)
+    horizon_utc = current_utc + timedelta(hours=28)
     prices: Dict[str, float] = {}
 
     property_data = data.get('account', {}).get('property')
@@ -195,10 +254,8 @@ def build_tariff_state(data: dict) -> Dict[str, float]:
             "(Zählpunkt evtl. noch nicht aktiv/verknüpft)."
         raise OctopusEnergyApiError(error_message)
 
-    for hour in range(28):
-        hour_time_utc = current_utc + timedelta(hours=hour)
-        for agreement in malos[0]['agreements']:
-            process_agreement(agreement, hour_time_utc, prices)
+    for agreement in malos[0]['agreements']:
+        process_agreement(agreement, current_utc, horizon_utc, prices)
 
     sorted_prices = dict(sorted(prices.items()))
     return sorted_prices
