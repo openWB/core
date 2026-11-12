@@ -192,37 +192,46 @@ def get_rate_from_unit_rate_info(unit_rate_info: dict, hour_time_utc: datetime) 
     return None
 
 
-def get_rate_from_forecast(forecast: list, hour_time_utc: datetime) -> Optional[float]:
-    for entry in forecast:
-        valid_from = parse_datetime(entry['validFrom'])
-        valid_to = parse_datetime(entry['validTo']) if entry.get('validTo') else None
-        if valid_from <= hour_time_utc and (valid_to is None or hour_time_utc < valid_to):
-            return get_rate_from_unit_rate_info(entry['unitRateInformation'], hour_time_utc)
-    return None
-
-
-def process_agreement(agreement: dict, hour_time_utc: datetime, prices: Dict[str, float]):
+def agreement_active_at(agreement: dict, time_utc: datetime) -> bool:
     if agreement['validTo'] is None:
-        valid = True
-    else:
-        valid_from = parse_datetime(agreement['validFrom'])
-        valid_to = parse_datetime(agreement['validTo'])
-        valid = valid_from <= hour_time_utc <= valid_to
+        return True
+    valid_from = parse_datetime(agreement['validFrom'])
+    valid_to = parse_datetime(agreement['validTo'])
+    return valid_from <= time_utc <= valid_to
 
-    if valid:
-        local_hour_time = hour_time_utc.astimezone(GERMAN_TZ)
-        timestamp = str(int(local_hour_time.replace(minute=0, second=0, microsecond=0).timestamp()))
-        forecast = agreement.get('unitRateForecast')
-        rate = get_rate_from_forecast(forecast, hour_time_utc) if forecast else None
-        if rate is None:
+
+def process_agreement(agreement: dict, current_utc: datetime, horizon_utc: datetime, prices: Dict[str, float]):
+    forecast = agreement.get('unitRateForecast')
+    covered_until = current_utc
+    if forecast:
+        for entry in forecast:
+            valid_from = parse_datetime(entry['validFrom'])
+            valid_to = parse_datetime(entry['validTo']) if entry.get('validTo') else horizon_utc
+            if valid_to <= current_utc or valid_from >= horizon_utc:
+                continue
+            if agreement_active_at(agreement, valid_from):
+                rate = get_rate_from_unit_rate_info(entry['unitRateInformation'], valid_from)
+                if rate is not None:
+                    timestamp = str(int(valid_from.astimezone(GERMAN_TZ).timestamp()))
+                    prices[timestamp] = rate
+            covered_until = max(covered_until, valid_to)
+
+    # Fällt zurück auf unitRateInformation für alles, was der Forecast nicht abdeckt (oder komplett fehlt).
+    hour = timedelta()
+    while current_utc + hour < horizon_utc:
+        hour_time_utc = current_utc + hour
+        if hour_time_utc >= covered_until and agreement_active_at(agreement, hour_time_utc):
             rate = get_rate_from_unit_rate_info(agreement['unitRateInformation'], hour_time_utc)
-        if rate is not None:
-            log.debug(f"Adding rate: {rate} for timestamp: {timestamp} with hour_time_utc: {hour_time_utc}")
-            prices[timestamp] = rate
+            if rate is not None:
+                local_hour_time = hour_time_utc.astimezone(GERMAN_TZ)
+                timestamp = str(int(local_hour_time.replace(minute=0, second=0, microsecond=0).timestamp()))
+                prices[timestamp] = rate
+        hour += timedelta(hours=1)
 
 
 def build_tariff_state(data: dict) -> Dict[str, float]:
     current_utc = datetime.now(timezone.utc)
+    horizon_utc = current_utc + timedelta(hours=28)
     prices: Dict[str, float] = {}
 
     property_data = data.get('account', {}).get('property')
@@ -235,10 +244,8 @@ def build_tariff_state(data: dict) -> Dict[str, float]:
             "(Zählpunkt evtl. noch nicht aktiv/verknüpft)."
         raise OctopusEnergyApiError(error_message)
 
-    for hour in range(28):
-        hour_time_utc = current_utc + timedelta(hours=hour)
-        for agreement in malos[0]['agreements']:
-            process_agreement(agreement, hour_time_utc, prices)
+    for agreement in malos[0]['agreements']:
+        process_agreement(agreement, current_utc, horizon_utc, prices)
 
     sorted_prices = dict(sorted(prices.items()))
     return sorted_prices

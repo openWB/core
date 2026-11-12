@@ -157,6 +157,33 @@ def test_build_tariff_state_prefers_unit_rate_forecast_for_dynamic_tariffs(monke
     assert prices['1793624400'] == pytest.approx(0.0008)  # 2026-11-02 13:03 UTC, second forecast interval (80 ct)
 
 
+def test_build_tariff_state_keeps_forecasts_own_quarter_hour_resolution(monkeypatch):
+    def quarter_hour(minute: int, rate: str) -> dict:
+        start = f"2026-11-02T12:{minute:02d}:00+00:00"
+        end = f"2026-11-02T12:{minute + 15:02d}:00+00:00" if minute < 45 else "2026-11-02T13:00:00+00:00"
+        return {'validFrom': start, 'validTo': end,
+                'unitRateInformation': {'__typename': 'SimpleProductUnitRateInformation',
+                                        'latestGrossUnitRateCentsPerKwh': rate}}
+
+    data = {'account': {'property': {'electricityMalos': [{'agreements': [
+        {'id': 1,
+         'unitRateInformation': ALL_DAY_RATE,
+         'unitRateForecast': [quarter_hour(0, '10'), quarter_hour(15, '20'),
+                              quarter_hour(30, '30'), quarter_hour(45, '40')],
+         'validFrom': '2026-01-01T00:00:00+00:00',
+         'validTo': None}]}]}}}
+    datetime_mock = MagicMock(wraps=datetime)
+    datetime_mock.now.return_value = datetime(2026, 11, 2, 12, 0, 0, tzinfo=timezone.utc)
+    monkeypatch.setattr(tariff, "datetime", datetime_mock)
+
+    prices = build_tariff_state(data)
+
+    assert prices['1793620800'] == pytest.approx(0.0001)  # 12:00 UTC
+    assert prices['1793621700'] == pytest.approx(0.0002)  # 12:15 UTC
+    assert prices['1793622600'] == pytest.approx(0.0003)  # 12:30 UTC
+    assert prices['1793623500'] == pytest.approx(0.0004)  # 12:45 UTC
+
+
 # --- Zusätzliche Tests für die Fehlerbehandlung bei fehlenden/kaputten API-Daten ---
 
 def test_build_tariff_state_raises_on_missing_property():
