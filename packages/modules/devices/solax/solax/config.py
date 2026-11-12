@@ -30,8 +30,8 @@ class Solax:
 
 
 class SolaxBatConfiguration:
-    def __init__(self):
-        pass
+    def __init__(self, battery_index: int = 1):
+        self.battery_index = battery_index
 
 
 class SolaxBatSetup(ComponentSetup[SolaxBatConfiguration]):

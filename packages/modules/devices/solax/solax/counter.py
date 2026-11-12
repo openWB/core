@@ -43,6 +43,9 @@ class SolaxCounter(AbstractCounter):
                 0x0704, [ModbusDataType.INT_32] * 3, wordorder=Endian.Little, unit=unit)]
             exported, imported = [value * 10 for value in self.__tcp_client.read_input_registers(
                 0x043D, [ModbusDataType.UINT_32] * 2, wordorder=Endian.Little, unit=unit)]
+            voltages = None
+            currents = None
+            power_factors = None
 
         elif SolaxVersion(self.device_config.configuration.version) == SolaxVersion.G3:
             power = self.__tcp_client.read_input_registers(
@@ -55,6 +58,33 @@ class SolaxCounter(AbstractCounter):
                 powers = None
             exported, imported = [value * 10 for value in self.__tcp_client.read_input_registers(
                 0x0048, [ModbusDataType.UINT_32] * 2, wordorder=Endian.Little, unit=unit)]
+            voltages = None
+            currents = None
+            power_factors = None
+
+        elif SolaxVersion(self.device_config.configuration.version) == SolaxVersion.G5:
+            power = self.__tcp_client.read_input_registers(
+                0x0046, ModbusDataType.INT_32, wordorder=Endian.Little, unit=unit) * -1
+            frequency = self.__tcp_client.read_input_registers(0x0007, ModbusDataType.UINT_16, unit=unit) / 100
+            powers = [-value for value in self.__tcp_client.read_input_registers(
+                130, [ModbusDataType.INT_32] * 3, wordorder=Endian.Little, unit=unit)]
+            exported, imported = [value * 10 for value in self.__tcp_client.read_input_registers(
+                0x0048, [ModbusDataType.UINT_32] * 2, wordorder=Endian.Little, unit=unit)]
+            try:
+                voltages = [value / 10 for value in self.__tcp_client.read_input_registers(
+                    202, [ModbusDataType.UINT_16] * 3, unit=unit)]
+            except Exception:
+                voltages = None
+            try:
+                currents = [value / 10 for value in self.__tcp_client.read_input_registers(
+                    206, [ModbusDataType.INT_16] * 3, unit=unit)]
+            except Exception:
+                currents = None
+            try:
+                power_factors = [value / 100 for value in self.__tcp_client.read_input_registers(
+                    197, [ModbusDataType.UINT_16] * 3, unit=unit)]
+            except Exception:
+                power_factors = None
 
         else:
             power = self.__tcp_client.read_input_registers(
@@ -63,13 +93,19 @@ class SolaxCounter(AbstractCounter):
             powers = None
             exported, imported = [value * 100 for value in self.__tcp_client.read_input_registers(
                 0x042F, [ModbusDataType.UINT_32] * 2, wordorder=Endian.Little, unit=unit)]
+            voltages = None
+            currents = None
+            power_factors = None
         imported, exported = self.peak_filter.check_values(power, imported, exported)
         counter_state = CounterState(
             imported=imported,
             exported=exported,
             power=power,
             powers=powers,
-            frequency=frequency
+            frequency=frequency,
+            voltages=voltages,
+            currents=currents,
+            power_factors=power_factors
         )
         self.store.set(counter_state)
 

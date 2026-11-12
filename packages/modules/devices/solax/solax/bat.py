@@ -52,9 +52,13 @@ class SolaxBat(AbstractBat):
     def update(self) -> None:
         unit = self.device_config.configuration.modbus_id
 
-        # Basiswerte aus dem Batterie-Registersatz lesen
-        power = self.__tcp_client.read_input_registers(0x0016, ModbusDataType.INT_16, unit=unit)
-        soc = self.__tcp_client.read_input_registers(0x001C, ModbusDataType.UINT_16, unit=unit)
+        version = SolaxVersion(self.device_config.configuration.version)
+        if self.component_config.configuration.battery_index == 2 and version == SolaxVersion.G5:
+            power = self.__tcp_client.read_input_registers(297, ModbusDataType.INT_16, unit=unit)
+            soc = self.__tcp_client.read_input_registers(302, ModbusDataType.UINT_16, unit=unit)
+        else:
+            power = self.__tcp_client.read_input_registers(0x0016, ModbusDataType.INT_16, unit=unit)
+            soc = self.__tcp_client.read_input_registers(0x001C, ModbusDataType.UINT_16, unit=unit)
         self.peak_filter.check_values(power)
         imported, exported = self.sim_counter.sim_count(power)
         bat_state = BatState(
