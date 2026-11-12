@@ -4221,7 +4221,8 @@ class UpdateConfig:
         def upgrade(topic: str, payload) -> Optional[dict]:
             if topic == "openWB/optional/forecast/provider":
                 provider = decode_payload(payload)
-                if provider.get("type") == "pvnode" and provider.get("name") == "PVNode V2":
+                if (isinstance(provider, dict) and provider.get("type") == "pvnode"
+                        and provider.get("name") == "PVNode V2"):
                     provider["name"] = "pvnode V2"
                     return {topic: provider}
             return None
