@@ -20,12 +20,12 @@ def _patch_now(monkeypatch: pytest.MonkeyPatch, fixed_now: datetime) -> None:
     monkeypatch.setattr(_forecast, "datetime", FixedDateTime)
 
 
-def _published(pub: Mock, topic_suffix: str):
+def _published(pub: Mock, field: str):
     for call in pub.call_args_list:
         topic, payload = call.args[0], call.args[1]
-        if topic.endswith(topic_suffix):
+        if topic.rsplit("/", 1)[-1] == field:
             return payload
-    raise AssertionError(f"no publish for topic ending in {topic_suffix!r}")
+    raise AssertionError(f"no publish for field {field!r}")
 
 
 def test_update_splits_by_current_calendar_day(monkeypatch: pytest.MonkeyPatch):
@@ -43,8 +43,8 @@ def test_update_splits_by_current_calendar_day(monkeypatch: pytest.MonkeyPatch):
 
     assert _published(pub, "today_kwh") == 3.5
     assert _published(pub, "tomorrow_kwh") == 4.2
-    assert list(_published(pub, "/today_values").values()) == [500.0]
-    assert list(_published(pub, "/tomorrow_values").values()) == [700.0]
+    assert list(_published(pub, "today_values").values()) == [500.0]
+    assert list(_published(pub, "tomorrow_values").values()) == [700.0]
 
 
 def test_update_reruns_split_after_midnight_without_new_fetch(monkeypatch: pytest.MonkeyPatch):
@@ -107,7 +107,7 @@ def test_dst_transition_does_not_shift_day_boundary(monkeypatch: pytest.MonkeyPa
         _patch_now(monkeypatch, datetime(2026, 10, 25, 20, 0, 0))
         store.update()
 
-        assert list(_published(pub, "/today_values").values()) == [100.0]
-        assert list(_published(pub, "/tomorrow_values").values()) == [200.0]
+        assert list(_published(pub, "today_values").values()) == [100.0]
+        assert list(_published(pub, "tomorrow_values").values()) == [200.0]
     finally:
         time.tzset()
