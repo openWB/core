@@ -133,6 +133,8 @@ second_env=$(readlink -f "$workdir/openwb/.venv")
 mkdir -p "$workdir/openwb/.venvs/env.OLD00001" "$workdir/openwb/.venvs/env.OLD00002"
 touch "$workdir/openwb/.venvs/env.OLD00001/.openwb-ready"
 touch "$workdir/openwb/.venvs/env.OLD00002/.openwb-ready" "$workdir/openwb/.venvs/env.OLD00002/.openwb-lock" "$workdir/openwb/.venvs/env.OLD00002/.openwb-unprotected"
+mkdir "$workdir/openwb/.venvs/env.INCOMP01"
+printf 'partial environment\n' > "$workdir/openwb/.venvs/env.INCOMP01/partial-file"
 bash "$script_dir/setup_python_venv.sh" "$workdir/openwb" 0
 [[ -d "$first_env" && -d "$second_env" ]]
 bash "$script_dir/setup_python_venv.sh" "$workdir/openwb" 0 --boot-cleanup boot-one
@@ -147,7 +149,16 @@ bash "$script_dir/setup_python_venv.sh" "$workdir/openwb" 0 --boot-cleanup boot-
 [[ -d "$first_env" ]]
 bash "$script_dir/setup_python_venv.sh" "$workdir/openwb" 0 --boot-cleanup boot-three
 [[ ! -e "$first_env" && -d "$second_env" ]]
+[[ ! -e "$workdir/openwb/.venvs/env.INCOMP01" ]]
 [[ -d "$workdir/openwb/.venvs/env.OLD00001" && -d "$workdir/openwb/.venvs/env.OLD00002" ]]
+
+mkdir -p "$workdir/active-incomplete/.venvs/env.ACTIVE01"
+cp "$workdir/openwb/requirements.txt" "$workdir/active-incomplete/requirements.txt"
+printf 'partial active environment\n' > "$workdir/active-incomplete/.venvs/env.ACTIVE01/partial-file"
+ln -s "$workdir/active-incomplete/.venvs/env.ACTIVE01" "$workdir/active-incomplete/.venv"
+printf 'previous-boot\n' > "$workdir/active-incomplete/.venvs/.cleanup-boot-id"
+bash "$script_dir/setup_python_venv.sh" "$workdir/active-incomplete" 0 --boot-cleanup current-boot
+[[ -d "$workdir/active-incomplete/.venv" && -f "$workdir/active-incomplete/.venv/partial-file" ]]
 
 mkdir -p "$workdir/legacy/.venvs/env.LEGACY01/bin"
 cp "$second_env/bin/python" "$workdir/legacy/.venvs/env.LEGACY01/bin/python"
@@ -266,6 +277,7 @@ fi
 
 rm "$workdir/openwb/.venv"
 bash "$script_dir/setup_python_venv.sh" "$workdir/openwb" 0 --boot-cleanup boot-four
+[[ ! -e "$second_env" ]]
 touch "$workdir/openwb/.venvs/.legacy"
 if bash "$workdir/openwb/runs/run_python.sh" -c 'pass'; then
 	exit 1
@@ -286,7 +298,7 @@ fi
 [[ -d "$workdir/openwb/.venv" ]]
 rmdir "$workdir/openwb/.venv"
 mkdir -p "$workdir/foreign/bin"
-cp "$second_env/bin/python" "$workdir/foreign/bin/python"
+cp "$workdir/bin/legacy-python" "$workdir/foreign/bin/python"
 touch "$workdir/foreign/.openwb-ready" "$workdir/openwb/.venvs/.migrated"
 ln -s "$workdir/foreign" "$workdir/openwb/.venv"
 if bash "$script_dir/setup_python_venv.sh" "$workdir/openwb" 1; then
