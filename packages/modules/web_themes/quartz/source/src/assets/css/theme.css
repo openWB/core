@@ -1,0 +1,239 @@
+@import 'tailwindcss';
+
+@theme {
+  --color-bg: var(--bg);
+  --color-panel: var(--panel);
+  --color-border: var(--border);
+  --color-text: var(--text);
+  --color-muted: var(--muted);
+  --color-pv: var(--pv);
+  --color-grid: var(--grid);
+  --color-chargepoint: var(--chargepoint);
+  --color-battery: var(--battery);
+  --color-car: var(--car);
+  --color-consumption: var(--consumption);
+  --color-consumer: var(--consumer);
+  --color-accent: var(--accent);
+  --color-warning: var(--warning);
+  --color-error: var(--error);
+}
+
+:root {
+  --bg: #f1f2f4;
+  --panel: #ffffff;
+  --border: #e3e5e9;
+  --text: #1a1d24;
+  --muted: #6b7280;
+  /* entity color convention: chargepoints blue, counters/grid red, inverters/pv green, batteries yellow, cars turquoise */
+  --pv: #1f9d55;
+  --grid: #dc2626;
+  --chargepoint: #2563eb;
+  --battery: #eab308;
+  --car: #0d9488;
+  --consumption: #475569;
+  --consumer: #7c3aed;
+  --accent: #2563eb;
+  --warning: #ea580c;
+  --error: #e11d48;
+}
+
+:root[data-theme='dark'] {
+  --bg: #0a0b0d;
+  --panel: #1f232b;
+  --border: #343a46;
+  --text: #e7e9ee;
+  --muted: #9aa0ac;
+  --pv: #3ec776;
+  --grid: #f87171;
+  --chargepoint: #5b9bff;
+  --battery: #facc15;
+  --car: #2dd4bf;
+  --consumption: #a7b0bf;
+  --consumer: #a78bfa;
+  --warning: #fb923c;
+  --error: #fb7185;
+}
+
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family:
+      -apple-system,
+      'Segoe UI',
+      Roboto,
+      sans-serif;
+    transition:
+      background 0.2s ease,
+      color 0.2s ease;
+  }
+
+  a {
+    color: var(--accent);
+    text-decoration: none;
+  }
+
+  a:hover {
+    text-decoration: underline;
+  }
+
+  button {
+    font-family: inherit;
+    cursor: pointer;
+  }
+}
+
+@layer components {
+  .panel {
+    @apply rounded-[14px] border border-border bg-panel;
+  }
+
+  /* for a horizontally-scrollable row (e.g. the chart legend on narrow viewports) that should
+     scroll via touch/trackpad without a visible scrollbar taking up space */
+  .scrollbar-hide {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  .settings-group-label {
+    @apply text-[11px] font-bold tracking-[0.02em] text-muted uppercase;
+  }
+
+  .detail-section {
+    @apply mb-2 rounded-[10px] bg-bg px-2 py-2 last:mb-0 sm:px-3 sm:py-2.5;
+  }
+
+  /* same blue "info" tint + reserved height as the card-level status box, so a status message's
+     varying length never changes this section's height - min-h-24 comfortably fits 3 lines of
+     text-[13px] plus the section's own label row, so 1-3 line messages all render the same height */
+  .detail-section-info {
+    @apply min-h-24;
+    background: color-mix(in srgb, var(--chargepoint) 10%, transparent);
+  }
+
+  .field-label {
+    @apply mb-1.5 block text-xs font-semibold text-muted;
+  }
+
+  .field-select {
+    @apply w-full rounded-lg border border-border bg-bg px-2.5 py-2 text-[13px] text-text;
+  }
+
+  .mode-note {
+    @apply mt-1 mb-3.5 text-xs text-muted;
+  }
+
+  .toggle-row {
+    @apply mt-2 flex items-center justify-between border-t border-border py-2.5;
+  }
+
+  .settings-divider {
+    @apply mt-4 mb-3 border-t border-border;
+  }
+
+  .legend-dot {
+    @apply inline-block h-2.5 w-2.5 flex-none rounded-[3px];
+  }
+
+  .range-slider {
+    @apply w-full accent-accent;
+  }
+
+  .time-range-row {
+    @apply flex items-center gap-2 text-xs text-muted;
+  }
+
+  .time-range-row .field-select {
+    @apply flex-1;
+  }
+
+  .plan-row {
+    @apply mb-2 flex cursor-pointer items-center justify-between rounded-lg bg-bg px-3 py-2.5 text-[13px];
+  }
+
+  .plan-inactive {
+    @apply text-[11px] text-muted;
+  }
+
+  .plan-frequency {
+    @apply text-[11px] text-muted;
+  }
+
+  .add-plan-btn {
+    @apply w-full rounded-lg border border-dashed border-border bg-transparent p-2 text-[13px] text-accent;
+  }
+
+  .info-box {
+    @apply flex flex-col gap-1.5 rounded-[10px] bg-bg px-4 py-3;
+  }
+
+  .info-row {
+    @apply flex gap-2.5 text-[13px];
+  }
+
+  .info-label {
+    @apply min-w-[110px] text-muted;
+  }
+
+  .status-box {
+    @apply rounded-[10px] px-4 py-3 text-[13px];
+    background: color-mix(in srgb, var(--pv) 12%, transparent);
+  }
+
+  .status-box p {
+    @apply mt-1 mb-0;
+  }
+
+  .status-box-warning {
+    background: color-mix(in srgb, var(--warning) 12%, transparent);
+  }
+
+  .status-box-fault {
+    background: color-mix(in srgb, var(--error) 12%, transparent);
+  }
+
+  .status-box-info {
+    background: color-mix(in srgb, var(--chargepoint) 10%, transparent);
+  }
+
+  .plan-edit-head {
+    @apply mb-2 flex items-center justify-between;
+  }
+
+  .badge {
+    @apply rounded-full px-[9px] py-[3px] text-[11px] font-bold whitespace-nowrap;
+  }
+
+  .badge-ok {
+    background: color-mix(in srgb, var(--pv) 18%, transparent);
+    color: var(--pv);
+  }
+
+  .badge-wait {
+    background: color-mix(in srgb, var(--chargepoint) 18%, transparent);
+    color: var(--chargepoint);
+  }
+
+  .badge-muted {
+    background: var(--bg);
+    color: var(--muted);
+  }
+
+  .chip-warning {
+    @apply border-warning;
+    background: color-mix(in srgb, var(--warning) 12%, transparent);
+  }
+
+  .chip-error {
+    @apply border-error;
+    background: color-mix(in srgb, var(--error) 12%, transparent);
+  }
+}
