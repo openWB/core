@@ -22,7 +22,7 @@ def create_device(device_config: SolakonOne):
         return SolakonOneBat(component_config=component_config, client=client)
 
     def create_inverter_component(component_config: SolakonOneInverterSetup):
-        return SolakonOneInverter(component_config=component_config, client=client)
+        return SolakonOneInverter(component_config=component_config, client=client, device_id=device_config.id)
 
     def create_counter_component(component_config: SolakonOneCounterSetup):
         return SolakonOneCounter(component_config=component_config, client=client)
