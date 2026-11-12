@@ -184,6 +184,31 @@ def test_build_tariff_state_keeps_forecasts_own_quarter_hour_resolution(monkeypa
     assert prices['1793623500'] == pytest.approx(0.0004)  # 12:45 UTC
 
 
+def test_build_tariff_state_fills_gap_between_forecast_entries(monkeypatch):
+    data = {'account': {'property': {'electricityMalos': [{'agreements': [
+        {'id': 1,
+         'unitRateInformation': ALL_DAY_RATE,
+         'unitRateForecast': [
+             {'validFrom': '2026-11-02T12:00:00+00:00', 'validTo': '2026-11-02T13:00:00+00:00',
+              'unitRateInformation': {'__typename': 'SimpleProductUnitRateInformation',
+                                      'latestGrossUnitRateCentsPerKwh': '10'}},
+             # Lücke 13:00-15:00 Uhr, keine Forecast-Daten dafür
+             {'validFrom': '2026-11-02T15:00:00+00:00', 'validTo': '2026-11-02T16:00:00+00:00',
+              'unitRateInformation': {'__typename': 'SimpleProductUnitRateInformation',
+                                      'latestGrossUnitRateCentsPerKwh': '90'}},
+         ],
+         'validFrom': '2026-01-01T00:00:00+00:00',
+         'validTo': None}]}]}}}
+    datetime_mock = MagicMock(wraps=datetime)
+    datetime_mock.now.return_value = datetime(2026, 11, 2, 12, 0, 0, tzinfo=timezone.utc)
+    monkeypatch.setattr(tariff, "datetime", datetime_mock)
+
+    prices = build_tariff_state(data)
+
+    assert prices['1793624400'] == pytest.approx(0.0002)  # 13:00 UTC, gap filled from unitRateInformation
+    assert prices['1793628000'] == pytest.approx(0.0002)  # 14:00 UTC, gap filled from unitRateInformation
+
+
 # --- Zusätzliche Tests für die Fehlerbehandlung bei fehlenden/kaputten API-Daten ---
 
 def test_build_tariff_state_raises_on_missing_property():

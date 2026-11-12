@@ -201,32 +201,42 @@ def agreement_active_at(agreement: dict, time_utc: datetime) -> bool:
 
 
 def process_agreement(agreement: dict, current_utc: datetime, horizon_utc: datetime, prices: Dict[str, float]):
-    forecast = agreement.get('unitRateForecast')
-    covered_until = current_utc
-    if forecast:
-        for entry in forecast:
-            valid_from = parse_datetime(entry['validFrom'])
-            valid_to = parse_datetime(entry['validTo']) if entry.get('validTo') else horizon_utc
-            if valid_to <= current_utc or valid_from >= horizon_utc:
-                continue
-            if agreement_active_at(agreement, valid_from):
-                rate = get_rate_from_unit_rate_info(entry['unitRateInformation'], valid_from)
-                if rate is not None:
-                    timestamp = str(int(valid_from.astimezone(GERMAN_TZ).timestamp()))
-                    prices[timestamp] = rate
-            covered_until = max(covered_until, valid_to)
-
-    # Fällt zurück auf unitRateInformation für alles, was der Forecast nicht abdeckt (oder komplett fehlt).
-    hour = timedelta()
-    while current_utc + hour < horizon_utc:
-        hour_time_utc = current_utc + hour
-        if hour_time_utc >= covered_until and agreement_active_at(agreement, hour_time_utc):
-            rate = get_rate_from_unit_rate_info(agreement['unitRateInformation'], hour_time_utc)
+    forecast = agreement.get('unitRateForecast') or []
+    forecast_intervals = []
+    for entry in forecast:
+        valid_from = parse_datetime(entry['validFrom'])
+        valid_to = parse_datetime(entry['validTo']) if entry.get('validTo') else horizon_utc
+        if valid_to <= current_utc or valid_from >= horizon_utc:
+            continue
+        forecast_intervals.append((valid_from, valid_to))
+        if agreement_active_at(agreement, valid_from):
+            rate = get_rate_from_unit_rate_info(entry['unitRateInformation'], valid_from)
             if rate is not None:
-                local_hour_time = hour_time_utc.astimezone(GERMAN_TZ)
-                timestamp = str(int(local_hour_time.replace(minute=0, second=0, microsecond=0).timestamp()))
+                timestamp = str(int(valid_from.astimezone(GERMAN_TZ).timestamp()))
                 prices[timestamp] = rate
-        hour += timedelta(hours=1)
+
+    # Lücken im Forecast (oder sein komplettes Fehlen) werden mit unitRateInformation aufgefüllt, im selben
+    # Takt wie der Forecast - sonst leitet ep_get_loading_hours() aus den ersten beiden Preisen eine falsche,
+    # global geltende Slot-Länge ab.
+    if forecast_intervals:
+        step = forecast_intervals[0][1] - forecast_intervals[0][0]
+        round_to_hour = False
+    else:
+        step = timedelta(hours=1)
+        round_to_hour = True
+
+    offset = timedelta()
+    while current_utc + offset < horizon_utc:
+        time_utc = current_utc + offset
+        if (not any(start <= time_utc < end for start, end in forecast_intervals)
+                and agreement_active_at(agreement, time_utc)):
+            rate = get_rate_from_unit_rate_info(agreement['unitRateInformation'], time_utc)
+            if rate is not None:
+                local_time = time_utc.astimezone(GERMAN_TZ)
+                if round_to_hour:
+                    local_time = local_time.replace(minute=0, second=0, microsecond=0)
+                prices[str(int(local_time.timestamp()))] = rate
+        offset += step
 
 
 def build_tariff_state(data: dict) -> Dict[str, float]:
