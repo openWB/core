@@ -240,6 +240,7 @@ class Consumer(ConsumerRfidMixin, Load):
     SCHEDULED_REACHED_MAX_ON_TIME = ("Ziel erreicht, da das Gerät die gewünschte Dauer in Betrieb war.")
     SCHEDULED_CHARGING_NO_PLANS_CONFIGURED = "Kein Ziel, da keine Ziel-Termine konfiguriert sind."
     SCHEDULED_CHARGING_NO_DATE_PENDING = "Kein Ziel, da kein Ziel-Termin ansteht. "
+    SCHEDULED_CHARGING_MISSING_DEADLINE = "Kein Zielbetrieb, da der Zieltermin für die Preisplanung fehlt."
     SCHEDULED_CHARGING_USE_PV = "Betrieb startet {}. Falls vorhanden, wird Überschuss verwendet. "
     SCHEDULED_CHARGING_CHEAP_HOUR = "Ziel, da ein günstiger Zeitpunkt für den preisbasierten Betrieb ist. {}"
     SCHEDULED_CHARGING_EXPENSIVE_HOUR = (
@@ -273,6 +274,11 @@ class Consumer(ConsumerRfidMixin, Load):
             # Wenn dynamische Tarife aktiv sind, prüfen, ob jetzt ein günstiger Zeitpunkt zum Laden
             # ist.
             if data.data.optional_data.data.electricity_pricing.configured:
+                if deadline is None:
+                    log.error("Verbraucher %s, Plan %s: %s", self.num, plan.id,
+                              self.SCHEDULED_CHARGING_MISSING_DEADLINE)
+                    return 0, self.SCHEDULED_CHARGING_MISSING_DEADLINE, Chargemode.STOP
+
                 def get_hours_message() -> str:
                     def end_of_today_timestamp() -> float:
                         return datetime.datetime.now().replace(
@@ -313,8 +319,6 @@ class Consumer(ConsumerRfidMixin, Load):
                     loading_message = "Eingeschaltet wird " + "".join(parts)
                     return loading_message + '.'
 
-                if deadline is None:
-                    raise ValueError("Für den Verbraucherplan fehlt der Zieltermin.")
                 hour_list = data.data.optional_data.ep_get_loading_hours({
                     "deadline": deadline,
                     "chargeDuration": duration,

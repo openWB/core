@@ -1,4 +1,5 @@
 import datetime
+import time
 from typing import List, Optional, Union
 from unittest.mock import MagicMock, Mock
 import pytest
@@ -50,6 +51,40 @@ def test_check_end_time(time: str,
     remaining, deadline = timecheck.check_end_time_with_deadline(plan, 1200)
     assert remaining == expected_remaining_time
     assert deadline == (datetime.datetime.today() + datetime.timedelta(seconds=expected_remaining_time)).timestamp()
+
+
+@pytest.mark.skipif(not hasattr(time, "tzset"), reason="requires local timezone switching")
+@pytest.mark.parametrize(
+    "now_utc, plan_time, frequency, expected_deadline_utc",
+    [
+        ("2026-10-25T00:10:00+00:00", "02:30", "once", "2026-10-25T00:30:00+00:00"),
+        ("2026-10-25T01:10:00+00:00", "02:30", "once", "2026-10-25T00:30:00+00:00"),
+        ("2026-10-25T00:10:00+00:00", "03:30", "once", "2026-10-25T02:30:00+00:00"),
+        ("2026-03-29T00:30:00+00:00", "03:30", "once", "2026-03-29T01:30:00+00:00"),
+        ("2026-10-25T01:10:00+00:00", "02:30", "daily", "2026-10-26T01:30:00+00:00"),
+        ("2026-10-25T01:10:00+00:00", "02:30", "weekly", "2026-11-01T01:30:00+00:00"),
+    ],
+)
+def test_check_end_time_with_deadline_across_dst(
+        now_utc, plan_time, frequency, expected_deadline_utc, monkeypatch):
+    with monkeypatch.context() as timezone_patch:
+        timezone_patch.setenv("TZ", "Europe/Berlin")
+        time.tzset()
+        try:
+            now_timestamp = datetime.datetime.fromisoformat(now_utc).timestamp()
+            deadline_timestamp = datetime.datetime.fromisoformat(expected_deadline_utc).timestamp()
+            datetime.datetime.today.return_value = datetime.datetime.fromtimestamp(now_timestamp)
+            plan = Mock(spec=ScheduledChargingPlan, time=plan_time, frequency=Mock(
+                spec=FrequencyDate, selected=frequency, once=now_utc[:10],
+                weekly=[False, False, False, False, False, False, True]))
+
+            remaining, deadline = timecheck.check_end_time_with_deadline(plan)
+
+            assert deadline == deadline_timestamp
+            assert remaining == deadline_timestamp - now_timestamp
+        finally:
+            timezone_patch.undo()
+            time.tzset()
 
 
 @pytest.mark.parametrize(

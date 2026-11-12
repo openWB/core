@@ -555,6 +555,7 @@ class ChargeTemplate:
                                "Einspeisung erfolgt. ")
     SCHEDULED_CHARGING_NO_PLANS_CONFIGURED = "Kein Zielladen, da keine Ziel-Termine konfiguriert sind."
     SCHEDULED_CHARGING_NO_DATE_PENDING = "Kein Zielladen, da kein Ziel-Termin ansteht. "
+    SCHEDULED_CHARGING_MISSING_DEADLINE = "Kein Zielladen, da der Zieltermin für die Preisplanung fehlt."
     SCHEDULED_CHARGING_USE_PV = "Zielladen startet {}. Falls vorhanden, wird mit Überschuss geladen. "
     SCHEDULED_CHARGING_MAX_CURRENT = "Zielladen mit {}A. Der Ladestrom wurde erhöht, um das Ziel zu erreichen. "
     SCHEDULED_CHARGING_LIMITED_BY_SOC = 'einen SoC von {}%'
@@ -651,6 +652,11 @@ class ChargeTemplate:
             # Wenn dynamische Tarife aktiv sind, prüfen, ob jetzt ein günstiger Zeitpunkt zum Laden
             # ist.
             if plan.et_active:
+                if selected_plan.deadline is None:
+                    log.error("Ladeprofil %s, Plan %s: %s", self.data.id, plan.id,
+                              self.SCHEDULED_CHARGING_MISSING_DEADLINE)
+                    return 0, ChargemodeEnum.STOP, self.SCHEDULED_CHARGING_MISSING_DEADLINE, phases
+
                 def get_hours_message() -> str:
                     def end_of_today_timestamp() -> int:
                         return datetime.datetime.now().replace(
@@ -691,8 +697,6 @@ class ChargeTemplate:
                     loading_message = "Geladen wird " + "".join(parts)
                     return loading_message + '.'
 
-                if selected_plan.deadline is None:
-                    raise ValueError("Für den Ladeplan fehlt der Zieltermin.")
                 hour_list = data.data.optional_data.ep_get_loading_hours({
                     "deadline": selected_plan.deadline,
                     "chargeDuration": selected_plan.duration,

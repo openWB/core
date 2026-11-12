@@ -1,11 +1,10 @@
 from unittest.mock import Mock
-from typing import Dict, List, Optional, Tuple
+from typing import List, Optional, Tuple
 import datetime
 
 import pytest
 
-from helpermodules.abstract_plans import (ScheduledChargingPlan, ScheduledPlanConsumer, TimeChargingPlan,
-                                          TimeChargingPlanConsumer)
+from helpermodules.abstract_plans import ScheduledPlanConsumer, TimeChargingPlanConsumer
 from helpermodules import timecheck
 from control import optional
 from control import data
@@ -293,20 +292,20 @@ def test_process_on_time_pauses_when_charge_state_is_false(
 @pytest.mark.parametrize(
     "plans, plan_found, expected",
     [
-        pytest.param({}, None, (0,
+        pytest.param([], None, (0,
                      Consumer.TIME_CHARGING_NO_PLAN_CONFIGURED, Chargemode.STOP), id="no plan defined"),
-        pytest.param({"0": TimeChargingPlanConsumer(id=0)}, None,
+        pytest.param([TimeChargingPlanConsumer(id=0)], None,
                      (0, Consumer.TIME_CHARGING_NO_PLAN_ACTIVE, Chargemode.STOP),
                      id="no plan active without next start"),
-        pytest.param({"0": TimeChargingPlanConsumer(id=0)}, TimeChargingPlanConsumer(id=0),
+        pytest.param([TimeChargingPlanConsumer(id=0)], TimeChargingPlanConsumer(id=0),
                      (10, None, Chargemode.TIME_CHARGING), id="plan active"),
-        pytest.param({"0": TimeChargingPlanConsumer(id=0)}, None,
+        pytest.param([TimeChargingPlanConsumer(id=0)], None,
                      (0, Consumer.TIME_CHARGING_NO_PLAN_ACTIVE, Chargemode.STOP),
                      id="plan defined but not found"),
     ]
 )
-def test_time_charging(plans: Dict[int, TimeChargingPlanConsumer],
-                       plan_found: TimeChargingPlanConsumer,
+def test_time_charging(plans: List[TimeChargingPlanConsumer],
+                       plan_found: Optional[TimeChargingPlanConsumer],
                        expected: Tuple[float, Optional[str], Chargemode],
                        consumer: Consumer,
                        monkeypatch: pytest.MonkeyPatch):
@@ -371,7 +370,7 @@ def test_time_charging_min_bat_soc(min_bat_soc: Optional[int],
                                    consumer: Consumer,
                                    monkeypatch: pytest.MonkeyPatch):
     # setup
-    plan = TimeChargingPlan(id=0)
+    plan = TimeChargingPlanConsumer(id=0)
     plan.min_bat_soc = min_bat_soc
     consumer.data.usage.time_charging.plans = [plan]
     check_plans_timeframe_mock = Mock(return_value=plan)
@@ -485,10 +484,7 @@ def test_scheduled_charging_recent_plan(end_time_mock,
     monkeypatch.setattr(Consumer, "_calc_remaining_time", calculate_duration_mock)
     check_end_time_mock = Mock(side_effect=[(remaining, 123456 + i) for i, remaining in enumerate(end_time_mock)])
     monkeypatch.setattr(timecheck, "check_end_time_with_deadline", check_end_time_mock)
-    plan_mock_0 = Mock(spec=ScheduledPlanConsumer, active=True, id=0)
-    plan_mock_1 = Mock(spec=ScheduledPlanConsumer, active=True, id=1)
-    plan_mock_2 = Mock(spec=ScheduledPlanConsumer, active=True, id=2)
-    plans = [plan_mock_0, plan_mock_1, plan_mock_2]
+    plans = [ScheduledPlanConsumer(active=True, id=i) for i in range(3)]
 
     # execution
     selected_plan, remaining_time, duration, deadline = consumer._find_recent_plan(plans)
@@ -498,7 +494,7 @@ def test_scheduled_charging_recent_plan(end_time_mock,
         assert selected_plan.id == expected_plan_num
         assert remaining_time == 100
         assert duration == 500
-        assert deadline == 123456 + expected_plan_num
+        assert deadline == 123456 + (expected_plan_num or 0)
     else:
         assert selected_plan is None
         assert remaining_time == 0
@@ -530,8 +526,7 @@ def test_scheduled_charging_calc_current(plan: Optional[ScheduledPlanConsumer],
     # setup
     if plan is not None:
         plan.id = 0
-    # json verwandelt Keys in strings
-    consumer.data.usage.scheduled_charging.plans = [plan]
+    consumer.data.usage.scheduled_charging.plans = [plan if plan is not None else ScheduledPlanConsumer()]
 
     # execution
     ret = consumer.scheduled_charging_calc_current(plan, remaining_time, duration, None)
@@ -598,7 +593,7 @@ def test_scheduled_charging_calc_current_electricity_tariff(
     datetime_mock.now.return_value = datetime.datetime.fromtimestamp(LOADING_HOURS_TODAY[0])
     monkeypatch.setattr(datetime, "datetime", datetime_mock)
 
-    plan = ScheduledChargingPlan()
+    plan = ScheduledPlanConsumer()
     consumer.data.usage.scheduled_charging.plans = [plan]
     # für Github-Test keinen Zeitstempel verwenden
     mock_ep_get_loading_hours = Mock(return_value=loading_hours)
@@ -613,6 +608,19 @@ def test_scheduled_charging_calc_current_electricity_tariff(
     # evaluation
     assert ret == expected
     mock_ep_get_loading_hours.assert_called_once_with({"deadline": 123456, "chargeDuration": 3600})
+
+
+def test_scheduled_charging_missing_deadline(consumer, monkeypatch, caplog):
+    data.data.optional_data.data.electricity_pricing.configured = True
+    get_loading_hours = Mock()
+    monkeypatch.setattr(data.data.optional_data, "ep_get_loading_hours", get_loading_hours)
+
+    result = consumer.scheduled_charging_calc_current(
+        ScheduledPlanConsumer(), remaining_time=601, duration=3600, deadline=None)
+
+    assert result == (0, Consumer.SCHEDULED_CHARGING_MISSING_DEADLINE, Chargemode.STOP)
+    assert Consumer.SCHEDULED_CHARGING_MISSING_DEADLINE in caplog.text
+    get_loading_hours.assert_not_called()
 
 
 @pytest.mark.parametrize(
