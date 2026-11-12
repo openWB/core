@@ -369,6 +369,8 @@ class UpdateConfig:
         "^openWB/io/states/[0-9]+/get/analog_output$",
         "^openWB/io/states/[0-9]+/get/digital_input$",
         "^openWB/io/states/[0-9]+/get/digital_output$",
+        "^openWB/io/states/[0-9]+/get/fault_state$",
+        "^openWB/io/states/[0-9]+/get/fault_str$",
         "^openWB/io/states/[0-9]+/set/analog_input$",
         "^openWB/io/states/[0-9]+/set/analog_output$",
         "^openWB/io/states/[0-9]+/set/digital_input$",
