@@ -1,0 +1,5 @@
+#!/bin/sh
+# No browser, desktop panel, compiler, sudo rule or credential bootstrap.
+/usr/bin/xset s off
+/usr/bin/xset -dpms
+exec /usr/bin/openbox --config-file /etc/openwb-native-display/openbox.xml

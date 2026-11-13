@@ -1,0 +1,33 @@
+[Unit]
+Description=openWB native display (experimental Trixie X11 profile)
+Wants=lightdm.service openwb-display-power.service
+After=lightdm.service openwb-display-power.service
+PartOf=lightdm.service
+StartLimitIntervalSec=60
+StartLimitBurst=3
+
+[Service]
+Type=simple
+User=openwb
+Environment=HOME=/home/openwb
+Environment=DISPLAY=:0
+Environment=XAUTHORITY=/home/openwb/.Xauthority
+Environment=XDG_RUNTIME_DIR=/run/user/@USER_UID@
+Environment=QT_QPA_PLATFORM=xcb
+Environment=QT_XCB_GL_INTEGRATION=xcb_egl
+Environment=OPENWB_SCENEGRAPH=opengl
+Environment=QSG_INFO=1
+ExecStartPre=/usr/bin/timeout 60 /bin/sh -c 'until /usr/bin/xdpyinfo >/dev/null 2>&1; do /bin/sleep 1; done'
+ExecStartPre=-/usr/bin/xset s off
+ExecStartPre=-/usr/bin/xset -dpms
+ExecStart=/usr/libexec/openwb-native-display
+Restart=on-failure
+RestartSec=5
+KillMode=control-group
+TimeoutStopSec=15
+Nice=5
+NoNewPrivileges=true
+MemoryMax=256M
+
+[Install]
+WantedBy=graphical.target
