@@ -3,9 +3,10 @@
 set -euo pipefail
 OPENWBBASEDIR=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 PROFILE_DIR="${OPENWBBASEDIR}/data/config/native-display"
-PACKAGE_NAME='openwb-native-display_0.1.0~alpha3+watermark20261113_arm64.deb'
-PACKAGE_URL='https://openwb.de/uploads/display/openwb-native-display_0.1.0~alpha3%2Bwatermark20261113_arm64.deb'
-PACKAGE_SHA256='7dafd661a873aa29551e3bf7eab8c9479e23401adc81b1e84449e1aff0b430ca'
+PACKAGE_VERSION='0.1.0~alpha3+watermark20261113.1'
+PACKAGE_NAME="openwb-native-display_${PACKAGE_VERSION}_arm64.deb"
+PACKAGE_URL='https://openwb.de/uploads/display/openwb-native-display_0.1.0~alpha3%2Bwatermark20261113.1_arm64.deb'
+PACKAGE_SHA256='fbcfb5d3adb0ef6799e64d9e877d79716ddd9ba681b51141d57ae851b0795f11'
 
 if (( EUID != 0 )); then
     echo 'Run the display installer as root.' >&2
@@ -29,22 +30,43 @@ if [[ $display_found != true ]]; then
     exit 0
 fi
 id openwb >/dev/null
+# Share the updater's lock; read MQTT state only after acquiring it.
+exec 9>/run/lock/openwb-native-display.lock
+flock -x 9
 for file in openbox.xml openwb-native-session openwb-native.desktop zz-openwb-native.conf \
-            openwb-native-display.service display_power_service.py openwb-display-power.service; do
+            openwb-native-display.service display_power_service.py openwb-display-power.service \
+            native_display_settings.py; do
     test -r "$PROFILE_DIR/$file"
 done
 
-if [[ -f /etc/openwb/display-managed-externally &&
-      -f /etc/systemd/system/openwb-native-display.service ]] &&
-   [[ $(dpkg-query -W -f='${Version}' openwb-native-display 2>/dev/null || true) == '0.1.0~alpha3+watermark20261113' ]]; then
-    bash "$OPENWBBASEDIR/runs/update_local_display.sh"
-    echo 'Native alpha display is already installed; display settings applied without reinstalling.'
-    exit 0
+existing_profile=false
+package_changed=false
+power_changed=false
+masked_lightdm=false
+if [[ -f /etc/systemd/system/openwb-native-display.service ]]; then
+    if [[ ! -f /etc/openwb/display-managed-externally ]]; then
+        echo 'A separately managed native display service exists; refusing to overwrite it.' >&2
+        exit 1
+    fi
+    existing_profile=true
 fi
 
+# Avoid package post-install activation side effects when the initial display
+# state is unknown. A later installer invocation can resume safely.
+if python3 "$PROFILE_DIR/native_display_settings.py" preflight; then
+    :
+else
+    status=$?
+    if [[ $status == 75 ]]; then
+        echo 'Native display state unavailable; installation deferred without service changes.'
+        exit 0
+    fi
+    exit "$status"
+fi
+
+if [[ $(dpkg-query -W -f='${db:Status-Status} ${Version}' openwb-native-display 2>/dev/null || true) != "installed $PACKAGE_VERSION" ]]; then
 package_file="/var/cache/apt/archives/$PACKAGE_NAME"
 partial_file="/var/cache/apt/archives/partial/$PACKAGE_NAME"
-masked_lightdm=false
 cleanup() {
     rm -f -- "$partial_file" "$package_file"
     if [[ $masked_lightdm == true ]]; then
@@ -63,7 +85,7 @@ fi
 printf '%s  %s\n' "$PACKAGE_SHA256" "$package_file" | sha256sum --check --status
 test "$(dpkg-deb --field "$package_file" Package)" = openwb-native-display
 test "$(dpkg-deb --field "$package_file" Architecture)" = arm64
-test "$(dpkg-deb --field "$package_file" Version)" = '0.1.0~alpha3+watermark20261113'
+test "$(dpkg-deb --field "$package_file" Version)" = "$PACKAGE_VERSION"
 
 # A new LightDM must not start before its native-only session exists.
 if ! dpkg-query -W -f='${db:Status-Status}' lightdm 2>/dev/null | grep -qx installed; then
@@ -80,17 +102,19 @@ DEBIAN_FRONTEND=noninteractive apt-get -q -y --no-remove install --no-install-re
     "$package_file" xserver-xorg-core xserver-xorg-input-libinput xauth \
     x11-xserver-utils x11-utils lightdm openbox python3
 
-# Application upgrades preserve an already configured native session and overrides.
-if [[ -f /etc/openwb/display-managed-externally &&
-      -f /etc/systemd/system/openwb-native-display.service ]]; then
-    systemctl try-restart openwb-native-display.service
-    echo 'Native alpha display package updated; existing display profile preserved.'
-    exit 0
+package_changed=true
 fi
-if [[ -f /etc/systemd/system/openwb-native-display.service ]]; then
-    echo 'A separately managed native display service exists; refusing to overwrite it.' >&2
-    exit 1
+
+# Refresh owned helpers even when the application package is unchanged.
+install -d /usr/local/lib/openwb-native-display /usr/local/lib/openwb-display-power
+install -m 644 "$PROFILE_DIR/native_display_settings.py" /usr/local/lib/openwb-native-display/native_display_settings.py
+if ! cmp -s "$PROFILE_DIR/display_power_service.py" /usr/local/lib/openwb-display-power/display_power_service.py ||
+   ! cmp -s "$PROFILE_DIR/openwb-display-power.service" /etc/systemd/system/openwb-display-power.service; then
+    power_changed=true
+    install -m 644 "$PROFILE_DIR/display_power_service.py" /usr/local/lib/openwb-display-power/display_power_service.py
+    install -m 644 "$PROFILE_DIR/openwb-display-power.service" /etc/systemd/system/openwb-display-power.service
 fi
+if [[ $existing_profile == false ]]; then
 install -d /etc/openwb /etc/openwb-native-display /usr/local/libexec \
     /etc/lightdm/lightdm.conf.d /usr/share/xsessions /usr/local/lib/openwb-display-power
 install -m 644 "$PROFILE_DIR/openbox.xml" /etc/openwb-native-display/openbox.xml
@@ -103,42 +127,17 @@ sed "s/@USER_UID@/$(id -u openwb)/g" "$PROFILE_DIR/openwb-native-display.service
     > /etc/systemd/system/openwb-native-display.service
 chmod 644 /etc/systemd/system/openwb-native-display.service
 
-# Initialize only missing local transport/display settings; never copy another box's settings.
-sudo -u openwb python3 - <<'PY'
-from pathlib import Path
-import subprocess
-folder=Path.home()/'native-display'
-folder.mkdir(mode=0o700, exist_ok=True)
-settings=folder/'display.ini'
-if not settings.exists():
-    result=subprocess.run(['mosquitto_sub','-h','localhost','-p','1886','-t',
-                           'openWB/optional/int_display/rotation','-C','1','-W','2'],
-                          capture_output=True,text=True,timeout=4)
-    rotation='180' if result.stdout.strip()=='180' else '0'
-    settings.write_text('[display]\nrotation='+rotation+'\nstyle=graphic\n\n'
-                        '[mqtt]\nlocalPort=1886\nlocalHttpPort=81\n\n'
-                        '[presentation]\noverviewPanel=glass-flow\n')
-    settings.chmod(0o600)
-PY
+fi
+# Initialize only missing settings, atomically and as their actual owner.
+sudo -u openwb python3 /usr/local/lib/openwb-native-display/native_display_settings.py initialize
 touch /etc/openwb/display-managed-externally
 systemctl daemon-reload
 if [[ $masked_lightdm == true ]]; then
     systemctl unmask --runtime lightdm.service
     masked_lightdm=false
 fi
-systemctl enable lightdm.service openwb-display-power.service openwb-native-display.service
-display_active=$(mosquitto_sub -h localhost -p 1886 -t openWB/optional/int_display/active -C 1 -W 2 2>/dev/null || true)
-if [[ $display_active == false ]]; then
-    echo 'Native alpha display installed; existing disabled-display setting preserved.'
-    exit 0
-fi
-systemctl set-default graphical.target
-systemctl start openwb-display-power.service
-# A pre-existing graphical session needs exactly one session switch.
-systemctl restart lightdm.service
-systemctl start openwb-native-display.service
-sleep 5
-for unit in lightdm.service openwb-display-power.service openwb-native-display.service; do
-    systemctl is-active --quiet "$unit"
-done
-echo 'Native alpha display installed and active.'
+args=(apply --lock-fd 9)
+[[ $existing_profile == false ]] && args+=(--new-session)
+[[ $package_changed == true ]] && args+=(--force)
+[[ $power_changed == true ]] && args+=(--reload-power)
+python3 /usr/local/lib/openwb-native-display/native_display_settings.py "${args[@]}"

@@ -788,7 +788,7 @@ class SubData:
                     self.set_json_payload_class(var.data.ocpp, msg)
                 elif re.search("/optional/int_display/", msg.topic) is not None:
                     self.set_json_payload_class(var.data.int_display, msg)
-                    if re.search("/(standby|active|rotation)$", msg.topic) is not None:
+                    if re.search("/(standby|active|rotation|detected)$", msg.topic) is not None:
                         # some topics require an update of the display manager or boot settings
                         run_command([
                             str(Path(__file__).resolve().parents[2] / "runs" / "update_local_display.sh")

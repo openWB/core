@@ -6,6 +6,7 @@ from pathlib import Path
 import signal
 import socketserver
 import threading
+import tempfile
 import time
 
 RUNTIME = Path('/run/openwb-display-power')
@@ -21,17 +22,25 @@ class Backlight:
         self.device = None
         self.previous = None
         self.restore_file = runtime / 'restore.json'
+        self.recovery_error = False
         # Only a single unambiguous kernel backlight. No client-provided paths.
         devices = [p for p in root.iterdir() if (p / 'brightness').is_file()
                    and (p / 'max_brightness').is_file()] if root.exists() else []
         if len(devices) == 1:
             self.device = devices[0]
         if self.restore_file.exists():
-            record = json.loads(self.restore_file.read_text())
-            if self.device is None or record.get('device') != self.device.name:
-                raise RuntimeError('Backlight changed; inspect saved restore state')
-            self.previous = self.valid_brightness(record['brightness'])
-            self.restore()
+            try:
+                record = json.loads(self.restore_file.read_text())
+                if self.device is None or record.get('device') != self.device.name:
+                    raise ValueError('Backlight changed')
+                self.previous = self.valid_brightness(record['brightness'])
+                self.restore()
+            except (ValueError, TypeError, KeyError, AttributeError, OSError):
+                # Keep evidence, serve status, and refuse writes. Never guess a
+                # brightness or repeatedly crash on the same corrupt record.
+                self.recovery_error = True
+                self.previous = None
+                self.deadline = 0
 
     def valid_brightness(self, value):
         maximum = int((self.device / 'max_brightness').read_text())
@@ -40,7 +49,8 @@ class Backlight:
         return value
 
     def status(self):
-        return dict(ok=True, available=self.device is not None,
+        return dict(ok=True, available=self.device is not None and not self.recovery_error,
+                    recovery_error=self.recovery_error,
                     off=self.previous is not None,
                     device=self.device.name if self.device else '')
 
@@ -56,6 +66,8 @@ class Backlight:
         if not isinstance(request, dict) or set(request) != {'op'} or request['op'] not in ('status', 'on', 'off'):
             raise ValueError('Only status/on/off accepted')
         with self.lock:
+            if self.recovery_error and request['op'] != 'status':
+                raise ValueError('Backlight recovery requires inspection')
             if request['op'] == 'on':
                 self.restore()
             elif request['op'] == 'off':
@@ -66,10 +78,19 @@ class Backlight:
                     # Do not take ownership of a panel already off for another reason.
                     if value == 0:
                         raise ValueError('Backlight already off outside this service')
-                    fd = os.open(self.restore_file, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
-                    with os.fdopen(fd, 'w') as f:
-                        json.dump(dict(device=self.device.name, brightness=value), f)
-                        f.flush(); os.fsync(f.fileno())
+                    fd, temporary = tempfile.mkstemp(prefix='.restore-', dir=self.runtime)
+                    try:
+                        with os.fdopen(fd, 'w') as f:
+                            json.dump(dict(device=self.device.name, brightness=value), f)
+                            f.flush(); os.fsync(f.fileno())
+                        os.replace(temporary, self.restore_file)
+                        directory = os.open(self.runtime, os.O_RDONLY | os.O_DIRECTORY)
+                        try:
+                            os.fsync(directory)
+                        finally:
+                            os.close(directory)
+                    finally:
+                        Path(temporary).unlink(missing_ok=True)
                     self.previous = value
                     try:
                         (self.device / 'brightness').write_text('0')
