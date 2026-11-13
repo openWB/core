@@ -8,9 +8,11 @@
 .venv
 .venvs/
 .pyenv
+.ruff_cache
 .vite
 .vimrc
 .vscode/*
+.pytest_cache
 __pycache__/
 node_modules/
 data/config/eebus/certs/*
