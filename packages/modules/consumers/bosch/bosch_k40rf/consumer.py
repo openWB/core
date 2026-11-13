@@ -2,6 +2,8 @@
 import logging
 from typing import Optional
 
+import requests
+
 from modules.common import req
 from modules.common.abstract_device import DeviceDescriptor
 from modules.common.component_state import ConsumerState
@@ -31,8 +33,9 @@ def create_consumer(config: BoschK40Rf):
         power = _get("/heatSources/compressor/powerElecActual")
         try:
             power += _get("/heatSources/eHeater/powerElecActual")
-        except Exception:
-            pass
+        except requests.exceptions.HTTPError as e:
+            if e.response.status_code != 404:
+                raise
         consumption = _get("/heatSources/emon/totalConsumption")
         imported = consumption["electricity"] * 1000
         return ConsumerState(power=power, imported=imported)
