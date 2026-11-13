@@ -22,6 +22,14 @@ power = load('display_power_service')
 
 
 class StateTests(unittest.TestCase):
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.temp.cleanup)
+        self.pending = Path(self.temp.name) / 'activation-pending'
+        pending_patch = patch.object(settings, 'ACTIVATION_PENDING', self.pending)
+        pending_patch.start()
+        self.addCleanup(pending_patch.stop)
+
     def apply(self, active, detected, **kwargs):
         calls = []
         def ctl(*args):
@@ -37,6 +45,18 @@ class StateTests(unittest.TestCase):
                                  ('false', None), ('TRUE', 'true'), ('true', 'null')]:
             with self.subTest(active=active, detected=detected):
                 self.assertEqual(self.apply(active, detected), ('unknown', []))
+
+    def test_pending_activation_survives_unknown_and_disabled_broker_state(self):
+        self.pending.touch()
+        self.apply(None, 'true')
+        self.assertTrue(self.pending.exists())
+        self.apply('false', 'true')
+        self.assertTrue(self.pending.exists())
+
+    def test_valid_enabled_state_releases_persistent_activation_guard(self):
+        self.pending.touch()
+        self.apply('true', 'true')
+        self.assertFalse(self.pending.exists())
 
     def test_disabled_stops_and_disables_boot_activation(self):
         for active, detected in [('false', 'true'), ('true', 'false'), ('false', 'false')]:

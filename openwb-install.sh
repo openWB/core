@@ -145,25 +145,25 @@ fi
 echo "installing openwb2 system service..."
 ln -s "${OPENWBBASEDIR}/data/config/openwb2.service" /etc/systemd/system/openwb2.service
 systemctl daemon-reload
-systemctl enable openwb2
 
 echo "installing openwb2-simpleAPI service..."
 ln -s "${OPENWBBASEDIR}/data/config/openwb-simpleAPI.service" /etc/systemd/system/openwb-simpleAPI.service
 systemctl daemon-reload
-systemctl enable openwb-simpleAPI
 
 echo "installing openwb2 remote support service..."
 cp "${OPENWBBASEDIR}/data/config/openwbRemoteSupport.service" /etc/systemd/system/openwbRemoteSupport.service
 systemctl daemon-reload
-systemctl enable openwbRemoteSupport
 
 # Complete provisioning before openwb2's ExecStartPre can request a reboot.
 echo "installing the native display on supported Trixie arm64 display systems..."
-if ! OPENWB_APT_INDEX_READY=1 bash "${OPENWBBASEDIR}/runs/install_native_display.sh" --install-only; then
-	echo "Native display installation failed; see the error above." >&2
-	exit 1
-fi
+native_display_status=0
+OPENWB_APT_INDEX_READY=1 bash "${OPENWBBASEDIR}/runs/install_native_display.sh" --install-only || native_display_status=$?
+case "$native_display_status" in
+	0|10) ;; # 10 means this run found no supported native display profile.
+	*) echo "Native display installation failed; see the error above." >&2; exit 1 ;;
+esac
 
+systemctl enable openwb2 openwb-simpleAPI openwbRemoteSupport
 sync
 echo "installation finished, now starting openwb services..."
 systemctl start openwbRemoteSupport
@@ -172,7 +172,7 @@ systemctl start openwb-simpleAPI
 
 # If startup rebooted the system, Core's MQTT display updates perform this
 # activation on the next boot. Unknown broker state never enables a display.
-if [[ -f /etc/openwb/display-managed-externally &&
+if [[ $native_display_status == 0 && -f /etc/openwb/display-managed-externally &&
       -f /usr/local/lib/openwb-native-display/native_display_settings.py ]]; then
 	if ! python3 /usr/local/lib/openwb-native-display/native_display_settings.py apply --force --reload-power; then
 		echo "Native display activation failed; see the error above." >&2
