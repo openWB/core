@@ -1,0 +1,7 @@
+[Desktop Entry]
+Name=openWB Native Display
+Comment=Experimental native-only touchscreen session
+Exec=/usr/local/libexec/openwb-native-session
+TryExec=/usr/libexec/openwb-native-display
+Type=Application
+DesktopNames=openWB
