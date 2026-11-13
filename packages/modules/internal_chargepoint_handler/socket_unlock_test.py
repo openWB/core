@@ -33,9 +33,63 @@ def hardware(monkeypatch):
     meter = SimpleNamespace(currents=[0.0, 0.0, 0.0])
     controller = Mock(id=1)
     cp._client = SimpleNamespace(client=MagicMock(), evse_client=controller,
+                                 get_pins_cp_interruption=Mock(return_value=22),
                                  request_and_check_hardware=Mock(return_value=(evse, meter)))
     cp._Socket__open_actor = Mock(side_effect=lambda: setattr(gpio.input, "return_value", ActorState.OPENED))
     return cp, evse, meter, clock, gpio
+
+
+@pytest.mark.parametrize("outcome", ["success", "timeout", "read_error", "actor_error", "cancelled"])
+def test_cp_interruption_spans_checks_and_actor_and_is_always_restored(hardware, outcome):
+    cp, evse, meter, _, gpio = hardware
+    cancelled = Event()
+    events = []
+
+    def output(pin, value):
+        assert pin == 22
+        if value == gpio.HIGH:
+            cp._client.evse_client.set_current.assert_called_with(0)
+        events.append(value)
+
+    def read(_):
+        assert events == [gpio.HIGH]
+        if outcome == "read_error":
+            raise OSError("EVSE unavailable")
+        if outcome == "cancelled":
+            cancelled.set()
+        # CP-off can look like unplugging, but must not clear the local inhibit.
+        evse.plug_state = False
+        evse.status_code = 3 if outcome == "timeout" else 1
+        return evse, meter
+
+    def open_actor():
+        assert events == [gpio.HIGH]
+        if outcome == "actor_error":
+            raise OSError("actor unavailable")
+        gpio.input.return_value = ActorState.OPENED
+
+    gpio.output.side_effect = output
+    cp._client.request_and_check_hardware.side_effect = read
+    cp._Socket__open_actor.side_effect = open_actor
+
+    if outcome in ("read_error", "actor_error"):
+        with pytest.raises(OSError):
+            cp.perform_unlock(timeout=3, cancelled=cancelled)
+    else:
+        assert cp.perform_unlock(timeout=3, cancelled=cancelled) is (outcome == "success")
+    assert events == [gpio.HIGH, gpio.LOW]
+    assert cp.unlock_blocked
+    if outcome in ("timeout", "read_error", "cancelled"):
+        cp._Socket__open_actor.assert_not_called()
+
+
+def test_cancelled_request_does_not_interrupt_cp(hardware):
+    cp, _, _, _, gpio = hardware
+    cancelled = Event()
+    cancelled.set()
+    assert not cp.perform_unlock(timeout=3, cancelled=cancelled)
+    gpio.output.assert_not_called()
+    cp._Socket__open_actor.assert_not_called()
 
 
 def test_unlock_requires_stable_fresh_measurements_and_open_feedback(hardware):

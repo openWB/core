@@ -83,22 +83,37 @@ class Socket(ChargepointModule):
         """Run only in the hardware handler, with phase/CP operations excluded."""
         self._set_unlock_blocked(True)
         deadline = time.monotonic() + min(max(timeout, 0), UNLOCK_TIMEOUT)
-        stable_since = None
-        while time.monotonic() < deadline and not (cancelled and cancelled.is_set()):
-            _, safe = self._read_unlock_state()
-            now = time.monotonic()
-            if now >= deadline or (cancelled and cancelled.is_set()):
-                break
-            if not safe:
-                stable_since = None
-            elif stable_since is None:
-                stable_since = now
-            if stable_since is not None and now - stable_since >= UNLOCK_STABLE_SECONDS:
-                if ActorState(GPIO.input(19)) != ActorState.OPENED:
-                    self.__open_actor()
-                return ActorState(GPIO.input(19)) == ActorState.OPENED
-            time.sleep(0.5)
-        return False
+        if time.monotonic() >= deadline or (cancelled and cancelled.is_set()):
+            return False
+        with self._client.client:
+            self._client.evse_client.set_current(0)
+        if time.monotonic() >= deadline or (cancelled and cancelled.is_set()):
+            return False
+        gpio_cp = self._client.get_pins_cp_interruption()
+        try:
+            GPIO.output(gpio_cp, GPIO.HIGH)
+            log.debug("CP für Buchsenentriegelung an LP%s unterbrochen.", self.local_charge_point_num)
+            stable_since = None
+            while time.monotonic() < deadline and not (cancelled and cancelled.is_set()):
+                _, safe = self._read_unlock_state()
+                now = time.monotonic()
+                if now >= deadline or (cancelled and cancelled.is_set()):
+                    break
+                if not safe:
+                    stable_since = None
+                elif stable_since is None:
+                    stable_since = now
+                if stable_since is not None and now - stable_since >= UNLOCK_STABLE_SECONDS:
+                    if ActorState(GPIO.input(19)) != ActorState.OPENED:
+                        self.__open_actor()
+                    return ActorState(GPIO.input(19)) == ActorState.OPENED
+                time.sleep(0.5)
+            return False
+        finally:
+            # Vor dem nächsten normalen Hardware-Update CP wiederherstellen,
+            # damit die Unterbrechung nicht als tatsächliches Abstecken gilt.
+            GPIO.output(gpio_cp, GPIO.LOW)
+            log.debug("CP nach Buchsenentriegelung an LP%s wiederhergestellt.", self.local_charge_point_num)
 
     def set_current(self, current: float) -> None:
         if self._unlock_blocked:
