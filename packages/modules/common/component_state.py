@@ -275,11 +275,13 @@ class IoState:
 
 
 class EvseState:
-    def __init__(self, plug_state: bool, charge_state: bool, set_current: int, max_current: int) -> None:
+    def __init__(self, plug_state: bool, charge_state: bool, set_current: int, max_current: int,
+                 status_code: Optional[int] = None) -> None:
         self.plug_state = plug_state
         self.charge_state = charge_state
         self.set_current = set_current
         self.max_current = max_current
+        self.status_code = status_code
 
 
 @auto_str
