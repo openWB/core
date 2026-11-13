@@ -1,4 +1,4 @@
-from contextlib import nullcontext
+from contextlib import nullcontext, suppress
 import time
 from threading import Event
 from types import SimpleNamespace
@@ -29,10 +29,9 @@ def hardware(monkeypatch):
     cp.local_charge_point_num = 0
     cp.fault_state = Mock()
     cp._unlock_blocked = False
-    evse = SimpleNamespace(charge_state=False, set_current=0, plug_state=True)
+    evse = SimpleNamespace(charge_state=False, set_current=0, plug_state=True, status_code=2)
     meter = SimpleNamespace(currents=[0.0, 0.0, 0.0])
     controller = Mock(id=1)
-    controller.client.read_holding_registers.return_value = [0, 0, 2]
     cp._client = SimpleNamespace(client=MagicMock(), evse_client=controller,
                                  request_and_check_hardware=Mock(return_value=(evse, meter)))
     cp._Socket__open_actor = Mock(side_effect=lambda: setattr(gpio.input, "return_value", ActorState.OPENED))
@@ -68,11 +67,27 @@ def test_zero_cached_fallback_does_not_authorize_unlock(hardware):
     assert cp.unlock_blocked
 
 
-@pytest.mark.parametrize("raw_current,state", [(0, 3), (0, 4), (0, 5), (6, 2), (0, 999)])
+@pytest.mark.parametrize("raw_current,state", [(0, 3), (0, 4), (0, 5), (6, 2), (0, 999), (0, None)])
 def test_zero_measured_current_without_evse_shutdown_is_insufficient(hardware, raw_current, state):
-    cp, _, _, _, _ = hardware
-    cp._client.evse_client.client.read_holding_registers.return_value = [raw_current, 0, state]
+    cp, evse, _, _, _ = hardware
+    evse.set_current = raw_current
+    evse.status_code = state
     assert not cp.perform_unlock(timeout=3)
+    cp._Socket__open_actor.assert_not_called()
+
+
+def test_suppressed_unlock_read_error_returns_state_and_keeps_block(hardware, monkeypatch):
+    cp, _, _, _, _ = hardware
+    cp._unlock_blocked = True
+    cp.client_error_context = suppress(OSError)
+    cp.socket_max_current = 32
+    cp.old_chargepoint_state = SimpleNamespace(plug_state=True)
+    fresh_state = SimpleNamespace(plug_state=True)
+    monkeypatch.setattr(socket.ChargepointModule, "get_values", Mock(return_value=fresh_state))
+    cp._client.request_and_check_hardware.side_effect = OSError("EVSE unavailable")
+
+    assert cp.get_values(False, "") is fresh_state
+    assert cp.unlock_blocked
     cp._Socket__open_actor.assert_not_called()
 
 
@@ -133,16 +148,17 @@ def test_no_relock_and_only_safe_disconnect_releases_charging_block(hardware, mo
     cp.client_error_context = nullcontext()
     cp.socket_max_current = 32
     cp.chargepoint_state = SimpleNamespace(plug_state=True)
+    cp.old_chargepoint_state = cp.chargepoint_state
     monkeypatch.setattr(socket.ChargepointModule, "get_values", Mock(return_value=cp.chargepoint_state))
     cp._Socket__close_actor = Mock()
     cp.get_values(False, "")
     cp._Socket__close_actor.assert_not_called()
     assert cp.unlock_blocked
     evse.plug_state = False
-    cp._client.evse_client.client.read_holding_registers.return_value = [0, 0, 3]
+    evse.status_code = 3
     cp.get_values(False, "")
     assert cp.unlock_blocked
-    cp._client.evse_client.client.read_holding_registers.return_value = [0, 0, 2]
+    evse.status_code = 2
     cp.get_values(False, "")
     assert not cp.unlock_blocked
 

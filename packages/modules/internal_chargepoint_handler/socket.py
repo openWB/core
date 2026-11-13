@@ -9,7 +9,6 @@ from helpermodules.logger import ModifyLoglevelContext
 from modules.common.component_context import SingleComponentUpdateContext
 from modules.common.component_state import ChargepointState
 from modules.common.evse import EvseStatusCode
-from modules.common.modbus import ModbusDataType
 from modules.internal_chargepoint_handler.chargepoint_module import ChargepointModule
 from modules.internal_chargepoint_handler.clients import ClientHandler
 from modules.internal_chargepoint_handler.internal_chargepoint_handler_config import InternalChargepoint
@@ -75,11 +74,8 @@ class Socket(ChargepointModule):
         # Bypass get_values(): its cached/zero fallback values cannot authorize release.
         with self._client.client:
             self._client.evse_client.set_current(0)
-            evse, meter = self._client.request_and_check_hardware(self.fault_state)
-            controller = self._client.evse_client
-            raw_current, _, state = controller.client.read_holding_registers(
-                1000, [ModbusDataType.UINT_16]*3, unit=controller.id)
-        safe = (raw_current == 0 and state in (EvseStatusCode.READY, EvseStatusCode.EV_PRESENT)
+        evse, meter = self._client.request_and_check_hardware(self.fault_state)
+        safe = (evse.status_code in (EvseStatusCode.READY, EvseStatusCode.EV_PRESENT)
                 and evse.charge_state is False and evse.set_current == 0 and currents_are_zero(meter.currents))
         return evse.plug_state, safe
 
@@ -136,7 +132,7 @@ class Socket(ChargepointModule):
                     self.__close_actor()
                 if self.chargepoint_state.plug_state is False and actor == ActorState.CLOSED:
                     self.__open_actor()
-            return self.chargepoint_state
+        return self.chargepoint_state
 
     def __open_actor(self):
         self.__set_actor(open=True)

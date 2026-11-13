@@ -47,6 +47,7 @@ class Evse:
                     self.activate_precise_current()
                 self._precise_current = self.is_precise_current_active()
         self.evse_current = 0
+        self.status_code = None
 
     def get_plug_charge_state(self) -> Tuple[bool, bool, float]:
         time.sleep(0.1)
@@ -61,6 +62,7 @@ class Evse:
             raise ValueError("Unbekannter Zustand der EVSE: State " +
                              str(state)+", Soll-Stromstärke: "+str(self.evse_current))
         plugged = state.plugged
+        self.status_code = state
         charging = self.evse_current > 0 if state.charge_enabled else False
         # self.evse_current bleibt als Rohwert im Register-Format erhalten,
         # damit der Vergleich in set_current() korrekt funktioniert.
@@ -75,7 +77,8 @@ class Evse:
         state = EvseState(plug_state=plugged,
                           charge_state=charging,
                           set_current=set_current,
-                          max_current=self.max_current)
+                          max_current=self.max_current,
+                          status_code=self.status_code)
         return state
 
     def is_precise_current_active(self) -> bool:
