@@ -50,6 +50,7 @@ export class Config {
 	zoomedWidget = 1
 	countersToShow: number[] = []
 	vehiclesWithSocToShow: number[] | undefined = undefined
+	socsToHide: number[] = []
 	priorities: Map<number, number> = new Map()
 	constructor() {}
 	get showRelativeArcs() {
@@ -407,7 +408,7 @@ export const infotext: { [key: string]: string } = {
 interface Preferences {
 	hideSH?: string[]
 	showCtr?: string[]
-	showSoc?: string[]
+	hideSoc?: string[]
 	showLG?: boolean
 	displayM?: string
 	stackO?: number
@@ -444,8 +445,8 @@ function writeCookie() {
 	prefs.showCtr = [...counters.values()]
 		.filter((ctr) => ctr.showInGraph)
 		.map((ctr) => ctr.id.toString())
-	prefs.showSoc = Object.values(vehicles)
-		.filter((v) => v.showSoc)
+	prefs.hideSoc = Object.values(vehicles)
+		.filter((v) => !v.showSoc)
 		.map((v) => v.id.toString())
 	prefs.showLG = globalConfig.graphPreference == 'live'
 	prefs.stackO = globalConfig.usageStackOrder
@@ -485,8 +486,8 @@ function readCookie() {
 		if (prefs.showCtr !== undefined) {
 			globalConfig.countersToShow = prefs.showCtr.map((i) => +i)
 		}
-		if (prefs.showSoc != undefined) {
-			globalConfig.vehiclesWithSocToShow = prefs.showSoc.map((i) => +i)
+		if (prefs.hideSoc != undefined) {
+			globalConfig.socsToHide = prefs.hideSoc.map((i) => +i)
 		}
 		if (prefs.showLG !== undefined) {
 			globalConfig.setGraphPreference(prefs.showLG ? 'live' : 'today')
