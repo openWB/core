@@ -43,7 +43,7 @@ else
 fi
 
 echo -n "check for ramdisk... "
-RAMDISK_TARGET_DIR=/etc/systemd/zram-generator.cond.d
+RAMDISK_TARGET_DIR=/etc/systemd/zram-generator.conf.d
 RAMDISK_FILE=99-openwb-ramdisk.conf
 if [ -f "${RAMDISK_TARGET_DIR}/${RAMDISK_FILE}" ]; then
 	echo "ok"
