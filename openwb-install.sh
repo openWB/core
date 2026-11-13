@@ -2,6 +2,8 @@
 OPENWBBASEDIR=/var/www/html/openWB
 OPENWB_USER=openwb
 OPENWB_GROUP=openwb
+# TODO: Update the branch for installation as needed
+CHECKOUT_BRANCH=trixie-next
 
 if (( $(id -u) != 0 )); then
 	echo "this script has to be run as user root or with sudo"
@@ -11,7 +13,7 @@ fi
 echo "installing openWB 2 into \"${OPENWBBASEDIR}\""
 
 # install packages by pre-downloading our script so we only have one file to maintain
-curl -s "https://raw.githubusercontent.com/openWB/core/master/runs/install_packages.sh" | bash -s
+curl -s "https://raw.githubusercontent.com/openWB/core/${CHECKOUT_BRANCH}/runs/install_packages.sh" | bash -s
 
 echo "create group $OPENWB_GROUP"
 # Will do nothing if group already exists:
@@ -24,7 +26,8 @@ echo "create user $OPENWB_USER"
 echo "done"
 
 # The user "openwb" is still new and we might need sudo in many places. Thus for now we give the user
-# unrestricted sudo. This should be restricted in the future
+# unrestricted sudo.
+# TODO: Restrict sudo privileges for the openwb user in the future instead of giving unrestricted access.
 echo "$OPENWB_USER ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/openwb
 chmod 440 /etc/sudoers.d/openwb
 echo "done"
@@ -33,19 +36,23 @@ echo "check for initial git clone..."
 if [ ! -d "${OPENWBBASEDIR}/web" ]; then
 	mkdir "$OPENWBBASEDIR"
 	chown "$OPENWB_USER:$OPENWB_GROUP" "$OPENWBBASEDIR"
-	sudo -u "$OPENWB_USER" git clone https://github.com/openWB/core.git --branch master "$OPENWBBASEDIR"
+	sudo -u "$OPENWB_USER" git clone https://github.com/openWB/core.git --branch "$CHECKOUT_BRANCH" "$OPENWBBASEDIR"
 	echo "git cloned"
 else
 	echo "ok"
 fi
 
 echo -n "check for ramdisk... "
-if grep -Fq "tmpfs ${OPENWBBASEDIR}/ramdisk" /etc/fstab; then
+RAMDISK_TARGET_DIR=/etc/systemd/zram-generator.cond.d
+RAMDISK_FILE=99-openwb-ramdisk.conf
+if [ -f "${RAMDISK_TARGET_DIR}/${RAMDISK_FILE}" ]; then
 	echo "ok"
 else
 	mkdir -p "${OPENWBBASEDIR}/ramdisk"
-	sudo tee -a "/etc/fstab" <"${OPENWBBASEDIR}/data/config/ramdisk_config.txt" >/dev/null
-	mount -a
+	sudo mkdir -p "${RAMDISK_TARGET_DIR}"
+	sudo cp "${OPENWBBASEDIR}/data/config/${RAMDISK_FILE}" "${RAMDISK_TARGET_DIR}/${RAMDISK_FILE}"
+	sudo systemctl daemon-reload
+	sudo systemctl restart systemd-zram-setup@zram1.service
 	echo "created"
 fi
 
@@ -98,15 +105,13 @@ cp "${OPENWBBASEDIR}/data/config/apache/000-default.conf" "/etc/apache2/sites-av
 cp "${OPENWBBASEDIR}/index.html" /var/www/html/index.html
 echo "done"
 echo -n "fix upload limit..."
-if [ -d "/etc/php/7.3/" ]; then
-	echo "upload_max_filesize = 300M" > /etc/php/7.3/apache2/conf.d/20-uploadlimit.ini
-	echo "post_max_size = 300M" >> /etc/php/7.3/apache2/conf.d/20-uploadlimit.ini
-	echo "done (OS Buster)"
-elif [ -d "/etc/php/7.4/" ]; then
-	echo "upload_max_filesize = 300M" > /etc/php/7.4/apache2/conf.d/20-uploadlimit.ini
-	echo "post_max_size = 300M" >> /etc/php/7.4/apache2/conf.d/20-uploadlimit.ini
-	echo "done (OS Bullseye)"
-fi
+for php_dir in /etc/php/*; do
+	if [ -d "$php_dir/apache2/conf.d" ]; then
+		echo "upload_max_filesize = 300M" > "$php_dir/apache2/conf.d/20-uploadlimit.ini"
+		echo "post_max_size = 300M" >> "$php_dir/apache2/conf.d/20-uploadlimit.ini"
+		echo "done for: $php_dir"
+	fi
+done
 echo -n "enabling apache ssl module..."
 a2enmod ssl
 a2enmod proxy_wstunnel
