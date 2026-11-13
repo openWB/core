@@ -3,21 +3,12 @@ OPENWBBASEDIR=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 # set "forceUpdate" to parameter $1, set to 0 if not set
 forceUpdate=${1:-0}
 
-# Native profiles consume rotation, standby and PIN settings themselves.
+# Native profiles consume local broker rotation, standby and PIN settings.
 # Do not edit LXDE/firmware settings or restart a healthy native X11 session.
 if [[ -f /etc/openwb/display-managed-externally ]]; then
-	if display_active=$(mosquitto_sub -p 1886 -t "openWB/optional/int_display/active" -C 1 -W 1) && [[ "$display_active" == "true" ]] && display_detected=$(mosquitto_sub -p 1886 -t "openWB/optional/int_display/detected" -C 1 -W 1) && [[ "$display_detected" == "true" ]]; then
-		if [[ $(systemctl get-default) != graphical.target ]]; then
-			sudo systemctl set-default graphical.target
-		fi
-		sudo systemctl start openwb-display-power.service lightdm.service openwb-native-display.service
-	else
-		sudo systemctl stop openwb-native-display.service lightdm.service
-		if [[ $(systemctl get-default) != multi-user.target ]]; then
-			sudo systemctl set-default multi-user.target
-		fi
-	fi
-	exit 0
+	args=()
+	[[ "$forceUpdate" == 1 ]] && args+=(--force)
+	exec sudo python3 /usr/local/lib/openwb-native-display/native_display_settings.py apply "${args[@]}"
 fi
 
 # update display standby timeout
