@@ -11,6 +11,7 @@ import tempfile
 
 SETTINGS = Path('/home/openwb/native-display/display.ini')
 LOCK = Path('/run/lock/openwb-native-display.lock')
+ACTIVATION_PENDING = Path('/etc/openwb/native-display-activation-pending')
 UNITS = ('lightdm.service', 'openwb-display-power.service', 'openwb-native-display.service')
 
 
@@ -103,6 +104,9 @@ def apply(force=False, new_session=False, reload_power=False):
         if systemctl('get-default') != 'multi-user.target':
             systemctl('set-default', 'multi-user.target')
         return 'disabled'
+    # Install-only provisioning blocks all display units across package scripts
+    # and reboots. Release only after both broker states explicitly allow it.
+    ACTIVATION_PENDING.unlink(missing_ok=True)
     systemctl('enable', *UNITS)
     if systemctl('get-default') != 'graphical.target':
         systemctl('set-default', 'graphical.target')
