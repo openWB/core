@@ -41,6 +41,7 @@ from helpermodules.utils.topic_parser import decode_payload, get_index, get_seco
 from control.counter_all import counter_all, counter_all_data
 from control.bat_all import BatConsiderationMode
 from control.chargepoint.charging_type import ChargingType
+from control.chargepoint.chargepoint_data import get_ocpp_config_default
 from control.counter import get_counter_default_config, CounterMode
 from control.ev.charge_template import EcoCharging, get_charge_template_default
 from control.ev import ev
@@ -164,6 +165,21 @@ class UpdateConfig:
         "^openWB/chargepoint/[0-9]+/get/connected_vehicle/config$",
         "^openWB/chargepoint/[0-9]+/get/rfid$",
         "^openWB/chargepoint/[0-9]+/get/rfid_timestamp$",
+        "^openWB/chargepoint/[0-9]+/get/ocpp/availability$",
+        "^openWB/chargepoint/[0-9]+/get/ocpp/authorization_flow_status$",
+        "^openWB/chargepoint/[0-9]+/get/ocpp/backend_message$",
+        "^openWB/chargepoint/[0-9]+/get/ocpp/config$",
+        "^openWB/chargepoint/[0-9]+/get/ocpp/last_connection_settings$",
+        "^openWB/chargepoint/[0-9]+/get/ocpp/pending_availability$",
+        "^openWB/chargepoint/[0-9]+/get/ocpp/pending_transactions$",
+        "^openWB/chargepoint/[0-9]+/get/ocpp/previous_chargebox_id$",
+        "^openWB/chargepoint/[0-9]+/get/ocpp/remote_stop$",
+        "^openWB/chargepoint/[0-9]+/get/ocpp/reset$",
+        "^openWB/chargepoint/[0-9]+/get/ocpp/rfid_stop$",
+        "^openWB/chargepoint/[0-9]+/get/ocpp/tag_accepted$",
+        "^openWB/chargepoint/[0-9]+/get/ocpp/transaction_id$",
+        "^openWB/chargepoint/[0-9]+/get/ocpp/transaction_id_tag$",
+        "^openWB/chargepoint/[0-9]+/get/ocpp/unlock_stop$",
         "^openWB/chargepoint/[0-9]+/set/charge_template$",
         "^openWB/chargepoint/[0-9]+/set/current$",
         "^openWB/chargepoint/[0-9]+/set/manual_lock$",
@@ -173,7 +189,6 @@ class UpdateConfig:
         "^openWB/chargepoint/[0-9]+/set/rfid$",
         "^openWB/chargepoint/[0-9]+/set/log$",
         "^openWB/chargepoint/[0-9]+/set/phases_to_use$",
-        "^openWB/chargepoint/[0-9]+/set/ocpp_transaction_id$",
         "^openWB/chargepoint/[0-9]+/set/ocpp_transaction_active$",
 
         "^openWB/command/max_id/autolock_plan$",
@@ -362,6 +377,7 @@ class UpdateConfig:
         "^openWB/internal_chargepoint/[0-1]/get/state_str$",
         "^openWB/internal_chargepoint/[0-1]/get/rfid$",
         "^openWB/internal_chargepoint/[0-1]/get/rfid_timestamp$",
+        "^openWB/internal_chargepoint/[0-1]/get/unlock_blocked$",
 
         "^openWB/io/action/[0-9]+/config$",
         "^openWB/io/action/[0-9]+/timestamp$",
@@ -673,6 +689,26 @@ class UpdateConfig:
         "^openWB/system/usage_terms_acknowledged$",
         "^openWB/system/version$",
     ]
+
+    default_topics_with_wildcards = (
+        ("openWB/chargepoint/{}/get/ocpp/backend_message", None),
+        ("openWB/chargepoint/{}/get/ocpp/authorization_flow_status", None),
+        ("openWB/chargepoint/{}/get/ocpp/availability", [True, True]),
+        ("openWB/chargepoint/{}/get/ocpp/connected", False),
+        ("openWB/chargepoint/{}/get/ocpp/config", get_ocpp_config_default()),
+        ("openWB/chargepoint/{}/get/ocpp/last_connection_settings", None),
+        ("openWB/chargepoint/{}/get/ocpp/pending_availability", [False, False]),
+        ("openWB/chargepoint/{}/get/ocpp/pending_transactions", []),
+        ("openWB/chargepoint/{}/get/ocpp/previous_chargebox_id", None),
+        ("openWB/chargepoint/{}/get/ocpp/remote_stop", False),
+        ("openWB/chargepoint/{}/get/ocpp/reset", False),
+        ("openWB/chargepoint/{}/get/ocpp/rfid_stop", False),
+        ("openWB/chargepoint/{}/get/ocpp/tag_accepted", False),
+        ("openWB/chargepoint/{}/get/ocpp/transaction_id", None),
+        ("openWB/chargepoint/{}/get/ocpp/transaction_id_tag", None),
+        ("openWB/chargepoint/{}/get/ocpp/unlock_stop", False),
+    )
+
     default_topic = (
         ("openWB/bat/config/bat_control_activated", False),
         ("openWB/bat/config/power_limit_mode", "mode_no_discharge"),
@@ -901,11 +937,31 @@ class UpdateConfig:
         for topic in topics_to_delete:
             self.__update_topic(topic, "")
 
+    def __default_topic_with_wildcards(self):
+        """Expand default topic patterns for all discovered numeric IDs.
+        """
+        expanded_defaults = []
+        for topic_template, default_payload in self.default_topics_with_wildcards:
+            prefix, wildcard, suffix = topic_template.partition("{}")
+            if not wildcard:
+                continue
+            id_pattern = re.compile(rf"^{re.escape(prefix)}([0-9]+)(?:/|$)")
+            topic_ids = {
+                match.group(1)
+                for topic in self.all_received_topics
+                if (match := id_pattern.match(topic)) is not None
+            }
+            for topic_id in topic_ids:
+                topic = f"{prefix}{topic_id}{suffix}"
+                expanded_defaults.append((topic, default_payload))
+        return expanded_defaults
+
     def __pub_missing_defaults(self):
         """ publish missing required default topics to broker and update all_received_topics
         """
         missing_topics = {}
-        for topic, default_payload in self.default_topic:
+        default_topics = (*self.default_topic, *self.__default_topic_with_wildcards())
+        for topic, default_payload in default_topics:
             if topic not in self.all_received_topics.keys():
                 log.debug(f"Setze Topic '{topic}' auf Standardwert '{str(default_payload)}'")
                 missing_topics[topic] = default_payload
