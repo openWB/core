@@ -1,19 +1,61 @@
 name: Python application
 
-on: pull_request
+on:
+  pull_request:
+  workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        raspberry-pi-os-release: ["Bullseye", "Trixie"]
+        include:
+          - raspberry-pi-os-release: "Bullseye"
+            glibc: "2_31"
+            python-version: "3.9"
+            arm-wheel-python-version: "3.9.2"
+          - raspberry-pi-os-release: "Trixie"
+            glibc: "2_41"
+            python-version: "3.13"
+            arm-wheel-python-version: "3.13"
     steps:
       - uses: actions/checkout@v7
-      - name: Set up Python 3.9
+      - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v6
         with:
-          python-version: "3.9.12"
-      - name: Install dependencies
+          python-version: ${{ matrix.python-version }}
+      - name: Test Python environment bootstrap
+        run: bash runs/tests/test_python_venv.sh
+      - name: Install dependencies in a virtual environment
         run: |
-          pip3 install -r "/home/runner/work/core/core/requirements.txt"
+          mkdir -p "${RUNNER_TEMP}/openwb-venv"
+          cp requirements.txt "${RUNNER_TEMP}/openwb-venv/requirements.txt"
+          status=0
+          OPENWB_PYTHON="$(command -v python)" bash runs/setup_python_venv.sh "${RUNNER_TEMP}/openwb-venv" 1 || status=$?
+          if [[ "$status" != 0 && "$status" != 10 ]]; then exit "$status"; fi
+          "${RUNNER_TEMP}/openwb-venv/.venv/bin/python" -c 'import sys; assert sys.prefix != sys.base_prefix'
+          OPENWB_PYTHON="$(command -v python)" bash runs/setup_python_venv.sh "${RUNNER_TEMP}/openwb-venv" 0
+      - name: Check Raspberry Pi dependency wheels
+        run: |
+          python -m pip download --only-binary=:all: \
+            --platform linux_armv7l --platform manylinux_${{ matrix.glibc }}_armv7l \
+            --implementation cp \
+            --python-version "${{ matrix.arm-wheel-python-version }}" \
+            --extra-index-url https://www.piwheels.org/simple \
+            --dest "${RUNNER_TEMP}/armv7-wheels" -r requirements.txt
+      - name: Check Trixie ARM64 dependency wheels
+        if: matrix.python-version == '3.13'
+        run: |
+          python -m pip download --only-binary=:all: \
+            --platform linux_aarch64 --platform manylinux_2_41_aarch64 \
+            --platform manylinux_2_38_aarch64 --platform manylinux_2_36_aarch64 \
+            --platform manylinux_2_34_aarch64 --platform manylinux_2_31_aarch64 \
+            --platform manylinux_2_28_aarch64 --platform manylinux_2_17_aarch64 \
+            --platform manylinux2014_aarch64 --implementation cp --python-version 3.13 \
+            --extra-index-url https://www.piwheels.org/simple \
+            --dest "${RUNNER_TEMP}/arm64-wheels" -r <(sed '/^evdev==/d' requirements.txt)
       - name: Flake8 with annotations in packages folder
         uses: TrueBrain/actions-flake8@v2.4
         with:
@@ -26,5 +68,7 @@ jobs:
           flake8_version: "7.3.0"
       - name: Test with pytest
         run: |
-          PYTHONPATH=packages python -m pytest packages --log-cli-level=DEBUG
-          PYTHONPATH=runs python -m pytest packages --log-cli-level=DEBUG
+          for pythonpath in packages runs; do
+            PYTHONPATH="$pythonpath" "${RUNNER_TEMP}/openwb-venv/.venv/bin/python" -m pytest packages --ignore=packages/modules/internal_chargepoint_handler/rfid_test.py --log-cli-level=DEBUG
+            PYTHONPATH="$pythonpath" "${RUNNER_TEMP}/openwb-venv/.venv/bin/python" -m pytest packages/modules/internal_chargepoint_handler/rfid_test.py --rootdir=. --log-cli-level=DEBUG
+          done
