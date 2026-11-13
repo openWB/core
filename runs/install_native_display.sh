@@ -8,14 +8,27 @@ PACKAGE_NAME="openwb-native-display_${PACKAGE_VERSION}_arm64.deb"
 PACKAGE_URL='https://openwb.de/uploads/display/openwb-native-display_0.1.0~alpha3%2Bwatermark20261113.1_arm64.deb'
 PACKAGE_SHA256='fbcfb5d3adb0ef6799e64d9e877d79716ddd9ba681b51141d57ae851b0795f11'
 
+install_only=false
+case "$*" in
+    '') ;;
+    --install-only) install_only=true ;;
+    *) echo 'Usage: install_native_display.sh [--install-only]' >&2; exit 2 ;;
+esac
+
+unsupported() {
+    echo "$1"
+    # Let the caller distinguish this run's result from stale installed files.
+    if [[ $install_only == true ]]; then exit 10; fi
+    exit 0
+}
+
 if (( EUID != 0 )); then
     echo 'Run the display installer as root.' >&2
     exit 1
 fi
 . /etc/os-release
 if [[ ${VERSION_CODENAME:-} != trixie || $(dpkg --print-architecture) != arm64 ]]; then
-    echo 'Native alpha display: no package selected for this OS/architecture.'
-    exit 0
+    unsupported 'Native alpha display: no package selected for this OS/architecture.'
 fi
 display_found=false
 for connector in /sys/class/drm/card*-DSI-*; do
@@ -26,8 +39,7 @@ for connector in /sys/class/drm/card*-DSI-*; do
     fi
 done
 if [[ $display_found != true ]]; then
-    echo 'Native alpha display: no supported 800x480 DSI panel detected; skipping.'
-    exit 0
+    unsupported 'Native alpha display: no supported 800x480 DSI panel detected; skipping.'
 fi
 id openwb >/dev/null
 # Share the updater's lock; read MQTT state only after acquiring it.
@@ -51,9 +63,11 @@ if [[ -f /etc/systemd/system/openwb-native-display.service ]]; then
     existing_profile=true
 fi
 
-# Avoid package post-install activation side effects when the initial display
-# state is unknown. A later installer invocation can resume safely.
-if python3 "$PROFILE_DIR/native_display_settings.py" preflight; then
+# Standalone updates preserve the previous unknown-state policy. Initial
+# provisioning must also work before Core has published any broker state.
+if [[ $install_only == true ]]; then
+    :
+elif python3 "$PROFILE_DIR/native_display_settings.py" preflight; then
     :
 else
     status=$?
@@ -62,6 +76,31 @@ else
         exit 0
     fi
     exit "$status"
+fi
+
+if [[ $install_only == true ]]; then
+    # Persistent start conditions also block package-maintainer service starts
+    # and survive a reboot during installation. Only valid broker state may
+    # release this guard in native_display_settings.py.
+    install -d /etc/openwb
+    touch /etc/openwb/native-display-activation-pending
+    for unit in lightdm.service openwb-native-display.service openwb-display-power.service; do
+        dropin="/etc/systemd/system/$unit.d/20-openwb-provisioning.conf"
+        contents=$'[Unit]\nConditionPathExists=!/etc/openwb/native-display-activation-pending'
+        if [[ -e $dropin && $(cat "$dropin") != "$contents" ]]; then
+            echo "Refusing to overwrite unrelated provisioning guard: $dropin" >&2
+            exit 1
+        fi
+        install -d "/etc/systemd/system/$unit.d"
+        printf '%s\n' "$contents" > "$dropin"
+    done
+    systemctl daemon-reload
+    for unit in openwb-native-display.service lightdm.service openwb-display-power.service; do
+        if [[ $(systemctl show "$unit" --property=LoadState --value) == loaded ]]; then
+            systemctl stop "$unit"
+            systemctl disable "$unit"
+        fi
+    done
 fi
 
 if [[ $(dpkg-query -W -f='${db:Status-Status} ${Version}' openwb-native-display 2>/dev/null || true) != "installed $PACKAGE_VERSION" ]]; then
@@ -88,7 +127,7 @@ test "$(dpkg-deb --field "$package_file" Architecture)" = arm64
 test "$(dpkg-deb --field "$package_file" Version)" = "$PACKAGE_VERSION"
 
 # A new LightDM must not start before its native-only session exists.
-if ! dpkg-query -W -f='${db:Status-Status}' lightdm 2>/dev/null | grep -qx installed; then
+if [[ $install_only != true ]] && ! dpkg-query -W -f='${db:Status-Status}' lightdm 2>/dev/null | grep -qx installed; then
     if [[ ! -e /run/systemd/system/lightdm.service && ! -L /run/systemd/system/lightdm.service &&
           ! -L /etc/systemd/system/lightdm.service ]]; then
         systemctl mask --runtime lightdm.service
@@ -135,6 +174,12 @@ systemctl daemon-reload
 if [[ $masked_lightdm == true ]]; then
     systemctl unmask --runtime lightdm.service
     masked_lightdm=false
+fi
+if [[ $install_only == true ]]; then
+    # Counter enablement by package scripts, including pre-existing LightDM.
+    systemctl disable lightdm.service openwb-native-display.service openwb-display-power.service
+    echo 'Native display installed; activation deferred until Core publishes display state.'
+    exit 0
 fi
 args=(apply --lock-fd 9)
 [[ $existing_profile == false ]] && args+=(--new-session)
