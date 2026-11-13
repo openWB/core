@@ -8,6 +8,13 @@ PACKAGE_NAME="openwb-native-display_${PACKAGE_VERSION}_arm64.deb"
 PACKAGE_URL='https://openwb.de/uploads/display/openwb-native-display_0.1.0~alpha3%2Bwatermark20261113.1_arm64.deb'
 PACKAGE_SHA256='fbcfb5d3adb0ef6799e64d9e877d79716ddd9ba681b51141d57ae851b0795f11'
 
+install_only=false
+case "$*" in
+    '') ;;
+    --install-only) install_only=true ;;
+    *) echo 'Usage: install_native_display.sh [--install-only]' >&2; exit 2 ;;
+esac
+
 if (( EUID != 0 )); then
     echo 'Run the display installer as root.' >&2
     exit 1
@@ -51,9 +58,11 @@ if [[ -f /etc/systemd/system/openwb-native-display.service ]]; then
     existing_profile=true
 fi
 
-# Avoid package post-install activation side effects when the initial display
-# state is unknown. A later installer invocation can resume safely.
-if python3 "$PROFILE_DIR/native_display_settings.py" preflight; then
+# Standalone updates preserve the previous unknown-state policy. Initial
+# provisioning must also work before Core has published any broker state.
+if [[ $install_only == true ]]; then
+    :
+elif python3 "$PROFILE_DIR/native_display_settings.py" preflight; then
     :
 else
     status=$?
@@ -70,6 +79,9 @@ partial_file="/var/cache/apt/archives/partial/$PACKAGE_NAME"
 cleanup() {
     rm -f -- "$partial_file" "$package_file"
     if [[ $masked_lightdm == true ]]; then
+        if [[ $install_only == true ]]; then
+            systemctl disable lightdm.service
+        fi
         systemctl unmask --runtime lightdm.service >/dev/null
     fi
 }
@@ -133,8 +145,17 @@ sudo -u openwb python3 /usr/local/lib/openwb-native-display/native_display_setti
 touch /etc/openwb/display-managed-externally
 systemctl daemon-reload
 if [[ $masked_lightdm == true ]]; then
+    # A newly installed LightDM may be enabled by its package scripts. In
+    # install-only mode, let Core enable it only after valid broker state.
+    if [[ $install_only == true ]]; then
+        systemctl disable lightdm.service
+    fi
     systemctl unmask --runtime lightdm.service
     masked_lightdm=false
+fi
+if [[ $install_only == true ]]; then
+    echo 'Native display installed; activation deferred until Core publishes display state.'
+    exit 0
 fi
 args=(apply --lock-fd 9)
 [[ $existing_profile == false ]] && args+=(--new-session)
