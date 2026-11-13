@@ -3,6 +3,14 @@ OPENWBBASEDIR=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 # set "forceUpdate" to parameter $1, set to 0 if not set
 forceUpdate=${1:-0}
 
+# Native profiles consume local broker rotation, standby and PIN settings.
+# Do not edit LXDE/firmware settings or restart a healthy native X11 session.
+if [[ -f /etc/openwb/display-managed-externally ]]; then
+	args=()
+	[[ "$forceUpdate" == 1 ]] && args+=(--force)
+	exec sudo python3 /usr/local/lib/openwb-native-display/native_display_settings.py apply "${args[@]}"
+fi
+
 # update display standby timeout
 if timeout=$(mosquitto_sub -p 1886 -t "openWB/optional/int_display/standby" -C 1 -W 1); then
 	echo "new display timeout value: '$timeout'"

@@ -162,5 +162,11 @@ echo "installation finished, now starting openwb services..."
 systemctl start openwb2
 systemctl start openwb-simpleAPI
 
+echo "installing the native display on supported Trixie arm64 display systems..."
+if ! OPENWB_APT_INDEX_READY=1 bash "${OPENWBBASEDIR}/runs/install_native_display.sh"; then
+	echo "Native display installation failed; see the error above." >&2
+	exit 1
+fi
+
 echo "all done"
 echo "if you want to use this installation for development, add a password for user 'openwb'"

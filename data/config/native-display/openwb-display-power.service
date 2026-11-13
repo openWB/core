@@ -1,0 +1,28 @@
+[Unit]
+Description=openWB display backlight with fail-open watchdog
+
+[Service]
+Type=simple
+User=root
+Group=openwb
+ExecStart=/usr/bin/python3 /usr/local/lib/openwb-display-power/display_power_service.py
+Restart=on-failure
+RestartSec=2
+RuntimeDirectory=openwb-display-power
+RuntimeDirectoryMode=0750
+RuntimeDirectoryPreserve=restart
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=strict
+ReadWritePaths=/run/openwb-display-power
+# /sys backlight brightness is the only kernel attribute written by this helper.
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictAddressFamilies=AF_UNIX
+CapabilityBoundingSet=
+MemoryMax=32M
+
+[Install]
+WantedBy=multi-user.target
