@@ -97,46 +97,84 @@ def test_check_values_valid(params):
         assert exp == params.expected_exported
 
 
-def test_check_total_energy_forward_jump_then_accept_second_high_and_wait_after_backward_jump():
+def test_check_total_energy_forward_jump_within_bound_is_capped_and_catches_up_over_cycles():
     fs = DummyFaultState()
     pf = PeakFilter(ComponentType.COUNTER, 1, fs)
 
     allowed_deviation = 10
     max_energy = 1_000_000_000
 
-    # Vorwaertssprung: erster Wert wird verworfen, aber als Vergleichsbasis gespeichert.
+    # Vorwaertssprung genau am Rand von MAX_SMOOTHABLE_JUMP_FACTOR * allowed_deviation (zB Zaehler/WR,
+    # der seinen Stand nur sprunghaft aktualisiert): wird auf die erlaubte Differenz begrenzt statt
+    # verworfen, und als neue Basis gemerkt.
+    checked, previous = pf.check_total_energy(1100, 1000, allowed_deviation, max_energy)
+    assert checked == 1010
+    assert previous == 1010
+
+    # Rohwert bleibt stehen - naechster Zyklus holt schrittweise weiter auf.
+    checked, previous = pf.check_total_energy(1100, previous, allowed_deviation, max_energy)
+    assert checked == 1020
+    assert previous == 1020
+
+    for _ in range(8):
+        checked, previous = pf.check_total_energy(1100, previous, allowed_deviation, max_energy)
+    assert checked == 1100
+    assert previous == 1100
+
+    # Danach wird mit kleinen, plausiblen Differenzen normal weitergezaehlt.
+    checked, previous = pf.check_total_energy(1105, previous, allowed_deviation, max_energy)
+    assert checked == 1105
+    assert previous == 1105
+
+    # Rueckwaertssprung: letzter gueltiger Hoechststand bleibt erhalten.
+    checked, previous = pf.check_total_energy(1000, previous, allowed_deviation, max_energy)
+    assert checked == 1105
+    assert previous == 1105
+
+    # Unterhalb des Hoechststands wird weiterhin gewartet.
+    checked, previous = pf.check_total_energy(1090, previous, allowed_deviation, max_energy)
+    assert checked == 1105
+    assert previous == 1105
+
+    # Naechster gleicher oder hoeherer Wert wird wieder zugelassen.
+    checked, previous = pf.check_total_energy(1105, previous, allowed_deviation, max_energy)
+    assert checked == 1105
+    assert previous == 1105
+
+    checked, previous = pf.check_total_energy(1110, previous, allowed_deviation, max_energy)
+    assert checked == 1110
+    assert previous == 1110
+
+
+def test_check_total_energy_forward_jump_beyond_bound_falls_back_to_reject_then_accept():
+    fs = DummyFaultState()
+    pf = PeakFilter(ComponentType.COUNTER, 1, fs)
+
+    allowed_deviation = 10
+    max_energy = 1_000_000_000
+
+    # Sprung deutlich groesser als MAX_SMOOTHABLE_JUMP_FACTOR * allowed_deviation (zB nach einer
+    # laengeren Verbindungsunterbrechung mit echtem Nachholbedarf, nicht nur einem groben Zaehlertakt):
+    # wird NICHT geglaettet, sondern wie vor dieser Aenderung einmal verworfen und bei Bestaetigung im
+    # naechsten Zyklus sofort in voller Hoehe uebernommen.
     checked, previous = pf.check_total_energy(2000, 1000, allowed_deviation, max_energy)
     assert checked is None
     assert previous == 2000
 
-    # Zweiter hoher Wert mit kleiner Differenz wird uebernommen.
-    checked, previous = pf.check_total_energy(2005, previous, allowed_deviation, max_energy)
-    assert checked == 2005
-    assert previous == 2005
+    checked, previous = pf.check_total_energy(2000, previous, allowed_deviation, max_energy)
+    assert checked == 2000
+    assert previous == 2000
 
-    # Rueckwaertssprung: letzter gueltiger Hoechststand bleibt erhalten.
-    checked, previous = pf.check_total_energy(1900, previous, allowed_deviation, max_energy)
-    assert checked == 2005
-    assert previous == 2005
 
-    # Unterhalb des Hoechststands wird weiterhin gewartet.
-    checked, previous = pf.check_total_energy(1990, previous, allowed_deviation, max_energy)
-    assert checked == 2005
-    assert previous == 2005
+def test_check_total_energy_recovery_after_too_high_previous_value():
+    fs = DummyFaultState()
+    pf = PeakFilter(ComponentType.COUNTER, 1, fs)
 
-    # Naechster gleicher oder hoeherer Wert wird wieder zugelassen.
-    checked, previous = pf.check_total_energy(2005, previous, allowed_deviation, max_energy)
-    assert checked == 2005
-    assert previous == 2005
-
-    checked, previous = pf.check_total_energy(2010, previous, allowed_deviation, max_energy)
-    assert checked == 2010
-    assert previous == 2010
-
-    # Der niedrigere Folgewert wird einmal verworfen und als neue Vergleichsbasis gesetzt.
     allowed_deviation = 10
     max_energy = 3000
 
+    # Vorheriger Wert lag ueber dem 50-Jahres-Limit - niedrigerer Folgewert wird einmal verworfen
+    # und als neue Vergleichsbasis gesetzt (unabhaengig vom Cap-Verhalten bei Vorwaertssprueingen).
     checked, previous = pf.check_total_energy(4000, 2900, allowed_deviation, max_energy)
     assert checked is None
     assert previous == 4000
