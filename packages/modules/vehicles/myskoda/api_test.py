@@ -26,6 +26,11 @@ def test_extract_captured_timestamp_parses_iso8601_with_z_suffix():
     assert extract_captured_timestamp(data) == expected
 
 
+def test_extract_captured_timestamp_non_string_returns_none():
+    data = {"vehicle": {"charging": {"carCapturedTimestamp": 12345}}}
+    assert extract_captured_timestamp(data) is None
+
+
 def test_extract_captured_timestamp_invalid_value_returns_none():
     data = {"vehicle": {"charging": {"carCapturedTimestamp": "not-a-date"}}}
     assert extract_captured_timestamp(data) is None

@@ -112,8 +112,8 @@ def extract_captured_timestamp(data: dict) -> Optional[float]:
         return None
     try:
         return datetime.fromisoformat(timestamp.replace("Z", "+00:00")).timestamp()
-    except ValueError:
-        log.debug(f"Konnte carCapturedTimestamp nicht parsen: {timestamp}")
+    except (ValueError, AttributeError):
+        log.debug(f"Konnte carCapturedTimestamp nicht parsen: {timestamp!r}")
         return None
 
 
