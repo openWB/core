@@ -62,6 +62,7 @@ class Load(Protocol):
                 self.data.control_parameter.timestamp_charge_start = create_timestamp()
         elif self.data.set.current == 0:
             self.data.control_parameter.timestamp_charge_start = None
+            self.data.control_parameter.timestamp_last_cp_retry = None
 
     def is_charging_stop_allowed(self) -> bool:
         ...

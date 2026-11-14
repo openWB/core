@@ -58,6 +58,7 @@ class Process:
                     else:
                         control_parameter.state = ChargepointState.NO_CHARGING_ALLOWED
                         cp.data.set.current = 0
+                        cp.set_timestamp_charge_start()
 
                     if cp.data.get.charge_state:
                         cp.data.get.state_str = self._prepend_state_message("Fahrzeug lädt.", cp.data.get.state_str)

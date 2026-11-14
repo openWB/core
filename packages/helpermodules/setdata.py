@@ -555,6 +555,7 @@ class SetData:
                 "/control_parameter/reserved_power" in msg.topic or
                 "/control_parameter/timestamp_switch_on_off" in msg.topic or
                 "/control_parameter/timestamp_charge_start" in msg.topic or
+                "/control_parameter/timestamp_last_cp_retry" in msg.topic or
                 "/control_parameter/timestamp_chargemode_changed" in msg.topic or
                 "/control_parameter/timestamp_last_phase_switch" in msg.topic or
                 "/control_parameter/timestamp_phase_switch_buffer_start" in msg.topic):
