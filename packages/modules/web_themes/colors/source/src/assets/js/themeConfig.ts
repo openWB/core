@@ -488,6 +488,7 @@ function readCookie() {
 		}
 		if (prefs.hideSoc != undefined) {
 			globalConfig.socsToHide = prefs.hideSoc.map((i) => +i)
+			updateVehicleSocVisibility()
 		}
 		if (prefs.showLG !== undefined) {
 			globalConfig.setGraphPreference(prefs.showLG ? 'live' : 'today')
@@ -535,4 +536,10 @@ function readCookie() {
 			globalConfig.setDebug(prefs.debug)
 		}
 	}
+}
+
+function updateVehicleSocVisibility() {
+	Object.values(vehicles).forEach((v) => {
+		v.showSoc = !globalConfig.socsToHide.includes(v.id)
+	})
 }
