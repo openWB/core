@@ -102,6 +102,21 @@ def extract_soc(data: dict) -> float:
     return float(battery["stateOfChargeInPercent"])
 
 
+def extract_captured_timestamp(data: dict) -> Optional[float]:
+    """Zeitpunkt, zu dem das Fahrzeug die Ladedaten zuletzt tatsächlich übermittelt hat
+    (nicht der Zeitpunkt des API-Abrufs) - die Public API liefert bei Autos ohne aktive
+    Verbindung sonst klaglos einen veralteten, zwischengespeicherten Stand zurück.
+    """
+    timestamp = ((data.get("vehicle") or {}).get("charging") or {}).get("carCapturedTimestamp")
+    if not timestamp:
+        return None
+    try:
+        return datetime.fromisoformat(timestamp.replace("Z", "+00:00")).timestamp()
+    except ValueError:
+        log.debug(f"Konnte carCapturedTimestamp nicht parsen: {timestamp}")
+        return None
+
+
 def extract_range(data: dict) -> Optional[float]:
     vehicle = data.get("vehicle") or {}
     status = ((vehicle.get("charging") or {}).get("status")) or {}

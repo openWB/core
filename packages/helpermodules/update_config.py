@@ -63,7 +63,7 @@ NO_MODULE = {"type": None, "configuration": {}}
 
 class UpdateConfig:
 
-    DATASTORE_VERSION = 161
+    DATASTORE_VERSION = 162
 
     valid_topic = [
         "^openWB/bat/config/bat_control_activated$",
@@ -4276,3 +4276,15 @@ class UpdateConfig:
 
         self._loop_all_received_topics(upgrade)
         self._append_datastore_version(161)
+
+    def upgrade_datastore_162(self) -> None:
+        """MySkoda: calculate_soc ergänzen, falls noch nicht vorhanden (neue Option zum manuellen
+        Erzwingen der SoC-Berechnung während der Ladung, Default False wie das bisherige Verhalten)."""
+        def upgrade(topic: str, payload) -> None:
+            if re.search("openWB/vehicle/[0-9]+/soc_module/config", topic) is not None:
+                config = decode_payload(payload)
+                if config.get("type") == "myskoda" and config["configuration"].get("calculate_soc") is None:
+                    config["configuration"]["calculate_soc"] = False
+                    return {topic: config}
+        self._loop_all_received_topics(upgrade)
+        self._append_datastore_version(162)
