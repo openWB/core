@@ -141,27 +141,58 @@ class ChargepointModule(AbstractChargepoint):
         self.old_chargepoint_state = chargepoint_state
         return chargepoint_state
 
+    # Issue #4289: Vor dem CP-Trennen muss der Zähler 0 A zeigen UND die EVSE das Fahrzeug nicht mehr in State C melden
+    # (Statusregister 1002 nicht 3/4). Der EVSE-Sollwert (Register 1000) taugt nicht als Kriterium, er steht
+    # sofort nach set_current(0) auf 0 (#3326). Ein einzelner Busfehler beim Rücklesen bricht nicht ab;
+    # erst ohne Bestätigung im Zeitfenster wird abgebrochen (Exception -> FaultState, keine GPIO-Aktion).
+    PHASE_SWITCH_CURRENT_THRESHOLD_A = 0.5   # MPM3PM zeigt bei offenem EV-Schütz 0,0 A, SDM/B23 rauschen
+    PHASE_SWITCH_METER_POLLS = 20            # 20 x (0,5 s + Lesezeit) = 10-20 s
+
     def perform_phase_switch(self, phases_to_use: int) -> None:
         gpio_cp, gpio_relay = self._client.get_pins_phase_switch(phases_to_use)
         evse = self._client.evse_client
+        meter = self._client.meter_client
+        num = self.local_charge_point_num
+        start = time.monotonic()
         with SingleComponentUpdateContext(self.fault_state, update_always=False, reraise=True):
-            evse.set_current(0)
-            for _ in range(20):  # poll up to 10s (20 × 0.5s) for EVSE to confirm 0 A
-                _, _, evse_current = evse.get_plug_charge_state()
-                if evse_current == 0:
-                    break
+            if meter is None:
+                raise Exception("Kein Zähler gefunden, Zählerstrom nicht prüfbar - Phasenumschaltung abgebrochen.")
+            evse.set_current(0)  # Schreibfehler -> Abbruch: ohne 0-A-Vorgabe wird nicht geschaltet (#3326)
+            for poll in range(1, self.PHASE_SWITCH_METER_POLLS + 1):
+                try:
+                    currents = meter.get_counter_state().currents
+                    werte = [c for c in currents if c is not None]
+                    evse.get_plug_charge_state()  # aktualisiert evse.state_number (wirft bei Status 5)
+                    state = evse.state_number
+                    log.debug(f"Phasenumschaltung LP{num}: Durchlauf {poll}, Ströme {currents} A, EVSE-Status {state}")
+                    # keine Messwerte (alle None) gelten nicht als 0 A
+                    if werte and max(werte) < self.PHASE_SWITCH_CURRENT_THRESHOLD_A and state not in (3, 4):
+                        log.warning(f"Phasenumschaltung LP{num}: 0 A und EVSE-Status {state} nach {poll} Durchläufen"
+                                    f" / {time.monotonic() - start:.1f} s bestätigt, Ströme {currents} A.")
+                        break
+                except Exception as e:
+                    # einzelner Busfehler (EVSE und Zähler am selben RS485-Bus): weiter pollen
+                    log.warning(f"Phasenumschaltung LP{num}: Rücklesen fehlgeschlagen ({e}), weiter.")
                 time.sleep(0.5)
-                evse.set_current(0)
+                try:
+                    evse.set_current(0)
+                except Exception as e:
+                    log.warning(f"Phasenumschaltung LP{num}: 0 A setzen fehlgeschlagen ({e}), weiter.")
             else:
-                raise Exception("Ladung konnte nicht gestoppt werden - Phasenumschaltung abgebrochen.")
-        GPIO.output(gpio_cp, GPIO.HIGH)  # CP off
-        GPIO.output(gpio_relay, GPIO.HIGH)  # 3 on/off
-        time.sleep(5)
-        GPIO.output(gpio_relay, GPIO.LOW)  # 3 on/off
-        time.sleep(5)
-        GPIO.output(gpio_cp, GPIO.LOW)  # CP on
+                raise Exception("Fahrzeug hat die Ladung nicht beendet (Zählerstrom > 0 oder EVSE-Status C)"
+                                " - Phasenumschaltung abgebrochen.")
+        try:
+            GPIO.output(gpio_cp, GPIO.HIGH)  # CP off
+            GPIO.output(gpio_relay, GPIO.HIGH)  # 3 on/off
+            time.sleep(5)
+            GPIO.output(gpio_relay, GPIO.LOW)  # 3 on/off
+            time.sleep(5)
+        finally:
+            GPIO.output(gpio_cp, GPIO.LOW)  # CP on - in jedem Fall wieder verbinden (#4037)
         time.sleep(1)
         self.old_phases_in_use = phases_to_use
+        log.warning(f"Phasenumschaltung LP{num}: auf {phases_to_use} Phasen umgeschaltet "
+                    f"({time.monotonic() - start:.1f} s gesamt).")
 
     def perform_cp_interruption(self, duration: int) -> None:
         gpio_cp = self._client.get_pins_cp_interruption()

@@ -47,6 +47,9 @@ class Evse:
                     self.activate_precise_current()
                 self._precise_current = self.is_precise_current_active()
         self.evse_current = 0
+        # zuletzt gelesener Rohstatus (Register 1002, EvseStatusCode), für die Phasenumschaltung:
+        # 3/4 = Fahrzeug lädt (State C), 2 = angesteckt ohne Ladung (State B)
+        self.state_number = 0
 
     def get_plug_charge_state(self) -> Tuple[bool, bool, float]:
         time.sleep(0.1)
@@ -54,6 +57,7 @@ class Evse:
             1000, [ModbusDataType.UINT_16]*3, unit=self.id)
         # remove leading zeros
         self.evse_current = int(raw_set_current)
+        self.state_number = int(state_number)
         log.debug("Gesetzte Stromstärke EVSE: "+str(self.evse_current) +
                   ", Status: "+str(state_number)+", Modbus-ID: "+str(self.id))
         state = EvseStatusCode(state_number)
