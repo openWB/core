@@ -47,3 +47,14 @@ def test_set_timestamp_charge_start_keeps_timestamps_while_charging(load):
 
     assert load.data.control_parameter.timestamp_charge_start == 1000
     assert load.data.control_parameter.timestamp_last_cp_retry == 2000
+
+
+@pytest.mark.parametrize("load", [Consumer(1), Chargepoint(2, None)])
+def test_set_timestamp_charge_start_resets_retry_timestamp_without_charge_start(load):
+    load.data.control_parameter.timestamp_charge_start = None
+    load.data.control_parameter.timestamp_last_cp_retry = 2000
+    load.data.set.current = 0
+
+    load.set_timestamp_charge_start()
+
+    assert load.data.control_parameter.timestamp_last_cp_retry is None

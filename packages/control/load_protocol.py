@@ -57,12 +57,13 @@ class Load(Protocol):
     def set_timestamp_charge_start(self) -> None:
         # Beim Ladestart Timer laufen lassen, manche Fahrzeuge brauchen sehr lange.
         # Nach dem Algorithmus setzen, sonst steht set current noch nicht fest.
+        if self.data.set.current == 0:
+            self.data.control_parameter.timestamp_last_cp_retry = None
         if self.data.control_parameter.timestamp_charge_start is None:
             if self.data.set.current_prev == 0 and self.data.set.current != 0:
                 self.data.control_parameter.timestamp_charge_start = create_timestamp()
         elif self.data.set.current == 0:
             self.data.control_parameter.timestamp_charge_start = None
-            self.data.control_parameter.timestamp_last_cp_retry = None
 
     def is_charging_stop_allowed(self) -> bool:
         ...
