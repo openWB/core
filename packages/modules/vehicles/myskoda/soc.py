@@ -28,8 +28,9 @@ def fetch(vehicle_config: Myskoda, vehicle: int) -> CarState:
     range_km = api.extract_range(data)
     odometer_km = api.extract_odometer(data)
     warning = api.extract_warning(data)
+    soc_timestamp = api.extract_captured_timestamp(data)
 
-    return CarState(soc=soc, range=range_km, odometer=odometer_km, warning=warning)
+    return CarState(soc=soc, range=range_km, soc_timestamp=soc_timestamp, odometer=odometer_km, warning=warning)
 
 
 def create_vehicle(vehicle_config: Myskoda, vehicle: int):
@@ -39,9 +40,7 @@ def create_vehicle(vehicle_config: Myskoda, vehicle: int):
     return ConfigurableVehicle(vehicle_config=vehicle_config,
                                component_updater=updater,
                                vehicle=vehicle,
-                               # SoC ist während der Ladung über die Public API abrufbar,
-                               # daher keine manuelle Berechnung nötig
-                               calc_while_charging=False)
+                               calc_while_charging=vehicle_config.configuration.calculate_soc)
 
 
 device_descriptor = DeviceDescriptor(configuration_factory=Myskoda)
