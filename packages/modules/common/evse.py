@@ -47,19 +47,25 @@ class Evse:
                     self.activate_precise_current()
                 self._precise_current = self.is_precise_current_active()
         self.evse_current = 0
-        # zuletzt gelesener Rohstatus (Register 1002, EvseStatusCode), für die Phasenumschaltung:
-        # 3/4 = Fahrzeug lädt (State C), 2 = angesteckt ohne Ladung (State B)
-        self.state_number = 0
 
-    def get_plug_charge_state(self) -> Tuple[bool, bool, float]:
+    def _read_state(self) -> int:
+        """Liest Soll-Strom (Register 1000) und Status (Register 1002), gibt den Rohstatus zurück."""
         time.sleep(0.1)
         raw_set_current, _, state_number = self.client.read_holding_registers(
             1000, [ModbusDataType.UINT_16]*3, unit=self.id)
         # remove leading zeros
         self.evse_current = int(raw_set_current)
-        self.state_number = int(state_number)
         log.debug("Gesetzte Stromstärke EVSE: "+str(self.evse_current) +
                   ", Status: "+str(state_number)+", Modbus-ID: "+str(self.id))
+        return int(state_number)
+
+    def get_state_number(self) -> int:
+        """Rohstatus (EvseStatusCode-Nummer) dieser Lesung, z. B. für die Phasenumschaltung:
+        1 = State A, 2 = State B, 3/4 = State C/D (Fahrzeug lädt), 5 = Fehler."""
+        return self._read_state()
+
+    def get_plug_charge_state(self) -> Tuple[bool, bool, float]:
+        state_number = self._read_state()
         state = EvseStatusCode(state_number)
         if state == EvseStatusCode.FAILURE:
             raise ValueError("Unbekannter Zustand der EVSE: State " +
