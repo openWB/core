@@ -21,6 +21,7 @@ import {
 import { processSmarthomeMessages } from '@/components/smartHome/processMessages'
 import { addCounter, counters } from '@/components/counterList/model'
 import { mqttClientId } from './mqttClient'
+import { globalConfig } from './themeConfig'
 import { displayConfig } from './model'
 
 const topicsToSubscribe = [
@@ -30,6 +31,7 @@ const topicsToSubscribe = [
 	'openWB/chargepoint/#',
 	'openWB/vehicle/#',
 	'openWB/general/chargemode_config/pv_charging/#',
+	'openWB/general/web_theme/#',
 	'openWB/optional/ep/#',
 	'openWB/system/#',
 	'openWB/LegacySmartHome/#',
@@ -68,6 +70,8 @@ function processMqttMessage(topic: string, payload: Buffer) {
 		topic.match(/^openwb\/general\/chargemode_config\/pv_charging\//i)
 	) {
 		processPvConfigMessages(topic, message)
+	} else if (topic.match(/^openwb\/general\/web_theme/i)) {
+		processThemeConfigMessages(topic, message)
 	} else if (topic.match(/^openwb\/graph\//i)) {
 		processLiveGraphMessages(topic, message)
 	} else if (topic.match(/^openwb\/log\/daily\//i)) {
@@ -203,6 +207,24 @@ function processPvConfigMessages(topic: string, message: string) {
 			// console.warn('Ignored PV CONFIG msg: [' + topic + '] ' + message)
 		}
 	}
+}
+
+function processThemeConfigMessages(topic: string, message: string) {
+	const themeConfig = JSON.parse(message).configuration
+	globalConfig.setShowRelativeArcs(themeConfig.showRelativeArcs)
+	//globalConfig.setDisplayMode(themeConfig.displayMode)
+	//globalConfig.setLiveGraphDuration(themeConfig.liveGraphDuration)
+	globalConfig.setShowGrid(themeConfig.showGrid)
+	globalConfig.setSmartHomeColors(themeConfig.smartHomeColors)
+	globalConfig.setDecimalPlaces(themeConfig.decimalPlaces)
+	globalConfig.setShowCounters(themeConfig.showCounters)
+	//globalConfig.setShowVehicles(themeConfig.showVehicles)
+	globalConfig.setShowStandardVehicle(themeConfig.showStandardVehicle)
+	//globalConfig.setShowPrices(themeConfig.showPrices)
+	//globalConfig.setLowerPriceBound(themeConfig.lowerPriceBound)
+	//globalConfig.setUpperPriceBound(themeConfig.upperPriceBound)
+	//globalConfig.setShowInverters(themeConfig.showInverters)
+	//globalConfig.setAlternativeEnergy(themeConfig.alternativeEnergy)
 }
 
 function processEvuMessages(topic: string, message: string) {

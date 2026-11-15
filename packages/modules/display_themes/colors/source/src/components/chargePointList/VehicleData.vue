@@ -1,7 +1,8 @@
 <template>
 	<div class="vehicleinfo justify-content-left">
-		<div class="titleline mb-3">
-			<DisplayButton @click="openSettings('#chSettings')">
+		<div v-if="vehiclesToDisplay.length == 0" class="titleline mb-3">
+			<DisplayButton  
+				@click="openSettings('#chSettings')">
 				<div
 					class="carname d-flex justify-content-left align-items-center px-2"
 				>
@@ -17,7 +18,27 @@
 					/>
 				</div>
 			</DisplayButton>
+			
 		</div>
+		<div v-if = "vehiclesToDisplay.length > 1" class="carselector mb-3">
+		<RadioBarInput
+				:id="'vehicle-' + chargepoint.name"
+				v-model="chargepoint.connectedVehicle"
+				class="vehicles mx-3 mt-4 mb-0"
+				
+				:options="
+					vehiclesToDisplay.map((v) => {
+						return {
+							text: v.name,
+							value: v.id,
+							color: v.id == chargepoint.connectedVehicle ? 'var(--color-charging)' : 'var(--color-fg)',
+							icon: 'fa-car',
+							active: v.id == chargepoint.connectedVehicle,
+						}
+					})
+				"
+			/>
+			</div>
 		<div
 			v-if="editSoc"
 			class="socEditor rounded mt-2 d-flex flex-column align-items-center grid-col-12 grid-left"
@@ -239,6 +260,9 @@ const currentPriceStyle = computed(() => {
 		? { color: 'var(--color-charging)' }
 		: { color: 'var(--color-menu)' }
 })
+const vehiclesToDisplay = computed(() => {
+	return Object.values(vehicles).filter((v) => v.visible)
+})
 function loadSoc() {
 	updateServer('socUpdate', 1, props.chargepoint.connectedVehicle)
 	chargePoints[props.chargepoint.id].waitingForSoc = true
@@ -288,5 +312,14 @@ function loadSoc() {
 .vehicleinfo {
 	display: flex;
 	flex-direction: column;
+}
+.carselector {
+	display: flex;
+	justify-content:stretch;
+}
+.vehicles {
+	grid-column: 1 / 13;
+	justify-self: center;
+	width: 100%;
 }
 </style>

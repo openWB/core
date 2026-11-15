@@ -8,24 +8,9 @@
 		>
 			<RadioInput
 				v-model.number="connectedVehicle"
-				:options="Object.values(vehicles).filter((v) => v.visible).map((v) => [v.name, v.id])"
+				:options="Object.values(vehicles).filter((v) => v.visible && (v.id != 0 || globalConfig.showStandardVehicle)).map((v) => [v.name, v.id])"
 			/>
 		</ConfigItem>
-		<!-- <ConfigItem
-			v-if="Object.keys(chargeTemplates).length > 1"
-			title="Ladeprofil"
-			icon="fa-sliders"
-			iconcolor="var(--color-pv)"
-		>
-			<RadioInput
-				v-if="vehicles[connectedVehicle]"
-				v-model.number="vehicles[connectedVehicle].chargeTemplateId"
-				:options="
-					Object.keys(chargeTemplates).map((v) => [chargeTemplates[+v].name, v])
-				"
-			/>
-		</ConfigItem>
-		 -->
 		<hr class="grid-col-2 my-2" />
 		<ConfigItem
 			title="Priorität"
@@ -50,16 +35,6 @@
 		>
 			<SwitchInput v-model="cp.isLocked" />
 		</ConfigItem>
-		<!-- Priority -->
-
-		<!-- <ConfigItem
-			title="Strompreisbasiert laden"
-			icon="fa-coins"
-			iconcolor="var(--color-battery)"
-		>
-			<SwitchInput v-model="etActive"></SwitchInput>
-		</ConfigItem>
-		 -->
 		<hr v-if="globalData.isBatteryConfigured" class="grid-col-2 my-2" />
 		<ConfigItem
 			v-if="globalData.isBatteryConfigured"
@@ -85,6 +60,7 @@ import RadioInput from '@/components/shared/RadioInput.vue'
 import { globalData } from '@/assets/js/model'
 import { evPriorityModes } from '@/assets/js/types'
 import { computed } from 'vue'
+import { globalConfig } from '@/assets/js/themeConfig'
 
 const props = defineProps<{
 	chargepointId: number
@@ -92,7 +68,6 @@ const props = defineProps<{
 
 //state
 const cp = computed(() => {
-	console.log(vehicles)
 	return chargePoints[props.chargepointId]
 })
 

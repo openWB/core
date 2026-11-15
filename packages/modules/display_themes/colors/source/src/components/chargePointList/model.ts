@@ -393,8 +393,7 @@ export class Vehicle {
 	}
 	get visible(): boolean {
 		return (
-			this.name != '__invalid' && this.name != ""//&&
-			//(this.id != 0 || globalConfig.showStandardVehicle)
+			this.name != '__invalid' && this.name != ""
 		)
 	}
 }
