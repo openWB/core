@@ -720,3 +720,41 @@ def test_update_recalculates_voltages_and_currents_when_still_at_default(
     # evaluation
     assert consumer.data.get.voltages == expected_voltages
     assert consumer.data.get.currents == expected_currents
+
+
+@pytest.mark.parametrize(
+    "connected_phases, phase_1, power, expected_voltages, expected_currents",
+    [
+        pytest.param(1, 2, 230, [0, 230, 0], [0.0, 1.0, 0.0], id="1 Phase auf L2"),
+        pytest.param(1, 3, 230, [0, 0, 230], [0.0, 0.0, 1.0], id="1 Phase auf L3"),
+        pytest.param(2, 3, 460, [230, 0, 230], [1.0, 0.0, 1.0], id="2 Phasen ab L3 (L3 und L1)"),
+        pytest.param(1, 0, 230, [230, 0, 0], [1.0, 0.0, 0.0], id="Phase 1 nicht angegeben: ab L1"),
+    ],
+)
+def test_update_derives_values_on_connected_phases_of_the_evu(
+        consumer: Consumer,
+        connected_phases: int,
+        phase_1: int,
+        power: float,
+        expected_voltages: List[float],
+        expected_currents: List[float],
+        monkeypatch):
+    # setup
+    consumer.data.config.connected_phases = connected_phases
+    consumer.data.config.phase_1 = phase_1
+    consumer.data.get.voltages = [230.0]*3
+    consumer.data.get.currents = [0.0]*3
+    consumer.data.get.power = power
+    monkeypatch.setattr(consumer, "reset_chargemode_at_time", Mock())
+    monkeypatch.setattr(consumer, "is_switch_interval_elapsed", Mock())
+    monkeypatch.setattr(consumer, "get_parameter", Mock(return_value=(0, None, None, None)))
+    monkeypatch.setattr(consumer, "set_mode_changed", Mock())
+    monkeypatch.setattr(consumer, "set_control_parameter", Mock())
+    data.data.counter_all_data = Mock()
+
+    # execution
+    consumer.update()
+
+    # evaluation
+    assert consumer.data.get.voltages == expected_voltages
+    assert consumer.data.get.currents == expected_currents

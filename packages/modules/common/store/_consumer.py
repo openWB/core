@@ -1,4 +1,5 @@
 from control import data
+from helpermodules.phase_handling import convert_cp_currents_to_evu_currents
 from modules.common.component_state import ConsumerState
 from modules.common.component_type import ComponentType
 from modules.common.store import ValueStore
@@ -7,12 +8,42 @@ from modules.common.store._broker import pub_to_broker
 from modules.common.utils.component_parser import get_consumer_name_by_id, get_hierarchy_obj_by_id
 
 
+def _to_evu_phases(state: ConsumerState, connected_phases: int, phase_1: int) -> None:
+    """Die Werte eines Verbrauchers liegen wie bei den Zählern je Phase des EVU vor, nur die angeschlossenen Phasen
+    ab der gewählten Phase 1 haben Werte. Module liefern die Werte in der Reihenfolge der eigenen Phasen.
+    Module, die nur die Gesamtleistung liefern, bekommen von ConsumerState 230 V und 0 A/0 W auf allen drei
+    Phasen, diese werden zuerst auf die angeschlossenen Phasen verteilt."""
+    if any(values is not None and len(values) != 3 for values in (state.voltages, state.currents, state.powers)):
+        # nutzerdefinierte Module können Listen mit anderer Länge liefern, diese bleiben unverändert
+        return
+    if state.voltages == [230.0]*3:
+        state.voltages = [230.0 if i < connected_phases else 0.0 for i in range(3)]
+    if state.power and state.currents == [0.0]*3 and (state.powers is None or state.powers == [0.0]*3):
+        state.powers = [state.power / connected_phases if i < connected_phases else 0.0 for i in range(3)]
+        state.currents = [power / voltage if voltage else 0.0 for power, voltage in zip(state.powers, state.voltages)]
+    state.voltages = convert_cp_currents_to_evu_currents(phase_1, state.voltages)
+    if state.currents is not None:
+        state.currents = convert_cp_currents_to_evu_currents(phase_1, state.currents)
+    if state.powers is not None:
+        state.powers = convert_cp_currents_to_evu_currents(phase_1, state.powers)
+
+
 class ConsumerValueStoreBroker(ValueStore[ConsumerState]):
     def __init__(self, component_num: int) -> None:
         self.num = component_num
 
     def set(self, state: ConsumerState) -> None:
         self.state = state
+        try:
+            consumer_data = data.data.consumer_data[f"consumer{self.num}"].data
+            # Ein separater Zähler liefert die Werte bereits je Phase des EVU.
+            if consumer_data.extra_meter is None:
+                connected_phases = int(consumer_data.config.connected_phases)
+                if 1 <= connected_phases <= 3:
+                    _to_evu_phases(state, connected_phases, consumer_data.config.phase_1)
+        except (AttributeError, KeyError, TypeError, ValueError):
+            # Verbraucher (noch) nicht bekannt oder Phase 1 nicht angegeben: die Werte bleiben unverändert
+            pass
 
     def update(self) -> None:
         if self.state.currents is not None:

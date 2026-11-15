@@ -2,7 +2,7 @@
 """
 from modules.common.utils.component_parser import get_component_name_by_id
 from modules.common.fault_state import FaultStateLevel
-from helpermodules.phase_handling import convert_cp_currents_to_evu_currents
+from helpermodules.phase_handling import convert_cp_currents_to_evu_currents, convert_cp_phases_to_evu_phases
 from helpermodules.constants import NO_ERROR
 from helpermodules import timecheck
 from dataclass_utils.factories import currents_list_factory, voltages_list_factory
@@ -205,9 +205,15 @@ class Counter:
                                   f"mit {load.data.get.power}W berücksichtigt.")
                         continue
                 try:
-                    element_current = convert_cp_currents_to_evu_currents(
-                        load.data.config.phase_1,
-                        load.data.get.currents)
+                    if "cp" in load_key:
+                        element_current = convert_cp_currents_to_evu_currents(
+                            load.data.config.phase_1,
+                            load.data.get.currents)
+                    else:
+                        # Die Werte der Verbraucher liegen bereits je Phase des EVU vor (wie bei Zählern), solange
+                        # die Phase 1 angegeben ist.
+                        convert_cp_phases_to_evu_phases(load.data.config.phase_1)
+                        element_current = load.data.get.currents
                 except KeyError:
                     element_current = [load.get_mean_current()]*3
                 # Vorzeichen anhand der Gesamtleistung entscheiden, nicht anhand einzelner Phasenströme

@@ -12,7 +12,8 @@ from control.load_protocol import Load
 from control.text import format_next_time_charging_start
 from helpermodules import timecheck
 from helpermodules.abstract_plans import ScheduledPlanConsumer
-from helpermodules.phase_handling import convert_single_evu_phase_to_cp_phase, voltages_mean
+from helpermodules.phase_handling import (convert_cp_currents_to_evu_currents, convert_single_evu_phase_to_cp_phase,
+                                          voltages_mean)
 from modules.common.configurable_consumer import ConfigurableConsumer
 
 log = logging.getLogger(__name__)
@@ -45,13 +46,18 @@ class Consumer(ConsumerRfidMixin, Load):
     def update(self):
         try:
             self.setup_values_at_start()
+            connected = [1 if i < self.data.config.connected_phases else 0 for i in range(0, 3)]
+            try:
+                # angeschlossene Phasen ab der gewählten Phase 1, wie bei den Zählern je Phase des EVU
+                connected = convert_cp_currents_to_evu_currents(self.data.config.phase_1, connected)
+            except KeyError:
+                pass
             if self.data.get.voltages == [230.0]*3:
-                self.data.get.voltages = [230 if i < self.data.config.connected_phases else 0
-                                          for i in range(0, 3)]
+                self.data.get.voltages = [230 if connected[i] else 0 for i in range(0, 3)]
             if self.data.get.currents == [0.0]*3:
-                for i in range(0, self.data.config.connected_phases):
+                for i in range(0, 3):
                     voltage = self.data.get.voltages[i]
-                    if voltage != 0:
+                    if connected[i] and voltage != 0:
                         self.data.get.currents[i] = (self.data.get.power /
                                                      self.data.config.connected_phases /
                                                      voltage)
