@@ -104,17 +104,32 @@ def test_consumer_store_keeps_values_for_unknown_phase_1(monkeypatch, mock_pub):
     assert published["currents"] == [0, 0, 0]
 
 
-def test_consumer_store_keeps_voltages_with_unexpected_length(monkeypatch, mock_pub):
+def test_consumer_store_moves_complete_lists_even_if_voltages_have_unexpected_length(monkeypatch, mock_pub):
     """ Nutzerdefinierte Module können zu kurze Listen liefern, der ConsumerState verlangt nur für Strom und
-    Leistung drei Werte. Das darf die Aktualisierung nicht abbrechen. """
+    Leistung drei Werte. Das darf die Aktualisierung nicht abbrechen, vollständige Listen werden trotzdem auf die
+    Phasen des EVU gelegt, damit das Lastmanagement den Strom auf der richtigen Phase abzieht. """
     _set_consumer(monkeypatch, 1, phase_1=2)
-    state = ConsumerState(power=1380, currents=[0.0, 6.0, 0.0], powers=[0.0, 1380.0, 0.0], voltages=[230.0, 230.0])
+    state = ConsumerState(power=1380, currents=[6.0, 0.0, 0.0], powers=[1380.0, 0.0, 0.0], voltages=[230.0, 230.0])
 
     published = _publish(state, mock_pub)
 
     assert published["voltages"] == [230.0, 230.0]
     assert published["currents"] == [0.0, 6.0, 0.0]
     assert published["powers"] == [0.0, 1380.0, 0.0]
+
+
+def test_consumer_store_does_not_change_the_state_of_the_module(monkeypatch, mock_pub):
+    """ Der veröffentlichte Zustand ist eine Kopie, andere Threads sehen nie einen halb umgerechneten Zustand. """
+    _set_consumer(monkeypatch, 1, phase_1=2)
+    state = ConsumerState(power=1380)
+    store = _consumer.ConsumerValueStoreBroker(1)
+
+    store.set(state)
+
+    assert state.voltages == [230.0, 230.0, 230.0]
+    assert state.currents == [0.0, 0.0, 0.0]
+    assert store.state is not state
+    assert store.state.voltages == [0.0, 230.0, 0.0]
 
 
 def test_consumer_store_without_known_consumer_keeps_values(mock_pub):
