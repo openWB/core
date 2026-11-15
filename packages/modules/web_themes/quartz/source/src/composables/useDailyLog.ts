@@ -288,7 +288,8 @@ export function useDailyLog() {
   onMounted(() => {
     refreshTimer = setInterval(() => {
       if (!followToday.value) return
-      selectedDate.value = startOfDay(new Date())
+      const today = startOfDay(new Date())
+      if (today.getTime() !== selectedDate.value.getTime()) selectedDate.value = today
       mqttStore.fetchDailyLog(selectedDate.value)
     }, REFRESH_INTERVAL_MS)
   })

@@ -101,7 +101,6 @@
       </button>
       <ChartjsLine
         v-if="hasData"
-        ref="chartRef"
         :key="`${theme}-${mode}`"
         :data="chartData"
         :options="chartOptions"
@@ -163,12 +162,26 @@ const {
   selectedVehicleSoc: publishedSelectedVehicleSoc,
 } = useChartSettings()
 
-const chartRef = ref<{ chart?: Chart } | null>(null)
-const isZoomed = ref(false)
+// the zoomed range lives in state because chartOptions is recomputed on every 'now' tick / data
+// update, which would otherwise push the unzoomed scale bounds back into the chart. Clearing it is
+// the whole reset: chart.resetZoom() would fire onZoomComplete and immediately re-capture the range.
+const zoomRange = ref<{ min: number; max: number } | null>(null)
+const isZoomed = computed(() => zoomRange.value !== null)
+
+// safety net so a forgotten zoom doesn't leave a stale view on an unattended screen
+const ZOOM_AUTO_RESET_MS = 5 * 60 * 1000
+let zoomResetTimer: ReturnType<typeof setTimeout> | undefined
+
+function captureZoom(chart: Chart): void {
+  const { min, max } = chart.scales.x
+  zoomRange.value = { min, max }
+  clearTimeout(zoomResetTimer)
+  zoomResetTimer = setTimeout(resetZoom, ZOOM_AUTO_RESET_MS)
+}
 
 function resetZoom(): void {
-  chartRef.value?.chart?.resetZoom()
-  isZoomed.value = false
+  clearTimeout(zoomResetTimer)
+  zoomRange.value = null
 }
 
 // Date.now() isn't a reactive dependency, so without this, 'now' (the chart options
@@ -179,7 +192,10 @@ let nowTimer: ReturnType<typeof setInterval> | undefined
 onMounted(() => {
   nowTimer = setInterval(() => (now.value = Date.now()), 30_000)
 })
-onUnmounted(() => clearInterval(nowTimer))
+onUnmounted(() => {
+  clearInterval(nowTimer)
+  clearTimeout(zoomResetTimer)
+})
 
 // Chart.js options are JS-driven, not CSS - this is the one piece of the axis chrome that needs
 // a real viewport check rather than a Tailwind breakpoint class, to drop the rotated axis titles
@@ -299,15 +315,14 @@ watch(mode, (m) => {
     mqttStore.unsubscribeLiveSeries()
     clearTimeout(liveLoadingTimeout)
   }
-  isZoomed.value = false
 })
 onUnmounted(() => {
   if (mode.value === 'live') mqttStore.unsubscribeLiveSeries()
   clearTimeout(liveLoadingTimeout)
 })
 
-// a zoom/pan from a previously viewed day shouldn't carry over to the newly selected one
-watch(selectedDate, () => (isZoomed.value = false))
+// a zoom/pan shouldn't carry over to another day or the other view
+watch([mode, selectedDate], resetZoom)
 
 const hasData = computed(() => categories.value.grid.all.length > 0)
 const isLoading = computed(() => (mode.value === 'live' ? liveIsLoading.value : dayIsLoading.value))
@@ -620,20 +635,20 @@ const chartOptions = computed<ChartOptions<'line'>>(() => {
         // disabled on narrow/touch viewports - a single-finger drag-to-pan there captures every
         // attempt to scroll the page past the chart, which is far more disruptive than losing pan
         // (pinch-zoom, a deliberate 2-finger gesture that doesn't conflict with scrolling, still works)
-        pan: { enabled: !isNarrow.value, mode: 'x', onPanComplete: () => (isZoomed.value = true) },
+        pan: { enabled: !isNarrow.value, mode: 'x', onPanComplete: ({ chart }) => captureZoom(chart) },
         zoom: {
           wheel: { enabled: true },
           pinch: { enabled: true },
           mode: 'x',
-          onZoomComplete: () => (isZoomed.value = true),
+          onZoomComplete: ({ chart }) => captureZoom(chart),
         },
       },
     },
     scales: {
       x: {
         type: 'time',
-        min: xRange.value.min,
-        max: xRange.value.max,
+        min: zoomRange.value?.min ?? xRange.value.min,
+        max: zoomRange.value?.max ?? xRange.value.max,
         time: { unit: mode.value === 'live' ? 'minute' : 'hour' },
         grid: { color: borderColor },
         ticks: { color: mutedColor, font: { size: 11 } },
