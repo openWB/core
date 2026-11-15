@@ -8,7 +8,14 @@
 		>
 			<RadioInput
 				v-model.number="connectedVehicle"
-				:options="Object.values(vehicles).filter((v) => v.visible && (v.id != 0 || globalConfig.showStandardVehicle)).map((v) => [v.name, v.id])"
+				:options="
+					Object.values(vehicles)
+						.filter(
+							(v) =>
+								v.visible && (v.id != 0 || globalConfig.showStandardVehicle),
+						)
+						.map((v) => [v.name, v.id])
+				"
 			/>
 		</ConfigItem>
 		<hr class="grid-col-2 my-2" />
