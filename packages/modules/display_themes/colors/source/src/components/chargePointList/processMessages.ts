@@ -97,8 +97,8 @@ export function processChargepointMessages(topic: string, message: string) {
 			)
 		) {
 			const info = JSON.parse(message)
-			chargePoints[index].vehicleName = String(info.name)
 			chargePoints[index].updateConnectedVehicle(+info.id)
+			chargePoints[index].vehicleName = String(info.name)
 		} else if (
 			topic.match(
 				/^openwb\/chargepoint\/[0-9]+\/get\/connected_vehicle\/config$/i,

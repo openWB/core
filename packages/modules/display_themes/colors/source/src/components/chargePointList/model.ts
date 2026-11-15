@@ -396,7 +396,7 @@ export class Vehicle {
 		return undefined
 	}
 	get visible(): boolean {
-		return this.name != '__invalid' && this.name != '' && this.id != 0
+		return this.name != '__invalid' && this.name != ''
 	}
 }
 export interface ConnectedVehicleConfig {

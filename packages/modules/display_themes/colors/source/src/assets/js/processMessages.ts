@@ -211,20 +211,30 @@ function processPvConfigMessages(topic: string, message: string) {
 
 function processThemeConfigMessages(topic: string, message: string) {
 	const themeConfig = JSON.parse(message).configuration
-	globalConfig.setShowRelativeArcs(themeConfig.showRelativeArcs)
-	//globalConfig.setDisplayMode(themeConfig.displayMode)
-	//globalConfig.setLiveGraphDuration(themeConfig.liveGraphDuration)
-	globalConfig.setShowGrid(themeConfig.showGrid)
-	globalConfig.setSmartHomeColors(themeConfig.smartHomeColors)
-	globalConfig.setDecimalPlaces(themeConfig.decimalPlaces)
-	globalConfig.setShowCounters(themeConfig.showCounters)
-	//globalConfig.setShowVehicles(themeConfig.showVehicles)
-	globalConfig.setShowStandardVehicle(themeConfig.showStandardVehicle)
-	//globalConfig.setShowPrices(themeConfig.showPrices)
-	//globalConfig.setLowerPriceBound(themeConfig.lowerPriceBound)
-	//globalConfig.setUpperPriceBound(themeConfig.upperPriceBound)
-	//globalConfig.setShowInverters(themeConfig.showInverters)
-	//globalConfig.setAlternativeEnergy(themeConfig.alternativeEnergy)
+	if (themeConfig.showRelativeArcs != undefined) {
+		globalConfig.setShowRelativeArcs(themeConfig.showRelativeArcs)
+	}
+	if (themeConfig.showGrid != undefined) {
+		globalConfig.setShowGrid(themeConfig.showGrid)
+	}
+	if (themeConfig.smartHomeColors != undefined) {
+		globalConfig.setSmartHomeColors(themeConfig.smartHomeColors)
+	}
+	if (themeConfig.decimalPlaces != undefined) {
+		globalConfig.setDecimalPlaces(themeConfig.decimalPlaces)
+	}
+	if (themeConfig.smartHomeColors != undefined) {
+		globalConfig.setSmartHomeColors(themeConfig.smartHomeColors)
+	}
+	if (themeConfig.decimalPlaces != undefined) {
+		globalConfig.setDecimalPlaces(themeConfig.decimalPlaces)
+	}
+	if (themeConfig.decimalPlaces != undefined) {
+		globalConfig.setDecimalPlaces(themeConfig.decimalPlaces)
+	}
+	if (themeConfig.showStandardVehicle != undefined) {
+		globalConfig.setShowStandardVehicle(themeConfig.showStandardVehicle)
+	}
 }
 
 function processEvuMessages(topic: string, message: string) {

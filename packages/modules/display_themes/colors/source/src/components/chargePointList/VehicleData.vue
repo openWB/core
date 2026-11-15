@@ -274,7 +274,9 @@ const connectedVehicle = computed({
 	},
 	set(newVehicle) {
 		if (!displayConfig.locked) {
-			chargePoints[props.chargepoint.id].connectedVehicle = newVehicle
+			if (!editSoc.value) {
+				chargePoints[props.chargepoint.id].connectedVehicle = newVehicle
+			}
 		} else {
 			unlockDisplay()
 		}
