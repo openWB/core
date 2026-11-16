@@ -23,8 +23,12 @@ declare resultStatus
 	mkdir -p "$WORKING_DIR"
 	echo "****************************************"
 	echo "Step 2: extract archive to working directory"
+	# Check for path traversal attempts (security layer 2)
+	if sudo tar --list --file="$SOURCE_FILE" | grep -q '\.\./' ; then
+		resultMessage="Sicherheitsprüfung fehlgeschlagen: Das Archiv enthält ungültige relative Pfade ('../')!"
+		resultStatus=1
 	# extracting as root preserves file owner/group and permissions, but directory owner/group is root!
-	if ! sudo tar --verbose --extract --file="$SOURCE_FILE" --directory="$WORKING_DIR"; then
+	elif ! sudo tar --verbose --extract --file="$SOURCE_FILE" --directory="$WORKING_DIR"; then
 		resultMessage="Beim Entpacken des Archivs ist ein Fehler aufgetreten!"
 		resultStatus=1
 	else
