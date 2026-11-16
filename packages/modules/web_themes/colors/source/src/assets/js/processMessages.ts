@@ -24,7 +24,10 @@ import {
 	processVehicleTemplateMessages,
 } from '@/components/chargePointList/processMessages'
 import { processSmarthomeMessages } from '@/components/smartHome/processMessages'
-import { processConsumerMessages } from '@/components/consumerList/processMessages'
+import {
+	processConsumerMessages,
+	registerConsumerFromHierarchy,
+} from '@/components/consumerList/processMessages'
 import {
 	addCounter,
 	counters,
@@ -33,7 +36,7 @@ import {
 import { mqttClientId } from './mqttClient'
 import { add } from '@/components/mqttViewer/model'
 import { globalConfig } from './themeConfig'
-import { addConsumer, consumers } from '@/components/consumerList/model'
+import { consumers } from '@/components/consumerList/model'
 
 const topicsToSubscribe = [
 	'openWB/counter/#',
@@ -183,7 +186,7 @@ function processHierarchy(hierarchy: Hierarchy) {
 			addPvSystem(hierarchy.id)
 			break
 		case 'consumer':
-			addConsumer(hierarchy.id)
+			registerConsumerFromHierarchy(hierarchy.id)
 			break
 		default:
 		// console.warn('Ignored Hierarchy type: ' + hierarchy.type)
