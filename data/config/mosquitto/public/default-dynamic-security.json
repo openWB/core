@@ -2904,6 +2904,12 @@
 				},
 				{
 					"acltype": "publishClientReceive",
+					"topic": "openWB/system/os_version",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
 					"topic": "openWB/system/pnp_ip",
 					"priority": 0,
 					"allow": true

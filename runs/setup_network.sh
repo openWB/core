@@ -49,6 +49,16 @@ function get_mac() {
 	echo "$mac"
 }
 
+function get_os_version() {
+	local issue_file="${1:-/etc/issue}"
+	local os_version=""
+	if [[ -r "$issue_file" ]]; then
+		# Remove login placeholders and surrounding whitespace from the OS description.
+		os_version=$(sed 's/\\[nl]//g; s/^[[:space:]]*//; s/[[:space:]]*$//; /^$/d' "$issue_file" | head -n 1)
+	fi
+	printf '%s\n' "${os_version:-unknown}"
+}
+
 function setup_pnp_network() {
 	defaultPnpIpAddress="192.168.193.250"
 	defaultPnpIpPrefix=24
@@ -178,6 +188,11 @@ mosquitto_pub -t "openWB/system/mac_address" -p 1886 -r -m "\"$mac\""
 hostname=$(hostname)
 echo "my hostname: $hostname"
 mosquitto_pub -t "openWB/system/hostname" -p 1886 -r -m "\"$hostname\""
+
+# publish OS version as a JSON string, including any quotes in the description
+osVersion=$(get_os_version)
+echo "my OS version: $osVersion"
+mosquitto_pub -t "openWB/system/os_version" -p 1886 -r -m "$(printf '%s' "$osVersion" | jq -Rs .)"
 
 # image restricted to LAN only
 # get local ip
