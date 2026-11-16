@@ -3,6 +3,7 @@ from unittest.mock import Mock
 
 from requests.exceptions import HTTPError as RequestsHTTPError
 
+from helpermodules import timecheck
 from modules.common import store
 from modules.common.abstract_vehicle import VehicleUpdateData
 from modules.common.component_context import SingleComponentUpdateContext
@@ -95,6 +96,39 @@ class TestBmwCardata:
         assert result.soc == 75
         assert result.range == 350
         assert result.odometer == 61570
+
+    @pytest.mark.parametrize(
+        "timestamp, expected",
+        [
+            pytest.param("2026-03-27T17:55:48Z", 1774634148.0, id="utc"),
+            pytest.param("2026-03-27T18:55:48+01:00", 1774634148.0, id="offset"),
+            pytest.param(None, None, id="missing"),
+            pytest.param("kein Datum", None, id="invalid"),
+        ],
+    )
+    def test_soc_timestamp_from_soc_entry(self, monkeypatch, timestamp, expected):
+        soc_entry = {"value": "75", "unit": "%"}
+        if timestamp is not None:
+            soc_entry["timestamp"] = timestamp
+        mock_response = Mock()
+        mock_response.json.return_value = {"telematicData": {
+            "vehicle.drivetrain.electricEngine.charging.level": soc_entry,
+            # Zeitstempel eines anderen Datenpunkts darf nicht verwendet werden
+            "vehicle.drivetrain.electricEngine.remainingElectricRange": {
+                "value": "350", "unit": "km", "timestamp": "2020-01-01T00:00:00Z"},
+        }}
+        mock_session = Mock()
+        mock_session.get.return_value = mock_response
+        mock_session.headers = {}
+        monkeypatch.setattr("modules.vehicles.bmw_cardata.soc.req.get_http_session", Mock(return_value=mock_session))
+
+        result = fetch_soc(self._make_config())
+
+        if expected is None:
+            # CarState nimmt ohne Zeitstempel "jetzt" an
+            assert result.soc_timestamp == timecheck.create_timestamp()
+        else:
+            assert result.soc_timestamp == expected
 
     def test_soc_extraction_fallback_field(self, monkeypatch):
         mock_response = Mock()
