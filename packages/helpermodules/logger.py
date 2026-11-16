@@ -20,7 +20,7 @@ NUMBER_OF_LOGFILES = 3
 
 KNOWN_SENSITIVE_FIELDS = [
     'password', 'secret', 'token', 'apikey', 'access_token',
-    'refresh_token', 'accesstoken', 'refreshtoken'
+    'refresh_token', 'accesstoken', 'refreshtoken', 'client_secret'
 ]
 REDACTION_PATTERNS = [
     (r'({field})[=:]([^\s&]+)', r'\1=***REDACTED***'),  # field=value, i.e. for URL query parameters

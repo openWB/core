@@ -11,6 +11,57 @@ from control.optional import Optional
 from helpermodules.subdata import SubData
 
 
+@pytest.mark.parametrize("change", ["ski", "remote_ski", "port", "unchanged", "delete"])
+def test_eebus_config_change_stops_old_client_before_reinitialization(change, monkeypatch):
+    from dataclass_utils import asdict
+    from modules.io_devices.eebus import api
+    from modules.io_devices.eebus.config import CertInfo, Eebus, EebusConfiguration
+
+    subdata = SubData.__new__(SubData)
+    subdata.event_subdata_initialized = Mock()
+    subdata.event_subdata_initialized.is_set.return_value = True
+    config = Eebus(id=3, configuration=EebusConfiguration(cert_info=CertInfo(client_ski="old-ski")))
+    old_io = Mock(config=config)
+    other_io = Mock()
+    devices = {"io3": old_io, "io4": other_io}
+    payload = asdict(config)
+    if change == "ski":
+        payload["configuration"]["cert_info"]["client_ski"] = "new-ski"
+    elif change == "remote_ski":
+        payload["configuration"]["remote_ski"] = "new-remote-ski"
+    elif change == "port":
+        payload["configuration"]["port"] = 4713
+    elif change == "delete":
+        payload = ""
+
+    new_io = Mock()
+
+    def create_io(new_config):
+        old_io.shutdown.assert_called_once_with()
+        assert asdict(new_config) == payload
+        return new_io
+
+    factory = Mock(side_effect=create_io)
+    monkeypatch.setattr(api, "create_io", factory)
+    msg = Mock(topic="openWB/system/io/3/config", payload=json.dumps(payload).encode())
+
+    subdata.process_system_topic(Mock(), devices, msg)
+
+    other_io.shutdown.assert_not_called()
+    if change == "unchanged":
+        old_io.shutdown.assert_not_called()
+        factory.assert_not_called()
+        assert devices["io3"] is old_io
+    elif change == "delete":
+        old_io.shutdown.assert_called_once_with()
+        factory.assert_not_called()
+        assert "io3" not in devices
+    else:
+        old_io.shutdown.assert_called_once_with()
+        factory.assert_called_once()
+        assert devices["io3"] is new_io
+
+
 @pytest.mark.parametrize(
     "usage_type, loadmanagement_prios, expected_loadmanagement_prios, expected_changed",
     [

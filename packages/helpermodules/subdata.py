@@ -1083,6 +1083,7 @@ class SubData:
                 index = get_index(msg.topic)
                 if decode_payload(msg.payload) == "":
                     if "io"+index in var:
+                        var["io"+index].shutdown()
                         if (var[f"io{index}"].config.type == "add_on" and
                                 var[f"io{index}"].config.configuration.host == "localhost"):
                             var.pop("iolocal")
@@ -1104,6 +1105,8 @@ class SubData:
                     if (self.event_subdata_initialized.is_set() is False or
                             "io"+index not in var or
                             io_config != asdict(var["io"+index].config)):
+                        if "io"+index in var:
+                            var["io"+index].shutdown()
                         var["io"+index] = dev.create_io(config)
             elif re.search("^.+/io/[0-9]+/set/manual/analog_output", msg.topic) is not None:
                 index = get_index(msg.topic)
