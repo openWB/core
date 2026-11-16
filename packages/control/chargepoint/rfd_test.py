@@ -16,7 +16,7 @@ from control.ev.ev import Ev
 
 
 @pytest.mark.parametrize("processing_index", [0, 1])
-def test_duo_abgelehnter_scan_bleibt_nach_wiederanstecken_gesperrt(duo, rfid_tag, processing_index):
+def test_duo_rejected_scan_remains_blocked_after_reconnecting(duo, rfid_tag, processing_index):
     cp = duo.chargepoints[processing_index]
     partner = duo.chargepoints[1 - processing_index]
     timestamp = duo.clock.return_value
@@ -62,7 +62,7 @@ def test_duo_abgelehnter_scan_bleibt_nach_wiederanstecken_gesperrt(duo, rfid_tag
     assert cp.data.set.rfid == rfid_tag
 
 
-def test_quittierung_setzt_verarbeitungsgrenze_nicht_zurueck(duo, rfid_tag):
+def test_acknowledgement_does_not_decrease_processed_timestamp(duo, rfid_tag):
     cp, partner = duo.chargepoints
     timestamp = duo.clock.return_value
     cp.data.set.rfid_timestamp = timestamp + 10
@@ -74,7 +74,7 @@ def test_quittierung_setzt_verarbeitungsgrenze_nicht_zurueck(duo, rfid_tag):
 
 
 @pytest.mark.parametrize("same_card", [False, True])
-def test_quittierung_eines_scans_behaelt_neueren_scan_am_partner(duo, rfid_tag, same_card):
+def test_acknowledging_scan_preserves_newer_scan_at_partner(duo, rfid_tag, same_card):
     cp, partner = duo.chargepoints
     timestamp = duo.clock.return_value
     cp.data.get.rfid = rfid_tag
@@ -95,7 +95,7 @@ def test_quittierung_eines_scans_behaelt_neueren_scan_am_partner(duo, rfid_tag, 
 @pytest.mark.parametrize("selected_index", [0, 1])
 @pytest.mark.parametrize("reverse_order", [False, True])
 @pytest.mark.parametrize("replay_offset", [0, -1], ids=["Gleicher-Scan", "Aelterer-Scan"])
-def test_duo_reader_timestamp_verhindert_zweite_freigabe(
+def test_duo_reader_timestamp_prevents_second_authorization(
         duo, rfid_tag, selected_index, reverse_order, replay_offset, mock_pub):
     from helpermodules.changed_values_handler import ChangedValuesHandler
 
@@ -151,7 +151,7 @@ def test_duo_reader_timestamp_verhindert_zweite_freigabe(
 
 
 @pytest.mark.parametrize("new_first", [False, True])
-def test_duo_alte_wiederholung_loescht_keinen_neueren_scan_am_partner(duo, rfid_tag, new_first):
+def test_duo_old_replay_does_not_clear_newer_scan_at_partner(duo, rfid_tag, new_first):
     cp, partner = duo.chargepoints
     cp.data.set.rfid_timestamp = duo.clock.return_value - 10
     cp.data.get.rfid = rfid_tag
@@ -170,7 +170,7 @@ def test_duo_alte_wiederholung_loescht_keinen_neueren_scan_am_partner(duo, rfid_
 
 
 @pytest.mark.parametrize("duo_mode", [False, True], ids=["Einzel-LP", "Duo"])
-def test_alter_reader_ohne_timestamp_bleibt_nutzbar(duo, rfid_tag, duo_mode):
+def test_legacy_reader_without_timestamp_remains_supported(duo, rfid_tag, duo_mode):
     cp, partner = duo.chargepoints
     if not duo_mode:
         data.data.cp_data.pop(f"cp{partner.num}")
@@ -188,7 +188,7 @@ def test_alter_reader_ohne_timestamp_bleibt_nutzbar(duo, rfid_tag, duo_mode):
 
 
 @pytest.mark.parametrize("duo_mode", [False, True], ids=["Einzel-LP", "Duo"])
-def test_reader_timestamp_startet_frist_am_scan(duo, rfid_tag, duo_mode):
+def test_reader_timestamp_starts_timeout_at_scan_time(duo, rfid_tag, duo_mode):
     cp, partner = duo.chargepoints
     if not duo_mode:
         data.data.cp_data.pop(f"cp{partner.num}")
@@ -202,7 +202,7 @@ def test_reader_timestamp_startet_frist_am_scan(duo, rfid_tag, duo_mode):
     assert "verworfen" in cp.data.get.state_str
 
 
-def test_reader_erzeugt_pro_scan_neuen_timestamp(duo, monkeypatch):
+def test_reader_generates_new_timestamp_for_each_scan(duo, monkeypatch):
     import asyncio
     from modules.internal_chargepoint_handler import rfid as reader_module
 
@@ -227,7 +227,7 @@ def test_reader_erzeugt_pro_scan_neuen_timestamp(duo, monkeypatch):
     ]
 
 
-def test_scan_timestamp_topics_validieren_und_uebernehmen(duo, mock_pub, monkeypatch):
+def test_scan_timestamp_topics_are_validated_and_applied(duo, mock_pub, monkeypatch):
     import json
     from helpermodules.setdata import SetData
     from helpermodules.subdata import SubData
@@ -254,7 +254,7 @@ def test_scan_timestamp_topics_validieren_und_uebernehmen(duo, mock_pub, monkeyp
             assert getattr(target, attribute) == value
 
 
-def test_interner_ladepunkt_reicht_scan_timestamp_unveraendert_durch(duo, rfid_tag, monkeypatch, mock_pub):
+def test_internal_chargepoint_forwards_scan_timestamp_unchanged(duo, rfid_tag, monkeypatch, mock_pub):
     from unittest.mock import MagicMock
     from modules.common.component_state import ChargepointState, CounterState
     from modules.common.store._chargepoint_internal import InternalChargepointValueStore
@@ -288,7 +288,7 @@ def test_interner_ladepunkt_reicht_scan_timestamp_unveraendert_durch(duo, rfid_t
     mock_pub.pub.assert_any_call("openWB/set/internal_chargepoint/0/get/rfid_timestamp", None)
 
 
-def test_verarbeiteter_scan_bleibt_nach_abstecken_gesperrt(duo, rfid_tag, monkeypatch):
+def test_processed_scan_remains_blocked_after_unplugging(duo, rfid_tag, monkeypatch):
     cp, partner = duo.chargepoints
     cp.data.get.plug_state = True
     cp.data.set.plug_time = duo.clock.return_value - 10
@@ -429,7 +429,7 @@ def duo(monkeypatch, rfid_tag):
 
 
 @pytest.fixture
-def duo_regelzyklus(duo, rfid_tag, monkeypatch, caplog):
+def duo_control_cycle(duo, rfid_tag, monkeypatch, caplog):
     """Echte Prepare-Schleife und echte Chargepoints; keine reale Ladung."""
     default_ev = data.data.ev_data["ev0"]
     default_ev.data.name = "Standardfahrzeug"
@@ -465,7 +465,7 @@ def duo_regelzyklus(duo, rfid_tag, monkeypatch, caplog):
 
 
 @pytest.mark.parametrize("module_type", ["external_openwb", "internal_openwb"])
-def test_duo_partner_wird_erkannt(duo, module_type):
+def test_duo_partner_is_detected(duo, module_type):
     for cp in duo.chargepoints:
         cp.data.config.type = module_type
     cp1, cp2 = duo.chargepoints
@@ -475,7 +475,7 @@ def test_duo_partner_wird_erkannt(duo, module_type):
 
 @pytest.mark.parametrize("plugged_index", [0, 1], ids=["Ladepunkt-1", "Ladepunkt-2"])
 @pytest.mark.parametrize("reverse_order", [False, True], ids=["Reihenfolge-1-2", "Reihenfolge-2-1"])
-def test_scan_wird_nur_dem_eingesteckten_ladepunkt_zugeordnet(
+def test_scan_is_assigned_only_to_plugged_chargepoint(
         duo, rfid_tag, plugged_index, reverse_order):
     plugged = duo.chargepoints[plugged_index]
     other = duo.chargepoints[1 - plugged_index]
@@ -503,14 +503,14 @@ def test_scan_wird_nur_dem_eingesteckten_ladepunkt_zugeordnet(
 
 
 @pytest.mark.parametrize("elapsed", [300, 301], ids=["bei-300s-gueltig", "nach-301s-verworfen"])
-def test_scan_zeitlimit_ohne_auto(duo, duo_regelzyklus, rfid_tag, elapsed):
-    default_ev = duo_regelzyklus.default_ev
+def test_scan_timeout_without_vehicle(duo, duo_control_cycle, rfid_tag, elapsed):
+    default_ev = duo_control_cycle.default_ev
     duo.reader.scan(rfid_tag)
-    duo_regelzyklus.run()
-    assert all(cp.data.get.connected_vehicle.info.id == duo_regelzyklus.tagged_ev.num
+    duo_control_cycle.run()
+    assert all(cp.data.get.connected_vehicle.info.id == duo_control_cycle.tagged_ev.num
                for cp in duo.chargepoints)
     duo.clock.return_value += elapsed
-    duo_regelzyklus.run()
+    duo_control_cycle.run()
 
     for cp in duo.chargepoints:
         assert cp.data.set.rfid is None
@@ -519,7 +519,7 @@ def test_scan_zeitlimit_ohne_auto(duo, duo_regelzyklus, rfid_tag, elapsed):
         if elapsed == 300:
             assert cp.data.get.rfid == rfid_tag
             assert cp.data.get.rfid_timestamp == duo.clock.return_value - elapsed
-            assert cp.data.get.connected_vehicle.info.id == duo_regelzyklus.tagged_ev.num
+            assert cp.data.get.connected_vehicle.info.id == duo_control_cycle.tagged_ev.num
             cp.chargepoint_module.clear_rfid.assert_not_called()
         else:
             assert cp.data.get.rfid is None
@@ -534,28 +534,28 @@ def test_scan_zeitlimit_ohne_auto(duo, duo_regelzyklus, rfid_tag, elapsed):
 
 @pytest.mark.parametrize("plugged_index", [0, 1], ids=["Anstecken-LP1", "Anstecken-LP2"])
 @pytest.mark.parametrize("reverse_order", [False, True], ids=["Zyklus-LP1-LP2", "Zyklus-LP2-LP1"])
-def test_produktionsschleife_reset_spaetestens_im_folgezyklus(
-        duo, duo_regelzyklus, rfid_tag, plugged_index, reverse_order):
+def test_production_loop_resets_vehicle_by_next_cycle(
+        duo, duo_control_cycle, rfid_tag, plugged_index, reverse_order):
     """Eine vorläufige Anzeige darf höchstens bis zum Folgezyklus bestehen."""
     order = list(reversed(duo.chargepoints)) if reverse_order else duo.chargepoints
     data.data.cp_data = {f"cp{cp.num}": cp for cp in order}
     plugged = duo.chargepoints[plugged_index]
     other = duo.chargepoints[1 - plugged_index]
     duo.reader.scan(rfid_tag)
-    duo_regelzyklus.run()
+    duo_control_cycle.run()
     assert all(cp.data.get.connected_vehicle.info.id == 1 for cp in duo.chargepoints)
 
     duo.clock.return_value += 60
     plugged.data.get.plug_state = True
-    duo_regelzyklus.run()
+    duo_control_cycle.run()
     first_cycle_id = other.data.get.connected_vehicle.info.id
     assert other.data.get.rfid is None
     assert other.data.config.ev == 0
     # Ein unmittelbarer Reset ist ebenfalls zulässig. Entscheidend ist der
     # garantierte Reset im Folgezyklus, nicht eine bestimmte alte Verzögerung.
-    assert first_cycle_id in (duo_regelzyklus.default_ev.num, duo_regelzyklus.tagged_ev.num)
+    assert first_cycle_id in (duo_control_cycle.default_ev.num, duo_control_cycle.tagged_ev.num)
 
-    duo_regelzyklus.run()
+    duo_control_cycle.run()
     next_cycle_id = other.data.get.connected_vehicle.info.id
     assert next_cycle_id == 0, "Fahrzeug bleibt auch im Folgezyklus am freien LP zugeordnet."
     assert plugged.data.get.connected_vehicle.info.id == 1
@@ -564,7 +564,7 @@ def test_produktionsschleife_reset_spaetestens_im_folgezyklus(
 @pytest.mark.parametrize("duo_mode, reverse_order", [(False, False), (True, False), (True, True)],
                          ids=["Einzel-LP", "Duo-LP1-LP2", "Duo-LP2-LP1"])
 @pytest.mark.parametrize("assigned", [False, True], ids=["Ohne-RFID-Zuordnung", "Mit-RFID-Zuordnung"])
-def test_neuer_scan_nach_ladestart_behaelt_bestehende_zuordnung(
+def test_new_scan_after_charging_starts_preserves_existing_assignment(
         duo, rfid_tag, duo_mode, reverse_order, assigned):
     """Nach Energiebezug darf ein neuer Scan laufende Zuordnungen nicht ersetzen."""
     chargepoints = duo.chargepoints if duo_mode else duo.chargepoints[:1]
@@ -607,7 +607,7 @@ def test_neuer_scan_nach_ladestart_behaelt_bestehende_zuordnung(
 
 @pytest.mark.parametrize("selected_index", [0, 1], ids=["Ziel-LP1", "Ziel-LP2"])
 @pytest.mark.parametrize("reverse_order", [False, True], ids=["LP1-LP2", "LP2-LP1"])
-def test_duo_rfid_freigabe_nur_am_zugeordneten_ladepunkt(
+def test_duo_rfid_authorizes_only_assigned_chargepoint(
         duo, rfid_tag, monkeypatch, caplog, selected_index, reverse_order):
     """Echte update()- und Freigabelogik, ohne Netzschutz als Abkürzung."""
     data.data.general_data.data.grid_protection_configured = False
@@ -654,7 +654,7 @@ def test_duo_rfid_freigabe_nur_am_zugeordneten_ladepunkt(
 
 @pytest.mark.parametrize("duo_mode, source", [
     (False, "get.rfid"), (False, "set.rfid"), (False, "vehicle_id"), (True, "vehicle_id")])
-def test_rfid_freigabe_bleibt_erhalten(duo, rfid_tag, duo_mode, source):
+def test_rfid_authorization_is_preserved(duo, rfid_tag, duo_mode, source):
     data.data.general_data.data.grid_protection_configured = False
     cp = duo.chargepoints[0]
     if not duo_mode:
@@ -673,7 +673,7 @@ def test_rfid_freigabe_bleibt_erhalten(duo, rfid_tag, duo_mode, source):
 
 @pytest.mark.parametrize("plug_times", [(0, 0), (1000, 1000), (None, None), (None, 1000), (1000, None)])
 @pytest.mark.parametrize("reverse_order", [False, True], ids=["LP1-LP2", "LP2-LP1"])
-def test_duo_rfid_gleichstand_fehlende_zeiten_warten(duo, rfid_tag, plug_times, reverse_order):
+def test_duo_rfid_waits_when_plug_times_are_equal_or_missing(duo, rfid_tag, plug_times, reverse_order):
     """Gleiche oder fehlende Zeiten: Auch ein weiterer Scan darf keinen LP freigeben."""
     data.data.general_data.data.grid_protection_configured = False
     order = list(reversed(duo.chargepoints)) if reverse_order else duo.chargepoints
@@ -694,7 +694,7 @@ def test_duo_rfid_gleichstand_fehlende_zeiten_warten(duo, rfid_tag, plug_times, 
 
 
 @pytest.mark.parametrize("source_index", [0, 1], ids=["Quittierung-LP1", "Quittierung-LP2"])
-def test_duo_rfid_quittierung_gemeinsamer_leser(duo, rfid_tag, source_index):
+def test_duo_rfid_acknowledges_shared_reader(duo, rfid_tag, source_index):
     for cp in duo.chargepoints:
         cp.data.get.rfid = rfid_tag
         cp.data.get.rfid_timestamp = 1000
@@ -715,7 +715,7 @@ def test_duo_rfid_quittierung_gemeinsamer_leser(duo, rfid_tag, source_index):
 @pytest.mark.parametrize("load_defaults", [(False, False), (True, True), (True, False), (False, True)])
 @pytest.mark.parametrize("source_index", [0, 1], ids=["Timeout-LP1", "Timeout-LP2"])
 @pytest.mark.parametrize("elapsed", [300, 301], ids=["Noch-gueltig", "Abgelaufen"])
-def test_timeout_reset_duo_beachtet_beide_fahrzeugprofile(
+def test_duo_timeout_reset_respects_both_vehicle_profiles(
         duo, rfid_tag, load_defaults, source_index, elapsed):
     """Beim gemeinsamen Timeout jedes Profil vor dem Löschen der Tags auswerten."""
     for index, cp in enumerate(duo.chargepoints):
@@ -750,7 +750,7 @@ def test_timeout_reset_duo_beachtet_beide_fahrzeugprofile(
 
 @pytest.mark.parametrize("source_index", [0, 1], ids=["Scan-LP1", "Scan-LP2"])
 @pytest.mark.parametrize("source_plugged", [False, True], ids=["Quelle-leer", "Quelle-eingesteckt"])
-def test_duo_energiepruefung_verwendet_ziel_statt_aufrufenden_ladepunkt(
+def test_duo_energy_check_uses_target_instead_of_calling_chargepoint(
         duo, rfid_tag, source_index, source_plugged):
     """Energiebezug am aufrufenden LP darf den Tag für den anderen nicht verwerfen."""
     cp = duo.chargepoints[source_index]
@@ -782,7 +782,7 @@ def test_duo_energiepruefung_verwendet_ziel_statt_aufrufenden_ladepunkt(
 @pytest.mark.parametrize("running_index", [0, 1])
 @pytest.mark.parametrize("reverse_order", [False, True])
 @pytest.mark.parametrize("meter", [0, 1000], ids=["Zaehler-null", "Zaehler-unveraendert"])
-def test_duo_ladender_lp_ohne_zaehlerfortschritt_scan_wartet_am_freien_partner(
+def test_duo_scan_waits_at_free_partner_when_other_charges_without_meter_progress(
         duo, rfid_tag, running_index, reverse_order, meter):
     running = duo.chargepoints[running_index]
     free = duo.chargepoints[1 - running_index]
@@ -831,7 +831,7 @@ def test_duo_ladender_lp_ohne_zaehlerfortschritt_scan_wartet_am_freien_partner(
 @pytest.mark.parametrize("duo_mode", [False, True], ids=["Einzel-LP", "Duo"])
 @pytest.mark.parametrize("charge_state", [False, True], ids=["Laedt-nicht", "Ladesignal-aktiv"])
 @pytest.mark.parametrize("energy_delivered", [False, True], ids=["Vor-Energiebezug", "Nach-Energiebezug"])
-def test_neuauswahl_nur_am_einzel_lp_duo_behaelt_erfolgreiche_zuordnung(
+def test_only_single_chargepoint_allows_reselection_while_duo_preserves_assignment(
         duo, rfid_tag, monkeypatch, caplog, duo_mode, charge_state, energy_delivered):
     """Nur Einzel-LP dürfen A vor Energiebezug ersetzen; Duo hält A bis zum Abstecken."""
     data.data.general_data.data.grid_protection_configured = False
@@ -892,7 +892,7 @@ def test_neuauswahl_nur_am_einzel_lp_duo_behaelt_erfolgreiche_zuordnung(
     ((10, 20), 0), ((10, 20), 1),
 ])
 @pytest.mark.parametrize("reverse_order", [False, True], ids=["LP1-LP2", "LP2-LP1"])
-def test_duo_beide_zugeordnet_neuer_scan_aendert_nichts(
+def test_duo_new_scan_does_not_change_existing_assignments(
         duo, rfid_tag, plug_times, running_index, reverse_order):
     """Beide zugeordnet oder ein LP lädt: Scan quittieren und beide informieren."""
     for index, cp in enumerate(duo.chargepoints):
@@ -925,7 +925,7 @@ def test_duo_beide_zugeordnet_neuer_scan_aendert_nichts(
 @pytest.mark.parametrize("running_index", [None, 0, 1], ids=["Beide-leer", "Belegt-LP1", "Belegt-LP2"])
 @pytest.mark.parametrize("reverse_order", [False, True], ids=["LP1-LP2", "LP2-LP1"])
 @pytest.mark.parametrize("event", ["timeout", "invalid-tag", "rfid-disabled"])
-def test_scan_verwerfen_und_meldungen_nur_an_verfuegbaren_lps(
+def test_scan_rejection_and_messages_affect_only_available_chargepoints(
         duo, running_index, reverse_order, event):
     running = duo.chargepoints[running_index] if running_index is not None else None
     available = [cp for cp in duo.chargepoints if cp is not running]
@@ -976,7 +976,7 @@ def test_scan_verwerfen_und_meldungen_nur_an_verfuegbaren_lps(
 
 @pytest.mark.parametrize("reverse_order", [False, True])
 @pytest.mark.parametrize("same_card", [False, True], ids=["Andere-Karte", "Gleiche-Freigabekarte"])
-def test_duo_zwei_wartende_autos_nacheinander_freigeben_ohne_energiebezug(
+def test_duo_authorizes_two_waiting_vehicles_sequentially_without_energy_consumption(
         duo, rfid_tag, reverse_order, same_card):
     """Erster Scan: letzter Stecker. Zweiter Scan: übriger LP, ohne vorherigen Ladestart."""
     older, latest = duo.chargepoints
@@ -1019,7 +1019,7 @@ def test_duo_zwei_wartende_autos_nacheinander_freigeben_ohne_energiebezug(
 @pytest.mark.parametrize("first_index", [0, 1])
 @pytest.mark.parametrize("reverse_order", [False, True])
 @pytest.mark.parametrize("first_plug_offset", [-10, 10], ids=["Ein-Auto-wartet", "Beide-spaeter-erkannt"])
-def test_duo_unklare_ansteckreihenfolge_wartet_bis_neuem_scan(
+def test_duo_ambiguous_plug_order_waits_for_new_scan(
         duo, rfid_tag, first_index, reverse_order, first_plug_offset):
     duo.reader.scan(rfid_tag)
     for cp in duo.chargepoints:
@@ -1053,7 +1053,7 @@ def test_duo_unklare_ansteckreihenfolge_wartet_bis_neuem_scan(
 @pytest.mark.parametrize(
     "plug_after", [299, 301, None], ids=["Vor-Frist", "Nach-Frist", "Zeit-fehlt"])
 @pytest.mark.parametrize("plugged_index", [0, 1])
-def test_duo_timeout_mit_eingestecktem_ziel(
+def test_duo_timeout_with_plugged_target(
         duo, rfid_tag, plug_after, plugged_index):
     duo.reader.scan(rfid_tag)
     for cp in duo.chargepoints:
@@ -1072,7 +1072,7 @@ def test_duo_timeout_mit_eingestecktem_ziel(
     assert all(point.data.get.rfid is None for point in duo.chargepoints)
 
 
-def test_duo_echter_tag_eingang_neuer_tag_behaelt_laufende_frist(duo, rfid_tag):
+def test_duo_new_tag_at_real_input_preserves_running_timeout(duo, rfid_tag):
     from helpermodules.subdata import SubData
 
     duo.reader.scan(rfid_tag)
@@ -1108,7 +1108,7 @@ def test_duo_echter_tag_eingang_neuer_tag_behaelt_laufende_frist(duo, rfid_tag):
 
 @pytest.mark.parametrize("source_index", [0, 1])
 @pytest.mark.parametrize("event", ["invalid", "timeout", "pending"])
-def test_duo_hintergrundkopie_veraendert_keinen_globalen_scan(duo, rfid_tag, source_index, event):
+def test_duo_background_copy_does_not_modify_global_scan(duo, rfid_tag, source_index, event):
     duo.reader.scan("UNBEKANNT" if event == "invalid" else rfid_tag)
     if event == "timeout":
         for cp in duo.chargepoints:
@@ -1128,7 +1128,7 @@ def test_duo_hintergrundkopie_veraendert_keinen_globalen_scan(duo, rfid_tag, sou
 
 @pytest.mark.parametrize("duo_mode", [False, True], ids=["Einzel-LP", "Duo"])
 @pytest.mark.parametrize("committed", [False, True], ids=["Vorlaeufig", "Zugeordnet"])
-def test_autolock_duo_nur_mit_zugeordnetem_tag(duo, rfid_tag, duo_mode, committed):
+def test_duo_autolock_uses_only_assigned_tag(duo, rfid_tag, duo_mode, committed):
     cp, partner = duo.chargepoints
     if not duo_mode:
         data.data.cp_data.pop(f"cp{partner.num}")
@@ -1148,7 +1148,7 @@ def test_autolock_duo_nur_mit_zugeordnetem_tag(duo, rfid_tag, duo_mode, committe
 @pytest.mark.parametrize("unplugged_index", [0, 1])
 @pytest.mark.parametrize("reverse_order", [False, True])
 @pytest.mark.parametrize("stale_charge_state", [False, True])
-def test_duo_scan_im_absteckzyklus_bleibt_erhalten_und_ocpp_behaelt_alten_tag(
+def test_duo_scan_during_unplug_cycle_is_preserved_and_ocpp_keeps_old_tag(
         duo, rfid_tag, unplugged_index, reverse_order, stale_charge_state, monkeypatch, caplog):
     unplugged = duo.chargepoints[unplugged_index]
     partner = duo.chargepoints[1 - unplugged_index]
@@ -1206,7 +1206,7 @@ def test_duo_scan_im_absteckzyklus_bleibt_erhalten_und_ocpp_behaelt_alten_tag(
 
 
 @pytest.mark.parametrize("unplugged_index", [0, 1])
-def test_duo_abstecken_loest_nur_eigene_zuordnung_und_erlaubt_neue_karte(
+def test_duo_unplugging_clears_only_own_assignment_and_allows_new_card(
         duo, rfid_tag, unplugged_index, monkeypatch):
     cp = duo.chargepoints[unplugged_index]
     partner = duo.chargepoints[1 - unplugged_index]
@@ -1246,7 +1246,7 @@ def test_duo_abstecken_loest_nur_eigene_zuordnung_und_erlaubt_neue_karte(
 @pytest.mark.parametrize("target_index", [0, 1])
 @pytest.mark.parametrize("reverse_order", [False, True])
 @pytest.mark.parametrize("scan_before_plug", [False, True])
-def test_duo_fahrzeug_tag_ohne_lp_berechtigung_belegt_keinen_platz_neuer_tag_moeglich(
+def test_duo_vehicle_tag_without_chargepoint_permission_leaves_slot_available_for_new_tag(
         duo, target_index, reverse_order, scan_before_plug):
     """Eine EV-Zuordnung allein darf einen gesperrten LP nicht dauerhaft belegen."""
     target = duo.chargepoints[target_index]
