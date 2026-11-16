@@ -14,10 +14,22 @@ from modules.devices.fronius.fronius_sunspec.config import FroniusSunspecBatSetu
 
 log = logging.getLogger(__name__)
 
+# Modbus TCP: Der Wechselrichter (und damit der Speicher) hat immer die Adresse 1. Nur der Smart Meter hat eine
+# konfigurierbare Adresse (siehe counter.py).
+UNIT = 1
+
 # StorCtl_Mod: Bit 0 aktiviert die Lade-, Bit 1 die Entladesteuerung. Ist ein Bit nicht gesetzt,
 # regelt der Wechselrichter die jeweilige Richtung selbstständig.
 STOR_CTL_MOD_CHARGE = 0b01
 STOR_CTL_MOD_DISCHARGE = 0b10
+
+
+def _mppt_channel_address(mppt_index: int, module_count: int) -> int:
+    if mppt_index < 1 or mppt_index > module_count:
+        raise ValueError(
+            f"Konfigurierter MPPT-Kanal {mppt_index} existiert nicht -- Gerät meldet "
+            f"{module_count} Kanäle. Bitte Konfiguration am Gerät prüfen.")
+    return 40285 + (mppt_index-1) * 20  # module/1/DCW, +20 je weiterem Kanal
 
 
 class KwargsDict(TypedDict):
@@ -37,40 +49,34 @@ class FroniusSunspecBat(AbstractBat):
         self.peak_filter = PeakFilter(ComponentType.BAT, self.component_config.id, self.fault_state)
         self.last_mode = 'Undefined'
 
-    def _mppt_channel_address(self, mppt_index: int, unit: int) -> int:
-        module_count = self.__tcp_client.read_holding_registers(40272, ModbusDataType.UINT_16, unit=unit)  # N
-        if mppt_index < 1 or mppt_index > module_count:
-            raise ValueError(
-                f"Konfigurierter MPPT-Kanal {mppt_index} existiert nicht -- Gerät meldet "
-                f"{module_count} Kanäle. Bitte Konfiguration am Gerät prüfen.")
-        return 40285 + (mppt_index-1) * 20  # module/1/DCW, +20 je weiterem Kanal
+        # Lade- und Entladeleistung liegen auf getrennten MPPT-Kanälen, nicht auf einem mit Vorzeichen.
+        # Die Kanäle ändern sich nicht zur Laufzeit, daher nur einmal beim Start prüfen. Schlägt das fehl,
+        # wird die Komponente erneut initialisiert.
+        config = self.component_config.configuration
+        module_count = self.__tcp_client.read_holding_registers(40272, ModbusDataType.UINT_16, unit=UNIT)  # N
+        self.charge_address = _mppt_channel_address(config.mppt_index_charge, module_count)
+        self.discharge_address = _mppt_channel_address(config.mppt_index_discharge, module_count)
 
     def update(self) -> None:
-        unit = 1
 
-        soc_raw = self.__tcp_client.read_holding_registers(40362, ModbusDataType.UINT_16, unit=unit)  # ChaState
+        soc_raw = self.__tcp_client.read_holding_registers(40362, ModbusDataType.UINT_16, unit=UNIT)  # ChaState
         soc_scale = self.__tcp_client.read_holding_registers(
-            40376, ModbusDataType.INT_16, unit=unit)  # ChaState_SF
+            40376, ModbusDataType.INT_16, unit=UNIT)  # ChaState_SF
         soc = soc_raw * (10 ** soc_scale)
 
-        # Lade- und Entladeleistung liegen auf getrennten MPPT-Kanälen, nicht auf einem mit Vorzeichen.
-        config = self.component_config.configuration
-        charge_address = self._mppt_channel_address(config.mppt_index_charge, unit)
-        discharge_address = self._mppt_channel_address(config.mppt_index_discharge, unit)
-
-        power_scale = self.__tcp_client.read_holding_registers(40268, ModbusDataType.INT_16, unit=unit)  # DCW_SF
-        energy_scale = self.__tcp_client.read_holding_registers(40269, ModbusDataType.INT_16, unit=unit)  # DCWH_SF
+        power_scale = self.__tcp_client.read_holding_registers(40268, ModbusDataType.INT_16, unit=UNIT)  # DCW_SF
+        energy_scale = self.__tcp_client.read_holding_registers(40269, ModbusDataType.INT_16, unit=UNIT)  # DCWH_SF
 
         charge_power_raw = self.__tcp_client.read_holding_registers(
-            charge_address, ModbusDataType.UINT_16, unit=unit)  # DCW
+            self.charge_address, ModbusDataType.UINT_16, unit=UNIT)  # DCW
         discharge_power_raw = self.__tcp_client.read_holding_registers(
-            discharge_address, ModbusDataType.UINT_16, unit=unit)  # DCW
+            self.discharge_address, ModbusDataType.UINT_16, unit=UNIT)  # DCW
         power = (charge_power_raw - discharge_power_raw) * (10 ** power_scale)
 
         imported_raw = self.__tcp_client.read_holding_registers(
-            charge_address+1, ModbusDataType.UINT_32, unit=unit)  # DCWH
+            self.charge_address+1, ModbusDataType.UINT_32, unit=UNIT)  # DCWH
         exported_raw = self.__tcp_client.read_holding_registers(
-            discharge_address+1, ModbusDataType.UINT_32, unit=unit)  # DCWH
+            self.discharge_address+1, ModbusDataType.UINT_32, unit=UNIT)  # DCWH
         imported = imported_raw * (10 ** energy_scale)
         exported = exported_raw * (10 ** energy_scale)
 
@@ -83,52 +89,53 @@ class FroniusSunspecBat(AbstractBat):
         )
         self.store.set(bat_state)
 
-    def _rate_percent(self, power: float, unit: int) -> int:
-        max_power_raw = self.__tcp_client.read_holding_registers(40356, ModbusDataType.UINT_16, unit=unit)  # WChaMax
+    def _rate_register_value(self, power: float) -> int:
+        """Wert für die Register InWRte/OutWRte: Anteil der maximalen Ladeleistung (WChaMax) in Prozent,
+        skaliert mit InOutWRte_SF."""
+        max_power_raw = self.__tcp_client.read_holding_registers(40356, ModbusDataType.UINT_16, unit=UNIT)  # WChaMax
         max_power_scale = self.__tcp_client.read_holding_registers(
-            40372, ModbusDataType.INT_16, unit=unit)  # WChaMax_SF
-        max_power = max_power_raw * (10 ** max_power_scale)
+            40372, ModbusDataType.INT_16, unit=UNIT)  # WChaMax_SF
         rate_scale = self.__tcp_client.read_holding_registers(
-            40379, ModbusDataType.INT_16, unit=unit)  # InOutWRte_SF
-        percent = 0 if max_power == 0 else min(abs(power) / max_power * 100, 100)
-        return int(round(percent / (10 ** rate_scale)))
+            40379, ModbusDataType.INT_16, unit=UNIT)  # InOutWRte_SF
+        max_power = max_power_raw * (10 ** max_power_scale)
+        percent = min(abs(power) / max_power * 100, 100) if max_power else 0
+        return round(percent / (10 ** rate_scale))
 
     def set_power_limit(self, setpoint: SetPoint) -> None:
         power_limit = setpoint.power_limit
-        unit = 1
 
         if power_limit is None:
             log.debug("Keine Batteriesteuerung, Selbstregelung durch Wechselrichter")
             if self.last_mode is not None:
-                self.__tcp_client.write_register(40359, 0, data_type=ModbusDataType.UINT_16, unit=unit)  # StorCtl_Mod
-                self.__tcp_client.write_register(40366, 100, data_type=ModbusDataType.INT_16, unit=unit)  # OutWRte
-                self.__tcp_client.write_register(40367, 100, data_type=ModbusDataType.INT_16, unit=unit)  # InWRte
+                self.__tcp_client.write_register(40359, 0, data_type=ModbusDataType.UINT_16, unit=UNIT)  # StorCtl_Mod
+                self.__tcp_client.write_register(40366, 100, data_type=ModbusDataType.INT_16, unit=UNIT)  # OutWRte
+                self.__tcp_client.write_register(40367, 100, data_type=ModbusDataType.INT_16, unit=UNIT)  # InWRte
                 self.last_mode = None
         elif power_limit == 0:
             log.debug("Aktive Batteriesteuerung. Batterie wird auf Stop gesetzt und nicht entladen")
             if self.last_mode != 'stop':
                 self.__tcp_client.write_register(
-                    40359, STOR_CTL_MOD_DISCHARGE, data_type=ModbusDataType.UINT_16, unit=unit)  # StorCtl_Mod
-                self.__tcp_client.write_register(40366, 0, data_type=ModbusDataType.INT_16, unit=unit)  # OutWRte
+                    40359, STOR_CTL_MOD_DISCHARGE, data_type=ModbusDataType.UINT_16, unit=UNIT)  # StorCtl_Mod
+                self.__tcp_client.write_register(40366, 0, data_type=ModbusDataType.INT_16, unit=UNIT)  # OutWRte
                 self.last_mode = 'stop'
         elif power_limit < 0:
             if self.last_mode != 'discharge':
                 self.__tcp_client.write_register(
-                    40359, STOR_CTL_MOD_DISCHARGE, data_type=ModbusDataType.UINT_16, unit=unit)  # StorCtl_Mod
+                    40359, STOR_CTL_MOD_DISCHARGE, data_type=ModbusDataType.UINT_16, unit=UNIT)  # StorCtl_Mod
                 self.last_mode = 'discharge'
             log.debug(f"Aktive Batteriesteuerung. Batterie wird mit {abs(power_limit)} W "
                       "entladen für den Hausverbrauch")
             self.__tcp_client.write_register(
-                40366, self._rate_percent(power_limit, unit), data_type=ModbusDataType.INT_16, unit=unit)  # OutWRte
+                40366, self._rate_register_value(power_limit), data_type=ModbusDataType.INT_16, unit=UNIT)  # OutWRte
         elif power_limit > 0:
             if self.last_mode != 'charge':
-                self.__tcp_client.write_register(40371, 1, data_type=ModbusDataType.UINT_16, unit=unit)  # ChaGriSet
+                self.__tcp_client.write_register(40371, 1, data_type=ModbusDataType.UINT_16, unit=UNIT)  # ChaGriSet
                 self.__tcp_client.write_register(
-                    40359, STOR_CTL_MOD_CHARGE, data_type=ModbusDataType.UINT_16, unit=unit)  # StorCtl_Mod
+                    40359, STOR_CTL_MOD_CHARGE, data_type=ModbusDataType.UINT_16, unit=UNIT)  # StorCtl_Mod
                 self.last_mode = 'charge'
             log.debug(f"Aktive Batteriesteuerung. Batterie wird mit {power_limit} W geladen")
             self.__tcp_client.write_register(
-                40367, self._rate_percent(power_limit, unit), data_type=ModbusDataType.INT_16, unit=unit)  # InWRte
+                40367, self._rate_register_value(power_limit), data_type=ModbusDataType.INT_16, unit=UNIT)  # InWRte
 
     def power_limit_controllable(self) -> bool:
         return True
