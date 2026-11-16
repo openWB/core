@@ -11,7 +11,7 @@ from urllib.parse import urlencode, urljoin, urlparse
 
 from requests import HTTPError, RequestException, Response, Session
 
-BASE_URL = "https://eu-data-act.drivesomethinggreater.com"
+BASE_URL = "eu-data-act.vwgroup-datahub.com"
 OIDC_AUTHORIZE_URL = "https://identity.vwgroup.io/oidc/v1/authorize"
 CALLBACK_LOGIN_PATH = "/services/callbacklogin"
 METADATA_PATH = "/proxy_api/euda-apim/datarequest/vehicles/{vin}/metadata/partial"
