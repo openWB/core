@@ -27,6 +27,18 @@ declare resultStatus
 	if sudo tar --list --file="$SOURCE_FILE" | grep -q '\.\./' ; then
 		resultMessage="Sicherheitsprüfung fehlgeschlagen: Das Archiv enthält ungültige relative Pfade ('../')!"
 		resultStatus=1
+	# Check for symbolic links (security layer 2)
+	elif sudo tar --verbose --list --file="$SOURCE_FILE" | grep -q '^l' ; then
+		resultMessage="Sicherheitsprüfung fehlgeschlagen: Das Archiv enthält Symbolische Links!"
+		resultStatus=1
+	# Check for hardlinks (security layer 2)
+	elif sudo tar --verbose --list --file="$SOURCE_FILE" | grep -q -E '^-.*[0-9] ' | grep -q -v ' 0 ' ; then
+		# Hardlinks haben link count > 0 in der Ausgabe
+		# Prüfe auf link count > 1 in Spalte 6 (nach Berechtigungen und vor Datum)
+		if sudo tar --verbose --list --file="$SOURCE_FILE" | awk '{print $6}' | grep -q -E '^[2-9]$|^[0-9]{2,}$' ; then
+			resultMessage="Sicherheitsprüfung fehlgeschlagen: Das Archiv enthält Hardlinks!"
+			resultStatus=1
+		fi
 	# extracting as root preserves file owner/group and permissions, but directory owner/group is root!
 	elif ! sudo tar --verbose --extract --file="$SOURCE_FILE" --directory="$WORKING_DIR"; then
 		resultMessage="Beim Entpacken des Archivs ist ein Fehler aufgetreten!"
