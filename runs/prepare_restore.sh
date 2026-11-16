@@ -11,6 +11,23 @@ source "$OPENWB_BASE_DIR/runs/update_version_helpers.sh" || exit 1
 declare resultMessage
 declare resultStatus
 
+# Validate SHA256-Checksum (TOCTOU-Schutz)
+# Checks if the archive has been replaced between upload and extraction
+validate_archive_checksum()
+{
+	local archive_file="$1"
+	local checksum_file="${archive_file}.sha256"
+	
+	if [[ ! -f "$checksum_file" ]]; then
+		return 0
+	fi
+	
+	if ! (cd "$(dirname "$archive_file")" && sha256sum --quiet --check "$(basename "$checksum_file")"); then
+		return 1
+	fi
+	return 0
+}
+
 {
 	echo "$(date +"%Y-%m-%d %H:%M:%S") Preparation of restore started..."
 	echo "****************************************"
@@ -23,16 +40,21 @@ declare resultStatus
 	mkdir -p "$WORKING_DIR"
 	echo "****************************************"
 	echo "Step 2: extract archive to working directory"
+	# Validate archive integrity with SHA256 checksum (TOCTOU protection)
+	if ! validate_archive_checksum "$SOURCE_FILE"; then
+		resultMessage="Sicherheitsprüfung fehlgeschlagen: Archive wurde zwischenzeitlich verändert oder ausgetauscht!"
+		resultStatus=1
+	fi
 	# Check for path traversal attempts (security layer 2)
-	if sudo tar --list --file="$SOURCE_FILE" | grep -q '\.\./' ; then
+	if [[ $resultStatus -eq 0 ]] && sudo tar --list --file="$SOURCE_FILE" | grep -q '\.\./' ; then
 		resultMessage="Sicherheitsprüfung fehlgeschlagen: Das Archiv enthält ungültige relative Pfade ('../')!"
 		resultStatus=1
 	# Check for symbolic links (security layer 2)
-	elif sudo tar --verbose --list --file="$SOURCE_FILE" | grep -q '^l' ; then
+	elif [[ $resultStatus -eq 0 ]] && sudo tar --verbose --list --file="$SOURCE_FILE" | grep -q '^l' ; then
 		resultMessage="Sicherheitsprüfung fehlgeschlagen: Das Archiv enthält Symbolische Links!"
 		resultStatus=1
 	# Check for hardlinks (security layer 2)
-	elif sudo tar --verbose --list --file="$SOURCE_FILE" | grep -q -E '^-.*[0-9] ' | grep -q -v ' 0 ' ; then
+	elif [[ $resultStatus -eq 0 ]] && sudo tar --verbose --list --file="$SOURCE_FILE" | grep -q -E '^-.*[0-9] ' | grep -q -v ' 0 ' ; then
 		# Hardlinks haben link count > 0 in der Ausgabe
 		# Prüfe auf link count > 1 in Spalte 6 (nach Berechtigungen und vor Datum)
 		if sudo tar --verbose --list --file="$SOURCE_FILE" | awk '{print $6}' | grep -q -E '^[2-9]$|^[0-9]{2,}$' ; then
@@ -40,7 +62,7 @@ declare resultStatus
 			resultStatus=1
 		fi
 	# extracting as root preserves file owner/group and permissions, but directory owner/group is root!
-	elif ! sudo tar --verbose --extract --file="$SOURCE_FILE" --directory="$WORKING_DIR"; then
+	elif [[ $resultStatus -eq 0 ]] && validate_archive_checksum "$SOURCE_FILE" && ! sudo tar --verbose --extract --file="$SOURCE_FILE" --directory="$WORKING_DIR"; then
 		resultMessage="Beim Entpacken des Archivs ist ein Fehler aufgetreten!"
 		resultStatus=1
 	else
