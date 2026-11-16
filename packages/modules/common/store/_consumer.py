@@ -35,7 +35,12 @@ class ConsumerValueStoreBroker(ValueStore[ConsumerState]):
         if self.state.imported is not None and self.state.exported is not None:
             pub_to_broker(f"openWB/set/consumer/{self.num}/get/imported", self.state.imported, 2)
             pub_to_broker(f"openWB/set/consumer/{self.num}/get/exported", self.state.exported, 2)
-        pub_to_broker(f"openWB/set/consumer/{self.num}/get/temperatures", self.state.temperatures)
+        if self.state.temperatures is not None:
+            pub_to_broker(f"openWB/set/consumer/{self.num}/get/temperatures", self.state.temperatures)
+        if self.state.rfid is not None:
+            pub_to_broker(f"openWB/set/consumer/{self.num}/get/rfid", self.state.rfid)
+        if self.state.rfid_timestamp is not None:
+            pub_to_broker(f"openWB/set/consumer/{self.num}/get/rfid_timestamp", self.state.rfid_timestamp)
 
 
 class PurgeConsumerState(ValueStore[ConsumerState]):

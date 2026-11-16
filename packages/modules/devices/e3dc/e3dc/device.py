@@ -26,7 +26,8 @@ def create_device(device_config: E3dc) -> ConfigurableDevice:
         return E3dcBat(component_config=component_config,
                        device_id=device_config.id,
                        modbus_id=device_config.configuration.modbus_id,
-                       client=client)
+                       client=client,
+                       device_config=device_config.configuration)
 
     def create_counter_component(component_config: E3dcCounterSetup) -> E3dcCounter:
         return E3dcCounter(component_config=component_config,

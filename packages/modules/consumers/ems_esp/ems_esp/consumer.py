@@ -2,6 +2,8 @@
 import logging
 from typing import Optional
 
+import requests
+
 from modules.common import req
 from modules.common.abstract_device import DeviceDescriptor
 from modules.common.component_state import ConsumerState
@@ -10,23 +12,46 @@ from modules.consumers.ems_esp.ems_esp.config import EmsEsp
 
 log = logging.getLogger(__name__)
 
+# EMS-ESP führt eine reine Wärmepumpe nicht zwingend unter "heatpump" (ursprüngliche Annahme
+# dieses Moduls) - zB Bosch Compress 6800i liegt unter "boiler", eigentlich für Gasthermen o.ä.
+# gedacht (Issue #4282).
+DEVICE_NAMES = ("heatpump", "boiler")
+
 
 def create_consumer(config: EmsEsp):
     session: Optional[req.CustomSession] = None
-    base_url: str = ""
+    base_url: Optional[str] = None
     headers: dict = {}
 
     def initializer():
-        nonlocal session, base_url, headers
+        nonlocal session, headers
         session = req.get_http_session()
-        # "heatpump" ist der EMS-ESP-Gerätename für eine reine Wärmepumpe; Hybridanlagen mit
-        # Gas-/Ölkessel laufen zB unter "boiler" (https://emsesp.org/All-Entities).
-        base_url = f"http://{config.configuration.ip_address}/api/heatpump"
         headers = {"Content-Type": "application/json",
                    "Authorization": f"Bearer {config.configuration.token}"}
 
+    def _detect_base_url() -> str:
+        for device_name in DEVICE_NAMES:
+            url = f"http://{config.configuration.ip_address}/api/{device_name}"
+            try:
+                values = session.get(url, headers=headers).json()
+            except requests.exceptions.HTTPError as e:
+                if e.response is not None and e.response.status_code == 404:
+                    continue
+                raise
+            if "hpcurrpower" in values:
+                return url
+        raise ValueError(
+            f"Keine Wärmepumpen-Entity 'hpcurrpower' unter {DEVICE_NAMES} auf "
+            f"{config.configuration.ip_address} gefunden.")
+
+    def _get_base_url() -> str:
+        nonlocal base_url
+        if base_url is None:
+            base_url = _detect_base_url()
+        return base_url
+
     def _write_entity(entity: str, value) -> None:
-        session.post(f"{base_url}/{entity}", json={"value": value}, headers=headers)
+        session.post(f"{_get_base_url()}/{entity}", json={"value": value}, headers=headers)
 
     def switch_on() -> None:
         _write_entity("hpin4opt", "1xxxxxxxxxxx")
@@ -36,12 +61,13 @@ def create_consumer(config: EmsEsp):
         _write_entity("hpin1opt", "0xxxxxxxxxxxxxx")
 
     def update() -> ConsumerState:
+        url = _get_base_url()
         # fehlender Schlüssel (zB falsches Modell) kommt als 200 OK zurück, nicht als HTTP-Fehler -
         # ohne diese Prüfung würde das unbemerkt als 0W durchgehen.
-        values = session.get(base_url, headers=headers).json()
+        values = session.get(url, headers=headers).json()
         if "hpcurrpower" not in values:
             raise ValueError(
-                f"Entity 'hpcurrpower' nicht in der Antwort von {base_url} enthalten - "
+                f"Entity 'hpcurrpower' nicht in der Antwort von {url} enthalten - "
                 f"vorhandene Werte: {list(values.keys())}")
         power = float(values["hpcurrpower"])
         return ConsumerState(power=power)

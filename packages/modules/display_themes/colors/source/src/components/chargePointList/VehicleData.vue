@@ -48,13 +48,22 @@
 				heading="Ladestand:"
 				class="grid-col-4 grid-left"
 			>
-				<BatterySymbol :soc="soc" class="me-2" />
+				<BatterySymbol :soc="soc ?? 0" class="me-2" />
 				<DisplayButton v-if="chargepoint.isSocManual" @click="startSocEditor">
 					<i
 						class="fa-solid fa-sm fas fa-edit py-0 px-3 mt-3"
 						:style="{ color: 'var(--color-fg)' }"
 					/>
 				</DisplayButton>
+				<DisplayButton v-else >
+					<i
+						class="fa-solid fa-sm fas py-0 px-3 mt-3"
+						:class="chargepoint.waitingForSoc ? 'fa-spinner fa-spin' : 'fa-sync'"
+					@click="loadSoc"
+						:style="{ color: 'var(--color-fg)' }"
+					/>
+				</DisplayButton>
+				
 			</InfoItem>
 			<InfoItem
 				v-if="chargepoint.isSocConfigured"
@@ -154,15 +163,15 @@ const cp = ref(props.chargepoint)
 const editSoc = ref(false)
 
 function setSoc() {
-	updateServer('setSoc', manualSoc.value, props.chargepoint.connectedVehicle)
+	updateServer('setSoc', manualSoc.value ?? 0, props.chargepoint.connectedVehicle)
 	editSoc.value = false
 }
 const manualSoc = computed({
 	get() {
-		return props.chargepoint.soc
+		return props.chargepoint.soc ?? 0
 	},
-	set(s: number) {
-		chargePoints[props.chargepoint.id].soc = s
+	set(s: number | undefined) {
+		chargePoints[props.chargepoint.id].soc = s ?? 0
 	},
 })
 const soc = computed(() => {
@@ -230,6 +239,10 @@ const currentPriceStyle = computed(() => {
 		? { color: 'var(--color-charging)' }
 		: { color: 'var(--color-menu)' }
 })
+function loadSoc() {
+	updateServer('socUpdate', 1, props.chargepoint.connectedVehicle)
+	chargePoints[props.chargepoint.id].waitingForSoc = true
+}
 </script>
 <style scoped>
 .titleline {
@@ -264,6 +277,9 @@ const currentPriceStyle = computed(() => {
 }
 .fa-edit {
 	font-size: 8pt;
+}
+.fa-sync {
+	font-size: 10pt;
 }
 .socEditor {
 	border: 1px solid var(--color-menu);

@@ -324,8 +324,8 @@ class Ev:
         delay = surplus_config.vehicle.phase_switch_delay * 60
         if phases_in_use == 1:
             direction_str = f"Umschaltung von 1 auf {max_phases}"
-            required_reserved_power = (control_parameter.min_current * max_phases * 230 -
-                                       self.ev_template.data.max_current_single_phase * 230)
+            required_reserved_power = max(0, control_parameter.min_current * max_phases * 230 -
+                                          self.ev_template.data.max_current_single_phase * 230)
 
             new_phase = max_phases
             new_current = control_parameter.min_current
@@ -339,9 +339,9 @@ class Ev:
             waiting_time = surplus_config.vehicle.switch_off_delay
         all_surplus = data.data.counter_all_data.get_evu_counter().get_usable_surplus()
         if control_parameter.state == ChargepointState.PHASE_SWITCH_DELAY:
-            # eigene reservierte Leistung addieren, wenn die Verzögerung für die Umschaltung läuft,
-            # da diese Leistung bereits für die Umschaltung reserviert ist.
-            surplus = all_surplus + max(0, required_reserved_power)
+            # mit der tatsächlich reservierten Leistung rechnen, nicht mit einer frisch berechneten - sonst
+            # können Reservieren und Zurücknehmen auseinanderlaufen, wenn sich zB max_phases währenddessen ändert
+            surplus = all_surplus + control_parameter.reserved_power
         else:
             surplus = all_surplus
 
@@ -361,8 +361,9 @@ class Ev:
                 if condition:
                     # Wenn nach der Umschaltung weniger Leistung benötigt wird, soll während der Verzögerung keine
                     # neuen eingeschaltet werden.
+                    control_parameter.reserved_power = required_reserved_power
                     data.data.counter_all_data.get_evu_counter(
-                    ).data.set.reserved_surplus += max(0, required_reserved_power)
+                    ).data.set.reserved_surplus += control_parameter.reserved_power
                     message = self.PHASE_SWITCH_DELAY_TEXT.format(
                         direction_str,
                         self._remaining_phase_switch_time(control_parameter,
@@ -387,14 +388,16 @@ class Ev:
                         message = self.PHASE_SWITCH_DELAY_TEXT.format(direction_str, remaining_time)
                     else:
                         data.data.counter_all_data.get_evu_counter(
-                        ).data.set.reserved_surplus -= max(0, required_reserved_power)
+                        ).data.set.reserved_surplus -= control_parameter.reserved_power
+                        control_parameter.reserved_power = 0
                         phases_to_use = new_phase
                         current = new_current
                         log.debug("Phasenumschaltung kann nun durchgeführt werden.")
                         control_parameter.state = ChargepointState.PHASE_SWITCH_AWAITED
                 else:
                     data.data.counter_all_data.get_evu_counter(
-                    ).data.set.reserved_surplus -= max(0, required_reserved_power)
+                    ).data.set.reserved_surplus -= control_parameter.reserved_power
+                    control_parameter.reserved_power = 0
                     message = f"Verzögerung für die {direction_str} Phasen abgebrochen{condition_msg}"
                     control_parameter.state = ChargepointState.CHARGING_ALLOWED
                     control_parameter.timestamp_phase_switch_buffer_start = None
@@ -432,7 +435,7 @@ class Ev:
                 control_parameter.timestamp_phase_switch_buffer_start = None
                 return True, None
 
-    def reset_phase_switch_delay(self, control_parameter: ControlParameter, max_phases: int):
+    def reset_phase_switch_delay(self, control_parameter: ControlParameter):
         """ Zurücksetzen der Zeitstempel und reservierten Leistung.
 
         Die Phasenumschaltung kann nicht abgebrochen werden!
@@ -444,8 +447,8 @@ class Ev:
                 # Wenn der Timer läuft, ist den Control-Parametern die alte Phasenzahl hinterlegt.
                 # bei der Umschaltung 3p1p wird keine Leistung reserviert
                 evu_counter = data.data.counter_all_data.get_evu_counter()
-                reserved = max(0, control_parameter.min_current * max_phases * 230 -
-                               self.ev_template.data.max_current_single_phase * 230)
+                reserved = control_parameter.reserved_power
+                control_parameter.reserved_power = 0
                 evu_counter.data.set.reserved_surplus -= reserved
                 log.debug(f"Zurücksetzen von {reserved}W reservierter Leistung für die Phasenumschaltung. "
                           f"reservierte Leistung: {evu_counter.data.set.reserved_surplus} W")

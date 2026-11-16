@@ -141,7 +141,10 @@ export function fgColor(colorname: string) {
 	const root = document.documentElement
 	const style = getComputedStyle(root)
 	colorname = colorname.slice(4, -1) // remove 'var(...)'
-	const bgColor = style.getPropertyValue(colorname).trim()
+	let bgColor = style.getPropertyValue(colorname).trim()
+	if (bgColor.length === 4) {
+		bgColor = `#${bgColor[1]}${bgColor[1]}${bgColor[2]}${bgColor[2]}${bgColor[3]}${bgColor[3]}` // convert #RGB to #RRGGBB
+	}
 	const r = parseInt(bgColor.slice(1, 3), 16)
 	const g = parseInt(bgColor.slice(3, 5), 16)
 	const b = parseInt(bgColor.slice(5, 7), 16)

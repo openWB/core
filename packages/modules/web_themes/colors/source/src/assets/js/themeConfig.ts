@@ -11,6 +11,7 @@ import { addShDevice, shDevices } from '@/components/smartHome/model'
 import { registry } from './model'
 import { updateServer } from './sendMessages'
 import { counters } from '@/components/counterList/model'
+import { vehicles } from '@/components/chargePointList/model'
 export class Config {
 	private _showRelativeArcs = false
 	showTodayGraph = true
@@ -48,6 +49,7 @@ export class Config {
 	zoomGraph = false
 	zoomedWidget = 1
 	countersToShow: number[] = []
+	vehiclesWithSocToShow: number[] = []
 	priorities: Map<number, number> = new Map()
 	constructor() {}
 	get showRelativeArcs() {
@@ -405,6 +407,7 @@ export const infotext: { [key: string]: string } = {
 interface Preferences {
 	hideSH?: string[]
 	showCtr?: string[]
+	showSoc?: string[]
 	showLG?: boolean
 	displayM?: string
 	stackO?: number
@@ -441,6 +444,9 @@ function writeCookie() {
 	prefs.showCtr = [...counters.values()]
 		.filter((ctr) => ctr.showInGraph)
 		.map((ctr) => ctr.id.toString())
+	prefs.showSoc = Object.values(vehicles)
+		.filter((v) => v.showSoc)
+		.map((v) => v.id.toString())
 	prefs.showLG = globalConfig.graphPreference == 'live'
 	prefs.stackO = globalConfig.usageStackOrder
 	prefs.maxPow = globalConfig.maxPower
@@ -478,6 +484,9 @@ function readCookie() {
 		}
 		if (prefs.showCtr !== undefined) {
 			globalConfig.countersToShow = prefs.showCtr.map((i) => +i)
+		}
+		if (prefs.showSoc != undefined) {
+			globalConfig.vehiclesWithSocToShow = prefs.showSoc.map((i) => +i)
 		}
 		if (prefs.showLG !== undefined) {
 			globalConfig.setGraphPreference(prefs.showLG ? 'live' : 'today')

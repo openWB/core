@@ -436,6 +436,59 @@ def test_upgrade_datastore_155_removes_only_obsolete_template_prio(mock_pub: Moc
     mock_pub.pub.assert_not_called()
 
 
+def test_upgrade_datastore_157_moves_fixed_hours_weekdays_into_active_times(mock_pub: Mock):
+    uc = UpdateConfig()
+    uc.all_received_topics = {
+        # von 2.2.x über upgrade_datastore_133 migriert: Wochentage neben active_times
+        "openWB/optional/ep/flexible_tariff/provider": (
+            b'{"type": "fixed_hours", "configuration": {"default_price": 0.0003, "tariffs": [{"name": "NT", '
+            b'"price": 0.0002, "active_times": {"dates": [["01-01", "31-12"]], "times": [["00:00", "07:00"]]}, '
+            b'"weekdays": [0, 1, 2, 3, 4, 5, 6]}]}}'),
+        # nach der Migration in der Oberfläche gespeichert: active_times["weekdays"] bleibt
+        "openWB/optional/ep/grid_fee/provider": {
+            "type": "fixed_hours",
+            "configuration": {"tariffs": [{"name": "Modul 3", "price": 0.0001,
+                                           "active_times": {"dates": [["01-01", "31-12"]],
+                                                            "times": [["17:00", "20:00"]],
+                                                            "weekdays": [0, 1, 2, 3, 4]},
+                                           "weekdays": [0, 1, 2, 3, 4, 5, 6]}]}},
+        "openWB/system/datastore_version": list(range(157)),
+    }
+
+    uc.upgrade_datastore_157()
+
+    flexible_tariff = uc.all_received_topics["openWB/optional/ep/flexible_tariff/provider"]["configuration"][
+        "tariffs"][0]
+    assert flexible_tariff == {"name": "NT", "price": 0.0002,
+                               "active_times": {"dates": [["01-01", "31-12"]], "times": [["00:00", "07:00"]],
+                                                "weekdays": [0, 1, 2, 3, 4, 5, 6]}}
+    grid_fee_tariff = uc.all_received_topics["openWB/optional/ep/grid_fee/provider"]["configuration"]["tariffs"][0]
+    assert "weekdays" not in grid_fee_tariff
+    assert grid_fee_tariff["active_times"]["weekdays"] == [0, 1, 2, 3, 4]
+    assert uc.all_received_topics["openWB/system/datastore_version"] == list(range(158))
+    assert mock_pub.pub.call_count == 3
+
+    mock_pub.reset_mock()
+    uc.upgrade_datastore_157()
+    mock_pub.pub.assert_not_called()
+
+
+def test_upgrade_datastore_157_keeps_other_providers(mock_pub: Mock):
+    uc = UpdateConfig()
+    tibber = {"type": "tibber", "configuration": {"token": "x", "home_id": "y"}}
+    uc.all_received_topics = {
+        "openWB/optional/ep/flexible_tariff/provider": tibber,
+        "openWB/optional/ep/grid_fee/provider": {"type": None, "configuration": {}},
+        "openWB/system/datastore_version": list(range(157)),
+    }
+
+    uc.upgrade_datastore_157()
+
+    assert uc.all_received_topics["openWB/optional/ep/flexible_tariff/provider"] == tibber
+    assert uc.all_received_topics["openWB/system/datastore_version"] == list(range(158))
+    assert mock_pub.pub.call_count == 1  # nur Datastore-Version
+
+
 def test_upgrade_datastore_149_removes_not_controlled_consumers(mock_pub: Mock):
     uc = UpdateConfig()
     uc.all_received_topics = {
@@ -619,18 +672,51 @@ def test_upgrade_datastore_153_migrates_legacy_modes(
     assert uc.all_received_topics["openWB/system/datastore_version"] == [152, 153]
 
 
-@pytest.mark.parametrize("file_operation_version, finished, expected_calls", [
-    ([], False, 1),  # erster Start
-    ([0], True, 0),   # bereits fertig -> kein Neustart
-    ([0], False, 1),  # angefangen, aber nicht fertig -> Neustart
+@pytest.mark.parametrize("provider_type, configuration, expected_configuration, updated", [
+    ("energycharts", {"surcharge": 0.0001}, {"surcharge": 0.0001, "price_cap": None}, True),
+    ("energycharts", {"price_cap": 0.0002}, {"price_cap": 0.0002}, False),
+    ("energycharts", {"price_cap": None}, {"price_cap": None}, False),
+    ("tibber", {}, {}, False),
+    (None, {}, {}, False),
 ])
-def test_file_operation_0_start_behavior(file_operation_version, finished, expected_calls):
-    update_config = UpdateConfig()
-    update_config.all_received_topics = {
-        "openWB/system/file_operation_version": file_operation_version,
-        "openWB/system/log_data_ready": finished
+def test_upgrade_datastore_156_adds_energycharts_price_cap(
+    mock_pub: Mock, provider_type, configuration, expected_configuration, updated
+):
+    topic = "openWB/optional/ep/flexible_tariff/provider"
+    uc = UpdateConfig()
+    uc.all_received_topics = {
+        topic: json.dumps({"type": provider_type, "configuration": configuration}).encode(),
+        "openWB/system/datastore_version": [155],
     }
 
-    with patch.object(update_config, "upgrade_file_operation_0") as upgrade_mock:
-        update_config._UpdateConfig__solve_breaking_changes_filesystem()
-    assert upgrade_mock.call_count == expected_calls
+    uc.upgrade_datastore_156()
+
+    if updated:
+        assert uc.all_received_topics[topic] == {
+            "type": provider_type, "configuration": expected_configuration
+        }
+    else:
+        assert json.loads(uc.all_received_topics[topic]) == {
+            "type": provider_type, "configuration": expected_configuration
+        }
+    updated_topics = [call.args[0] for call in mock_pub.pub.call_args_list]
+    assert (topic in updated_topics) is updated
+    assert uc.all_received_topics["openWB/system/datastore_version"] == [155, 156]
+
+
+def test_start_filesystem_migrations_launches_one_worker(monkeypatch):
+    updater = UpdateConfig()
+    popen = Mock()
+    monkeypatch.setattr(update_config.subprocess, "Popen", popen)
+
+    updater._UpdateConfig__start_filesystem_migrations()
+
+    popen.assert_called_once_with(
+        [update_config.sys.executable, "-m", "helpermodules.filesystem_migrations"],
+        cwd=updater.base_path / "packages",
+        start_new_session=True,
+        stdin=update_config.subprocess.DEVNULL,
+        stdout=update_config.subprocess.DEVNULL,
+        stderr=update_config.subprocess.DEVNULL,
+        close_fds=True,
+    )

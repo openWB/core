@@ -220,14 +220,11 @@ class ModbusClient:
                        byteorder: str = Endian.Big, wordorder: str = Endian.Big, **kwargs: Any):
         with self._lock:
             if data_type is not None:
-                if data_type.bits > 16 or data_type in [ModbusDataType.FLOAT_16,
-                                                        ModbusDataType.FLOAT_32,
-                                                        ModbusDataType.FLOAT_64]:
-                    registers = self._build_binary_payload(value, data_type, byteorder, wordorder)
-                    self._delegate.write_registers(address, registers, **kwargs)
-                else:
-                    # Einfache 16-bit oder kleinere Werte können direkt geschrieben werden
-                    self._delegate.write_registers(address, [value], **kwargs)
+                # Immer über den BinaryPayloadBuilder kodieren - ein roher negativer Wert (zB INT_16/INT_8)
+                # direkt an pymodbus durchgereicht scheitert dort an der erwarteten vorzeichenlosen
+                # Registerdarstellung (0..65535), unabhängig davon wie klein der Datentyp ist.
+                registers = self._build_binary_payload(value, data_type, byteorder, wordorder)
+                self._delegate.write_registers(address, registers, **kwargs)
             else:
                 # Fallback für bestehenden Code ohne data_type
                 self._delegate.write_registers(address, value, **kwargs)

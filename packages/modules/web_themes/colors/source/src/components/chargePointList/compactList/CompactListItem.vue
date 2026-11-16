@@ -49,19 +49,19 @@
 					class="d-flex justify-content-center align-items-center vehiclestatus"
 				>
 					<BatterySymbol
-						v-if="chargepoint.soc"
+						v-if="chargepoint.soc != undefined"
 						class="me-1"
 						:soc="chargepoint.soc"
 					/>
 					<i
-						v-if="chargepoint.isSocConfigured && chargepoint.isSocManual"
+						v-if="chargepoint.isSocManual"
 						type="button"
 						class="fa-solid fa-sm fas fa-edit"
 						:style="{ color: 'var(--color-menu)' }"
 						@click="editSoc = !editSoc"
 					/>
 					<i
-						v-if="chargepoint.isSocConfigured && !chargepoint.isSocManual"
+						v-else
 						type="button"
 						class="fa-solid fa-sm me-2"
 						:class="
@@ -139,7 +139,12 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { chargePoints, type ChargeLimit, type ChargePoint } from '../model'
+import {
+	chargePoints,
+	vehicles,
+	type ChargeLimit,
+	type ChargePoint,
+} from '../model'
 import { chargemodes, globalConfig } from '@/assets/js/themeConfig'
 import { formatWatt, formatWattH } from '@/assets/js/helpers'
 import ChargeConfigPanel from '../cpConfig/ChargeConfigPanel.vue'

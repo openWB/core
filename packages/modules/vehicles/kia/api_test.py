@@ -69,6 +69,36 @@ class TestCciHeaders:
         assert headers["Authentication"] == "ncs"
 
 
+class TestCciFingerprint:
+    # Pinned live-verified vectors from hyundai_kia_connect_api#1352/#1355
+    # (test_eu_cci_fingerprint.py) - confirms our port matches byte-for-byte.
+    def test_matches_pinned_kia_vector(self):
+        headers = {
+            "client-id": "com.kia.oneapp.eu", "client-name": "KiaEU",
+            "client-version": "1.4.0", "client-os-code": "android",
+            "client-os-version": "14", "X-Timestamp": "1700000000123",
+        }
+        assert api.computeXFingerprint(headers, "kia") == \
+            "0a3ceccc83823ec0d2c5d39a15dbf722c813e6da48800a0156a7a8459db63337"
+
+    def test_matches_pinned_hyundai_vector(self):
+        headers = {
+            "client-id": "com.hyundai.oneapp.eu", "client-name": "HyundaiEU",
+            "client-version": "1.4.0", "client-os-code": "android",
+            "client-os-version": "14", "X-Timestamp": "1792000084084",
+        }
+        assert api.computeXFingerprint(headers, "hyundai") == \
+            "df04e3dadd52288ce5b280b368af261272556b5360adbc90a817a167526e2946"
+
+    def test_gate_rejection_codes(self):
+        for code in (9035, 9036, 9037):
+            assert api.isGateRejection(400, f'{{"code":{code},"message":"x"}}')
+        assert not api.isGateRejection(400, '{"code":9013,"message":"x"}')
+        assert not api.isGateRejection(500, '{"code":9035,"message":"x"}')
+        assert not api.isGateRejection(200, '{"code":9035,"message":"x"}')
+        assert not api.isGateRejection(502, "upstream html error")
+
+
 class TestExchangeCciToken:
     def test_raises_on_non_200(self, monkeypatch):
         monkeypatch.setattr(api, "getString", Mock(return_value="https://cci-api-eu.kia.com"))
@@ -90,6 +120,38 @@ class TestExchangeCciToken:
         assert result["cciAccessToken"] == "cci-access"
         assert result["nonCcsToken"] == "ncs"
         assert result["idToken"] == "id-1"
+
+    def test_uses_signed_endpoint_first(self, monkeypatch):
+        monkeypatch.setattr(api, "getString", Mock(return_value="https://cci-api-eu.kia.com"))
+        response = Mock(status_code=200)
+        response.json.return_value = {"accessToken": "cci-access"}
+        mock_post = Mock(return_value=response)
+        monkeypatch.setattr(api.requests, "post", mock_post)
+        api.exchangeCciToken("auth-code", "device-1", "kia")
+        assert mock_post.call_count == 1
+        assert mock_post.call_args.args[0] == "https://cci-api-eu.kia.com/auth/v1/token"
+        assert mock_post.call_args.kwargs["headers"]["X-Fingerprint"]
+
+    def test_falls_back_to_legacy_on_gate_rejection(self, monkeypatch):
+        monkeypatch.setattr(api, "getString", Mock(return_value="https://cci-api-eu.kia.com"))
+        gate_response = Mock(status_code=400, text='{"code":9035,"message":"x"}')
+        legacy_response = Mock(status_code=200)
+        legacy_response.json.return_value = {"accessToken": "legacy-access"}
+        mock_post = Mock(side_effect=[gate_response, legacy_response])
+        monkeypatch.setattr(api.requests, "post", mock_post)
+        result = api.exchangeCciToken("auth-code", "device-1", "kia")
+        assert result["cciAccessToken"] == "legacy-access"
+        assert mock_post.call_count == 2
+        assert mock_post.call_args_list[1].args[0] == "https://cci-api-eu.kia.com/domain/api/v1/auth/token"
+        assert "X-Fingerprint" not in mock_post.call_args_list[1].kwargs["headers"]
+
+    def test_non_gate_error_does_not_fall_back(self, monkeypatch):
+        monkeypatch.setattr(api, "getString", Mock(return_value="https://cci-api-eu.kia.com"))
+        mock_post = Mock(return_value=Mock(status_code=502, text="bad gateway"))
+        monkeypatch.setattr(api.requests, "post", mock_post)
+        with pytest.raises(RuntimeError):
+            api.exchangeCciToken("auth-code", "device-1", "kia")
+        assert mock_post.call_count == 1
 
 
 class TestExchangeCcsToken:

@@ -18,7 +18,7 @@ RETRY_DELAY_SECONDS = 0.3
 READ_RS485_ADAPTER_AGAIN = "Erneutes Auslesen des {}"
 READ_USB_ADAPTER_AGAIN = READ_RS485_ADAPTER_AGAIN.format('USB-Adapters')
 READ_LAN_ADAPTER_AGAIN = READ_RS485_ADAPTER_AGAIN.format('LAN-Konverters')
-METER_PROBLEM = "Erneutes Auslesen des Zählers"
+METER_PROBLEM = "Erneutes Auslesen des Ladeleistungs-Zählers"
 READ_METER_VOLTAGES_AGAIN = "Erneutes Auslesen der Spannungen am Zähler: {}V"
 METER_NO_SERIAL_NUMBER = ("Die Seriennummer des Zählers für das Ladelog kann nicht ausgelesen werden. Wenn Du die "
                           "Seriennummer für Abrechnungszwecke benötigst, wende Dich bitte an unseren Support. Die "

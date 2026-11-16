@@ -80,11 +80,11 @@ export class ChargePoint {
 			vehicles[this.connectedVehicle].name = name
 		}
 	}
-	get soc() {
-		if (vehicles[this.connectedVehicle]) {
+	get soc() : number | undefined {
+		if (vehicles[this.connectedVehicle] && vehicles[this.connectedVehicle].soc != undefined) {
 			return vehicles[this.connectedVehicle].soc
 		} else {
-			return 0
+			return undefined
 		}
 	}
 	set soc(newSoc: number) {
@@ -390,6 +390,12 @@ export class Vehicle {
 			}
 		}
 		return undefined
+	}
+	get visible(): boolean {
+		return (
+			this.name != '__invalid' && this.name != ""//&&
+			//(this.id != 0 || globalConfig.showStandardVehicle)
+		)
 	}
 }
 export interface ConnectedVehicleConfig {

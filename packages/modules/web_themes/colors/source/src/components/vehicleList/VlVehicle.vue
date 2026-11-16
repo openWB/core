@@ -3,6 +3,17 @@
 		<template #title>
 			<span class="vehiclename">{{ props.vehicle.name }}</span>
 		</template>
+		<template #buttons>
+			<WbBadge
+				v-if="props.vehicle.isSocConfigured"
+				:bgcolor="socBadgeColor"
+				:small="true"
+				@click="props.vehicle.showSoc = !props.vehicle.showSoc"
+				type="button"
+			>
+				SoC
+			</WbBadge>
+		</template>
 		<div class="subgrid">
 			<InfoItem heading="Status:" :small="true" class="grid-left grid-col-4">
 				<span
@@ -28,6 +39,7 @@
 import { computed } from 'vue'
 import InfoItem from '../shared/InfoItem.vue'
 import WbSubwidget from '../shared/WbSubwidget.vue'
+import WbBadge from '../shared/WbBadge.vue'
 import type { Vehicle } from '@/components/chargePointList/model.ts'
 
 const props = defineProps<{
@@ -63,6 +75,10 @@ const statusColor = computed(() => {
 		return 'var(--color-axis)'
 	}
 })
+
+const socBadgeColor = computed(() =>
+	props.vehicle.showSoc ? 'var(--color-pv)' : 'var(--color-menu)',
+)
 </script>
 <style scoped>
 .idWbBadge {

@@ -67,6 +67,12 @@ def create_entry(sh_log_data: Optional[LegacySmartHomeLogData], previous_entry: 
         prices_dict = {"fault_state": 0}
 
     try:
+        forecast_value = data.data.optional_data.forecast_get_current_value()
+    except Exception:
+        log.exception("Fehler im Werte-Logging-Modul für die PV-Prognose")
+        forecast_value = None
+
+    try:
         cp_dict = {"all": {"imported": data.data.cp_all_data.data.get.imported,
                            "exported": data.data.cp_all_data.data.get.exported,
                            "fault_state": data.data.cp_all_data.data.get.fault_state}}
@@ -94,9 +100,15 @@ def create_entry(sh_log_data: Optional[LegacySmartHomeLogData], previous_entry: 
 
     counter_dict = {}
     counter_all_data = data.data.counter_all_data
+    # extra_meter-Zähler hängen an einem Verbraucher, nicht an einem Knoten der Zähler-Hierarchie - sie würden
+    # is_home_consumption_counter() daher immer mit einem IndexError abbrechen lassen.
+    extra_meter_ids = {consumer.data.extra_meter for consumer in data.data.consumer_data.values()}
     # Zählt alle effektiven Hausverbrauchs-Zähler, auch bei Auto-Vererbung über den Parent.
     is_home_consumption_by_counter = {}
     for current_counter in data.data.counter_data.values():
+        if current_counter.num in extra_meter_ids:
+            is_home_consumption_by_counter[current_counter.num] = False
+            continue
         try:
             is_home_consumption_by_counter[current_counter.num] = counter_all_data.is_home_consumption_counter(
                 current_counter.num)
@@ -114,12 +126,7 @@ def create_entry(sh_log_data: Optional[LegacySmartHomeLogData], previous_entry: 
             is_home_consumption_counter = is_home_consumption_by_counter.get(counter.num, False)
             if not is_grid_counter and is_home_consumption_counter and home_consumption_counter_count == 1:
                 continue
-            skip_counter = False
-            if not is_grid_counter:
-                for consumer in data.data.consumer_data:
-                    if counter.num == data.data.consumer_data[consumer].data.extra_meter:
-                        skip_counter = True
-                        break
+            skip_counter = not is_grid_counter and counter.num in extra_meter_ids
             if skip_counter is False:
                 counter_dict.update(
                     {f"counter{counter.num}": {
@@ -190,6 +197,7 @@ def create_entry(sh_log_data: Optional[LegacySmartHomeLogData], previous_entry: 
         "timestamp": current_timestamp,
         "date": date,
         "prices": prices_dict,
+        "forecast": forecast_value,
         "cp": cp_dict,
         "ev": ev_dict,
         "counter": counter_dict,

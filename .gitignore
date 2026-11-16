@@ -19,6 +19,8 @@ data/daily_log/*
 data/daily_totals/*
 data/monthly_log/*
 data/monthly_totals/*
+data/filesystem_migrations.lock
+data/generate_totals.lock
 data/backup/*.tar.gz
 data/backup/*.openwb-backup*
 data/restore/*.tar.gz

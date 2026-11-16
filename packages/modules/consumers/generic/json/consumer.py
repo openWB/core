@@ -67,7 +67,9 @@ def create_consumer(config: Json):
             currents=currents,
             imported=imported,
             exported=exported,
-            temperatures=temperatures if isinstance(temperatures, list) else [temperatures],
+            temperatures=(temperatures if isinstance(temperatures, list)
+                          else [temperatures] if temperatures is not None
+                          else None),
         )
 
     def switch_on():

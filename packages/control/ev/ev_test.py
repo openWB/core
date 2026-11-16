@@ -5,8 +5,10 @@ import pytest
 
 from control import data
 
+from control.chargepoint.chargepoint_state import ChargepointState
 from control.chargepoint.control_parameter import ControlParameter
 from control.ev.ev import Ev, get_ev_to_rfid
+from control.limiting_value import LimitingValue, LoadmanagementLimit
 from helpermodules import timecheck
 from modules.common.abstract_vehicle import VehicleUpdateData
 from modules.vehicles.mqtt.config import MqttSocSetup
@@ -75,6 +77,64 @@ def test_remaining_phase_switch_time(timestamp_last_phase_switch,
 
     # evaluation
     assert result == expected_result
+
+
+@pytest.mark.parametrize(
+    "surplus, expected_condition",
+    [
+        pytest.param(6901, True, id="Überschuss reicht für min_current auf allen Phasen: umschalten"),
+        pytest.param(5000, False, id="Überschuss reicht nicht für min_current auf allen Phasen: nicht umschalten"),
+    ],
+)
+def test_check_phase_switch_conditions_required_surplus_based_on_min_current(surplus, expected_condition):
+    """ required_surplus muss auf control_parameter.min_current basieren. """
+    # setup
+    ev = Ev(0)
+    ev.ev_template.data.max_phases = 3
+    ev.ev_template.data.max_current_single_phase = 16
+    ev.ev_template.data.nominal_difference = 1
+    control_parameter = ControlParameter()
+    control_parameter.min_current = 10
+    control_parameter.phases = 1
+    control_parameter.required_current = 6
+    limit = LoadmanagementLimit(message=None, limiting_value=LimitingValue.CURRENT)
+
+    # execution
+    condition, _ = ev._check_phase_switch_conditions(
+        control_parameter=control_parameter,
+        evse_current=0,
+        get_currents=[0, 0, 0],
+        get_power=0,
+        max_current_cp=32,
+        limit=limit,
+        surplus=surplus,
+    )
+
+    # evaluation: required_surplus = min_current(10) * max_phases(3) * 230 = 6900
+    assert condition == expected_condition
+
+
+def test_reset_phase_switch_delay_uses_reserved_power_not_a_fresh_calculation(monkeypatch):
+    """ reset_phase_switch_delay() muss die beim Reservieren gespeicherte Leistung zurücknehmen, nicht neu
+    berechnen - sonst würde reserved_surplus driften, falls sich zB max_phases inzwischen geändert hat. """
+    # setup
+    ev = Ev(0)
+    ev.ev_template.data.max_current_single_phase = 16
+    control_parameter = ControlParameter()
+    control_parameter.state = ChargepointState.PHASE_SWITCH_DELAY
+    control_parameter.phases = 1
+    control_parameter.reserved_power = 500
+    evu_counter = Mock()
+    evu_counter.data.set.reserved_surplus = 1000
+    monkeypatch.setattr(data.data.counter_all_data, "get_evu_counter", Mock(return_value=evu_counter))
+
+    # execution
+    ev.reset_phase_switch_delay(control_parameter)
+
+    # evaluation
+    assert evu_counter.data.set.reserved_surplus == 500
+    assert control_parameter.reserved_power == 0
+    assert control_parameter.state == ChargepointState.CHARGING_ALLOWED
 
 
 @pytest.fixture(autouse=True)

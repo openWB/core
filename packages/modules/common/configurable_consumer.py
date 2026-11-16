@@ -33,7 +33,8 @@ class ConfigurableConsumer(Generic[T_CONSUMER]):
                  send_values: Optional[Callable[[CurrentValues], None]] = lambda _values: None,
                  set_power_limit: Optional[Callable] = lambda: None,
                  switch_on: Optional[Callable] = lambda: None,
-                 switch_off: Optional[Callable] = lambda: None,) -> None:
+                 switch_off: Optional[Callable] = lambda: None,
+                 clear_rfid: Optional[Callable] = lambda: None,) -> None:
         self.config = consumer_config
         self.module_initializer = initializer
         self.module_error_handler = error_handler
@@ -42,6 +43,7 @@ class ConfigurableConsumer(Generic[T_CONSUMER]):
         self.module_set_power_limit = set_power_limit
         self.module_switch_on = switch_on
         self.module_switch_off = switch_off
+        self.module_clear_rfid = clear_rfid
 
         self.error_timestamp = None
         self.sim_counter = SimCounterConsumer(self.config.id, ComponentType.CONSUMER)
@@ -80,10 +82,23 @@ class ConfigurableConsumer(Generic[T_CONSUMER]):
             pass
 
     def update(self):
+<<<<<<< HEAD
         try:
             with SingleComponentUpdateContext(self.fault_state, reraise=True):
                 if self.module_updater is not None:
                     consumer_state = self.module_updater()
+=======
+        with SingleComponentUpdateContext(self.fault_state):
+            if self.module_updater is not None:
+                consumer_state = self.module_updater()
+                if consumer_state.power is None:
+                    consumer_state.power = 0
+                    if consumer_state.imported is None:
+                        consumer_state.imported = 0
+                    if consumer_state.exported is None:
+                        consumer_state.exported = 0
+                else:
+>>>>>>> upstream/master
                     imported, exported = self.peak_filter.check_values(
                         consumer_state.power,
                         consumer_state.imported,
@@ -96,9 +111,13 @@ class ConfigurableConsumer(Generic[T_CONSUMER]):
                             exported = simulated_exported
                     consumer_state.imported = imported
                     consumer_state.exported = exported
+<<<<<<< HEAD
                     self.store.set(consumer_state)
         except Exception:
             self.error_handler()
+=======
+                self.store.set(consumer_state)
+>>>>>>> upstream/master
 
     def set_power_limit(self, power_limit: float, data: SetLimitData) -> None:
         with SingleComponentUpdateContext(self.fault_state):
@@ -115,3 +134,7 @@ class ConfigurableConsumer(Generic[T_CONSUMER]):
     def send_values(self, values: CurrentValues) -> None:
         with SingleComponentUpdateContext(self.fault_state):
             self.module_send_values(values)
+
+    def clear_rfid(self) -> None:
+        with SingleComponentUpdateContext(self.fault_state):
+            self.module_clear_rfid()

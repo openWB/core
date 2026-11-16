@@ -18,7 +18,7 @@
 						id="minCurrent"
 						v-model="cp.pvMinCurrent"
 						:min="6"
-						:max="32"
+						:max="16"
 						:step="1"
 						unit="A"
 					/>
@@ -66,7 +66,7 @@
 						v-model="cp.pvMinSocCurrent"
 						class="grid-col-2"
 						:min="6"
-						:max="32"
+						:max="16"
 						:step="1"
 						unit="A"
 					/>
@@ -76,10 +76,10 @@
 					<RadioInput2
 						v-model="cp.pvMinSocPhases"
 						class="grid-col-1"
-						:columns="2"
 						:options="[
 							['1', 1],
 							['Maximum', 3],
+							['Auto', 0],
 						]"
 					/>
 				</div>
