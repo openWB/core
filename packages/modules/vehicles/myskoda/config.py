@@ -5,6 +5,7 @@ from dataclasses import dataclass
 class MyskodaConfiguration:
     api_key: str = ""
     vin: str = ""
+    calculate_soc: bool = False
     # wird vom Backend nach jedem erfolgreichen Abruf aus dem API-Response-Header
     # zurückgeschrieben (ISO-8601), nicht vom Nutzer editierbar - siehe soc.py
     key_expires_at: str = ""
