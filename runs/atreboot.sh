@@ -1,5 +1,17 @@
 #!/bin/bash
 OPENWBBASEDIR=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
+
+# Old updaters may already have checked out trixie-next. Recover before any
+# virtualenv, package, service, network or boot-configuration migration runs.
+source "$OPENWBBASEDIR/runs/os_update_guard.sh" || exit 1
+requiresSystemUpdate
+guardStatus=$?
+case "$guardStatus" in
+	0) exec bash "$OPENWBBASEDIR/runs/update_self.sh" "trixie-next" ;;
+	1) ;;
+	*) echo "Cannot read OS identity; refusing startup changes." >&2; exit 1 ;;
+esac
+
 hasInet=0
 
 # setup log file
