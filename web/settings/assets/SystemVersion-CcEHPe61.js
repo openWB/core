@@ -1,0 +1,1 @@
+import{_ as e}from"./vendor-lA_1SSBr.js";const t={computed:{systemVersion(){const s=this.$store.state.mqtt["openWB/system/version"]?.match(/(\d+)\.(\d+)\.\d+/);return s?`${s[1]}.${s[2]}.x`:"2.3.x"}},mounted(){this.$root.doSubscribe(["openWB/system/version"])}},i=e(t,[["__file","/opt/openWB-dev/openwb-ui-settings/src/components/mixins/SystemVersion.vue"]]);export{i as S};
