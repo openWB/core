@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 from unittest.mock import Mock
 
 import pytest
@@ -8,6 +7,7 @@ from helpermodules import timecheck
 from modules.common.abstract_device import AbstractDevice
 from modules.common.component_state import ConsumerState, CounterState
 from modules.common.fault_state import ComponentInfo, FaultState
+from modules.common.store import _consumer
 from modules.common.store._consumer import ConsumerValueStoreBroker, PurgeConsumerState
 
 
@@ -96,11 +96,6 @@ def test_zero_power_on_sustained_error_without_prior_read_still_publishes():
 
     # evaluation
     assert broker.state.power == 0
-=======
-import pytest
-
-from modules.common.component_state import ConsumerState
-from modules.common.store import _consumer
 
 
 @pytest.mark.parametrize("tag", ["0012345678", None])
@@ -115,4 +110,3 @@ def test_consumer_store_forwards_rfid_without_clearing_pending_input(tag, timest
         topic = f"openWB/set/consumer/1/get/{key}"
         calls = [call.args for call in mock_pub.pub.call_args_list if call.args[0] == topic]
         assert calls == ([(topic, value)] if value is not None else [])
->>>>>>> upstream/master

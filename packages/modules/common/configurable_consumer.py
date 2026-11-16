@@ -82,42 +82,32 @@ class ConfigurableConsumer(Generic[T_CONSUMER]):
             pass
 
     def update(self):
-<<<<<<< HEAD
         try:
             with SingleComponentUpdateContext(self.fault_state, reraise=True):
                 if self.module_updater is not None:
                     consumer_state = self.module_updater()
-=======
-        with SingleComponentUpdateContext(self.fault_state):
-            if self.module_updater is not None:
-                consumer_state = self.module_updater()
-                if consumer_state.power is None:
-                    consumer_state.power = 0
-                    if consumer_state.imported is None:
-                        consumer_state.imported = 0
-                    if consumer_state.exported is None:
-                        consumer_state.exported = 0
-                else:
->>>>>>> upstream/master
-                    imported, exported = self.peak_filter.check_values(
-                        consumer_state.power,
-                        consumer_state.imported,
-                        consumer_state.exported)
-                    if consumer_state.imported is None or consumer_state.exported is None:
-                        simulated_imported, simulated_exported = self.sim_counter.sim_count(consumer_state.power)
+                    if consumer_state.power is None:
+                        consumer_state.power = 0
                         if consumer_state.imported is None:
-                            imported = simulated_imported
+                            consumer_state.imported = 0
                         if consumer_state.exported is None:
-                            exported = simulated_exported
-                    consumer_state.imported = imported
-                    consumer_state.exported = exported
-<<<<<<< HEAD
+                            consumer_state.exported = 0
+                    else:
+                        imported, exported = self.peak_filter.check_values(
+                            consumer_state.power,
+                            consumer_state.imported,
+                            consumer_state.exported)
+                        if consumer_state.imported is None or consumer_state.exported is None:
+                            simulated_imported, simulated_exported = self.sim_counter.sim_count(consumer_state.power)
+                            if consumer_state.imported is None:
+                                imported = simulated_imported
+                            if consumer_state.exported is None:
+                                exported = simulated_exported
+                        consumer_state.imported = imported
+                        consumer_state.exported = exported
                     self.store.set(consumer_state)
         except Exception:
             self.error_handler()
-=======
-                self.store.set(consumer_state)
->>>>>>> upstream/master
 
     def set_power_limit(self, power_limit: float, data: SetLimitData) -> None:
         with SingleComponentUpdateContext(self.fault_state):

@@ -127,16 +127,13 @@ class Consumer(ConsumerRfidMixin, Load):
                                        "Verbraucher nicht abgeschaltet werden darf.")
 
     def get_parameter(self) -> Tuple[float, Optional[str], Optional[Chargemode], Chargemode]:
-<<<<<<< HEAD
         if error_duration_exceeded(self.data.get.fault_state, self.data.set.error_timer):
             message = (f"Fehler beim Auslesen des Verbrauchers {get_component_name_by_id(self.num)}. "
                        "Es wird nicht mehr angesteuert.")
             return (0, message, self.data.control_parameter.chargemode, Chargemode.STOP)
-=======
         if self.rfid_required() and self.data.set.rfid is None:
             return (0, "Verbraucher gesperrt. Bitte per RFID freischalten.",
                     self.data.usage.chargemode, Chargemode.STOP)
->>>>>>> upstream/master
         if self.data.set.switch_interval_elapsed is False:
             log.debug("Intervall für neuen Schaltbefehl nicht abgelaufen.")
             return (max(self.data.get.currents),
