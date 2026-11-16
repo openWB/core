@@ -2,18 +2,30 @@
 """Starten der benötigten Prozesse
 """
 # flake8: noqa: E402
+import subprocess
+import sys
+from pathlib import Path
+
+# Old service units ignore ExecStartPre failures. Check again before importing
+# application modules, without launching recovery or changing any target data.
+try:
+    guard = Path(__file__).resolve().parents[1] / "runs" / "os_update_guard.sh"
+    guard_status = subprocess.run(["/bin/bash", str(guard), "--check-start"], timeout=4).returncode
+except (OSError, subprocess.TimeoutExpired):
+    guard_status = 1
+if guard_status != 0:
+    sys.exit("OS update required or OS identity unavailable; refusing application startup.")
+
 import logging
 from helpermodules import logger
 from helpermodules.utils import run_command, thread_handler
 import threading
-import sys
 import functools
 
 # als erstes logging initialisieren, damit auch ImportError geloggt werden
 logger.setup_logging()
 log = logging.getLogger()
 
-from pathlib import Path
 from random import randrange
 import schedule
 import time

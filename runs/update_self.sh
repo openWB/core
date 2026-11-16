@@ -153,6 +153,8 @@ echo "#### running update ####" >"$LOG_FILE"
 	# notify system
 	if [[ $legacyFallback -eq 1 && $DRY_RUN -eq 0 ]]; then
 		publishSystemUpdateMessage || true
+		echo "#### compatible Release installed; allowing 30 seconds to read the system-update notice ####"
+		sleep 30
 	fi
 	# set boot_done first to prevent flickering in gui
 	if [[ $DRY_RUN -eq 0 ]]; then

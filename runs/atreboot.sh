@@ -3,13 +3,134 @@ OPENWBBASEDIR=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 
 # Old updaters may already have checked out trixie-next. Recover before any
 # virtualenv, package, service, network or boot-configuration migration runs.
-source "$OPENWBBASEDIR/runs/os_update_guard.sh" || exit 1
+guardFailureState() {
+	# Independent of the sourced helper, so missing helpers are covered too.
+	python3 - "$OPENWBBASEDIR" "$1" <<'PY'
+import fcntl
+import hashlib
+import json
+import math
+import os
+from pathlib import Path
+import re
+import subprocess
+import sys
+import tempfile
+import time
+
+base = Path(sys.argv[1])
+action = sys.argv[2]
+state_file = base / "data/log/os-update-guard.json"
+boot_id = Path("/proc/sys/kernel/random/boot_id").read_text().strip()
+fingerprint = hashlib.sha256()
+for name in ("runs/atreboot.sh", "runs/update_self.sh", "runs/os_update_guard.sh", "packages/main.py"):
+    path = base / name
+    fingerprint.update(name.encode())
+    fingerprint.update(path.read_bytes() if path.is_file() else b"missing")
+key = boot_id + ":" + fingerprint.hexdigest()
+def load_record():
+    try:
+        item = json.loads(state_file.read_text())
+        if (not isinstance(item, dict) or not isinstance(item.get("key"), str)
+                or type(item.get("failed_at")) not in (int, float)
+                or not math.isfinite(item["failed_at"]) or item["failed_at"] < 0
+                or type(item.get("timestamp")) is not int
+                or type(item.get("sent")) is not bool
+                or not isinstance(item.get("topic"), str)
+                or not re.fullmatch(r"openWB/system/messages/[0-9]+", item["topic"])):
+            return {}
+        return item
+    except (OSError, ValueError):
+        return {}
+
+record = load_record()
+same_failure = record.get("key") == key
+if action == "retry":
+    # Service restarts must not immediately repeat a failed Git fetch. A
+    # direct user-requested update_self.sh call is not subject to this delay.
+    sys.exit(1 if same_failure and time.monotonic() - record.get("failed_at", 0) < 300 else 0)
+
+message = (
+    "Der automatische Wechsel zum kompatiblen Release ist fehlgeschlagen. "
+    "openWB 2.5.x wurde auf diesem Betriebssystem nicht gestartet. "
+    "Bitte Update-Log prüfen."
+)
+items = [
+    ("openWB/set/system/update_in_progress", False),
+    ("openWB/system/update_in_progress", False),
+]
+def publish(topic, payload):
+    try:
+        subprocess.run(
+            ["mosquitto_pub", "-h", "127.0.0.1", "-p", "1886",
+             "-t", topic, "-q", "1", "-r", "-s"],
+            input=json.dumps(payload), universal_newlines=True,
+            timeout=3, check=True,
+        )
+        return True
+    except Exception:
+        return False
+
+for topic, payload in items:
+    publish(topic, payload)
+
+# Keep one event ID per failure/boot/code version. QoS1 retries replay that
+# same retained event; acknowledged/dismissed events are not recreated.
+try:
+    state_file.parent.mkdir(parents=True, exist_ok=True)
+    fd = os.open(str(state_file) + ".lock", os.O_CREAT | os.O_RDWR | os.O_NOFOLLOW, 0o600)
+    with os.fdopen(fd, "w") as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        record = load_record()
+        if record.get("key") != key:
+            record = {"key": key, "failed_at": time.monotonic(),
+                      "topic": "openWB/system/messages/" + str(int(time.time() * 1000)),
+                      "timestamp": int(time.time()), "sent": False}
+        elif time.monotonic() - record["failed_at"] >= 300:
+            record["failed_at"] = time.monotonic()
+
+        def save():
+            fd, name = tempfile.mkstemp(dir=state_file.parent, prefix=".os-update-guard-")
+            try:
+                with os.fdopen(fd, "w") as stream:
+                    json.dump(record, stream)
+                    stream.flush()
+                    os.fsync(stream.fileno())
+                os.replace(name, state_file)
+            finally:
+                if os.path.exists(name):
+                    os.unlink(name)
+
+        save()
+        if not record["sent"]:
+            payload = {"source": "command", "type": "danger", "message": message,
+                       "timestamp": record["timestamp"]}
+            if time.time() - record["timestamp"] > 60:
+                payload["message"] = "Verzögert zugestellt: " + message
+            if publish(record["topic"], payload):
+                record["sent"] = True
+                save()
+except (OSError, ValueError, KeyError):
+    print("Cannot persist OS guard failure status; application startup remains blocked.", file=sys.stderr)
+PY
+}
+guardFailure() {
+	guardFailureState report || true
+	exit 1
+}
+source "$OPENWBBASEDIR/runs/os_update_guard.sh" || guardFailure
 requiresSystemUpdate
 guardStatus=$?
 case "$guardStatus" in
-	0) exec bash "$OPENWBBASEDIR/runs/update_self.sh" "trixie-next" ;;
+	0)
+		guardFailureState retry || guardFailure
+		bash "$OPENWBBASEDIR/runs/update_self.sh" "trixie-next" || guardFailure
+		# Recovery either requested a reboot or failed. Never enter the new
+		# OS startup migrations from this already-open copy of atreboot.sh.
+		exit 0
+		;;
 	1) ;;
-	*) echo "Cannot read OS identity; refusing startup changes." >&2; exit 1 ;;
+	*) echo "Cannot read OS identity; refusing startup changes." >&2; guardFailure ;;
 esac
 
 hasInet=0
