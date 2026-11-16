@@ -129,10 +129,20 @@ class MigrateData:
     def map_to_new_ids(self, old_id: str) -> int:
         return getattr(self.id_map, old_id)
 
+    @staticmethod
+    def _is_safe_tar_path(tarinfo_name: str) -> bool:
+        """Überprüfe ob der Pfad im Archiv keine Path-Traversal-Versuche enthält."""
+        # TODO: Ab Python 3.12 kann filter='data' beim Extrahieren verwenden.
+        # https://docs.python.org/3/library/tarfile.html#extraction-filters
+        return os.pardir not in tarinfo_name.split(os.sep)
+
     def _file_to_extract_generator(self, members, log_folder_name: str):
         for tarinfo in members:
             if tarinfo.name.startswith(f"var/www/html/openWB/web/logging/data/{log_folder_name}"):
-                yield tarinfo
+                if self._is_safe_tar_path(tarinfo.name):
+                    yield tarinfo
+                else:
+                    log.warning(f"Sicherheit: Verdächtiger Pfad im Archiv blockiert: {tarinfo.name}")
 
     def _extract_files(self, log_folder_name: str):
         with tarfile.open('./data/data_migration/data_migration.tar.gz') as tar:
@@ -144,8 +154,17 @@ class MigrateData:
         self._extract_files("daily")
         self._extract_files("monthly")
         with tarfile.open('./data/data_migration/data_migration.tar.gz') as tar:
-            tar.extract(member="var/www/html/openWB/openwb.conf", path="./data/data_migration")
-            tar.extract(member="var/www/html/openWB/web/version", path="./data/data_migration")
+            # Sichere Extraktion einzelner bekannter Dateien
+            conf_member = "var/www/html/openWB/openwb.conf"
+            version_member = "var/www/html/openWB/web/version"
+            if self._is_safe_tar_path(conf_member):
+                tar.extract(member=conf_member, path="./data/data_migration")
+            else:
+                log.warning(f"Sicherheit: Verdächtiger Pfad blockiert: {conf_member}")
+            if self._is_safe_tar_path(version_member):
+                tar.extract(member=version_member, path="./data/data_migration")
+            else:
+                log.warning(f"Sicherheit: Verdächtiger Pfad blockiert: {version_member}")
 
     def convert_csv_to_json_chargelog(self) -> List[Thread]:
         """ konvertiert die alten Lade-Log-Dateien in das neue Format für 2.x.
