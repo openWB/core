@@ -358,6 +358,12 @@ chmod 666 "$LOGFILE"
 		"$OPENWBBASEDIR/runs/update_available_versions.sh" --no-fetch
 	fi
 
+	# update os version
+	if [[ -f "/etc/os-release" ]]; then
+		. /etc/os-release
+		sudo mosquitto_pub -p 1886 -t "openWB/system/os_version" -r -m "$VERSION"
+	fi
+
 	# set restore dir permissions to allow file upload for apache
 	sudo chgrp -R www-data "${OPENWBBASEDIR}/data/restore/." "${OPENWBBASEDIR}/data/data_migration/."
 	sudo chmod -R g+w "${OPENWBBASEDIR}/data/restore/." "${OPENWBBASEDIR}/data/data_migration/."
