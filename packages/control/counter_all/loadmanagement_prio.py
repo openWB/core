@@ -42,10 +42,14 @@ class LoadmanagementPrioMixin:
                 for type_name, ids in valid_ids.items():
                     if entry["type"] == type_name.value and entry["id"] not in ids:
                         entries.remove(entry)
+                        if type_name == ComponentType.CONSUMER and any(
+                                consumer.num == entry["id"] for consumer in data.data.consumer_data.values()):
+                            reason = "er nicht durch openWB gesteuert wird."
+                        else:
+                            reason = "keine Konfiguration mehr vorhanden ist"
                         pub_system_message(
                             {}, f"{component_type_to_readable_text(type_name)} mit ID {entry['id']} wurde "
-                            "aus der Prioritätensteuerung entfernt, da keine gültige Konfiguration "
-                            "für die Regelung gefunden wurde.", MessageType.WARNING)
+                            f"aus der Prioritätensteuerung entfernt, da {reason}.", MessageType.WARNING)
 
     def _add_missing_loadmanagement_prio_entries(
             self, entries: List[Dict], valid_ids: Dict[ComponentType, AbstractSet[int]]) -> None:
@@ -55,8 +59,7 @@ class LoadmanagementPrioMixin:
                     self.add_loadmanagement_prio_item(type_name, id)
                     pub_system_message(
                         {}, f"{component_type_to_readable_text(type_name)} mit ID {id} wurde "
-                        "der Prioritätensteuerung hinzugefügt, da eine gültige Konfiguration "
-                        "für die Regelung gefunden wurde.", MessageType.INFO)
+                        "der Prioritätensteuerung hinzugefügt.", MessageType.INFO)
 
     def add_loadmanagement_prio_item(self: LoadmanagementPrioProtocol, type: ComponentType, id: int) -> None:
         self.data.get.loadmanagement_prios.append({"type": type.value, "id": id})
