@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from typing import Callable, Dict, Generator, List, Optional, Protocol, Tuple, Union
+from typing import AbstractSet, Callable, Dict, Generator, List, Optional, Protocol, Tuple, Union
 
 from control.chargepoint.chargepoint import Chargepoint
 from control.consumer.usage import ConsumerUsage
@@ -106,6 +106,13 @@ class HierarchyProtocol(Protocol):
 class LoadmanagementPrioProtocol(Protocol):
     @property
     def data(self) -> CounterAllData: ...
+
+    def _remove_obsolete_loadmanagement_prio_entries(
+        self, entries: List[Dict], valid_ids: Dict[ComponentType, AbstractSet[int]]) -> None: ...
+
+    def _add_missing_loadmanagement_prio_entries(
+        self, entries: List[Dict], valid_ids: Dict[ComponentType, AbstractSet[int]]) -> None: ...
+
     def add_loadmanagement_prio_item(self, type: ComponentType, id: int) -> None: ...
     def update_consumer_loadmanagement_prio(self, consumer_id: int, usage_type: ConsumerUsage) -> bool: ...
     def _has_loadmanagement_prio_item(

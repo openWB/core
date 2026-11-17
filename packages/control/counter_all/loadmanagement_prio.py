@@ -1,5 +1,5 @@
 import logging
-from typing import Dict, Generator, List, Tuple
+from typing import AbstractSet, Dict, Generator, List, Tuple
 
 from control import data
 from control.chargepoint.chargepoint import Chargepoint
@@ -23,18 +23,19 @@ class LoadmanagementPrioMixin:
                 },
             }
 
-            self._remove_obsolete_entries(self.data.get.loadmanagement_prios, valid_ids)
-            self._add_missing_entries(self.data.get.loadmanagement_prios, valid_ids)
+            self._remove_obsolete_loadmanagement_prio_entries(self.data.get.loadmanagement_prios, valid_ids)
+            self._add_missing_loadmanagement_prio_entries(self.data.get.loadmanagement_prios, valid_ids)
 
         except Exception:
             log.exception("Fehler bei der Validierung der Prioritätensteuerung")
 
-    def _remove_obsolete_entries(self, entries: List[Dict], valid_ids: Dict[ComponentType, List[int]]) -> None:
+    def _remove_obsolete_loadmanagement_prio_entries(
+            self, entries: List[Dict], valid_ids: Dict[ComponentType, AbstractSet[int]]) -> None:
         for entry in entries.copy():
             if entry["type"] == "group":
                 children = entry["children"]
                 had_children = bool(children)
-                self._remove_obsolete_entries(children)
+                self._remove_obsolete_loadmanagement_prio_entries(children, valid_ids)
                 if had_children and not children:
                     entries.remove(entry)
             else:
@@ -46,7 +47,8 @@ class LoadmanagementPrioMixin:
                             "aus der Prioritätensteuerung entfernt, da keine gültige Konfiguration "
                             "für die Regelung gefunden wurde.", MessageType.WARNING)
 
-    def _add_missing_entries(self, entries: List[Dict], valid_ids: Dict[ComponentType, List[int]]) -> None:
+    def _add_missing_loadmanagement_prio_entries(
+            self, entries: List[Dict], valid_ids: Dict[ComponentType, AbstractSet[int]]) -> None:
         for type_name, ids in valid_ids.items():
             for id in ids:
                 if not self._has_loadmanagement_prio_item(type_name, id, entries):

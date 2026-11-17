@@ -32,7 +32,7 @@ def test_validate_loadmanagement_prios_restores_missing_vehicles(entries, monkey
     message.assert_not_called()
 
 
-def test_validate_loadmanagement_prios_preserves_groups_and_checks_type(monkeypatch):
+def test_validate_loadmanagement_prios_preserves_groups_and_checks_type(monkeypatch, caplog):
     c = CounterAll()
     group = {"type": "group", "label": "Vorrang", "children": [
         {"type": "vehicle", "id": 2}, {"type": "vehicle", "id": 0}]}
@@ -48,6 +48,7 @@ def test_validate_loadmanagement_prios_preserves_groups_and_checks_type(monkeypa
 
     assert c.data.get.loadmanagement_prios == [group, {"type": "consumer", "id": 0}]
     message.assert_not_called()
+    assert not [record for record in caplog.records if record.levelno >= 40]
 
 
 def test_validate_loadmanagement_prios_removes_obsolete_and_adds_controlled_consumers(monkeypatch):
