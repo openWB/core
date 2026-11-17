@@ -128,14 +128,16 @@ class ChargepointOcppRfidMixin:
                 self._clear_scanned_rfid()
             return
 
-        # Lokale Duo-Leserscans nur am ausgewählten Ladepunkt über OCPP verarbeiten.
+        # Eine eindeutige Duo-Freischaltung hat Vorrang vor RFID-Stop/Authorize-only.
         # Bei RemoteStart steht das Ziel bereits fest.
         if self.data.get.rfid is not None and not self.data.get.ocpp.remote_start:
             partner_num = self.find_duo_partner()
-            if partner_num is not None and self.data.get.ocpp.transaction_id is None:
+            if partner_num is not None:
                 partner = data.data.cp_data[f"cp{partner_num}"]
-                if self._rfid_target(partner, self.data.get.rfid_timestamp) is not self:
-                    # Gemeinsamen Scan erst am ausgewählten Duo-LP autorisieren.
+                target = self._rfid_target(partner, self.data.get.rfid_timestamp)
+                if target is not self and (target is not None or self.data.get.ocpp.transaction_id is None):
+                    # Den Scan nur am Freischaltungsziel verarbeiten. Ohne Ziel
+                    # bleiben Autorisierung und Stop laufender Transaktionen moeglich.
                     return
 
         data.data.ocpp_client.finish_rfid_authorization(

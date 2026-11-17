@@ -74,7 +74,7 @@ class ChargepointRfidMixin:
         return first if (t2 - t1) < 0 else second
 
     def _clear_pending_rfid(self: ChargepointProtocol, rfid: str, cp2_data=None,
-                            rfid_timestamp: Optional[float] = None) -> None:
+                            rfid_timestamp: Optional[float] = None, consume_ocpp_scan: bool = False) -> None:
         """Gemeinsamen Scan einmal quittieren, verbindliche Zuordnungen behalten."""
         if rfid_timestamp is None:
             rfid_timestamp = self.data.get.rfid_timestamp
@@ -84,7 +84,7 @@ class ChargepointRfidMixin:
             cp2_data is not None and {self.num, cp2_data.num} == {3, 5}
             and self.data.config.type == cp2_data.data.config.type == "mqtt"
             and not cp2_data.data.get.ocpp.remote_start
-            and not cp2_data._is_ocpp_rfid_transaction()
+            and (consume_ocpp_scan or not cp2_data._is_ocpp_rfid_transaction())
             and cp2_data.data.get.rfid == rfid
             and cp2_data.data.get.rfid_timestamp in (None, rfid_timestamp)
         )
@@ -99,7 +99,7 @@ class ChargepointRfidMixin:
         newer_scan_waiting = False
         for cp in (self, cp2_data):
             if (cp is None or cp.data.get.ocpp.remote_start
-                    or (cp is not self and cp._is_ocpp_rfid_transaction())):
+                    or (not consume_ocpp_scan and cp is not self and cp._is_ocpp_rfid_transaction())):
                 continue
             pending_timestamp = cp.data.get.rfid_timestamp
             if (cp.data.get.rfid is not None and pending_timestamp is not None and
@@ -107,6 +107,11 @@ class ChargepointRfidMixin:
                 newer_scan_waiting = True
             if (cp.data.get.rfid == rfid and
                     (pending_timestamp is None or rfid_timestamp is None or pending_timestamp == rfid_timestamp)):
+                if consume_ocpp_scan and cp._is_ocpp_rfid_transaction():
+                    # Der Scan gehoert zur neuen Freischaltung, nicht zur laufenden Transaktion.
+                    cp._discard_ocpp_rfid_authorization()
+                    if cp.data.get.ocpp.authorization_flow_status in ("init", "accepted", "rejected"):
+                        cp._reset_ocpp_rfid_flow()
                 cp.data.get.rfid = None
                 Pub().pub(f"openWB/set/chargepoint/{cp.num}/get/rfid", None)
                 cp.data.get.rfid_timestamp = None
@@ -136,7 +141,7 @@ class ChargepointRfidMixin:
             if target is not None:
                 target.data.set.rfid = rfid
                 target.data.set.rfid_timestamp = self.data.get.rfid_timestamp
-                self._clear_pending_rfid(rfid, cp2_data, self.data.get.rfid_timestamp)
+                self._clear_pending_rfid(rfid, cp2_data, self.data.get.rfid_timestamp, consume_ocpp_scan=True)
             return
 
         # Einzel-LP:
@@ -222,7 +227,7 @@ class ChargepointRfidMixin:
                            f"der ID-Tag {rfid} zugeordnet werden kann. Daher wird dieser verworfen.")
                 # Ablehnung und Timeout haben denselben Abschluss.
                 if msg:
-                    self._clear_pending_rfid(rfid, cp2_data, timestamp)
+                    self._clear_pending_rfid(rfid, cp2_data, timestamp, consume_ocpp_scan=target is not None)
                     for cp in allowed_cps:
                         cp.set_state_and_log(msg)
                     return
