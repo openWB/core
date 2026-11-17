@@ -400,6 +400,12 @@
 				},
 				{
 					"acltype": "publishClientReceive",
+					"topic": "openWB/optional/int_display/display_url",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
 					"topic": "openWB/optional/int_display/theme",
 					"priority": 0,
 					"allow": true
@@ -1254,6 +1260,12 @@
 				},
 				{
 					"acltype": "publishClientSend",
+					"topic": "openWB/set/optional/int_display/display_url",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
 					"topic": "openWB/set/optional/int_display/rotation",
 					"priority": 0,
 					"allow": true
@@ -1291,6 +1303,12 @@
 				{
 					"acltype": "publishClientReceive",
 					"topic": "openWB/optional/int_display/only_local_charge_points",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/optional/int_display/display_url",
 					"priority": 0,
 					"allow": true
 				},
