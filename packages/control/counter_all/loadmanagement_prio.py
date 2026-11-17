@@ -46,7 +46,7 @@ class LoadmanagementPrioMixin:
                                 consumer.num == entry["id"] for consumer in data.data.consumer_data.values()):
                             reason = "er nicht durch openWB gesteuert wird."
                         else:
-                            reason = "keine Konfiguration mehr vorhanden ist"
+                            reason = "keine gültige Konfiguration gefunden wurde"
                         pub_system_message(
                             {}, f"{component_type_to_readable_text(type_name)} mit ID {entry['id']} wurde "
                             f"aus der Prioritätensteuerung entfernt, da {reason}.", MessageType.WARNING)

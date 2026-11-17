@@ -1339,7 +1339,7 @@ class SubData:
                     elif re.search("openWB/consumer/[0-9]+/usage$", msg.topic) is not None:
                         usage = dataclass_from_dict(Usage, decode_payload(msg.payload))
                         var[f"consumer{index}"].data.usage = usage
-                        if (self.event_subdata_initialized.is_set() and
+                        if ((self.event_subdata_initialized.is_set() or not msg.retain) and
                                 self.counter_all_data.update_consumer_loadmanagement_prio(int(index), usage.type)):
                             Pub().pub("openWB/set/counter/get/loadmanagement_prios",
                                       self.counter_all_data.data.get.loadmanagement_prios)
