@@ -610,6 +610,7 @@ class SetData:
                 "/get/unlock_blocked" in msg.topic or
                 "/get/plug_state" in msg.topic or
                 "/get/ocpp/remote_stop" in msg.topic or
+                "/get/ocpp/remote_start" in msg.topic or
                 "/get/ocpp/unlock_stop" in msg.topic or
                 "/get/ocpp/tag_accepted" in msg.topic or
                 "/get/ocpp/connected" in msg.topic or

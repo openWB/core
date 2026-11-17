@@ -29,6 +29,7 @@ with ImportErrorContext():
     from ocpp.routing import after, on
 from typing import Optional
 from helpermodules.pub import Pub
+from helpermodules.timecheck import create_timestamp
 
 
 from control import data
@@ -470,6 +471,11 @@ class OcppChargePoint(cp):
                 status=RemoteStartStopStatus.rejected
             )
 
+        if (openwb_cp.data.get.charge_state or openwb_cp.data.get.ocpp.remote_start
+                or openwb_cp.data.set.rfid not in (None, id_tag)
+                or openwb_cp.data.get.ocpp.authorization_flow_status is not None):
+            return call_result.RemoteStartTransaction(status=RemoteStartStopStatus.rejected)
+
         if not data.data.optional_data.data.rfid.active:
             log.info("OCPP %s: Remote-Start abgelehnt, lokale RFID-Identifikation ist deaktiviert.",
                      self.chargebox_id)
@@ -479,18 +485,43 @@ class OcppChargePoint(cp):
 
         # Dieselbe lokale Tag-Zulassung wie in _validate_rfid() prüfen, bevor
         # der Auftrag bestätigt und als Scan an das Backend übergeben wird.
-        if (openwb_cp.template is None or
-                not (id_tag in openwb_cp.template.data.valid_tags or
-                     any(id_tag in ev.data.tag_id for ev in data.data.ev_data.values()))):
+        if openwb_cp.template is None or not openwb_cp._is_rfid_allowed(id_tag):
             log.info("OCPP %s: Remote-Start abgelehnt, Tag %s ist lokal nicht zugelassen.",
                      self.chargebox_id, id_tag)
             return call_result.RemoteStartTransaction(
                 status=RemoteStartStopStatus.rejected
             )
 
+        # Wartende Leserscans bewusst verwerfen, auch am gemeinsamen Duo-Partner.
+        # Die vorhandene Bereinigung quittiert den Leser, behält set.rfid und
+        # merkt den verarbeiteten Scanzeitstempel für verspätete Wiederholungen.
+        partner_num = openwb_cp.find_duo_partner()
+        partner = data.data.cp_data.get(f"cp{partner_num}") if partner_num is not None else None
+        reader_cleared = False
+        for point, other in ((openwb_cp, partner), (partner, openwb_cp)):
+            if point is not None and point.data.get.rfid is not None and not point.data.get.ocpp.remote_start:
+                point._clear_pending_rfid(point.data.get.rfid, other)
+                reader_cleared = True
+        if not reader_cleared:
+            openwb_cp.chargepoint_module.clear_rfid()
+
+        # TEMPORAERER MQTT-DUO-TEST: Auch ohne vorgemerkten Scan beide
+        # MQTT-RFID-Eingaenge quittieren. Nach Abschluss des Duo-Tests entfernen.
+        if (partner is not None and {openwb_cp.num, partner.num} == {3, 5}
+                and openwb_cp.data.config.type == partner.data.config.type == "mqtt"):
+            openwb_cp.chargepoint_module.clear_rfid()
+            partner.chargepoint_module.clear_rfid()
+        # ENDE TEMPORAERER MQTT-DUO-TEST
+
         # RFID-Tag an den lokalen Ladepunkt übergeben.
         # Bei erfolgreicher Autorisierung kann dieser den Start auslösen.
-        Pub().pub(f"openWB/set/chargepoint/{self.openwb_num}/get/rfid", id_tag)
+        # Bisherigen Leserscan leeren, bevor die Herkunft auf RemoteStart wechselt.
+        # Danach wie beim Leser Scanzeit und Tag übergeben.
+        prefix = f"openWB/set/chargepoint/{self.openwb_num}/get"
+        Pub().pub(f"{prefix}/rfid", None)
+        Pub().pub(f"{prefix}/ocpp/remote_start", True)
+        Pub().pub(f"{prefix}/rfid_timestamp", create_timestamp())
+        Pub().pub(f"{prefix}/rfid", id_tag)
 
         return call_result.RemoteStartTransaction(
             status=RemoteStartStopStatus.accepted

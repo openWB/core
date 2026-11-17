@@ -22,11 +22,10 @@ class ChargepointOcppMixin:
     def _process_ocpp_start(self) -> None:
         """Verarbeitet OCPP-Startanforderungen und das Zurücksetzen der Startsperre."""
         chargebox_id = get_chargebox_id(self)
-        id_tag = (
-            self.data.set.rfid
-            or self.data.get.rfid
-            or self.data.get.vehicle_id
-        )
+        rfid = self.data.set.rfid
+        if self.find_duo_partner() is None or not self.data.get.plug_state:
+            rfid = rfid or self.data.get.rfid
+        id_tag = rfid or self.data.get.vehicle_id
         if data.data.optional_data.data.ocpp.config.active and chargebox_id:
             if (self.data.get.plug_state is False and
                     not data.data.ocpp_client.is_unlock_in_progress(chargebox_id)):
@@ -224,6 +223,16 @@ class ChargepointOcppMixin:
                 self._clear_scanned_rfid()
             return
 
+        # Lokale Duo-Leserscans nur am ausgewählten Ladepunkt über OCPP verarbeiten.
+        # Bei RemoteStart steht das Ziel bereits fest.
+        if self.data.get.rfid is not None and not self.data.get.ocpp.remote_start:
+            partner_num = self.find_duo_partner()
+            if partner_num is not None and self.data.get.ocpp.transaction_id is None:
+                partner = data.data.cp_data[f"cp{partner_num}"]
+                if self._rfid_target(partner, self.data.get.rfid_timestamp) is not self:
+                    # Gemeinsamen Scan erst am ausgewählten Duo-LP autorisieren.
+                    return
+
         data.data.ocpp_client.finish_rfid_authorization(
             chargebox_id,
             self,
@@ -231,8 +240,7 @@ class ChargepointOcppMixin:
         if self.data.get.rfid is not None:
             rfid = self.data.get.rfid
             response = self.data.get.ocpp.authorization_flow_status
-            valid_tag = (rfid in self.template.data.valid_tags or
-                         any(rfid in v.data.tag_id for v in data.data.ev_data.values()))
+            valid_tag = self._is_rfid_allowed(rfid)
             transaction_active = self.data.get.ocpp.transaction_id is not None
 
             if valid_tag and transaction_active and response is None and rfid == (
