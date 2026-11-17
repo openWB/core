@@ -4,10 +4,74 @@ from unittest.mock import Mock
 
 import pytest
 
+from control import data
 from control.chargepoint.chargepoint import Chargepoint
 from control.consumer.usage import ConsumerUsage
 from control.counter_all.counter_all import CounterAll
 from modules.common.component_type import ComponentType
+
+
+@pytest.mark.parametrize("entries", [[], [{"type": "vehicle", "id": 2}]])
+def test_validate_loadmanagement_prios_restores_missing_vehicles(entries, monkeypatch):
+    c = CounterAll()
+    c.data.get.loadmanagement_prios = entries.copy()
+    monkeypatch.setattr(data.data, "ev_data", {"ev0": Mock(num=0), "ev2": Mock(num=2), "ev3": Mock(num=3)})
+    monkeypatch.setattr(data.data, "consumer_data", {})
+    message = Mock()
+    monkeypatch.setattr("control.counter_all.loadmanagement_prio.pub_system_message", message)
+
+    c.validate_loadmanagement_prios()
+    expected = entries + [{"type": "vehicle", "id": id} for id in (0, 2, 3)
+                          if {"type": "vehicle", "id": id} not in entries]
+    assert c.data.get.loadmanagement_prios == expected
+    assert message.call_count == len(expected) - len(entries)
+
+    message.reset_mock()
+    c.validate_loadmanagement_prios()
+    assert c.data.get.loadmanagement_prios == expected
+    message.assert_not_called()
+
+
+def test_validate_loadmanagement_prios_preserves_groups_and_checks_type(monkeypatch):
+    c = CounterAll()
+    group = {"type": "group", "label": "Vorrang", "children": [
+        {"type": "vehicle", "id": 2}, {"type": "vehicle", "id": 0}]}
+    c.data.get.loadmanagement_prios = [group, {"type": "consumer", "id": 0}]
+    monkeypatch.setattr(data.data, "ev_data", {"ev0": Mock(num=0), "ev2": Mock(num=2)})
+    consumer = Mock(num=0)
+    consumer.data.usage.type = ConsumerUsage.CONTINUOUS
+    monkeypatch.setattr(data.data, "consumer_data", {"consumer0": consumer})
+    message = Mock()
+    monkeypatch.setattr("control.counter_all.loadmanagement_prio.pub_system_message", message)
+
+    c.validate_loadmanagement_prios()
+
+    assert c.data.get.loadmanagement_prios == [group, {"type": "consumer", "id": 0}]
+    message.assert_not_called()
+
+
+def test_validate_loadmanagement_prios_removes_obsolete_and_adds_controlled_consumers(monkeypatch):
+    c = CounterAll()
+    c.data.get.loadmanagement_prios = [
+        {"type": "group", "label": "Alt", "children": [{"type": "vehicle", "id": 9}]},
+        {"type": "group", "label": "Gemischt", "children": [
+            {"type": "vehicle", "id": 0}, {"type": "consumer", "id": 1}]},
+        {"type": "consumer", "id": 2}, {"type": "consumer", "id": 9}]
+    monkeypatch.setattr(data.data, "ev_data", {"ev0": Mock(num=0)})
+    consumers = {}
+    for id, usage_type in enumerate((ConsumerUsage.CONTINUOUS, ConsumerUsage.METER_ONLY,
+                                    ConsumerUsage.SELF_CONTROLLED)):
+        consumer = Mock(num=id)
+        consumer.data.usage.type = usage_type
+        consumers[f"consumer{id}"] = consumer
+    monkeypatch.setattr(data.data, "consumer_data", consumers)
+    monkeypatch.setattr("control.counter_all.loadmanagement_prio.pub_system_message", Mock())
+
+    c.validate_loadmanagement_prios()
+
+    assert c.data.get.loadmanagement_prios == [
+        {"type": "group", "label": "Gemischt", "children": [{"type": "vehicle", "id": 0}]},
+        {"type": "consumer", "id": 0}]
 
 
 @pytest.fixture

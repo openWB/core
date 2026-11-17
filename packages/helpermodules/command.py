@@ -18,6 +18,7 @@ from control.chargelog.process_chargelog import get_log_data
 from control.chargepoint import chargepoint
 from control.chargepoint.chargepoint_template import get_chargepoint_template_default
 from control.consumer.consumer_data import Usage
+from control.consumer.usage import ConsumerUsage
 from control.consumer.consumer_data import Get as ConsumerGet, Set as ConsumerSet
 from control.counter_all import counter_all
 from control.ev import ev
@@ -1206,6 +1207,7 @@ class Command:
                                       "modules")
         consumer_default = asdict(dev.device_descriptor.configuration_factory())
         consumer_default["id"] = new_id
+        default_usage = ConsumerUsage(consumer_default["usage"][0])
         try:
             evu_counter = SubData.counter_all_data.get_id_evu_counter()
             SubData.counter_all_data.hierarchy_add_item_below(
@@ -1218,9 +1220,9 @@ class Command:
                              MessageType.ERROR)
             return
         try:
-            SubData.counter_all_data.add_loadmanagement_prio_item(ComponentType.CONSUMER, new_id)
-            Pub().pub("openWB/set/counter/get/loadmanagement_prios",
-                      SubData.counter_all_data.data.get.loadmanagement_prios)
+            if SubData.counter_all_data.update_consumer_loadmanagement_prio(new_id, default_usage):
+                Pub().pub("openWB/set/counter/get/loadmanagement_prios",
+                          SubData.counter_all_data.data.get.loadmanagement_prios)
         except (TypeError, IndexError) as e:
             pub_user_message(payload, connection_id,
                              str(e),
@@ -1230,7 +1232,7 @@ class Command:
         {Pub().pub(f"openWB/consumer/{new_id}/get/"+k, v) for (k, v) in asdict(ConsumerGet()).items()}
         {Pub().pub(f"openWB/consumer/{new_id}/set/"+k, v) for (k, v) in asdict(ConsumerSet()).items()}
         Pub().pub(f"openWB/consumer/{new_id}/extra_meter", None)
-        Pub().pub(f"openWB/consumer/{new_id}/usage", asdict(Usage(type=consumer_default["usage"][0])))
+        Pub().pub(f"openWB/consumer/{new_id}/usage", asdict(Usage(type=default_usage)))
         self.max_id_hierarchy = new_id
         Pub().pub("openWB/set/command/max_id/hierarchy", new_id)
         # add ACL roles for consumer access, if user management is active
