@@ -1410,8 +1410,10 @@ def test_duo_same_tag_requests_stop_for_each_ocpp_transaction(
 
 @pytest.mark.parametrize("running_index", [0, 1])
 @pytest.mark.parametrize("reverse_order", [False, True])
-def test_duo_assignment_at_free_partner_preserves_running_authorization(
-        active_ocpp_duo, running_index, reverse_order):
+@pytest.mark.parametrize("free_ocpp", [False, True])
+@pytest.mark.parametrize("scan_tag", ["ABC", "04A1B2C3D4"])
+def test_duo_assignment_at_free_partner_takes_priority_over_transaction(
+        active_ocpp_duo, running_index, reverse_order, free_ocpp, scan_tag):
     setup = active_ocpp_duo
     running = setup.duo.chargepoints[running_index]
     free = setup.duo.chargepoints[1 - running_index]
@@ -1420,18 +1422,100 @@ def test_duo_assignment_at_free_partner_preserves_running_authorization(
     free.data.get.ocpp.tag_accepted = False
     free.data.get.charge_state = False
     free.data.set.rfid = None
+    if not free_ocpp:
+        free.data.config.ocpp_chargebox_id = None
+    setup.duo.reader.scan(scan_tag, setup.duo.clock.return_value)
+    setup.run(reverse_order)
+    assert free.data.set.rfid == scan_tag
+    assert running.data.set.rfid == "04A1B2C3D4"
+    assert running.data.get.rfid is None
+    assert running.data.get.ocpp.authorization_flow_status is None
+    setup.run(reverse_order)
+    assert running.data.set.rfid == "04A1B2C3D4"
+    setup.client.authorize.assert_not_called()
+    setup.client.request_stop.assert_not_called()
+
+    if scan_tag == "04A1B2C3D4":
+        # Nach dem zweiten Start hat ein weiterer Scan wieder die Stopp-Bedeutung.
+        if free_ocpp:
+            free.data.get.ocpp.transaction_id = free.num
+            free.data.get.ocpp.transaction_id_tag = scan_tag
+            free.data.get.ocpp.tag_accepted = True
+            free.data.get.charge_state = True
+        setup.duo.clock.return_value += 1
+        setup.duo.reader.scan(scan_tag, setup.duo.clock.return_value)
+        setup.run(reverse_order)
+        expected_boxes = {running.data.config.ocpp_chargebox_id}
+        if free_ocpp:
+            expected_boxes.add(free.data.config.ocpp_chargebox_id)
+        assert {entry.kwargs["chargebox_id"] for entry in setup.client.request_stop.call_args_list} == expected_boxes
+        assert setup.client.request_stop.call_count == len(expected_boxes)
+
+
+@pytest.mark.parametrize("running_index", [0, 1])
+@pytest.mark.parametrize("reverse_order", [False, True])
+def test_duo_assignment_detaches_previous_authorization_for_same_scan(
+        active_ocpp_duo, running_index, reverse_order):
+    setup = active_ocpp_duo
+    running = setup.duo.chargepoints[running_index]
+    free = setup.duo.chargepoints[1 - running_index]
+    free.data.get.ocpp.transaction_id = None
+    free.data.get.ocpp.transaction_id_tag = None
+    free.data.get.ocpp.tag_accepted = False
+    free.data.get.charge_state = False
+    free.data.get.plug_state = False
+    free.data.set.plug_state_prev = False
+    free.data.set.rfid = None
     setup.duo.reader.scan("ABC", setup.duo.clock.return_value)
     setup.run(reverse_order)
-    assert free.data.set.rfid == "ABC"
-    assert running.data.set.rfid == "04A1B2C3D4"
-    assert running.data.get.rfid == "ABC"
+    future = setup.futures[running.data.config.ocpp_chargebox_id]
     assert running.data.get.ocpp.authorization_flow_status == "init"
-    setup.futures[running.data.config.ocpp_chargebox_id].set_result(SimpleNamespace(accepted=True))
+    free.data.get.plug_state = True
+    setup.run(reverse_order)
+    assert free.data.set.rfid == "ABC"
+    assert running.data.get.rfid is None
+    assert running.data.get.ocpp.authorization_flow_status is None
+    assert setup.client._rfid_authorize_pending == {}
+    future.set_result(SimpleNamespace(accepted=True))
     running.data.get.state_str = None
     setup.run(reverse_order)
-    assert "ID-Tag ABC wurde vom OCPP-Server akzeptiert." in running.data.get.state_str
-    assert running.data.set.rfid == "04A1B2C3D4"
+    assert "ID-Tag ABC wurde vom OCPP-Server akzeptiert." not in (running.data.get.state_str or "")
     setup.client.request_stop.assert_not_called()
+
+
+def test_duo_assignment_preserves_newer_scan_at_running_partner(active_ocpp_duo):
+    setup = active_ocpp_duo
+    running, free = setup.duo.chargepoints
+    free.data.get.ocpp.transaction_id = None
+    free.data.get.charge_state = False
+    free.data.set.rfid = None
+    setup.duo.reader.scan("ABC", setup.duo.clock.return_value)
+    running.data.get.rfid_timestamp += 1
+    free._validate_rfid()
+    free._link_rfid_to_cp()
+    assert free.data.set.rfid == "ABC"
+    assert running.data.get.rfid == "ABC"
+    assert running.data.get.rfid_timestamp == setup.duo.clock.return_value + 1
+    running._process_ocpp_rfid()
+    assert running.data.get.ocpp.authorization_flow_status == "init"
+
+
+@pytest.mark.parametrize("reverse_order", [False, True])
+def test_invalid_tag_at_free_target_does_not_stop_running_transaction(active_ocpp_duo, reverse_order):
+    setup = active_ocpp_duo
+    running, free = setup.duo.chargepoints
+    free.data.get.ocpp.transaction_id = None
+    free.data.get.charge_state = False
+    free.data.set.rfid = None
+    free.template.data.valid_tags = []
+    setup.duo.reader.scan("04A1B2C3D4", setup.duo.clock.return_value)
+    setup.run(reverse_order)
+    setup.run(reverse_order)
+    assert free.data.set.rfid is None
+    assert running.data.set.rfid == "04A1B2C3D4"
+    assert running.data.get.rfid is None
+    setup.client.request_stop.assert_not_called()
+    setup.client.authorize.assert_not_called()
 
 
 def test_background_copy_does_not_clear_invalid_scan_during_duo_transaction(active_ocpp_duo):
