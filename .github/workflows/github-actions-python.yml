@@ -69,6 +69,5 @@ jobs:
       - name: Test with pytest
         run: |
           for pythonpath in packages runs; do
-            PYTHONPATH="$pythonpath" "${RUNNER_TEMP}/openwb-venv/.venv/bin/python" -m pytest packages --ignore=packages/modules/internal_chargepoint_handler/rfid_test.py --log-cli-level=DEBUG
-            PYTHONPATH="$pythonpath" "${RUNNER_TEMP}/openwb-venv/.venv/bin/python" -m pytest packages/modules/internal_chargepoint_handler/rfid_test.py --rootdir=. --log-cli-level=DEBUG
+            PYTHONPATH="$pythonpath" "${RUNNER_TEMP}/openwb-venv/.venv/bin/python" -m pytest packages --log-cli-level=DEBUG
           done
