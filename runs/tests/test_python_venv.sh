@@ -100,18 +100,29 @@ bash "$script_dir/setup_python_venv.sh" "$workdir/openwb" 0
 [[ ! -e "$workdir/openwb/.venvs/.legacy" ]]
 
 printf 'example==2\n' > "$workdir/openwb/requirements.txt"
-if bash "$script_dir/setup_python_venv.sh" "$workdir/openwb" 0; then
-	exit 1
-fi
-if FAIL_INSTALL=1 bash "$script_dir/setup_python_venv.sh" "$workdir/openwb" 1; then
-	exit 1
-fi
+bash "$script_dir/setup_python_venv.sh" "$workdir/openwb" 0
 [[ $(readlink -f "$workdir/openwb/.venv") == "$first_env" ]]
+
+FAIL_INSTALL=1 bash "$script_dir/setup_python_venv.sh" "$workdir/openwb" 1
+[[ $(readlink -f "$workdir/openwb/.venv") == "$first_env" ]]
+[[ $(<"$first_env/.openwb-fallback") == "$({ sha256sum "$workdir/openwb/requirements.txt"; "$OPENWB_PYTHON" -c 'import os, sys; print(os.path.realpath(sys.executable), sys.version)'; } | sha256sum | cut -d ' ' -f 1)" ]]
+[[ $(bash "$workdir/openwb/runs/run_python.sh" --probe) == "$first_env/bin/python" ]]
+printf 'example==stale\n' > "$workdir/openwb/requirements.txt"
 if bash "$workdir/openwb/runs/run_python.sh" --probe > "$workdir/stale.out" 2> "$workdir/stale.err"; then
 	exit 1
 fi
 [[ ! -s "$workdir/stale.out" ]]
 grep -q 'does not match the current requirements' "$workdir/stale.err"
+printf 'example==2\n' > "$workdir/openwb/requirements.txt"
+if IMPORT_PROBE_RESULT=1 bash "$script_dir/setup_python_venv.sh" "$workdir/openwb" 0; then
+	exit 1
+fi
+[[ ! -e "$first_env/.openwb-fallback" ]]
+if bash "$workdir/openwb/runs/run_python.sh" --probe > "$workdir/unusable.out" 2> "$workdir/unusable.err"; then
+	exit 1
+fi
+[[ ! -s "$workdir/unusable.out" ]]
+grep -q 'does not match the current requirements' "$workdir/unusable.err"
 [[ $(find "$workdir/openwb/.venvs" -maxdepth 1 -type d -name 'env.*' | wc -l) == 1 ]]
 
 for validation in pip-check import-probe; do
@@ -284,11 +295,10 @@ fi
 [[ $(find "$workdir/missing-deb/.venvs" -maxdepth 1 -type d -name 'env.*' | wc -l) == 0 ]]
 arm64_env=$(readlink -f "$workdir/arm64/.venv")
 printf 'example==3\n' > "$workdir/arm64/requirements.txt"
-if PATH="$workdir/arch-bin:$PATH" TEST_ARCH=arm64 OPENWB_EVDEV_SOURCE="$workdir/wrong-evdev" \
-	bash "$script_dir/setup_python_venv.sh" "$workdir/arm64" 1; then
-	exit 1
-fi
+PATH="$workdir/arch-bin:$PATH" TEST_ARCH=arm64 OPENWB_EVDEV_SOURCE="$workdir/wrong-evdev" \
+	bash "$script_dir/setup_python_venv.sh" "$workdir/arm64" 1
 [[ $(readlink -f "$workdir/arm64/.venv") == "$arm64_env" ]]
+[[ -f "$arm64_env/.openwb-fallback" ]]
 
 rm "$workdir/openwb/.venv"
 bash "$script_dir/setup_python_venv.sh" "$workdir/openwb" 0 --boot-cleanup boot-four

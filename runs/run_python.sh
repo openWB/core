@@ -17,8 +17,11 @@ if [[ -f "$base_dir/.venvs/.lock" ]]; then
 		case "$venv" in
 			"$base_dir"/.venvs/env.*)
 				if [[ $(<"$venv/.openwb-ready") != "$expected_fingerprint" ]]; then
-					echo "The active Python environment does not match the current requirements; refusing to start" >&2
-					exit 1
+					if [[ ! -f "$venv/.openwb-fallback" || $(<"$venv/.openwb-fallback") != "$expected_fingerprint" ]]; then
+						echo "The active Python environment does not match the current requirements; refusing to start" >&2
+						exit 1
+					fi
+					echo "Warning: starting with the verified previous Python environment after a failed dependency rebuild" >&2
 				fi
 				exec 8<"$venv/.openwb-lock"
 				flock -s 8

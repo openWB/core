@@ -77,18 +77,51 @@ if [[ -x "$venv_link/bin/python" && -f "$venv_link/.openwb-ready" ]] &&
 	[[ $(<"$venv_link/.openwb-ready") == "$fingerprint" ]] &&
 	"$venv_link/bin/python" -m pip check &&
 	"$venv_link/bin/python" -c 'import aiohttp, evdev, grpc, jq, lxml, paho.mqtt.client, pymodbus, telnetlib3'; then
+	rm -f "$venv_link/.openwb-fallback"
 	touch "$venv_dir/.migrated"
 	rm -f "$venv_dir/.legacy"
 	echo "Python environment is up to date"
 	exit 0
 fi
 
-if [[ "$online" != 1 ]]; then
-	echo "Cannot install Python dependencies without a network connection" >&2
+use_existing_environment_fallback() {
+	local active_env marker_tmp
+	[[ -L "$venv_link" && -f "$venv_link/.openwb-ready" && -f "$venv_link/.openwb-lock" && -x "$venv_link/bin/python" ]] || return 1
+	active_env=$(readlink -f "$venv_link") || return 1
+	case "$active_env" in
+		"$venv_dir"/env.*) ;;
+		*) return 1 ;;
+	esac
+	if ! rm -f "$active_env/.openwb-fallback" ||
+		! "$active_env/bin/python" -m pip check ||
+		! "$active_env/bin/python" -c 'import aiohttp, evdev, grpc, jq, lxml, paho.mqtt.client, pymodbus, telnetlib3'; then
+		return 1
+	fi
+	marker_tmp="$active_env/.openwb-fallback.$$"
+	if ! printf '%s\n' "$fingerprint" > "$marker_tmp" || ! mv -f -- "$marker_tmp" "$active_env/.openwb-fallback"; then
+		rm -f -- "$marker_tmp"
+		return 1
+	fi
+	echo "Python environment rebuild failed; using the verified previous environment for this requirements fingerprint" >&2
+	return 0
+}
+
+fail_rebuild() {
+	local message=$1
+	echo "$message" >&2
+	if use_existing_environment_fallback; then
+		exit 0
+	fi
 	exit 1
+}
+
+if [[ "$online" != 1 ]]; then
+	fail_rebuild "Cannot install Python dependencies without a network connection"
 fi
 
-new_env=$(mktemp -d "$venv_dir/env.XXXXXXXX")
+if ! new_env=$(mktemp -d "$venv_dir/env.XXXXXXXX"); then
+	fail_rebuild "Cannot create a temporary Python environment"
+fi
 temporary_link=
 cleanup() {
 	if [[ -n "$new_env" ]]; then
@@ -102,9 +135,13 @@ cleanup() {
 	fi
 }
 trap cleanup EXIT
-chmod 755 "$new_env"
+if ! chmod 755 "$new_env"; then
+	fail_rebuild "Cannot set permissions on the temporary Python environment"
+fi
 
-"$python" -m venv "$new_env"
+if ! "$python" -m venv "$new_env"; then
+	fail_rebuild "Failed to create the Python virtual environment"
+fi
 binary_options=(--only-binary=:all:)
 case $(dpkg --print-architecture) in
 	arm64)
@@ -119,22 +156,31 @@ case $(dpkg --print-architecture) in
 			fi
 		done
 		if [[ ! -d "$evdev_source/evdev" || -z "$evdev_metadata" ]]; then
-			echo "Debian python3-evdev 1.9.1 is required on ARM64" >&2
-			exit 1
+			fail_rebuild "Debian python3-evdev 1.9.1 is required on ARM64"
 		fi
-		cp -a "$evdev_source/evdev" "$evdev_metadata" "$site_packages/"
+		if ! cp -a "$evdev_source/evdev" "$evdev_metadata" "$site_packages/"; then
+			fail_rebuild "Failed to copy Debian evdev into the Python environment"
+		fi
 		;;
 	arm*) ;;
 	*) binary_options+=(--no-binary=evdev) ;;
 esac
-"$new_env/bin/python" -m pip install --no-user "${binary_options[@]}" --extra-index-url https://www.piwheels.org/simple -r "$base_dir/requirements.txt"
-"$new_env/bin/python" -m pip check
-"$new_env/bin/python" -c 'import aiohttp, evdev, grpc, jq, lxml, paho.mqtt.client, pymodbus, telnetlib3'
-touch "$new_env/.openwb-lock"
-printf '%s\n' "$fingerprint" > "$new_env/.openwb-ready"
+if ! "$new_env/bin/python" -m pip install --no-user "${binary_options[@]}" --extra-index-url https://www.piwheels.org/simple -r "$base_dir/requirements.txt"; then
+	fail_rebuild "Failed to install Python dependencies"
+fi
+if ! "$new_env/bin/python" -m pip check; then
+	fail_rebuild "Python dependency consistency check failed"
+fi
+if ! "$new_env/bin/python" -c 'import aiohttp, evdev, grpc, jq, lxml, paho.mqtt.client, pymodbus, telnetlib3'; then
+	fail_rebuild "Python dependency import check failed"
+fi
+if ! touch "$new_env/.openwb-lock" || ! printf '%s\n' "$fingerprint" > "$new_env/.openwb-ready"; then
+	fail_rebuild "Failed to mark the Python environment as ready"
+fi
 temporary_link="$venv_dir/.venv-link.$$"
-ln -s "$new_env" "$temporary_link"
-mv -Tf "$temporary_link" "$venv_link"
+if ! ln -s "$new_env" "$temporary_link" || ! mv -Tf "$temporary_link" "$venv_link"; then
+	fail_rebuild "Failed to activate the new Python environment"
+fi
 new_env=
 touch "$venv_dir/.migrated"
 rm -f "$venv_dir/.legacy"
