@@ -4,11 +4,6 @@
       class="flex flex-wrap items-center justify-center gap-x-3 gap-y-0.5"
       :class="position === 'above' ? 'order-1 mb-1.5' : 'order-2 mt-1.5'"
     >
-      <span class="flex flex-none items-center gap-1.5 text-[11px] whitespace-nowrap text-muted sm:text-[13px]">
-        <span class="legend-dot bg-warning" />
-        <b class="text-xs font-bold text-warning sm:text-sm">{{ formatKw(total) }}</b>
-        Gesamt
-      </span>
       <span
         v-for="seg in segments"
         :key="seg.label"

@@ -60,7 +60,7 @@
       />
       <StatBlock
         label="Verbrauch heute"
-        :value="formatKwh(dailyImported)"
+        :value="formatKwh(dailyImported, 1)"
       />
       <span
         v-if="resetActive"

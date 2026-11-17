@@ -17,7 +17,7 @@
       />
       <StatBlock
         label="Eingespeist heute"
-        :value="formatKwh(dailyExported)"
+        :value="formatKwh(dailyExported, 1)"
       />
     </div>
   </div>

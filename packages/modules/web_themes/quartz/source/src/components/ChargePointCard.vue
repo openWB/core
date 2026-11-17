@@ -7,12 +7,13 @@
       </div>
       <div class="flex items-center gap-1">
         <BaseIconButton
-          :active="locked"
+          :tone="locked ? 'error' : 'ok'"
           :aria-label="locked ? 'Ladepunkt entsperren' : 'Ladepunkt sperren'"
           :title="locked ? 'Ladepunkt entsperren' : 'Ladepunkt sperren'"
           @click="locked = !locked"
         >
-          <IconLock />
+          <IconLock v-if="locked" />
+          <IconLockOpen v-else />
         </BaseIconButton>
         <BaseIconButton
           aria-label="Ladepunkt-Einstellungen öffnen"
@@ -38,7 +39,7 @@
     </div>
 
     <div class="mb-2.5 flex items-center gap-1.5 rounded-lg bg-bg px-2 py-1.5">
-      <IconCar class="flex-none text-muted" />
+      <IconCar class="flex-none text-car" />
       <select
         class="flex-1 border-0 bg-transparent text-[13px] text-text"
         aria-label="Fahrzeug an diesem Ladepunkt"
@@ -75,9 +76,9 @@
       />
     </div>
 
-    <div class="mt-3 grid grid-cols-[repeat(5,auto)] items-end gap-4 text-[13px]">
+    <div class="mt-3 flex flex-wrap items-end gap-x-2 gap-y-2 text-xs">
       <StatBlock
-        class="col-start-1"
+        class="min-w-[4.25rem] flex-none"
         label="Leistung"
       >
         <span class="flex items-center gap-1">
@@ -88,32 +89,30 @@
             :aria-label="power > 0 ? 'Lädt' : 'Entlädt (V2H)'"
           />
           {{ formatKw(power) }}
-          <span
-            v-if="phasesInUse > 0"
-            class="rounded-full px-[7px] py-px text-[11px] font-bold phase-badge"
-            title="Phasenanzahl"
-          >{{ phasesInUse }}~</span>
-          <span
-            v-if="chargingCurrent > 0"
-            class="rounded-full px-[7px] py-px text-[11px] font-bold phase-badge"
-            title="Aktueller Ladestrom"
-          >{{ chargingCurrent.toLocaleString(undefined, { maximumFractionDigits: 1 }) }}&nbsp;A</span>
         </span>
       </StatBlock>
       <StatBlock
-        class="col-start-2"
+        class="min-w-[2.6rem] flex-none"
+        label="Phasen"
+        :value="phasesInUse > 0 ? `${phasesInUse}~` : '–'"
+      />
+      <StatBlock
+        class="min-w-[2.6rem] flex-none"
+        label="Strom"
+        :value="chargingCurrent > 0 ? `${chargingCurrent.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 })} A` : '–'"
+      />
+      <StatBlock
+        class="min-w-[3.4rem] flex-none"
         label="Geladen"
-        :value="formatKwh(energyCharged)"
+        :value="formatKwh(energyCharged, 1)"
       />
       <StatBlock
         v-if="soc?.range_charged"
-        class="col-start-3"
         label="Reichweite"
         :value="`+${Math.round(soc.range_charged)} ${soc.range_unit}`"
       />
       <StatBlock
         v-if="limitLabel"
-        class="col-start-4"
         label="Ziel"
       >
         <span
@@ -126,7 +125,7 @@
       </StatBlock>
       <span
         v-if="timeChargingActive"
-        class="col-start-5 text-accent"
+        class="text-accent"
         title="Zeitladen aktiv"
       >
         <IconClock />
@@ -145,6 +144,7 @@ import { stateBadgeClass as stateBadgeClassFor } from '@/utils/badge'
 import IconBolt from './icons/IconBolt.vue'
 import IconCar from './icons/IconCar.vue'
 import IconLock from './icons/IconLock.vue'
+import IconLockOpen from './icons/IconLockOpen.vue'
 import IconGear from './icons/IconGear.vue'
 import IconTarget from './icons/IconTarget.vue'
 import IconClock from './icons/IconClock.vue'
@@ -190,17 +190,28 @@ const plugState = computed(() => mqttStore.chargePointPlugState(props.chargePoin
 const chargeState = computed(() => mqttStore.chargePointChargeState(props.chargePointId))
 const stateMessage = computed(() => mqttStore.chargePointStateMessage(props.chargePointId))
 const phasesInUse = computed(() => mqttStore.chargePointPhasesInUse(props.chargePointId))
-const chargingCurrent = computed(() => mqttStore.chargePointChargingCurrent(props.chargePointId))
+// measured current (average of the phases in use, same as the colors theme), not the setpoint from set/current
+const chargingCurrent = computed(() => {
+  const active = mqttStore.chargePointInstanceCurrents(props.chargePointId).slice(0, phasesInUse.value)
+  return active.length > 0 ? active.reduce((sum, current) => sum + current, 0) / active.length : 0
+})
 const faultState = computed(() => mqttStore.chargePointFaultState(props.chargePointId))
 const faultMessage = computed(() => mqttStore.chargePointFaultMessage(props.chargePointId))
 
+// the badge shows what the charge point actually does, not what was requested: charge_state alone
+// can stay true while the control is still stopping the charge (or while a simulated charge point
+// keeps reporting it), so "charging" additionally needs real power. A lock only shows once
+// charging has really stopped.
+const isCharging = computed(() => chargeState.value && power.value > 0)
+const isLockedShown = computed(() => locked.value && !isCharging.value)
+
 const stateBadgeText = computed(() => {
-  if (locked.value) return 'Gesperrt'
-  if (chargeState.value) return 'Lädt'
+  if (isLockedShown.value) return 'Gesperrt'
+  if (isCharging.value) return 'Lädt'
   if (plugState.value) return 'Angesteckt'
   return 'Nicht angesteckt'
 })
-const stateBadgeClass = computed(() => stateBadgeClassFor(chargeState.value, plugState.value, locked.value))
+const stateBadgeClass = computed(() => stateBadgeClassFor(isCharging.value, plugState.value, isLockedShown.value))
 
 function onVehicleChange(value: string): void {
   const id = Number(value)
@@ -208,10 +219,3 @@ function onVehicleChange(value: string): void {
   if (vehicle) mqttStore.setChargePointConnectedVehicle(props.chargePointId, vehicle.id, vehicle.name)
 }
 </script>
-
-<style scoped>
-.phase-badge {
-  background: color-mix(in srgb, var(--chargepoint) 18%, transparent);
-  color: var(--chargepoint);
-}
-</style>

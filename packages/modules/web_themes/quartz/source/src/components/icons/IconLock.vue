@@ -1,20 +1,22 @@
 <template>
   <svg
-    width="14"
-    height="14"
+    width="16"
+    height="16"
     viewBox="0 0 24 24"
     fill="none"
     stroke="currentColor"
     stroke-width="1.8"
+    stroke-linecap="round"
+    stroke-linejoin="round"
     aria-hidden="true"
   >
     <rect
-      x="5"
+      x="3"
       y="11"
-      width="14"
-      height="9"
-      rx="1.5"
+      width="16"
+      height="11"
+      rx="2"
     />
-    <path d="M8 11V8a4 4 0 1 1 8 0v3" />
+    <path d="M7 11V7a5 5 0 0 1 10 0v4" />
   </svg>
 </template>

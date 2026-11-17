@@ -29,11 +29,11 @@
       />
       <StatBlock
         label="Geladen heute"
-        :value="formatKwh(dailyImported)"
+        :value="formatKwh(dailyImported, 1)"
       />
       <StatBlock
         label="Entladen heute"
-        :value="formatKwh(dailyExported)"
+        :value="formatKwh(dailyExported, 1)"
       />
       <StatBlock
         v-if="soc !== undefined"

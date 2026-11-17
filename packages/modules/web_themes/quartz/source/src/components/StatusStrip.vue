@@ -152,7 +152,7 @@ const chips = computed<Chip[]>(() => {
   result.push(
     {
       key: 'battery',
-      label: `Speicher · ${mqttStore.batterySoc} %`,
+      label: `Speicher ${mqttStore.batterySoc}%`,
       value: formatKw(mqttStore.batteryPower),
       icon: IconBattery,
       color: 'battery',

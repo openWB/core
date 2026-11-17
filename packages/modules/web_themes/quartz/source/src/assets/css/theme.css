@@ -222,6 +222,11 @@
     color: var(--chargepoint);
   }
 
+  .badge-error {
+    background: color-mix(in srgb, var(--error) 18%, transparent);
+    color: var(--error);
+  }
+
   .badge-muted {
     background: var(--bg);
     color: var(--muted);
