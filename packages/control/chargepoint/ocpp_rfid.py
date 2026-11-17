@@ -1,7 +1,7 @@
 from typing import Optional
 
 from control import data
-from control.ocpp.helper import get_chargebox_id
+from control.ocpp.helper import get_chargebox_id, is_ocpp_stop_active
 from helpermodules import timecheck
 from helpermodules.pub import Pub
 
@@ -11,6 +11,13 @@ class ChargepointOcppRfidMixin:
 
     def _is_ocpp_rfid_active(self) -> bool:
         return bool(data.data.optional_data.data.ocpp.config.active and get_chargebox_id(self))
+
+    def _is_ocpp_rfid_assignment_blocked(self) -> bool:
+        """OCPP-Sperren fuer neue RFID-Zuordnungen, nicht fuer Transaktionsstopps."""
+        return self._is_ocpp_rfid_active() and (
+            is_ocpp_stop_active(self.data.get.ocpp)
+            or not all(self.data.get.ocpp.availability)
+        )
 
     def _is_ocpp_rfid_transaction(self) -> bool:
         """RFID-Scans dieser Transaktion werden vom OCPP-Ablauf verarbeitet."""
@@ -46,6 +53,9 @@ class ChargepointOcppRfidMixin:
                 return True
         if (self._is_ocpp_rfid_active() and not all(self.data.get.ocpp.availability)
                 and self.data.get.ocpp.transaction_id is None):
+            if not self.data.get.ocpp.remote_start and self.find_duo_partner() is not None:
+                # Lokalen Scan durch die Duo-Verteilung am verfuegbaren Partner behalten.
+                return False
             # Auch beim Aufruf aus update_ev() keine Wartephase fuer gesperrte Ladepunkte beginnen.
             self._clear_scanned_rfid()
             return True
@@ -132,8 +142,10 @@ class ChargepointOcppRfidMixin:
 
         if (not all(self.data.get.ocpp.availability)
                 and self.data.get.ocpp.transaction_id is None):
-            # Neue Scans verwerfen; RFID-Stops bestehender Transaktionen bleiben möglich.
-            if self.data.get.rfid is not None:
+            # Lokale Duo-Scans erst in _validate_rfid() verteilen, ohne den Leser
+            # vorzeitig zu quittieren. RemoteStart bleibt an diesen LP gebunden.
+            if (self.data.get.rfid is not None and
+                    (self.data.get.ocpp.remote_start or self.find_duo_partner() is None)):
                 self._clear_scanned_rfid()
             return
 
