@@ -130,6 +130,8 @@ def normalize_ocpp_connector_values(value: List[bool]) -> List[bool]:
 class Ocpp:
     connected: bool = False
     backend_message: Optional[str] = None
+    # Der vorläufige RFID-Tag gehört bereits zu diesem Ladepunkt.
+    remote_start: bool = False
     # Herkunft offener Vorgänge auch nach Backend-Neustart erhalten.
     last_connection_settings: Optional[Dict[str, str]] = None
     # neu erzeugte CPs sind per default erstmal available
@@ -265,7 +267,7 @@ class Set:
     plug_time: Optional[float] = field(default=None, metadata={"topic": "set/plug_time"})
     required_power: float = field(default=0, metadata={"topic": "set/required_power"})
     rfid: Optional[str] = field(default=None, metadata={"topic": "set/rfid"})
-    # Letzten abschließend verarbeiteten Scan (zugeordnet oder abgelehnt) auch nach dem Abstecken behalten.
+    # Letzten verarbeiteten Leserscan oder zugeordneten RemoteStart auch nach dem Abstecken behalten.
     rfid_timestamp: Optional[float] = field(default=None, metadata={"topic": "set/rfid_timestamp"})
     # set current aus dem vorherigen Zyklus, um zu wissen, ob am Ende des Zyklus die Ladung freigegeben wird
     # (für Control-Pilot-Unterbrechung)

@@ -32,9 +32,12 @@ class ChargepointValueStoreBroker(ValueStore[ChargepointState]):
         pub_to_broker("openWB/set/chargepoint/" + str(self.num) + "/get/charge_state", self.state.charge_state, 2)
         if self.state.plug_state is not None:
             pub_to_broker("openWB/set/chargepoint/" + str(self.num) + "/get/plug_state", self.state.plug_state, 2)
-        if self.state.rfid_timestamp is not None:
+        if self.state.rfid:
+            # Hardware-Tags sind lokale Scans. Vor dem Herkunftswechsel den
+            # bisherigen Tag leeren, bis Scanzeit und neuer Tag angekommen sind.
+            pub_to_broker(f"openWB/set/chargepoint/{self.num}/get/rfid", None)
+            pub_to_broker(f"openWB/set/chargepoint/{self.num}/get/ocpp/remote_start", False)
             pub_to_broker("openWB/set/chargepoint/" + str(self.num) + "/get/rfid_timestamp", self.state.rfid_timestamp)
-        if self.state.rfid is not None:
             pub_to_broker("openWB/set/chargepoint/" + str(self.num) + "/get/rfid", self.state.rfid)
         pub_to_broker("openWB/set/chargepoint/" + str(self.num) + "/get/serial_number", self.state.serial_number)
         if self.state.soc is not None:

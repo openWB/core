@@ -3,7 +3,7 @@ import copy
 import json
 from dataclasses import asdict
 from threading import Event
-from types import SimpleNamespace
+from types import MethodType, SimpleNamespace
 from unittest.mock import ANY, AsyncMock, Mock, call
 
 import pytest
@@ -11,6 +11,7 @@ import websockets
 
 from control import data
 from control.chargepoint.chargepoint_data import Ocpp, ocpp_config_factory
+from control.chargepoint.rfid import ChargepointRfidMixin
 from control.ocpp import ocpp_client
 from control.ocpp import ocpp_chargepoint
 from control.ocpp import ocpp_connection_manager
@@ -1720,12 +1721,19 @@ def test_reconnect_replaces_old_replay_retry_task(transaction_setup, monkeypatch
 def handler_setup(monkeypatch):
     openwb_cp = SimpleNamespace(
         num=1,
-        data=SimpleNamespace(get=SimpleNamespace(ocpp=SimpleNamespace(
-            transaction_id=None, availability=[True, True], pending_availability=[False, False],
-            authorization_flow_status=None,
-            config=ocpp_config_for_test(),
-        ))),
+        data=SimpleNamespace(
+            set=SimpleNamespace(rfid=None, manual_lock=False),
+            get=SimpleNamespace(charge_state=False, rfid=None, ocpp=SimpleNamespace(
+                transaction_id=None, availability=[True, True], pending_availability=[False, False],
+                authorization_flow_status=None,
+                remote_start=False,
+                config=ocpp_config_for_test(),
+            )),
+        ),
     )
+    openwb_cp.find_duo_partner = lambda: None
+    openwb_cp.chargepoint_module = Mock()
+    openwb_cp._is_rfid_allowed = MethodType(ChargepointRfidMixin._is_rfid_allowed, openwb_cp)
     monkeypatch.setattr(ocpp_chargepoint, "get_cp_from_chargebox_id", lambda _: openwb_cp)
 
     def make_charge_point():
@@ -2057,7 +2065,12 @@ def test_remote_start_requires_local_rfid_permission(
         assert asyncio.run(check()).status == expected_status
 
     if expected_status == RemoteStartStopStatus.accepted:
-        mock_pub.pub.assert_called_once_with("openWB/set/chargepoint/1/get/rfid", "TAG")
+        assert mock_pub.pub.call_args_list == [
+            call("openWB/set/chargepoint/1/get/rfid", None),
+            call("openWB/set/chargepoint/1/get/ocpp/remote_start", True),
+            call("openWB/set/chargepoint/1/get/rfid_timestamp", ANY),
+            call("openWB/set/chargepoint/1/get/rfid", "TAG"),
+        ]
     else:
         mock_pub.pub.assert_not_called()
         assert "Remote-Start abgelehnt" in caplog.text
