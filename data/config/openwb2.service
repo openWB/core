@@ -1,7 +1,8 @@
-# openwb-version:5
+# openwb-version:6
 [Unit]
 Description="Regelung openWB 2.0"
-After=mosquitto_local.service
+# Order startup after the time/network services without enabling disabled services.
+After=mosquitto_local.service NetworkManager.service systemd-timesyncd.service
 
 [Service]
 User=openwb

@@ -39,6 +39,7 @@ while IFS= read -r interface; do
 	# DHCP option 42 contains IPv4 addresses only. Never use DHCP text as shell/config code.
 	addresses=$(printf '%s\n' "$options" | awk '
 		$1 == "ntp_servers" && $2 == "=" {
+			gsub(/,/, " ")
 			for (i = 3; i <= NF; i++) {
 				if (split($i, octets, ".") != 4) continue
 				valid = 1
