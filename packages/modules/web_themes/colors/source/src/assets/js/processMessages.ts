@@ -126,19 +126,19 @@ function processCounterMessages(topic: string, message: string) {
 		}
 	}
 }
-const sample_loadmanagement_prios = [
-	{ type: 'vehicle', id: 2 },
-	{ type: 'vehicle', id: 3 },
-	{
-		type: 'group',
-		children: [
-			{ type: 'vehicle', id: 0 },
-			{ type: 'vehicle', id: 1 },
-		],
-	},
-	{ type: 'consumer', id: 11 },
-	{ type: 'consumer', id: 12 },
-]
+// const sample_loadmanagement_prios = [
+// 	{ type: 'vehicle', id: 2 },
+// 	{ type: 'vehicle', id: 3 },
+// 	{
+// 		type: 'group',
+// 		children: [
+// 			{ type: 'vehicle', id: 0 },
+// 			{ type: 'vehicle', id: 1 },
+// 		],
+// 	},
+// 	{ type: 'consumer', id: 11 },
+// 	{ type: 'consumer', id: 12 },
+// ]
 
 function processGlobalCounterMessages(topic: string, message: string) {
 	if (topic.match(/^openwb\/counter\/get\/hierarchy$/i)) {
