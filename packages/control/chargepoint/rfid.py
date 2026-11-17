@@ -4,7 +4,6 @@ from typing import Optional
 
 from control import data
 from control.chargepoint.chargepoint_data import ChargepointProtocol
-from control.ocpp.helper import is_ocpp_stop_active
 from helpermodules.pub import Pub
 from helpermodules import timecheck
 
@@ -55,7 +54,7 @@ class ChargepointRfidMixin:
         """Nur unzugeordnete Duo-LP ohne begonnenen Ladevorgang berücksichtigen."""
         candidates = [cp for cp in (self, cp2_data)
                       if not cp.data.get.ocpp.remote_start and not cp._is_ocpp_rfid_transaction() and
-                      not (cp._is_ocpp_rfid_active() and is_ocpp_stop_active(cp.data.get.ocpp)) and
+                      not cp._is_ocpp_rfid_assignment_blocked() and
                       cp.data.set.rfid is None and cp.data.get.plug_state and not cp.data.get.charge_state and
                       (cp.data.set.log.imported_at_plugtime == 0 or
                        cp.data.set.log.imported_at_plugtime == cp.data.get.imported)]
@@ -189,7 +188,7 @@ class ChargepointRfidMixin:
                     return
                 allowed_cps = [cp for cp in (self, cp2_data)
                                if not cp.data.get.ocpp.remote_start and not cp._is_ocpp_rfid_transaction()
-                               and not (cp._is_ocpp_rfid_active() and is_ocpp_stop_active(cp.data.get.ocpp))
+                               and not cp._is_ocpp_rfid_assignment_blocked()
                                and (not cp.data.get.plug_state or
                                (cp.data.set.rfid is None and not cp.data.get.charge_state and
                                 (cp.data.set.log.imported_at_plugtime == 0 or

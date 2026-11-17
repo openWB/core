@@ -1347,6 +1347,143 @@ def active_ocpp_duo(remote_duo):
     return setup
 
 
+@pytest.mark.parametrize("unavailable_index", [0, 1])
+@pytest.mark.parametrize("reverse_order", [False, True])
+@pytest.mark.parametrize("partner_ocpp", [False, True])
+@pytest.mark.parametrize("partner_plugged", [False, True])
+@pytest.mark.parametrize("availability", [[False, True], [True, False], [False, False]])
+def test_unavailable_duo_chargepoint_preserves_scan_for_available_partner(
+        remote_duo, unavailable_index, reverse_order, partner_ocpp, partner_plugged, availability):
+    setup = remote_duo
+    unavailable = setup.duo.chargepoints[unavailable_index]
+    available = setup.duo.chargepoints[1 - unavailable_index]
+    unavailable.data.get.ocpp.availability = availability
+    unavailable.data.get.plug_state = True
+    unavailable.data.set.plug_state_prev = True
+    unavailable.data.set.plug_time = None
+    available.data.get.plug_state = partner_plugged
+    available.data.set.plug_state_prev = partner_plugged
+    available.data.set.plug_time = setup.duo.clock.return_value - 10 if partner_plugged else None
+    if not partner_ocpp:
+        available.data.config.ocpp_chargebox_id = None
+
+    scanned_at = setup.duo.clock.return_value
+    setup.duo.reader.scan("ABC", scanned_at)
+    setup.run(reverse_order)
+    assert unavailable.data.get.rfid is None
+    assert unavailable.data.set.rfid is None
+    if not partner_plugged:
+        assert available.data.get.rfid == "ABC"
+        assert available.data.get.rfid_timestamp == scanned_at
+        assert "innerhalb von 5 Minuten" in available.data.get.state_str
+        assert all(cp.chargepoint_module.clear_rfid.call_count == 0 for cp in setup.duo.chargepoints)
+        setup.duo.clock.return_value += 10
+        setup.run(reverse_order)
+        assert available.data.get.rfid_timestamp == scanned_at
+        available.data.get.plug_state = True
+        setup.run(reverse_order)
+    assert available.data.set.rfid == "ABC"
+    assert available.data.get.rfid is None
+    assert unavailable.data.set.rfid is None
+    assert sum(cp.chargepoint_module.clear_rfid.call_count for cp in setup.duo.chargepoints) == 1
+    assert not [call for call in setup.client.request_start.call_args_list
+                if call.kwargs.get("chargebox_id") == unavailable.data.config.ocpp_chargebox_id]
+
+
+@pytest.mark.parametrize("reverse_order", [False, True])
+def test_unavailable_duo_discards_scan_when_both_chargepoints_unavailable(remote_duo, reverse_order):
+    setup = remote_duo
+    for cp in setup.duo.chargepoints:
+        cp.data.get.ocpp.availability = [True, False]
+    setup.duo.reader.scan("ABC", setup.duo.clock.return_value)
+    setup.run(reverse_order)
+    assert all(cp.data.get.rfid is None and cp.data.set.rfid is None for cp in setup.duo.chargepoints)
+    assert sum(cp.chargepoint_module.clear_rfid.call_count for cp in setup.duo.chargepoints) == 1
+    setup.client.request_start.assert_not_called()
+
+
+@pytest.mark.parametrize("unavailable_index", [0, 1])
+@pytest.mark.parametrize("reverse_order", [False, True])
+def test_unavailable_duo_distributes_scan_received_only_at_unavailable_input(
+        remote_duo, unavailable_index, reverse_order):
+    setup = remote_duo
+    unavailable = setup.duo.chargepoints[unavailable_index]
+    available = setup.duo.chargepoints[1 - unavailable_index]
+    unavailable.data.get.ocpp.availability = [True, False]
+    setup.hardware(unavailable, "ABC", setup.duo.clock.return_value)
+    background_cp = copy.deepcopy(unavailable)
+    background_cp.update_ev(data.data.ev_data)
+    assert unavailable.data.get.rfid == "ABC"
+    assert available.data.get.rfid is None
+    assert all(cp.chargepoint_module.clear_rfid.call_count == 0 for cp in setup.duo.chargepoints)
+    setup.run(reverse_order)
+    assert unavailable.data.get.rfid is None
+    assert available.data.get.rfid == "ABC"
+    assert available.data.get.rfid_timestamp == setup.duo.clock.return_value
+    assert all(cp.chargepoint_module.clear_rfid.call_count == 0 for cp in setup.duo.chargepoints)
+
+
+@pytest.mark.parametrize("unavailable_index", [0, 1])
+def test_unavailable_duo_remote_start_scan_is_not_redirected(remote_duo, unavailable_index):
+    setup = remote_duo
+    unavailable = setup.duo.chargepoints[unavailable_index]
+    partner = setup.duo.chargepoints[1 - unavailable_index]
+    unavailable.data.get.ocpp.availability = [True, False]
+    unavailable.data.get.ocpp.remote_start = True
+    unavailable.data.get.rfid = "ABC"
+    unavailable.data.get.rfid_timestamp = setup.duo.clock.return_value
+    setup.run()
+    assert all(cp.data.get.rfid is None and cp.data.set.rfid is None for cp in setup.duo.chargepoints)
+    assert not unavailable.data.get.ocpp.remote_start
+    assert partner.data.get.rfid_timestamp is None
+    setup.client.request_start.assert_not_called()
+
+
+@pytest.mark.parametrize("running_index", [0, 1])
+@pytest.mark.parametrize("reverse_order", [False, True])
+def test_unavailable_duo_running_transactions_keep_rfid_stop_processing(
+        active_ocpp_duo, running_index, reverse_order):
+    setup = active_ocpp_duo
+    running = setup.duo.chargepoints[running_index]
+    running.data.get.ocpp.availability = [True, False]
+    setup.duo.reader.scan(running.data.set.rfid, setup.duo.clock.return_value)
+    setup.run(reverse_order)
+    assert setup.client.request_stop.call_count == 2
+    assert {call.kwargs["chargebox_id"] for call in setup.client.request_stop.call_args_list} == {
+        cp.data.config.ocpp_chargebox_id for cp in setup.duo.chargepoints}
+
+
+@pytest.mark.parametrize("ocpp_mode", ["inactive", "unconfigured"])
+def test_unavailable_duo_flag_is_ignored_without_active_ocpp(remote_duo, ocpp_mode):
+    setup = remote_duo
+    cp, partner = setup.duo.chargepoints
+    cp.data.get.ocpp.availability = [False, False]
+    cp.data.get.plug_state = True
+    cp.data.set.plug_state_prev = True
+    if ocpp_mode == "inactive":
+        data.data.optional_data.data.ocpp.config.active = False
+    else:
+        cp.data.config.ocpp_chargebox_id = None
+    setup.duo.reader.scan("ABC", setup.duo.clock.return_value)
+    setup.run()
+    assert cp.data.set.rfid == "ABC"
+    assert partner.data.set.rfid is None
+
+
+@pytest.mark.parametrize("unavailable_index", [0, 1])
+@pytest.mark.parametrize("reverse_order", [False, True])
+def test_unavailable_duo_partner_scan_expires_after_original_timeout(
+        remote_duo, unavailable_index, reverse_order):
+    setup = remote_duo
+    setup.duo.chargepoints[unavailable_index].data.get.ocpp.availability = [False, True]
+    setup.duo.reader.scan("ABC", setup.duo.clock.return_value)
+    setup.run(reverse_order)
+    setup.duo.clock.return_value += 301
+    setup.run(reverse_order)
+    assert all(cp.data.get.rfid is None and cp.data.set.rfid is None for cp in setup.duo.chargepoints)
+    setup.client.request_start.assert_not_called()
+
+
 @pytest.mark.parametrize("stop_flag", ["rfid_stop", "remote_stop", "unlock_stop", "reset"])
 @pytest.mark.parametrize("stopped_index", [0, 1])
 @pytest.mark.parametrize("reverse_order", [False, True])
