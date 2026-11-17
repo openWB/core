@@ -14,6 +14,7 @@ from control.chargepoint.control_parameter import control_parameter_factory
 from control.chargepoint.charging_type import ChargingType
 from control.chargepoint.rfid import ChargepointRfidMixin
 from control.chargepoint.ocpp import ChargepointOcppMixin
+from control.chargepoint.ocpp_rfid import ChargepointOcppRfidMixin
 from control.ocpp.helper import get_chargebox_id, is_ocpp_stop_active
 from control.ev.charge_template import ChargeTemplate
 from control.ev.ev import Ev
@@ -55,7 +56,7 @@ def get_chargepoint_get_default() -> Dict:
 log = logging.getLogger(__name__)
 
 
-class Chargepoint(ChargepointRfidMixin, ChargepointOcppMixin, Load):
+class Chargepoint(ChargepointRfidMixin, ChargepointOcppRfidMixin, ChargepointOcppMixin, Load):
     """ geht alle Ladepunkte durch, prüft, ob geladen werden darf und ruft die Funktion des angesteckten Autos auf.
     """
     MAX_FAILED_PHASE_SWITCHES = 2
