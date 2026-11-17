@@ -641,7 +641,6 @@ class UpdateConfig:
         "^openWB/system/mqtt/valid_partner_ids$",
         "^openWB/system/os_version$",
         "^openWB/system/pnp_ip$",
-        "^openWB/system/python_runtime_version$",
         "^openWB/system/release_train$",
         "^openWB/system/secondary_auto_update$",
         "^openWB/system/security/user_management_active$",
