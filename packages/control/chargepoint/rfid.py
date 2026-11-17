@@ -78,17 +78,6 @@ class ChargepointRfidMixin:
         """Gemeinsamen Scan einmal quittieren, verbindliche Zuordnungen behalten."""
         if rfid_timestamp is None:
             rfid_timestamp = self.data.get.rfid_timestamp
-        # TEMPORAERER MQTT-DUO-TEST: Snapshot fuer die zusaetzliche Leserquittierung.
-        # Diesen Block nach Abschluss des Duo-Tests wieder entfernen.
-        clear_partner_rfid = (
-            cp2_data is not None and {self.num, cp2_data.num} == {3, 5}
-            and self.data.config.type == cp2_data.data.config.type == "mqtt"
-            and not cp2_data.data.get.ocpp.remote_start
-            and (consume_ocpp_scan or not cp2_data._is_ocpp_rfid_transaction())
-            and cp2_data.data.get.rfid == rfid
-            and cp2_data.data.get.rfid_timestamp in (None, rfid_timestamp)
-        )
-        # ENDE TEMPORAERER MQTT-DUO-TEST
         # Auch endgültig abgelehnte Scans dürfen später keine Freigabe auslösen.
         # Die verbindliche Kartenzuordnung bleibt dabei unverändert.
         # Bei einer Duo reicht das Setzen an einem CP, da die Wiederholungsprüfung
@@ -118,11 +107,6 @@ class ChargepointRfidMixin:
                 Pub().pub(f"openWB/set/chargepoint/{cp.num}/get/rfid_timestamp", None)
         if not newer_scan_waiting:
             self.chargepoint_module.clear_rfid()
-            # TEMPORAERER MQTT-DUO-TEST: Beide getrennten RFID-Eingaenge quittieren.
-            # Diesen Block nach Abschluss des Duo-Tests wieder entfernen.
-            if clear_partner_rfid:
-                cp2_data.chargepoint_module.clear_rfid()
-            # ENDE TEMPORAERER MQTT-DUO-TEST
 
     def _link_rfid_to_cp(self: ChargepointProtocol) -> None:
         """ tested
@@ -312,13 +296,6 @@ class ChargepointRfidMixin:
 
     def find_duo_partner(self: ChargepointProtocol) -> Optional[int]:
         try:
-            # TEMPORAERER MQTT-DUO-TEST: MQTT-Ladepunkte 3 und 5 als Duo behandeln.
-            # Diesen Block nach Abschluss des Duo-Tests wieder entfernen.
-            if self.data.config.type == "mqtt":
-                cp2_num = {3: 5, 5: 3}.get(self.num)
-                cp2_data = data.data.cp_data.get(f"cp{cp2_num}") if cp2_num is not None else None
-                return cp2_num if cp2_data is not None and cp2_data.data.config.type == "mqtt" else None
-            # ENDE TEMPORAERER MQTT-DUO-TEST
             # Wurde ein zweiter Ladepunkt an einer Duo konfiguriert?
             if self.data.config.type == "external_openwb" or self.data.config.type == "internal_openwb":
                 for cp2 in data.data.cp_data.values():

@@ -505,14 +505,6 @@ class OcppChargePoint(cp):
         if not reader_cleared:
             openwb_cp.chargepoint_module.clear_rfid()
 
-        # TEMPORAERER MQTT-DUO-TEST: Auch ohne vorgemerkten Scan beide
-        # MQTT-RFID-Eingaenge quittieren. Nach Abschluss des Duo-Tests entfernen.
-        if (partner is not None and {openwb_cp.num, partner.num} == {3, 5}
-                and openwb_cp.data.config.type == partner.data.config.type == "mqtt"):
-            openwb_cp.chargepoint_module.clear_rfid()
-            partner.chargepoint_module.clear_rfid()
-        # ENDE TEMPORAERER MQTT-DUO-TEST
-
         # RFID-Tag an den lokalen Ladepunkt übergeben.
         # Bei erfolgreicher Autorisierung kann dieser den Start auslösen.
         # Bisherigen Leserscan leeren, bevor die Herkunft auf RemoteStart wechselt.
