@@ -4,7 +4,6 @@ from typing import Optional
 
 from control import data
 from control.chargepoint.chargepoint_data import ChargepointProtocol
-from control.ocpp.helper import get_chargebox_id
 from helpermodules.pub import Pub
 from helpermodules import timecheck
 
@@ -12,13 +11,6 @@ log = logging.getLogger(__name__)
 
 
 class ChargepointRfidMixin:
-    def _is_ocpp_rfid_transaction(self) -> bool:
-        """RFID-Scans dieser Transaktion werden vom OCPP-Ablauf verarbeitet."""
-        return bool(data.data.optional_data.data.ocpp.config.active
-                    and data.data.optional_data.data.rfid.active
-                    and get_chargebox_id(self)
-                    and self.data.get.ocpp.transaction_id is not None)
-
     def _is_rfid_allowed(self, rfid: str) -> bool:
         """Lokale Tag-Zulassung für Leserscans und zielgebundene RemoteStarts."""
         if not data.data.optional_data.data.rfid.active:
@@ -153,34 +145,13 @@ class ChargepointRfidMixin:
         if not remote_start:
             self.chargepoint_module.clear_rfid()
         else:
-            self.data.get.ocpp.remote_start = False
-            Pub().pub(f"openWB/set/chargepoint/{self.num}/get/ocpp/remote_start", False)
+            self._reset_ocpp_remote_start()
 
-        data.data.ocpp_client.discard_rfid_authorization(get_chargebox_id(self))
+        self._discard_ocpp_rfid_authorization()
         self.data.get.rfid = None
         Pub().pub(f"openWB/set/chargepoint/{self.num}/get/rfid", None)
         self.data.get.rfid_timestamp = None
         Pub().pub(f"openWB/set/chargepoint/{self.num}/get/rfid_timestamp", None)
-
-    def _clear_scanned_rfid(self) -> None:
-        """Entfernt einen abgearbeiteten Scan inklusive OCPP-Antwort."""
-        remote_start = bool(self.data.get.ocpp.remote_start)
-        if remote_start:
-            self.data.get.ocpp.remote_start = False
-            Pub().pub(f"openWB/set/chargepoint/{self.num}/get/ocpp/remote_start", False)
-        data.data.ocpp_client.discard_rfid_authorization(get_chargebox_id(self))
-        self.data.get.rfid = None
-        Pub().pub(f"openWB/set/chargepoint/{self.num}/get/rfid", None)
-        self.data.get.rfid_timestamp = None
-        Pub().pub(f"openWB/set/chargepoint/{self.num}/get/rfid_timestamp", None)
-        flow_status = self.data.get.ocpp.authorization_flow_status
-        if (flow_status != "start_unconfirmed" and
-                (not data.data.optional_data.data.rfid.active or flow_status not in (
-                    "start_pending", "start_starting", "start_authorizing", "start_rejected", "start_error"))):
-            self.data.get.ocpp.authorization_flow_status = None
-            Pub().pub(f"openWB/set/chargepoint/{self.num}/get/ocpp/authorization_flow_status", None)
-        if not remote_start:
-            self.chargepoint_module.clear_rfid()
 
     def _validate_rfid(self) -> None:
         """Prüft, dass der Tag an diesem Ladepunkt gültig ist und dass dieser innerhalb von 5 Minuten einem EV
@@ -189,31 +160,9 @@ class ChargepointRfidMixin:
         msg = ""
         if self.data.get.rfid is not None:
             remote_start = bool(self.data.get.ocpp.remote_start)
-            if remote_start:
-                # Auch update_ev() arbeitet auf Kopien: nur im Regelzyklus bereinigen.
-                if data.data.cp_data.get(f"cp{self.num}") is not self:
-                    return
-                if (not data.data.optional_data.data.ocpp.config.active or not get_chargebox_id(self)
-                        or (self.data.set.rfid is not None and self.data.set.rfid != self.data.get.rfid)):
-                    self._clear_scanned_rfid()
-                    return
-            if (data.data.optional_data.data.ocpp.config.active and get_chargebox_id(self)
-                    and not all(self.data.get.ocpp.availability)
-                    and self.data.get.ocpp.transaction_id is None):
-                # Auch beim Aufruf aus update_ev() keine Wartephase für gesperrte Ladepunkte beginnen.
-                self._clear_scanned_rfid()
+            if self._validate_ocpp_rfid():
                 return
             rfid = self.data.get.rfid
-            if self._is_ocpp_rfid_transaction():
-                # Wie beim Einzel-LP den Scan bis zur OCPP-Antwort behalten.
-                # Weder die bestehende Zuordnung aendern noch den Duo-Partner bereinigen.
-                if data.data.cp_data.get(f"cp{self.num}") is not self:
-                    return
-                if not self._is_rfid_allowed(rfid):
-                    self._clear_scanned_rfid()
-                    self.set_state_and_log(
-                        f"Der ID-Tag {rfid} ist hier keinem Ladepunkt-Profil oder Fahrzeug zugeordnet.")
-                return
             cp2_num = self.find_duo_partner()
             cp2_data = (data.data.cp_data.get(f"cp{cp2_num}")
                         if cp2_num is not None and not remote_start else None)
@@ -305,29 +254,15 @@ class ChargepointRfidMixin:
                 return
             if data.data.optional_data.data.rfid.active:
                 if self._is_rfid_allowed(rfid):
-                    ocpp_active = (data.data.optional_data.data.ocpp.config.active and
-                                   get_chargebox_id(self))
+                    ocpp_active = self._is_ocpp_rfid_active()
                     # Bei aktivem OCPP auch während einer Ladung weitere RFID-Scans verarbeiten.
                     if (ocpp_active or (self.data.set.log.imported_at_plugtime == 0 or
                                         self.data.set.log.imported_at_plugtime == self.data.get.imported)):
 
-                        if ocpp_active and self.data.get.ocpp.transaction_id is not None:
-                            # Scan während einer Transaktion wird in chargepoint.py behandelt.
+                        if self._wait_for_ocpp_rfid_authorization():
                             return
-                        if ocpp_active and self.data.get.ocpp.authorization_flow_status == "init":
-                            # Die noch laufende OCPP-Autorisierung darf den Tag nicht löschen.
-                            if self.data.get.rfid_timestamp is None:
-                                self.data.get.rfid_timestamp = timecheck.create_timestamp()
-                                Pub().pub(f"openWB/set/chargepoint/{self.num}/get/rfid_timestamp",
-                                          self.data.get.rfid_timestamp)
-                            elif not timecheck.check_timestamp(self.data.get.rfid_timestamp, 300):
-                                self._clear_scanned_rfid()
-                                self.set_state_and_log("OCPP-RFID-Autorisierung nach 5 Minuten abgebrochen.")
-                            return
-
-                        if (ocpp_active and self.data.get.ocpp.authorization_flow_status is not None and
-                                self.data.get.ocpp.authorization_flow_status != "accepted"):
-                            # OCPP-Ablehnung wird in chargepoint.py ausgewertet und bereinigt.
+                        if self._get_ocpp_rfid_flow() not in (None, "accepted"):
+                            # OCPP-Ablehnung wird in ocpp_rfid.py ausgewertet und bereinigt.
                             pass
 
                         elif self.data.get.rfid_timestamp is None:
@@ -361,14 +296,12 @@ class ChargepointRfidMixin:
                 self._clear_scanned_rfid()
                 self.set_state_and_log(msg)
                 return
-            data.data.ocpp_client.discard_rfid_authorization(get_chargebox_id(self))
+            self._discard_ocpp_rfid_authorization()
             self.data.get.rfid = None
             Pub().pub(f"openWB/set/chargepoint/{self.num}/get/rfid", None)
             self.data.get.rfid_timestamp = None
             Pub().pub(f"openWB/set/chargepoint/{self.num}/get/rfid_timestamp", None)
-            if self.data.get.ocpp.authorization_flow_status != "start_unconfirmed":
-                self.data.get.ocpp.authorization_flow_status = None
-                Pub().pub(f"openWB/set/chargepoint/{self.num}/get/ocpp/authorization_flow_status", None)
+            self._reset_ocpp_rfid_flow()
             self.chargepoint_module.clear_rfid()
             self.set_state_and_log(msg)
 
