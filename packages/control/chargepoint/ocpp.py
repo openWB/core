@@ -143,7 +143,19 @@ class ChargepointOcppMixin:
                 "stop_error": "Server hat das Ende des Ladevorgangs nicht bestätigt.",
             }.get(self.data.get.ocpp.authorization_flow_status)
             if message is None and self.data.get.plug_state:
-                if self.data.set.rfid or self.data.get.rfid or self.data.get.vehicle_id:
+                if self.data.set.rfid:
+                    message = "Warte auf OCPP-Transaktionsfreigabe."
+                elif self.data.get.ocpp.remote_start:
+                    message = "Warte auf Verarbeitung der OCPP-Startanforderung."
+                elif self.data.get.rfid:
+                    partner_num = self.find_duo_partner()
+                    partner = data.data.cp_data.get(f"cp{partner_num}") if partner_num is not None else None
+                    if (partner is not None and
+                            self._rfid_target(partner, self.data.get.rfid_timestamp) is None):
+                        message = "RFID erkannt. Keine eindeutige Zuordnung zu einem Duo-Ladepunkt möglich."
+                    else:
+                        message = "Warte auf OCPP-Transaktionsfreigabe."
+                elif self.data.get.vehicle_id:
                     message = "Warte auf OCPP-Transaktionsfreigabe."
                 else:
                     message = "Keine Ladung: RFID zur OCPP-Freigabe erforderlich."
