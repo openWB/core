@@ -121,6 +121,15 @@ class ChargepointOcppRfidMixin:
                     f"openWB/set/chargepoint/{self.num}/get/ocpp/authorization_flow_status", None)
             return
 
+        # Verspaetete Kopien eines Freischaltungsscans vor Stop/Authorize verwerfen.
+        # Die normale RFID-Validierung folgt erst nach der OCPP-Verarbeitung.
+        if self.data.get.rfid is not None and not self.data.get.ocpp.remote_start:
+            # Nur den eigenen Abschluss vergleichen: Der Nicht-OCPP-Partner
+            # kann denselben Scan schon bereinigt haben, waehrend hier noch
+            # eine unabhaengige Transaktions-Autorisierung aussteht.
+            if self._discard_processed_rfid():
+                return
+
         if (not all(self.data.get.ocpp.availability)
                 and self.data.get.ocpp.transaction_id is None):
             # Neue Scans verwerfen; RFID-Stops bestehender Transaktionen bleiben möglich.

@@ -4,6 +4,7 @@ from typing import Optional
 
 from control import data
 from control.chargepoint.chargepoint_data import ChargepointProtocol
+from control.ocpp.helper import is_ocpp_stop_active
 from helpermodules.pub import Pub
 from helpermodules import timecheck
 
@@ -54,6 +55,7 @@ class ChargepointRfidMixin:
         """Nur unzugeordnete Duo-LP ohne begonnenen Ladevorgang berücksichtigen."""
         candidates = [cp for cp in (self, cp2_data)
                       if not cp.data.get.ocpp.remote_start and not cp._is_ocpp_rfid_transaction() and
+                      not (cp._is_ocpp_rfid_active() and is_ocpp_stop_active(cp.data.get.ocpp)) and
                       cp.data.set.rfid is None and cp.data.get.plug_state and not cp.data.get.charge_state and
                       (cp.data.set.log.imported_at_plugtime == 0 or
                        cp.data.set.log.imported_at_plugtime == cp.data.get.imported)]
@@ -124,7 +126,13 @@ class ChargepointRfidMixin:
             target = self._rfid_target(cp2_data, self.data.get.rfid_timestamp)
             if target is not None:
                 target.data.set.rfid = rfid
-                target.data.set.rfid_timestamp = self.data.get.rfid_timestamp
+                # Erfolgreiche lokale Zuordnung schliesst den gemeinsamen Scan
+                # fuer beide LP ab, auch bei spaeter erneut zugestellten Kopien.
+                timestamp = self.data.get.rfid_timestamp
+                for cp in (self, cp2_data):
+                    if (timestamp is not None and
+                            (cp.data.set.rfid_timestamp is None or timestamp > cp.data.set.rfid_timestamp)):
+                        cp.data.set.rfid_timestamp = timestamp
                 self._clear_pending_rfid(rfid, cp2_data, self.data.get.rfid_timestamp, consume_ocpp_scan=True)
             return
 
@@ -181,6 +189,7 @@ class ChargepointRfidMixin:
                     return
                 allowed_cps = [cp for cp in (self, cp2_data)
                                if not cp.data.get.ocpp.remote_start and not cp._is_ocpp_rfid_transaction()
+                               and not (cp._is_ocpp_rfid_active() and is_ocpp_stop_active(cp.data.get.ocpp))
                                and (not cp.data.get.plug_state or
                                (cp.data.set.rfid is None and not cp.data.get.charge_state and
                                 (cp.data.set.log.imported_at_plugtime == 0 or

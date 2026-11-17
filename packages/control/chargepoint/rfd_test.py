@@ -157,7 +157,8 @@ def test_duo_reader_timestamp_prevents_second_authorization(
     process()
     assert other.data.set.rfid == rfid_tag
     assert other.data.set.rfid_timestamp == duo.clock.return_value
-    assert selected.data.set.rfid_timestamp == scanned_at
+    # Auch der erste LP merkt sich den gemeinsamen Abschluss des neuen Scans.
+    assert selected.data.set.rfid_timestamp == duo.clock.return_value
     assert sum(cp.chargepoint_module.clear_rfid.call_count for cp in duo.chargepoints) == 2
 
 
@@ -1346,6 +1347,66 @@ def active_ocpp_duo(remote_duo):
     return setup
 
 
+@pytest.mark.parametrize("stop_flag", ["rfid_stop", "remote_stop", "unlock_stop", "reset"])
+@pytest.mark.parametrize("stopped_index", [0, 1])
+@pytest.mark.parametrize("reverse_order", [False, True])
+@pytest.mark.parametrize("partner_ocpp", [False, True])
+def test_stopped_duo_chargepoint_does_not_block_partner_assignment(
+        remote_duo, stop_flag, stopped_index, reverse_order, partner_ocpp):
+    setup = remote_duo
+    stopped = setup.duo.chargepoints[stopped_index]
+    available = setup.duo.chargepoints[1 - stopped_index]
+    for cp in setup.duo.chargepoints:
+        cp.data.get.plug_state = True
+        cp.data.set.plug_state_prev = True
+    stopped.data.set.plug_time = None
+    available.data.set.plug_time = setup.duo.clock.return_value - 10
+    setattr(stopped.data.get.ocpp, stop_flag, True)
+    if not partner_ocpp:
+        available.data.config.ocpp_chargebox_id = None
+
+    setup.duo.reader.scan("ABC", setup.duo.clock.return_value)
+    setup.run(reverse_order)
+    assert available.data.set.rfid == "ABC"
+    assert stopped.data.set.rfid is None
+    assert getattr(stopped.data.get.ocpp, stop_flag) is True
+    setup.client.request_stop.assert_not_called()
+    assert {entry.kwargs["chargebox_id"] for entry in setup.client.request_start.call_args_list} == (
+        {available.data.config.ocpp_chargebox_id} if partner_ocpp else set())
+
+    # Abstecken setzt die bestehende Sperre zurueck; danach ist der LP wieder waehlbar.
+    stopped.data.get.plug_state = False
+    stopped._reset_ocpp_stop_flags_after_unplug()
+    assert getattr(stopped.data.get.ocpp, stop_flag) is False
+    stopped.data.get.plug_state = True
+    assert stopped._rfid_target(available, setup.duo.clock.return_value) is stopped
+
+
+@pytest.mark.parametrize("stop_flag", ["rfid_stop", "remote_stop", "unlock_stop", "reset"])
+@pytest.mark.parametrize("ocpp_mode", ["active", "disabled", "unconfigured"])
+def test_duo_stop_filter_requires_active_ocpp(remote_duo, stop_flag, ocpp_mode):
+    setup = remote_duo
+    stopped, available = setup.duo.chargepoints
+    setattr(stopped.data.get.ocpp, stop_flag, True)
+    if ocpp_mode == "disabled":
+        data.data.optional_data.data.ocpp.config.active = False
+    elif ocpp_mode == "unconfigured":
+        stopped.data.config.ocpp_chargebox_id = None
+
+    # Ohne eingestecktes Auto prueft allowed_cps, wo der Scan vorgehalten wird.
+    setup.duo.reader.scan("ABC", setup.duo.clock.return_value)
+    available._validate_rfid()
+    assert available.data.get.rfid == "ABC"
+    assert stopped.data.get.rfid == (None if ocpp_mode == "active" else "ABC")
+
+    for cp in setup.duo.chargepoints:
+        cp.data.get.plug_state = True
+    stopped.data.set.plug_time = setup.duo.clock.return_value - 1
+    available.data.set.plug_time = setup.duo.clock.return_value - 10
+    expected = available if ocpp_mode == "active" else stopped
+    assert available._rfid_target(stopped, setup.duo.clock.return_value) is expected
+
+
 @pytest.mark.parametrize("ocpp_indices", [(0, 1), (0,), (1,)])
 @pytest.mark.parametrize("reverse_order", [False, True])
 @pytest.mark.parametrize("accepted", [False, True])
@@ -1410,12 +1471,57 @@ def test_duo_same_tag_requests_stop_for_each_ocpp_transaction(
     setup.client.authorize.assert_not_called()
 
 
+@pytest.mark.parametrize("target_index", [0, 1])
+@pytest.mark.parametrize("reverse_order", [False, True])
+@pytest.mark.parametrize("replay_offset", [0, -1])
+def test_replayed_assignment_scan_does_not_stop_new_duo_transaction(
+        active_ocpp_duo, target_index, reverse_order, replay_offset):
+    setup = active_ocpp_duo
+    target = setup.duo.chargepoints[target_index]
+    tag = "ABC"
+    scanned_at = setup.duo.clock.return_value
+    target.data.get.ocpp.transaction_id = None
+    target.data.get.ocpp.transaction_id_tag = None
+    target.data.get.ocpp.tag_accepted = False
+    target.data.get.charge_state = False
+    target.data.set.rfid = None
+    setup.duo.reader.scan(tag, scanned_at)
+    setup.run(reverse_order)
+    assert target.data.set.rfid == tag
+    assert target.data.set.rfid_timestamp == scanned_at
+
+    # Backend bestaetigt den Start, danach trifft derselbe Hardware-Scan nochmals ein.
+    target.data.get.ocpp.transaction_id = 763
+    target.data.get.ocpp.transaction_id_tag = tag
+    target.data.get.ocpp.tag_accepted = True
+    target.data.get.ocpp.authorization_flow_status = None
+    target.data.get.charge_state = True
+    setup.hardware(target, tag, scanned_at + replay_offset)
+    setup.run(reverse_order)
+    setup.run(reverse_order)
+    assert all(cp.data.get.rfid is None for cp in setup.duo.chargepoints)
+    assert target.data.set.rfid == tag
+    assert target.data.get.ocpp.transaction_id == 763
+    setup.client.request_stop.assert_not_called()
+    setup.client.authorize.assert_not_called()
+
+    # Ein echter neuer Scan derselben Karte muss weiterhin einen Stopp ausloesen.
+    setup.duo.clock.return_value += 1
+    for cp in setup.duo.chargepoints:
+        setup.hardware(cp, tag, setup.duo.clock.return_value)
+    setup.run(reverse_order)
+    setup.client.request_stop.assert_called_once()
+    assert setup.client.request_stop.call_args.kwargs["chargebox_id"] == target.data.config.ocpp_chargebox_id
+    assert setup.client.request_stop.call_args.kwargs["authorize_stop"] is True
+
+
 @pytest.mark.parametrize("running_index", [0, 1])
 @pytest.mark.parametrize("reverse_order", [False, True])
 @pytest.mark.parametrize("free_ocpp", [False, True])
 @pytest.mark.parametrize("scan_tag", ["ABC", "04A1B2C3D4"])
+@pytest.mark.parametrize("replay_offset", [0, -1])
 def test_duo_assignment_at_free_partner_takes_priority_over_transaction(
-        active_ocpp_duo, running_index, reverse_order, free_ocpp, scan_tag):
+        active_ocpp_duo, running_index, reverse_order, free_ocpp, scan_tag, replay_offset):
     setup = active_ocpp_duo
     running = setup.duo.chargepoints[running_index]
     free = setup.duo.chargepoints[1 - running_index]
@@ -1432,8 +1538,15 @@ def test_duo_assignment_at_free_partner_takes_priority_over_transaction(
     assert running.data.set.rfid == "04A1B2C3D4"
     assert running.data.get.rfid is None
     assert running.data.get.ocpp.authorization_flow_status is None
+    # Erst nach der abgeschlossenen Zuordnung wird der Hardware-Scan erneut zugestellt.
+    for cp in setup.duo.chargepoints:
+        setup.hardware(cp, scan_tag, setup.duo.clock.return_value + replay_offset)
     setup.run(reverse_order)
+    setup.run(reverse_order)
+    assert all(cp.data.get.rfid is None for cp in setup.duo.chargepoints)
+    assert free.data.set.rfid == scan_tag
     assert running.data.set.rfid == "04A1B2C3D4"
+    assert running.data.get.ocpp.transaction_id == running.num
     setup.client.authorize.assert_not_called()
     setup.client.request_stop.assert_not_called()
 
