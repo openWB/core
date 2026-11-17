@@ -1,5 +1,5 @@
 import asyncio
-from unittest.mock import Mock
+from unittest.mock import Mock, call
 
 from evdev import InputEvent, ecodes
 import pytest
@@ -10,6 +10,7 @@ from modules.internal_chargepoint_handler import rfid
 @pytest.mark.parametrize("enter_key", [ecodes.KEY_ENTER, ecodes.KEY_KPENTER])
 def test_read_events_publishes_tag(monkeypatch, enter_key: int):
     monkeypatch.setattr(rfid, "list_devices", lambda: [])
+    monkeypatch.setattr(rfid.timecheck, "create_timestamp", lambda: 123)
     publisher = Mock()
     monkeypatch.setattr(rfid, "Pub", Mock(return_value=publisher))
     reader = rfid.RfidReader()
@@ -30,4 +31,7 @@ def test_read_events_publishes_tag(monkeypatch, enter_key: int):
 
     asyncio.run(reader._read_events(device))
 
-    publisher.pub.assert_called_once_with("openWB/set/internal_chargepoint/last_tag", "12")
+    assert publisher.pub.call_args_list == [
+        call("openWB/set/internal_chargepoint/last_tag_timestamp", 123),
+        call("openWB/set/internal_chargepoint/last_tag", "12"),
+    ]
