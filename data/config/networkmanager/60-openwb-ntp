@@ -1,0 +1,78 @@
+#!/bin/bash
+set -eo pipefail
+export LC_ALL=C
+
+# Re-read current leases rather than retaining possibly stale event data.
+# A full snapshot also handles simultaneous LAN/WLAN connections.
+case "${2:-}" in
+	up | down | dhcp4-change | refresh) ;;
+	*) exit 0 ;;
+esac
+
+if ! systemctl is-active --quiet NetworkManager.service ||
+	! systemctl is-active --quiet systemd-timesyncd.service; then
+	exit 0
+fi
+
+state_dir="/run/openwb-timesync"
+config_dir="/run/systemd/timesyncd.conf.d"
+config_file="${config_dir}/60-openwb-dhcp.conf"
+restart_pending="${state_dir}/restart-pending"
+install -d -m 0755 "$state_dir" "$config_dir"
+
+# Startup and DHCP events must not overwrite each other's snapshots.
+exec 9>"${state_dir}/lock"
+flock -x 9
+
+devices=$(nmcli --get-values DEVICE device status)
+servers=""
+while IFS= read -r interface; do
+	[[ -n "$interface" ]] || continue
+	# nmcli escapes unusual device names; ordinary kernel interface names need no decoding.
+	[[ "$interface" =~ ^[a-zA-Z0-9_.-]+$ ]] || continue
+	state=$(nmcli --get-values GENERAL.STATE device show "$interface")
+	case "$state" in
+		100 | 100\ *) ;;
+		*) continue ;;
+	esac
+	options=$(nmcli --get-values DHCP4.OPTION device show "$interface")
+	# DHCP option 42 contains IPv4 addresses only. Never use DHCP text as shell/config code.
+	addresses=$(printf '%s\n' "$options" | awk '
+		$1 == "ntp_servers" && $2 == "=" {
+			for (i = 3; i <= NF; i++) {
+				if (split($i, octets, ".") != 4) continue
+				valid = 1
+				for (j = 1; j <= 4; j++) {
+					if (octets[j] !~ /^[0-9]+$/ || length(octets[j]) > 3 || octets[j] + 0 > 255)
+						valid = 0
+				}
+				if (valid) print $i
+			}
+		}')
+	servers="${servers}
+${addresses}"
+done <<<"$devices"
+
+# Stable ordering avoids restarts when only device/option ordering changes.
+servers=$(printf '%s\n' "$servers" | sed '/^$/d' | sort -u | paste -sd ' ' -)
+if [[ -n "$servers" ]]; then
+	temp_file=$(mktemp "${config_dir}/.openwb-dhcp.XXXXXX")
+	trap 'rm -f "$temp_file"' EXIT
+	printf '[Time]\nNTP=%s\n' "$servers" >"$temp_file"
+	if cmp -s "$temp_file" "$config_file"; then
+		[[ -f "$restart_pending" ]] || exit 0
+	else
+		chmod 0644 "$temp_file"
+		mv -f "$temp_file" "$config_file"
+	fi
+else
+	# No DHCP NTP servers left: fall back to the pre-existing timesyncd configuration.
+	[[ -f "$config_file" || -f "$restart_pending" ]] || exit 0
+	rm -f "$config_file"
+fi
+
+# If restarting fails, retry on the next event even when the file is already current.
+touch "$restart_pending"
+echo "openWB: applying DHCP NTP servers (${servers:-none}), restarting timesyncd"
+systemctl restart systemd-timesyncd.service
+rm -f "$restart_pending"
