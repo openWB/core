@@ -162,6 +162,28 @@ class ChargepointOcppRfidMixin:
             if valid_tag and transaction_active and response is None and rfid == (
                     self.data.get.ocpp.transaction_id_tag or self.data.set.rfid):
                 # Erneuter Scan des Transaktions-Tags fordert einen RFID-Stop an.
+                # Am Partner ohne Transaktion darf er nicht als Freischaltung warten.
+                timestamp = self.data.get.rfid_timestamp
+                partner_num = self.find_duo_partner()
+                partner = data.data.cp_data.get(f"cp{partner_num}") if partner_num is not None else None
+                for cp in (self, partner):
+                    if (cp is None or cp.data.get.ocpp.remote_start or
+                            (cp is not self and cp._is_ocpp_rfid_transaction())):
+                        continue
+                    if (timestamp is not None and
+                            (cp.data.set.rfid_timestamp is None or timestamp > cp.data.set.rfid_timestamp)):
+                        cp.data.set.rfid_timestamp = timestamp
+                    if (cp is not self and cp.data.get.rfid == rfid and
+                            cp.data.get.rfid_timestamp == timestamp):
+                        cp._discard_ocpp_rfid_authorization()
+                        if cp.data.get.ocpp.authorization_flow_status in ("init", "accepted", "rejected"):
+                            cp._reset_ocpp_rfid_flow()
+                        # Nur Software-Kopie bereinigen; den gemeinsamen Leser
+                        # quittiert anschliessend der stoppende Ladepunkt einmal.
+                        cp.data.get.rfid = None
+                        cp.data.get.rfid_timestamp = None
+                        Pub().pub(f"openWB/set/chargepoint/{cp.num}/get/rfid", None)
+                        Pub().pub(f"openWB/set/chargepoint/{cp.num}/get/rfid_timestamp", None)
                 # Sofort verbrauchen: Im nächsten Update darf kein zweiter Stop erfolgen.
                 self._clear_scanned_rfid()
                 future = data.data.ocpp_client.request_stop(
