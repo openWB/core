@@ -204,4 +204,4 @@ def test_unexpected_error_logs_traceback_and_keeps_cache_retry(config, monkeypat
     assert state.soc == 55
     assert "unexpected response shape" in state.warning
     assert portal.get_request_interval_override() == 60
-    # assert any(record.exc_info and "Unerwarteter Fehler" in record.getMessage() for record in caplog.records)
+    assert any(record.exc_info and "Unerwarteter Fehler" in record.getMessage() for record in caplog.records)
