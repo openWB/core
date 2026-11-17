@@ -33,6 +33,7 @@ export class Config {
 	private _showButtonBar = true
 	private _showCounters = false
 	private _showVehicles = false
+	private _showStandardVehicle = true
 	private _showPrices = false
 	private _debug: boolean = false
 	isEtEnabled: boolean = false
@@ -238,6 +239,12 @@ export class Config {
 	}
 	setShowVehicles(show: boolean) {
 		this._showVehicles = show
+	}
+	get showStandardVehicle() {
+		return this._showStandardVehicle
+	}
+	setShowStandardVehicle(show: boolean) {
+		this._showStandardVehicle = show
 	}
 	get showPrices() {
 		return this._showPrices

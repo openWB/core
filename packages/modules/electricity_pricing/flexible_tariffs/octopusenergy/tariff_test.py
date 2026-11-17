@@ -107,6 +107,108 @@ def test_build_tariff_state(now: datetime, expected_prices: Dict[str, float], mo
     assert prices == expected_prices
 
 
+ALL_DAY_RATE = {
+    '__typename': 'TimeOfUseProductUnitRateInformation',
+    'rates': [{
+        'latestGrossUnitRateCentsPerKwh': '20',
+        'timeslotActivationRules': [{'activeFromTime': '00:00:00', 'activeToTime': '00:00:00'}],
+        'timeslotName': 'STANDARD',
+    }],
+}
+
+
+def test_build_tariff_state_all_day_slot_with_equal_bounds(monkeypatch):
+    data = {'account': {'property': {'electricityMalos': [{'agreements': [
+        {'id': 1,
+         'unitRateInformation': ALL_DAY_RATE,
+         'validFrom': '2026-01-01T00:00:00+00:00',
+         'validTo': None}]}]}}}
+    datetime_mock = MagicMock(wraps=datetime)
+    datetime_mock.now.return_value = datetime(2026, 11, 2, 13, 3, 0, tzinfo=timezone.utc)
+    monkeypatch.setattr(tariff, "datetime", datetime_mock)
+
+    prices = build_tariff_state(data)
+
+    assert len(prices) == 28
+    assert all(price == pytest.approx(0.0002) for price in prices.values())
+
+
+def test_build_tariff_state_prefers_unit_rate_forecast_for_dynamic_tariffs(monkeypatch):
+    data = {'account': {'property': {'electricityMalos': [{'agreements': [
+        {'id': 1,
+         'unitRateInformation': ALL_DAY_RATE,
+         'unitRateForecast': [
+             {'validFrom': '2026-11-02T12:00:00+00:00', 'validTo': '2026-11-02T13:00:00+00:00',
+              'unitRateInformation': {'__typename': 'SimpleProductUnitRateInformation',
+                                      'latestGrossUnitRateCentsPerKwh': '40'}},
+             {'validFrom': '2026-11-02T13:00:00+00:00', 'validTo': '2026-11-02T14:00:00+00:00',
+              'unitRateInformation': {'__typename': 'SimpleProductUnitRateInformation',
+                                      'latestGrossUnitRateCentsPerKwh': '80'}},
+         ],
+         'validFrom': '2026-01-01T00:00:00+00:00',
+         'validTo': None}]}]}}}
+    datetime_mock = MagicMock(wraps=datetime)
+    datetime_mock.now.return_value = datetime(2026, 11, 2, 12, 3, 0, tzinfo=timezone.utc)
+    monkeypatch.setattr(tariff, "datetime", datetime_mock)
+
+    prices = build_tariff_state(data)
+
+    assert prices['1793620800'] == pytest.approx(0.0004)  # 2026-11-02 12:03 UTC, first forecast interval (40 ct)
+    assert prices['1793624400'] == pytest.approx(0.0008)  # 2026-11-02 13:03 UTC, second forecast interval (80 ct)
+
+
+def test_build_tariff_state_keeps_forecasts_own_quarter_hour_resolution(monkeypatch):
+    def quarter_hour(minute: int, rate: str) -> dict:
+        start = f"2026-11-02T12:{minute:02d}:00+00:00"
+        end = f"2026-11-02T12:{minute + 15:02d}:00+00:00" if minute < 45 else "2026-11-02T13:00:00+00:00"
+        return {'validFrom': start, 'validTo': end,
+                'unitRateInformation': {'__typename': 'SimpleProductUnitRateInformation',
+                                        'latestGrossUnitRateCentsPerKwh': rate}}
+
+    data = {'account': {'property': {'electricityMalos': [{'agreements': [
+        {'id': 1,
+         'unitRateInformation': ALL_DAY_RATE,
+         'unitRateForecast': [quarter_hour(0, '10'), quarter_hour(15, '20'),
+                              quarter_hour(30, '30'), quarter_hour(45, '40')],
+         'validFrom': '2026-01-01T00:00:00+00:00',
+         'validTo': None}]}]}}}
+    datetime_mock = MagicMock(wraps=datetime)
+    datetime_mock.now.return_value = datetime(2026, 11, 2, 12, 0, 0, tzinfo=timezone.utc)
+    monkeypatch.setattr(tariff, "datetime", datetime_mock)
+
+    prices = build_tariff_state(data)
+
+    assert prices['1793620800'] == pytest.approx(0.0001)  # 12:00 UTC
+    assert prices['1793621700'] == pytest.approx(0.0002)  # 12:15 UTC
+    assert prices['1793622600'] == pytest.approx(0.0003)  # 12:30 UTC
+    assert prices['1793623500'] == pytest.approx(0.0004)  # 12:45 UTC
+
+
+def test_build_tariff_state_fills_gap_between_forecast_entries(monkeypatch):
+    data = {'account': {'property': {'electricityMalos': [{'agreements': [
+        {'id': 1,
+         'unitRateInformation': ALL_DAY_RATE,
+         'unitRateForecast': [
+             {'validFrom': '2026-11-02T12:00:00+00:00', 'validTo': '2026-11-02T13:00:00+00:00',
+              'unitRateInformation': {'__typename': 'SimpleProductUnitRateInformation',
+                                      'latestGrossUnitRateCentsPerKwh': '10'}},
+             # Lücke 13:00-15:00 Uhr, keine Forecast-Daten dafür
+             {'validFrom': '2026-11-02T15:00:00+00:00', 'validTo': '2026-11-02T16:00:00+00:00',
+              'unitRateInformation': {'__typename': 'SimpleProductUnitRateInformation',
+                                      'latestGrossUnitRateCentsPerKwh': '90'}},
+         ],
+         'validFrom': '2026-01-01T00:00:00+00:00',
+         'validTo': None}]}]}}}
+    datetime_mock = MagicMock(wraps=datetime)
+    datetime_mock.now.return_value = datetime(2026, 11, 2, 12, 0, 0, tzinfo=timezone.utc)
+    monkeypatch.setattr(tariff, "datetime", datetime_mock)
+
+    prices = build_tariff_state(data)
+
+    assert prices['1793624400'] == pytest.approx(0.0002)  # 13:00 UTC, gap filled from unitRateInformation
+    assert prices['1793628000'] == pytest.approx(0.0002)  # 14:00 UTC, gap filled from unitRateInformation
+
+
 # --- Zusätzliche Tests für die Fehlerbehandlung bei fehlenden/kaputten API-Daten ---
 
 def test_build_tariff_state_raises_on_missing_property():

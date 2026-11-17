@@ -50,11 +50,7 @@ class FroniusSunspecInverterConfiguration:
                  version: FroniusInverterVersion = FroniusInverterVersion.mppt,
                  pv_mppt_indices: Optional[List[int]] = None):
         self.version = version
-        # Nur für version=mppt relevant: welche MPPT-Kanäle (SunSpec-Modell 160, 1-indiziert)
-        # PV-Strings sind. Auf Hybrid-Geräten belegen die Speicher-Lade-/Entladekanäle eigene,
-        # höhere Indizes (siehe FroniusSunspecBatConfiguration.mppt_index) -- welche Indizes
-        # tatsächlich PV vs. Speicher sind, unterscheidet sich zwischen Geräteserien und muss am
-        # Gerät (Kanalbezeichnung im Fronius-Webinterface bzw. per Modbus-Tool) geprüft werden.
+        # Nur für version=mppt relevant: welche MPPT-Kanäle (SunSpec-Modell 160) PV-Strings sind.
         self.pv_mppt_indices = pv_mppt_indices if pv_mppt_indices is not None else [1, 2]
 
 
@@ -69,11 +65,10 @@ class FroniusSunspecInverterSetup(ComponentSetup[FroniusSunspecInverterConfigura
 
 
 class FroniusSunspecBatConfiguration:
-    def __init__(self, mppt_index: Optional[int] = None):
-        # MPPT-Kanal (SunSpec-Modell 160, 1-indiziert), der die tatsächliche Lade-/Entladeleistung
-        # des Speichers liefert. None, falls unbekannt -- dann liefert die Komponente SOC und
-        # Steuerung, aber keine Momentanleistung (power bleibt 0).
-        self.mppt_index = mppt_index
+    def __init__(self, mppt_index_charge: int = 3, mppt_index_discharge: int = 4):
+        # Fronius bildet Lade-/Entladeleistung als zwei eigene MPPT-Kanäle ab (SunSpec-Modell 160).
+        self.mppt_index_charge = mppt_index_charge
+        self.mppt_index_discharge = mppt_index_discharge
 
 
 class FroniusSunspecBatSetup(ComponentSetup[FroniusSunspecBatConfiguration]):

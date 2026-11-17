@@ -218,7 +218,8 @@ class HandlerChargepoint:
                 time.sleep(0.1)
             phase_switch_cp_active = __thread_active(self.update_state.cp_interruption_thread) or __thread_active(
                 self.update_state.phase_switch_thread)
-            state = self.module.get_values(phase_switch_cp_active, rfid_data.last_tag)
+            state = self.module.get_values(phase_switch_cp_active, rfid_data.last_tag,
+                                           rfid_data.last_tag_timestamp)
             log.debug("Published plug state "+str(state.plug_state))
             heartbeat_expired = self._check_heartbeat_expired(global_data.heartbeat)
             self.update_state.update_state(data, heartbeat_expired)

@@ -502,6 +502,8 @@ class SetData:
                     self._validate_value(msg, int, [(0, 7)])
                 elif "/set/autolock_state" in msg.topic:
                     self._validate_value(msg, int, [(0, 4)])
+                elif msg.topic.endswith("/set/rfid_timestamp"):
+                    self._validate_value(msg, float, [(0, TIMESTAMP_2100)])
                 elif "/set/rfid" in msg.topic:
                     self._validate_value(msg, str)
                 elif "/set/plug_time" in msg.topic:
@@ -1230,6 +1232,8 @@ class SetData:
                 self._validate_value(msg, bool)
             elif "get" in msg.topic:
                 self.process_chargepoint_get_topics(msg)
+            elif msg.topic.endswith("/last_tag_timestamp"):
+                self._validate_value(msg, float, [(0, TIMESTAMP_2100)])
             elif "last_tag" in msg.topic:
                 self._validate_value(msg, str)
             else:

@@ -2,7 +2,6 @@ import logging
 from datetime import datetime, timedelta
 from typing import Dict, Optional
 
-from control import data
 from modules.common.component_state import ForecastState
 from modules.common.store import ValueStore
 from modules.common.store._api import LoggingValueStore
@@ -48,12 +47,8 @@ class ForecastValueStore(ValueStore[ForecastState]):
         tomorrow_values = _filter_values_for_date(values, tomorrow_date)
         today_kwh = float(daily_kwh.get(today_date.isoformat(), 0.0))
         tomorrow_kwh = float(daily_kwh.get(tomorrow_date.isoformat(), 0.0))
-        data.data.optional_data.data.forecast.get.values = values
-        data.data.optional_data.data.forecast.get.today_values = today_values
-        data.data.optional_data.data.forecast.get.tomorrow_values = tomorrow_values
-        data.data.optional_data.data.forecast.get.daily_kwh = daily_kwh
-        data.data.optional_data.data.forecast.get.today_kwh = today_kwh
-        data.data.optional_data.data.forecast.get.tomorrow_kwh = tomorrow_kwh
+        # publish only - same as FlexibleTariffValueStore/GridFeeValueStore; a direct write here
+        # would hit a stale snapshot, not the live object forecast_get_current_value() reads.
         pub_to_broker("openWB/set/optional/forecast/get/values", values)
         pub_to_broker("openWB/set/optional/forecast/get/today_values", today_values)
         pub_to_broker("openWB/set/optional/forecast/get/tomorrow_values", tomorrow_values)

@@ -63,7 +63,7 @@ NO_MODULE = {"type": None, "configuration": {}}
 
 class UpdateConfig:
 
-    DATASTORE_VERSION = 159
+    DATASTORE_VERSION = 162
 
     valid_topic = [
         "^openWB/bat/config/bat_control_activated$",
@@ -171,6 +171,7 @@ class UpdateConfig:
         "^openWB/chargepoint/[0-9]+/set/plug_state_prev$",
         "^openWB/chargepoint/[0-9]+/set/plug_time$",
         "^openWB/chargepoint/[0-9]+/set/rfid$",
+        "^openWB/chargepoint/[0-9]+/set/rfid_timestamp$",
         "^openWB/chargepoint/[0-9]+/set/log$",
         "^openWB/chargepoint/[0-9]+/set/phases_to_use$",
         "^openWB/chargepoint/[0-9]+/set/ocpp_transaction_id$",
@@ -369,6 +370,8 @@ class UpdateConfig:
         "^openWB/io/states/[0-9]+/get/analog_output$",
         "^openWB/io/states/[0-9]+/get/digital_input$",
         "^openWB/io/states/[0-9]+/get/digital_output$",
+        "^openWB/io/states/[0-9]+/get/fault_state$",
+        "^openWB/io/states/[0-9]+/get/fault_str$",
         "^openWB/io/states/[0-9]+/set/analog_input$",
         "^openWB/io/states/[0-9]+/set/analog_output$",
         "^openWB/io/states/[0-9]+/set/digital_input$",
@@ -391,6 +394,7 @@ class UpdateConfig:
         "^openWB/mqtt/chargepoint/[0-9]+/get/voltages$",
         "^openWB/mqtt/chargepoint/[0-9]+/get/power_factors$",
         "^openWB/mqtt/chargepoint/[0-9]+/get/rfid$",
+        "^openWB/mqtt/chargepoint/[0-9]+/get/rfid_timestamp$",
         "^openWB/mqtt/consumer/[0-9]+/get/currents$",
         "^openWB/mqtt/consumer/[0-9]+/get/rfid$",
         "^openWB/mqtt/consumer/[0-9]+/get/rfid_timestamp$",
@@ -4217,6 +4221,63 @@ class UpdateConfig:
         self._append_datastore_version(158)
 
     def upgrade_datastore_159(self) -> None:
+        """Vorgabe des pvnode-Teams: Schreibweise des Anbieternamens vereinheitlicht."""
+        def upgrade(topic: str, payload) -> Optional[dict]:
+            if topic == "openWB/optional/forecast/provider":
+                provider = decode_payload(payload)
+                if (isinstance(provider, dict) and provider.get("type") == "pvnode"
+                        and provider.get("name") == "PVNode V2"):
+                    provider["name"] = "pvnode V2"
+                    return {topic: provider}
+            return None
+
+        self._loop_all_received_topics(upgrade)
+        self._append_datastore_version(159)
+
+    def upgrade_datastore_160(self) -> None:
+        """Solax Speicher: Einstellung battery_index (Nummer der Batterie, Standard 1) ergänzen."""
+        def upgrade(topic: str, payload) -> Optional[dict]:
+            match = re.fullmatch(r"openWB/system/device/([0-9]+)/component/[0-9]+/config", topic)
+            if match is None:
+                return None
+            device_topic = f"openWB/system/device/{match.group(1)}/config"
+            device_config = decode_payload(self.all_received_topics.get(device_topic))
+            if not isinstance(device_config, dict) or device_config.get("type") != "solax":
+                return None
+            component_config = decode_payload(payload)
+            if component_config.get("type") != "bat" or "battery_index" in component_config["configuration"]:
+                return None
+            component_config["configuration"]["battery_index"] = 1
+            return {topic: component_config}
+
+        self._loop_all_received_topics(upgrade)
+        self._append_datastore_version(160)
+
+    def upgrade_datastore_161(self) -> None:
+        """Fronius SunSpec Speicher: mppt_index in mppt_index_charge/mppt_index_discharge aufgeteilt."""
+        def upgrade(topic: str, payload) -> Optional[dict]:
+            match = re.fullmatch(r"openWB/system/device/([0-9]+)/component/[0-9]+/config", topic)
+            if match is None:
+                return None
+            device_topic = f"openWB/system/device/{match.group(1)}/config"
+            device_config = decode_payload(self.all_received_topics.get(device_topic))
+            if not isinstance(device_config, dict) or device_config.get("type") != "fronius_sunspec":
+                return None
+            config = decode_payload(payload)
+            if config.get("type") != "bat":
+                return None
+            configuration = config["configuration"]
+            if "mppt_index_charge" in configuration or "mppt_index_discharge" in configuration:
+                return None
+            mppt_index = configuration.pop("mppt_index", None)
+            configuration["mppt_index_charge"] = mppt_index if mppt_index is not None else 3
+            configuration["mppt_index_discharge"] = 4
+            return {topic: config}
+
+        self._loop_all_received_topics(upgrade)
+        self._append_datastore_version(161)
+
+    def upgrade_datastore_162(self) -> None:
         def upgrade(topic: str, payload) -> Optional[dict]:
             if "openWB/general/charge_log_data_config" == topic:
                 config = decode_payload(payload)
@@ -4226,4 +4287,4 @@ class UpdateConfig:
             return None
 
         self._loop_all_received_topics(upgrade)
-        self._append_datastore_version(159)
+        self._append_datastore_version(162)
