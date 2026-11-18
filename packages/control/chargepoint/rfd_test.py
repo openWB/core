@@ -222,8 +222,10 @@ def test_reader_generates_new_timestamp_for_each_scan(duo, monkeypatch):
     assert [call.args for call in duo.mqtt.pub.call_args_list] == [
         ("openWB/set/internal_chargepoint/last_tag_timestamp", 1_700_000_000.125),
         ("openWB/set/internal_chargepoint/last_tag", "1"),
+        ("openWB/set/internal_socket/data/last_tag", "1"),
         ("openWB/set/internal_chargepoint/last_tag_timestamp", 1_700_000_001.25),
         ("openWB/set/internal_chargepoint/last_tag", "1"),
+        ("openWB/set/internal_socket/data/last_tag", "1"),
     ]
 
 
