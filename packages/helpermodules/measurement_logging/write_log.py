@@ -26,6 +26,7 @@ log = logging.getLogger(__name__)
 #                     "grid": Preis für Netzbezug,
 #                     "pv": Preis für PV-Strom,
 #                     "bat": Preis für Speicherstrom
+#                     "tariff_name": Tarifzeitraum des Netzpreises, nur bei Festen Tarifstunden
 #                 }
 #                     "cp": {
 #                     "cp1": {

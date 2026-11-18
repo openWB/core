@@ -63,7 +63,7 @@ NO_MODULE = {"type": None, "configuration": {}}
 
 class UpdateConfig:
 
-    DATASTORE_VERSION = 161
+    DATASTORE_VERSION = 162
 
     valid_topic = [
         "^openWB/bat/config/bat_control_activated$",
@@ -4291,3 +4291,15 @@ class UpdateConfig:
 
         self._loop_all_received_topics(upgrade)
         self._append_datastore_version(161)
+
+    def upgrade_datastore_162(self) -> None:
+        def upgrade(topic: str, payload) -> Optional[dict]:
+            if "openWB/general/charge_log_data_config" == topic:
+                config = decode_payload(payload)
+                if config.get("data_tariff_split") is None:
+                    config["data_tariff_split"] = False
+                    return {topic: config}
+            return None
+
+        self._loop_all_received_topics(upgrade)
+        self._append_datastore_version(162)
