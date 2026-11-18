@@ -22,9 +22,11 @@ class TasmotaParser:
                 return
             raise ValueError("Nicht unterstützter Tasmota Zählertyp. Bitte an den Support wenden.")
 
-    def _phase_values(self, key: str, attribute: str) -> List[float]:
+    def _phase_values(self, key: str, attribute: str, unmeasured: Optional[float] = None) -> List[float]:
         values = getattr(CounterState(), attribute)
         if self.meter_type == 'ENERGY' and self.meter.get(key) is not None:
+            if unmeasured is not None:
+                values = [unmeasured] * 3
             values[self.phase-1] = float(self.meter[key])
         return values
 
@@ -85,4 +87,5 @@ class TasmotaParser:
 
     @property
     def voltages(self) -> List[float]:
-        return self._phase_values('Voltage', 'voltages')
+        # Der Zähler misst nur eine Phase, die übrigen haben keine Spannung (wie bei den Shelly-Zählern).
+        return self._phase_values('Voltage', 'voltages', unmeasured=0.0)

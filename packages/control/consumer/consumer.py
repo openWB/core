@@ -45,16 +45,6 @@ class Consumer(ConsumerRfidMixin, Load):
     def update(self):
         try:
             self.setup_values_at_start()
-            if self.data.get.voltages == [230.0]*3:
-                self.data.get.voltages = [230 if i < self.data.config.connected_phases else 0
-                                          for i in range(0, 3)]
-            if self.data.get.currents == [0.0]*3:
-                for i in range(0, self.data.config.connected_phases):
-                    voltage = self.data.get.voltages[i]
-                    if voltage != 0:
-                        self.data.get.currents[i] = (self.data.get.power /
-                                                     self.data.config.connected_phases /
-                                                     voltage)
             self.data.get.phases_in_use = self.data.config.connected_phases
             self.data.set.phases_to_use = self.data.config.connected_phases
             self.data.get.charge_state = max(self.data.get.currents) > self.STANDBY_THRESHOLD

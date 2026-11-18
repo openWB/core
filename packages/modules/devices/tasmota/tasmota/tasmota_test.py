@@ -81,7 +81,7 @@ def test_energy_phase_assignment(phase):
     for attribute, expected in [('currents', 1), ('voltages', 230), ('powers', 230), ('power_factors', 1)]:
         values = getattr(data, attribute)
         assert values[phase-1] == expected
-        assert sum(values) == (690 if attribute == 'voltages' else expected)
+        assert sum(values) == expected
 
 
 @pytest.mark.parametrize('values, expected', [
@@ -126,11 +126,14 @@ def test_default_lists_are_independent():
     assert data.voltages == CounterState().voltages
 
 
-def test_missing_phase_measurements_use_counter_state_defaults():
+def test_voltage_is_only_set_on_the_measured_phase():
     data = TasmotaParser({'StatusSNS': {'ENERGY': {'Voltage': 240}}}, phase=2)
-    expected = CounterState().voltages
-    expected[1] = 240
-    assert data.voltages == expected
+    assert data.voltages == [0, 240, 0]
+
+
+def test_missing_phase_measurements_use_counter_state_defaults():
+    data = TasmotaParser({'StatusSNS': {'ENERGY': {'Power': 230}}}, phase=2)
+    assert data.voltages == CounterState().voltages
 
 
 @pytest.mark.parametrize('power, expected', [(0, False), (1, True)])
@@ -147,3 +150,20 @@ def test_relay_state(power, expected, status_sns):
 def test_missing_relay_state_uses_consumer_state_default():
     data = TasmotaParser({'StatusSNS': {'ENERGY': {'Power': 230}}})
     assert data.state == ConsumerState().state
+
+
+def test_single_phase_device_payload():
+    """ Original-Antwort eines einphasigen Geräts (Status 8), ohne Last. """
+    sensors = {"Time": "2026-11-15T15:17:51",
+               "ENERGY": {"TotalStartTime": "2026-07-24T15:34:15", "Total": 67.81017, "Yesterday": 1.34192,
+                          "Today": 0.00092, "Period": 0.000, "Power": 0.000, "ApparentPower": 0.000,
+                          "ReactivePower": 0.000, "Factor": 0.00, "Voltage": 227, "Current": 0.000},
+               "ESP32": {"Temperature": 46.6}, "TempUnit": "C"}
+    for phase, expected_voltages in [(1, [227, 0, 0]), (2, [0, 227, 0]), (3, [0, 0, 227])]:
+        data = TasmotaParser({'StatusSNS': sensors}, phase)
+
+        assert data.voltages == expected_voltages
+        assert data.currents[phase-1] == 0 and sum(data.currents) == 0
+        assert data.powers[phase-1] == 0 and sum(data.powers) == 0
+        assert data.power == 0
+        assert data.imported == 67810.17
