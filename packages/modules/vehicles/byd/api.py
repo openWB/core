@@ -41,10 +41,6 @@ REALTIME_POLL_ENDPOINT = "/vehicleInfo/vehicle/vehicleRealTimeResult"
 
 SESSION_EXPIRED_CODES = {"1002", "1005", "1010"}
 ENDPOINT_NOT_SUPPORTED_CODES = {"1001"}
-# Seit 2026-11-12 beantwortet die BYD-Cloud die Endpunkte, die das Fahrzeug erreichen, für Gast-Accounts
-# (Fahrzeug über "Familie und Freunde" geteilt) mit 1001, solange der äußere Umschlag kein signiertes
-# userType "1" trägt. Ein Besitzer, der es sendet, bekommt dagegen 8003.
-# Siehe https://github.com/jkaberg/pyBYD/pull/81
 USER_TYPE_GUEST = "1"
 GUEST_NOT_DECLARED_CODE = "1001"
 NOT_A_GUEST_CODE = "8003"
@@ -68,8 +64,6 @@ _LOGIN_FAILURE_COOLDOWN_S = 3600
 # Fingerprint-Cache je Account, analog zu _session_cache
 _fingerprint_cache: Dict[str, str] = {}
 
-# Welche Fahrzeuge dieses Accounts als Gast angesprochen werden müssen, und für welche Endpunkte die
-# Cloud beide Varianten ablehnt (dann echter 1001, nicht erneut versuchen)
 _guest_vins: Dict[Tuple[str, str], bool] = {}
 _user_type_settled: Set[Tuple[str, str, str]] = set()
 
@@ -285,7 +279,6 @@ def _post_token_json(endpoint: str, config: BydConfiguration, session: Dict[str,
         "reqTimestamp": req_timestamp,
     }
     if user_type is not None:
-        # muss mitsigniert werden, sonst antwortet die Cloud mit 1007
         sign_fields["userType"] = user_type
     sign = crypto.sha1_mixed(crypto.build_sign_string(sign_fields, keys["sign_key"]))
 
@@ -331,12 +324,6 @@ def _post_token_json(endpoint: str, config: BydConfiguration, session: Dict[str,
 
 def _post_vehicle_json(endpoint: str, config: BydConfiguration, session: Dict[str, Any],
                        inner: Dict[str, str]) -> Any:
-    """Request, der das Fahrzeug erreicht, mit dem userType, den dieser Account für das Fahrzeug braucht.
-
-    Erster Versuch als Besitzer (ohne userType). Antwortet die Cloud mit dem Code für "falscher userType",
-    wird einmal andersherum wiederholt und das Ergebnis je Fahrzeug gemerkt. Lehnt die Cloud beide Varianten
-    ab, wird der erste Fehler weitergegeben und der Endpunkt in dieser Prozesslaufzeit nicht erneut doppelt
-    angefragt."""
     key = (config.username, config.vin)
     guest = _guest_vins.get(key, False)
     try:
@@ -347,7 +334,6 @@ def _post_vehicle_json(endpoint: str, config: BydConfiguration, session: Dict[st
         wrong_user_type = NOT_A_GUEST_CODE if guest else GUEST_NOT_DECLARED_CODE
         if first.code != wrong_user_type or (*key, endpoint) in _user_type_settled:
             raise
-        # random und timeStamp eines Requests sind einmalig verwendbar
         retry_inner = {**inner, "random": secrets.token_hex(16).upper(),
                        "timeStamp": str(int(time.time() * 1000))}
         try:
@@ -356,10 +342,8 @@ def _post_vehicle_json(endpoint: str, config: BydConfiguration, session: Dict[st
             raise
         except BydApiError as second:
             if second.code == (GUEST_NOT_DECLARED_CODE if guest else NOT_A_GUEST_CODE):
-                # kein userType-Problem: ursprünglichen Fehler melden
                 _user_type_settled.add((*key, endpoint))
                 raise first from None
-            # jede andere Antwort ist am userType-Check vorbei (Fahrzeug schläft o.ä.)
             _guest_vins[key] = not guest
             raise
         _guest_vins[key] = not guest
