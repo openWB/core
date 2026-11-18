@@ -33,7 +33,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed } from 'vue'
 import {
 	extent,
 	scaleLinear,
@@ -51,7 +51,10 @@ const props = defineProps<{
 	height: number
 	margin: { left: number; top: number; right: number; bottom: number }
 }>()
-const showLine = ref(true)
+const hasPrice = (d: GraphDataItem) =>
+	d.price != undefined && Number.isFinite(d.price)
+const priceData = computed(() => graphData.data.filter(hasPrice))
+const showLine = computed(() => priceData.value.length > 0)
 const xScale = computed(() => {
 	let e = extent(graphData.data, (d) => d.date)
 	if (e[0] != undefined && e[1] != undefined) {
@@ -61,14 +64,13 @@ const xScale = computed(() => {
 	}
 })
 const yScale = computed(() => {
-	let e = extent(graphData.data, (d) => d.price)
+	let e = extent(priceData.value, (d) => d.price)
 	if (e[0] != undefined && e[1] != undefined) {
 		e[0] = 0
 		return scaleLinear()
 			.range([props.height - 10, 5])
 			.domain(e)
 	} else {
-		showLine.value = false
 		return scaleLinear()
 			.range([props.height - 10, 0])
 			.domain([0, 0])
@@ -77,17 +79,18 @@ const yScale = computed(() => {
 const myline = computed(() => {
 	const path = line<GraphDataItem>()
 		.x((d) => xScale.value(d.date))
-		.y((d) => yScale.value(d.price) ?? yScale.value(0))
+		.y((d) => yScale.value(d.price))
+		.defined(hasPrice)
 		.curve(curveStepBefore)
 	let p = path(graphData.data)
 	return p ? p : ''
 })
 
 const nameY = computed(() => {
-	if (graphData.data.length > 0) {
-		let index: number
-		index = Math.round(graphData.data.length / 2)
-		return yScale.value(graphData.data[index].price) + 2
+	const data = priceData.value
+	if (data.length > 0) {
+		const index = Math.floor(data.length / 2)
+		return yScale.value(data[index].price) + 2
 	} else {
 		return 0
 	}
@@ -102,7 +105,8 @@ const autozoom = computed(() => {
 		xScale.value.range(zoomedRange.value)
 		const path = line<GraphDataItem>()
 			.x((d) => xScale.value(d.date))
-			.y((d) => yScale.value(d.price) ?? yScale.value(0))
+			.y((d) => yScale.value(d.price))
+			.defined(hasPrice)
 			.curve(curveStepBefore)
 		path1.attr('d', path(graphData.data))
 		path2.attr('d', path(graphData.data))
