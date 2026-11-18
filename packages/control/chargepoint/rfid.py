@@ -196,6 +196,24 @@ class ChargepointRfidMixin:
                 target = self._rfid_target(cp2_data, timestamp)
                 if target is not None:
                     allowed_cps = [target]
+                elif (not self.data.get.plug_state and cp2_data._is_ocpp_rfid_transaction()
+                      and not cp2_data.data.get.ocpp.remote_start
+                      and cp2_data.data.get.ocpp.authorization_flow_status is None
+                      and cp2_data._is_rfid_allowed(rfid)
+                      and rfid == (cp2_data.data.get.ocpp.transaction_id_tag or cp2_data.data.set.rfid)
+                      and cp2_data.data.get.rfid == rfid
+                      and cp2_data.data.get.rfid_timestamp == self.data.get.rfid_timestamp):
+                    # Derselbe Scan stoppt die Partnertransaktion: am leeren LP
+                    # weder Wartehinweis noch Fahrzeugvorschau beginnen. Abschluss
+                    # und Leserquittierung bleiben beim stoppenden Partner.
+                    self._discard_ocpp_rfid_authorization()
+                    if self.data.get.ocpp.authorization_flow_status in ("init", "accepted", "rejected"):
+                        self._reset_ocpp_rfid_flow()
+                    self.data.get.rfid = None
+                    self.data.get.rfid_timestamp = None
+                    Pub().pub(f"openWB/set/chargepoint/{self.num}/get/rfid", None)
+                    Pub().pub(f"openWB/set/chargepoint/{self.num}/get/rfid_timestamp", None)
+                    return
 
                 # Ist Liste leer -> Abbrechen
                 if not allowed_cps:
