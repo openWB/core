@@ -1613,7 +1613,7 @@ def test_duo_same_tag_requests_stop_for_each_ocpp_transaction(
 @pytest.mark.parametrize("partner_ocpp", [False, True])
 @pytest.mark.parametrize("replay_offset", [0, -1])
 def test_rfid_stop_scan_cannot_start_empty_duo_partner(
-        active_ocpp_duo, running_index, reverse_order, partner_ocpp, replay_offset):
+        active_ocpp_duo, running_index, reverse_order, partner_ocpp, replay_offset, caplog):
     setup = active_ocpp_duo
     running = setup.duo.chargepoints[running_index]
     partner = setup.duo.chargepoints[1 - running_index]
@@ -1629,11 +1629,18 @@ def test_rfid_stop_scan_cannot_start_empty_duo_partner(
     if not partner_ocpp:
         partner.data.config.ocpp_chargebox_id = None
 
+    tagged_ev = Ev(9)
+    tagged_ev.data.tag_id = [tag]
+    data.data.ev_data["ev9"] = tagged_ev
     setup.duo.reader.scan(tag, scanned_at)
     setup.run(reverse_order)
     setup.client.request_stop.assert_called_once()
     assert partner.data.get.rfid is None
     assert partner.data.set.rfid is None
+    assert partner.data.get.connected_vehicle.info.id == 0
+    assert "5 Minuten" not in (partner.data.get.state_str or "")
+    assert not [record for record in caplog.records
+                if f"LP {partner.num}:" in record.getMessage() and "5 Minuten" in record.getMessage()]
     assert sum(cp.chargepoint_module.clear_rfid.call_count for cp in setup.duo.chargepoints) == 1
     setup.client.request_start.reset_mock()
 
@@ -1672,6 +1679,9 @@ def test_rfid_stop_preserves_newer_scan_at_empty_partner(active_ocpp_duo, runnin
     setup.duo.reader.scan("04A1B2C3D4", setup.duo.clock.return_value)
     partner.data.get.rfid = pending_tag
     partner.data.get.rfid_timestamp = setup.duo.clock.return_value + 1
+    partner._validate_rfid()
+    assert partner.data.get.rfid == pending_tag
+    assert partner.data.get.rfid_timestamp == setup.duo.clock.return_value + 1
     running._process_ocpp_rfid()
     setup.client.request_stop.assert_called_once()
     assert partner.data.get.rfid == pending_tag
