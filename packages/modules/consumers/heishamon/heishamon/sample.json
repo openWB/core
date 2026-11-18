@@ -1,0 +1,13 @@
+{
+  "heatpump": [
+    {"Topic": "TOP0", "Name": "Heatpump_State", "Value": 1, "Description": "On"},
+    {"Topic": "TOP5", "Name": "Main_Inlet_Temp", "Value": 40.50, "Description": "°C"},
+    {"Topic": "TOP6", "Name": "Main_Outlet_Temp", "Value": 42.75, "Description": "°C"},
+    {"Topic": "TOP7", "Name": "Main_Target_Temp", "Value": 48, "Description": "°C"},
+    {"Topic": "TOP10", "Name": "DHW_Temp", "Value": -128, "Description": "°C"},
+    {"Topic": "TOP15", "Name": "Heat_Power_Production", "Value": 2400, "Description": "Watt"},
+    {"Topic": "TOP16", "Name": "Heat_Power_Consumption", "Value": 1200, "Description": "Watt"},
+    {"Topic": "TOP39", "Name": "Cool_Power_Consumption", "Value": 0, "Description": "Watt"},
+    {"Topic": "TOP41", "Name": "DHW_Power_Consumption", "Value": 0, "Description": "Watt"}
+  ]
+}
