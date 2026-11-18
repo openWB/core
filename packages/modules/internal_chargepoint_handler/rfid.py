@@ -132,6 +132,7 @@ class RfidReader:
                                 Pub().pub("openWB/set/internal_chargepoint/last_tag_timestamp",
                                           timecheck.create_timestamp())
                                 Pub().pub("openWB/set/internal_chargepoint/last_tag", key_string)
+                                Pub().pub("openWB/set/internal_socket/data/last_tag", key_string)
                                 key_string = ""
                         else:
                             log.debug(f"new key: {data.scancode} - {ecodes.KEY[data.scancode]}")
