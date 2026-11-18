@@ -18,7 +18,10 @@ const pendingMessages = new Map<number, { topic: string; message: string }[]>()
 
 // called from hierarchy processing - the only place a consumer may be created, so its color
 // (assigned from consumers.size at creation) stays consistent with the hierarchy order
-export function registerConsumerFromHierarchy(index: number, showInList = true) {
+export function registerConsumerFromHierarchy(
+	index: number,
+	showInList = true,
+) {
 	addConsumer(index, showInList)
 	const pending = pendingMessages.get(index)
 	if (pending) {
