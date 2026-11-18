@@ -24,7 +24,7 @@ import logging
 import secrets
 import threading
 import time
-from typing import Any, Dict, Optional, Set, Tuple
+from typing import Any, Dict, Optional, Tuple
 
 from modules.common import req
 from modules.common.component_state import CarState
@@ -65,7 +65,8 @@ _LOGIN_FAILURE_COOLDOWN_S = 3600
 _fingerprint_cache: Dict[str, str] = {}
 
 _guest_vins: Dict[Tuple[str, str], bool] = {}
-_user_type_settled: Set[Tuple[str, str, str]] = set()
+_user_type_settled: Dict[Tuple[str, str, str], float] = {}
+_USER_TYPE_SETTLED_TTL_S = 3600
 
 # Lock je Account, da update_soc.py jedes Fahrzeug in einem eigenen Thread aktualisiert
 _account_locks: Dict[str, threading.Lock] = {}
@@ -332,7 +333,11 @@ def _post_vehicle_json(endpoint: str, config: BydConfiguration, session: Dict[st
         raise
     except BydApiError as first:
         wrong_user_type = NOT_A_GUEST_CODE if guest else GUEST_NOT_DECLARED_CODE
-        if first.code != wrong_user_type or (*key, endpoint) in _user_type_settled:
+        settled_at = _user_type_settled.get((*key, endpoint))
+        if settled_at is not None and time.monotonic() - settled_at >= _USER_TYPE_SETTLED_TTL_S:
+            del _user_type_settled[(*key, endpoint)]
+            settled_at = None
+        if first.code != wrong_user_type or settled_at is not None:
             raise
         retry_inner = {**inner, "random": secrets.token_hex(16).upper(),
                        "timeStamp": str(int(time.time() * 1000))}
@@ -342,9 +347,10 @@ def _post_vehicle_json(endpoint: str, config: BydConfiguration, session: Dict[st
             raise
         except BydApiError as second:
             if second.code == (GUEST_NOT_DECLARED_CODE if guest else NOT_A_GUEST_CODE):
-                _user_type_settled.add((*key, endpoint))
+                _user_type_settled[(*key, endpoint)] = time.monotonic()
                 raise first from None
-            _guest_vins[key] = not guest
+            if second.code is not None:
+                _guest_vins[key] = not guest
             raise
         _guest_vins[key] = not guest
         log.info("BYD: Account %s für Fahrzeug %s als %s erkannt", config.username, config.vin,

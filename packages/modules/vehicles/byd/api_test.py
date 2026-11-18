@@ -257,3 +257,27 @@ class TestPostVehicleJson:
             api._post_vehicle_json("/x", _config(), SESSION, {"vin": "VIN123"})
 
         post.assert_called_once()
+
+    def test_error_without_cloud_code_does_not_change_the_guess(self, monkeypatch):
+        post = Mock(side_effect=[self._error("1001"), api.BydApiError("Antwort ohne response-Feld")])
+        monkeypatch.setattr(api, "_post_token_json", post)
+
+        with pytest.raises(api.BydApiError):
+            api._post_vehicle_json("/x", _config(), SESSION, {"vin": "VIN123"})
+
+        assert ("user@example.com", "VIN123") not in api._guest_vins
+
+    def test_settled_endpoint_is_asked_again_after_the_ttl(self, monkeypatch):
+        post = Mock(side_effect=[self._error("1001"), self._error("8003"),
+                                 self._error("1001"), {"ok": 1}])
+        monkeypatch.setattr(api, "_post_token_json", post)
+        clock = Mock(return_value=1000.0)
+        monkeypatch.setattr(api.time, "monotonic", clock)
+
+        with pytest.raises(api.BydApiError):
+            api._post_vehicle_json("/x", _config(), SESSION, {"vin": "VIN123"})
+        clock.return_value = 1000.0 + api._USER_TYPE_SETTLED_TTL_S + 1
+        result = api._post_vehicle_json("/x", _config(), SESSION, {"vin": "VIN123"})
+
+        assert result == {"ok": 1}
+        assert self._user_types(post) == [None, "1", None, "1"]
