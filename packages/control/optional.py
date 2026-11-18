@@ -4,7 +4,7 @@ from dataclasses import asdict
 import logging
 from math import ceil
 from threading import Thread
-from typing import Dict, List, Optional as TypingOptional, Union
+from typing import Dict, List, Optional as TypingOptional, TypedDict, Union
 from datetime import datetime
 
 from control import data
@@ -22,6 +22,11 @@ from modules.common.configurable_monitoring import ConfigurableMonitoring
 log = logging.getLogger(__name__)
 AS_EURO_PER_KWH = 1000.0  # Umrechnung von €/Wh in €/kWh
 MQTT_PREFIX = "openWB/set/optional/ep"
+
+
+class ChargingSchedule(TypedDict):
+    deadline: float
+    chargeDuration: float
 
 
 class Optional(OcppMixin):
@@ -238,44 +243,45 @@ class Optional(OcppMixin):
         first_timestamps = sorted(list(prices.keys()))[:2]
         return float(first_timestamps[1]) - float(first_timestamps[0])
 
-    def ep_get_loading_hours(self, duration: float, remaining_time: float) -> List[int]:
+    def ep_get_loading_hours(self, schedule: ChargingSchedule) -> List[int]:
         """
         Parameter
         ---------
-        duration: float
-            benötigte Ladezeit
-        remaining_time: float
-            Restzeit bis Termin (von wo an gerechnet???)
+        schedule: ChargingSchedule
+            deadline: Zieltermin als Unix-Zeitstempel in Sekunden
+            chargeDuration: benötigte Ladezeit in Sekunden
         Return
         ------
         list: Key des Dictionary (Unix-Sekunden der günstigen Zeit-Slots)
         """
         if self.data.electricity_pricing.configured is False:
             raise Exception("Kein Anbieter für strompreisbasiertes Laden konfiguriert.")
+        duration = schedule["chargeDuration"]
+        deadline = schedule["deadline"]
         try:
             prices = self.data.electricity_pricing.get.prices
+            now = timecheck.create_timestamp()
             log.debug("Berechne günstige Zeit-Slots für strompreisbasiertes Laden, "
                       "benötigte Ladezeit: %.2f Sekunden, Restzeit bis Termin: %.2f Sekunden",
-                      duration, remaining_time)
+                      duration, deadline - now)
             log.debug("Verfügbare Preise: %s", prices)
             price_timeslot_seconds = self.__calculate_price_timeslot_length(prices)
             log.debug("Preis-Zeitslot-Länge: %.2f Sekunden", price_timeslot_seconds)
-            now = timecheck.create_timestamp()
             price_candidates = {
                 timestamp: price
                 for timestamp, price in prices.items()
                 if (
                     # is current timeslot or futur
                     float(timestamp) + price_timeslot_seconds > now and
-                    # ends before plan target time
-                    not float(timestamp) >= now + remaining_time
+                    # starts before plan target time
+                    float(timestamp) < deadline
                 )
             }
             log.debug("%s Preis-Kandidaten in %s Sekunden zwischen %s Uhr und %s Uhr von %s Uhr bis %s Uhr",
                       len(price_candidates),
                       duration,
                       datetime.fromtimestamp(now),
-                      datetime.fromtimestamp(now + remaining_time),
+                      datetime.fromtimestamp(deadline),
                       datetime.fromtimestamp(float(min(price_candidates, default=0))),
                       datetime.fromtimestamp(float(max(price_candidates, default=0))+price_timeslot_seconds))
             ordered_by_date_reverse = reversed(sorted(price_candidates.items(), key=lambda x: x[0]))
