@@ -686,7 +686,7 @@ class TransactionCoordinator:
         Bereits finalisierte Stopdaten bei Wiederholungen unverändert verwenden
         und diese Methode dafür nicht erneut aufrufen.
         """
-        deadline = monotonic() + 30.0
+        deadline = monotonic() + 45.0
         while True:
             openwb_cp = get_cp_from_chargebox_id(chargebox_id)
             if openwb_cp is None:
@@ -716,10 +716,11 @@ class TransactionCoordinator:
             if remaining <= 0:
                 report_ocpp_error(
                     chargebox_id,
-                    "Ladepunkt hat das Ende des Ladevorgangs nicht bestätigt.",
+                    "Ladestopp am Ladepunkt nicht innerhalb von 45 Sekunden bestätigt. "
+                    "Letzten verfügbaren Zählerstand für den Transaktionsabschluss verwendet.",
                 )
                 log.error(
-                    "OCPP %s: Ladestopp nach 30 s nicht zuverlässig bestätigt (%s). "
+                    "OCPP %s: Ladestopp nach 45 s nicht zuverlässig bestätigt (%s). "
                     "StopTransaction %s verwendet letzten verfügbaren Zählerstand %s Wh. "
                     "Die lokale Ladefreigabe bleibt gesperrt.",
                     chargebox_id, missing_confirmation, transaction_id, request.meter_stop,
