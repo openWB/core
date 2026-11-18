@@ -119,7 +119,23 @@ systemctl restart apache2
 echo "done"
 
 echo "installing python requirements..."
-sudo -u "$OPENWB_USER" pip install -r "${OPENWBBASEDIR}/requirements.txt"
+python_build_packages=()
+python_binary_packages=()
+case $(dpkg --print-architecture) in
+	arm64) python_binary_packages=(python3-evdev) ;;
+	arm*) ;;
+	*) python_build_packages=(gcc python3-dev) ;;
+esac
+if ! apt-get -q -y install python3-venv "${python_build_packages[@]}" "${python_binary_packages[@]}"; then
+	echo "Failed to install Python environment prerequisites" >&2
+	exit 1
+fi
+venv_status=0
+sudo -u "$OPENWB_USER" bash "${OPENWBBASEDIR}/runs/setup_python_venv.sh" "$OPENWBBASEDIR" 1 || venv_status=$?
+if ((venv_status != 0 && venv_status != 10)); then
+	echo "Python environment installation failed" >&2
+	exit 1
+fi
 
 echo "installing openwb2 system service..."
 ln -s "${OPENWBBASEDIR}/data/config/openwb2.service" /etc/systemd/system/openwb2.service

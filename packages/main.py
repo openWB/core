@@ -367,6 +367,7 @@ try:
     event_update_config_completed.wait(300)
     event_subdata_initialized.wait(300)
     Thread(target=check_roles_at_start, args=(), name="check acl roles at start").start()
+    Pub().pub("openWB/system/python_runtime_version", f"{sys.version.split()[0]}")
     Pub().pub("openWB/set/system/boot_done", True)
     Path(Path(__file__).resolve().parents[1]/"ramdisk"/"bootdone").touch()
     schedule_jobs()

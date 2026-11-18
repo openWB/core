@@ -86,7 +86,7 @@ class PeakFilter:
             elif previous_total_energy is None:
                 if allowed_deviation > 0:
                     self.fault_state.warning("PeakFilter: Vorheriger Wert None (Startup), "
-                                             f"aktueller Zählerwert: {total_energy / 1000 }kWh. "
+                                             f"aktueller Zählerwert: {total_energy / 1000}kWh. "
                                              "Warte einen Regelintervall.")
             elif allowed_deviation > 0 and (total_energy - previous_total_energy) > allowed_deviation:
                 log.debug(f"PeakFilter: Unplausibler Zählerwert: {total_energy / 1000}kWh. "
