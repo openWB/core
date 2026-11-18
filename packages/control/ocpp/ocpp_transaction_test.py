@@ -430,13 +430,19 @@ def test_start_rechecks_persisted_stops_after_waiting(
     connection.cp._start_transaction.assert_not_awaited()
 
 
-def test_rfid_stop_waits_for_hardware_and_uses_current_model_meter(transaction_setup, mock_pub, monkeypatch):
+@pytest.mark.parametrize("stop_after", [0.5, 35.0])
+def test_rfid_stop_waits_for_hardware_and_uses_current_model_meter(
+        transaction_setup, mock_pub, monkeypatch, stop_after):
     coordinator, connection, cp = transaction_setup
     cp.data.get.ocpp.transaction_id = 42
     cp.data.get.ocpp.transaction_id_tag = "TAG"
     cp.data.get.charge_state = True
     current = [cp]
     monkeypatch.setattr(ocpp_transaction_coordinator, "get_cp_from_chargebox_id", lambda _: current[0])
+    clock = [0.0]
+    monkeypatch.setattr(ocpp_transaction_coordinator, "monotonic", lambda: clock[0])
+    report_error = Mock()
+    monkeypatch.setattr(ocpp_transaction_coordinator, "report_ocpp_error", report_error)
     final_time = "2026-10-23T12:00:30Z"
 
     async def authorize(**kwargs):
@@ -449,6 +455,9 @@ def test_rfid_stop_waits_for_hardware_and_uses_current_model_meter(transaction_s
         assert cp.data.get.ocpp.tag_accepted is False
         assert cp.data.get.ocpp.rfid_stop is True
         connection.cp._stop_transaction.assert_not_awaited()
+        clock[0] += interval
+        if clock[0] < stop_after:
+            return
         current[0] = copy.deepcopy(cp)
         current[0].data.get.imported = 125.9
         current[0].data.get.charge_state = False
@@ -457,6 +466,8 @@ def test_rfid_stop_waits_for_hardware_and_uses_current_model_meter(transaction_s
     connection.cp._authorize.side_effect = authorize
     monkeypatch.setattr(ocpp_transaction_coordinator.asyncio, "sleep", hardware_tick)
     assert asyncio.run(coordinator.stop("box-1", 100, "TAG", "Local", authorize_stop=True)) is True
+    assert clock[0] == stop_after
+    report_error.assert_not_called()
     connection.cp._stop_transaction.assert_awaited_once_with(
         meter_stop=125, transaction_id=42, reason="Local", id_tag="TAG", timestamp=final_time,
     )
@@ -476,6 +487,8 @@ def test_stop_meter_timeout_uses_last_valid_value_and_keeps_local_block(
     cp.data.get.imported = float("nan") if failure == "invalid_meter" else 110
     clock = [0.0]
     sleeps = []
+    report_error = Mock()
+    monkeypatch.setattr(ocpp_transaction_coordinator, "report_ocpp_error", report_error)
     monkeypatch.setattr(ocpp_transaction_coordinator, "monotonic", lambda: clock[0])
     monkeypatch.setattr(ocpp_transaction_coordinator, "_get_formatted_time", lambda: f"time-{clock[0]}")
 
@@ -485,17 +498,22 @@ def test_stop_meter_timeout_uses_last_valid_value_and_keeps_local_block(
         assert cp.data.get.ocpp.tag_accepted is False
         connection.cp._stop_transaction.assert_not_awaited()
         if failure != "invalid_meter":
-            cp.data.get.imported = 120 if clock[0] < 30 else float("nan")
+            cp.data.get.imported = 120 if clock[0] < 45 else float("nan")
 
     monkeypatch.setattr(ocpp_transaction_coordinator.asyncio, "sleep", tick)
     assert asyncio.run(coordinator.stop("box-1", 100, "TAG", "Remote")) is True
-    assert clock[0] == 30
-    assert len(sleeps) == 60
+    assert clock[0] == 45
+    assert len(sleeps) == 90
     connection.cp._stop_transaction.assert_awaited_once_with(
         meter_stop=100 if failure == "invalid_meter" else 120,
-        transaction_id=42, reason="Remote", id_tag="TAG", timestamp="time-30.0",
+        transaction_id=42, reason="Remote", id_tag="TAG", timestamp="time-45.0",
     )
-    assert "Ladestopp nach 30 s nicht zuverlässig bestätigt" in caplog.text
+    assert "Ladestopp nach 45 s nicht zuverlässig bestätigt" in caplog.text
+    report_error.assert_called_once_with(
+        "box-1",
+        "Ladestopp am Ladepunkt nicht innerhalb von 45 Sekunden bestätigt. "
+        "Letzten verfügbaren Zählerstand für den Transaktionsabschluss verwendet.",
+    )
     assert cp.data.get.ocpp.remote_stop is True
     assert cp.data.get.ocpp.tag_accepted is False
 
