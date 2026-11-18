@@ -1,5 +1,5 @@
 <template>
-	<svg x="0" :width="props.width" class="Prices">
+	<svg v-if="showLine" :width="props.width" class="Prices">
 		<g>
 			<path
 				id="price"
@@ -33,7 +33,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import {
 	extent,
 	scaleLinear,
@@ -51,9 +51,10 @@ const props = defineProps<{
 	height: number
 	margin: { left: number; top: number; right: number; bottom: number }
 }>()
+const showLine = ref(true)
 const xScale = computed(() => {
 	let e = extent(graphData.data, (d) => d.date)
-	if (e[0] && e[1]) {
+	if (e[0] != undefined && e[1] != undefined) {
 		return scaleTime<number>().domain(e).range([0, props.width])
 	} else {
 		return scaleTime().range([0, 0])
@@ -61,12 +62,13 @@ const xScale = computed(() => {
 })
 const yScale = computed(() => {
 	let e = extent(graphData.data, (d) => d.price)
-	if (e[0] && e[1]) {
+	if (e[0] != undefined && e[1] != undefined) {
 		e[0] = 0
 		return scaleLinear()
 			.range([props.height - 10, 5])
 			.domain(e)
 	} else {
+		showLine.value = false
 		return scaleLinear()
 			.range([props.height - 10, 0])
 			.domain([0, 0])
