@@ -25,7 +25,7 @@ def create_device(device_config: SolakonOne):
         return SolakonOneInverter(component_config=component_config, client=client)
 
     def create_counter_component(component_config: SolakonOneCounterSetup):
-        return SolakonOneCounter(component_config=component_config, client=client)
+        return SolakonOneCounter(component_config=component_config, client=client, device_id=device_config.id)
 
     def update_components(components: Iterable[Union[SolakonOneBat, SolakonOneInverter, SolakonOneCounter]]):
         with client:
