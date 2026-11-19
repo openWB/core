@@ -23,7 +23,9 @@ if ! sudo apt-get -q -y install \
 	python3-pip \
 	python3-venv \
 	"${python_build_packages[@]}" \
-	"${python_binary_packages[@]}"; then
+	"${python_binary_packages[@]}" \
+	xserver-xorg x11-xserver-utils openbox-lxde-session lightdm lightdm-autologin-greeter accountsservice \
+	chromium chromium-l10n; then
 	echo "Failed to install required system packages" >&2
 	exit 1
 fi

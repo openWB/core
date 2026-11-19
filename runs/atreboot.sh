@@ -217,6 +217,64 @@ chmod 666 "$LOGFILE"
 	echo "cleaning obsolete python cache folders..."
 	"$OPENWBBASEDIR/runs/cleanPythonCache.sh"
 
+	# detect connected displays
+	displayDetected="false"
+	for connector in /sys/class/drm/card*-*; do
+		if [[ -f "$connector/status" && $(cat "$connector/status") == connected ]]; then
+			echo "Display connected on: $connector"
+			displayDetected="true"
+			break
+		fi
+	done
+	echo "displayDetected: $displayDetected"
+	forceDisplaySetup=0
+	if displayDetected_old=$(mosquitto_sub -p 1886 -t "openWB/optional/int_display/detected" -C 1 -W 1); then
+		echo "previous displayDetected value: $displayDetected_old"
+		if [[ $displayDetected_old != "$displayDetected" ]]; then
+			echo "displayDetected value changed, publishing new value"
+			mosquitto_pub -p 1886 -t "openWB/optional/int_display/detected" -r -m "$displayDetected"
+		else
+			echo "no change in displayDetected value, skipping publish"
+		fi
+	else
+		echo "no previous displayDetected value found, assuming initial boot"
+		echo "update of display settings forced"
+		forceDisplaySetup=1
+		mosquitto_pub -p 1886 -t "openWB/optional/int_display/detected" -r -m "$displayDetected"
+		mosquitto_pub -p 1886 -t "openWB/optional/int_display/active" -r -m "true"
+	fi
+
+	# display setup
+	echo "display setup..."
+	displaySetupModified=0
+	if [ ! -d "/home/openwb/.config/lxsession/LXDE" ]; then
+		mkdir --parents "/home/openwb/.config/lxsession/LXDE"
+	fi
+	if versionMatch "${OPENWBBASEDIR}/data/config/display/lightdm-autologin-greeter.conf" "/etc/lightdm/lightdm.conf.d/lightdm-autologin-greeter.conf"; then
+		echo "autologin configured"
+	else
+		echo "updating autologin"
+		sudo cp "${OPENWBBASEDIR}/data/config/display/lightdm-autologin-greeter.conf" "/etc/lightdm/lightdm.conf.d/lightdm-autologin-greeter.conf"
+		displaySetupModified=1
+	fi
+	if versionMatch "${OPENWBBASEDIR}/data/config/display/lightdm-hide-mouse-cursor.conf" "/etc/lightdm/lightdm.conf.d/lightdm-hide-mouse-cursor.conf"; then
+		echo "mouse cursor configured"
+	else
+		echo "updating mouse cursor configuration"
+		sudo cp "${OPENWBBASEDIR}/data/config/display/lightdm-hide-mouse-cursor.conf" "/etc/lightdm/lightdm.conf.d/lightdm-hide-mouse-cursor.conf"
+		displaySetupModified=1
+	fi
+	if versionMatch "${OPENWBBASEDIR}/data/config/display/lxdeautostart" "/home/openwb/.config/lxsession/LXDE/autostart"; then
+		echo "lxde session autostart already configured"
+	else
+		echo "updating lxde session autostart"
+		cp "${OPENWBBASEDIR}/data/config/display/lxdeautostart" "/home/openwb/.config/lxsession/LXDE/autostart"
+		displaySetupModified=1
+	fi
+	if ((displaySetupModified == 1)) || ((forceDisplaySetup == 1)); then
+		"${OPENWBBASEDIR}/runs/update_local_display.sh" $forceDisplaySetup
+	fi
+
 	# check apache configuration
 	"${OPENWBBASEDIR}/runs/setup_apache2.sh"
 
