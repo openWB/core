@@ -26,7 +26,16 @@ def test_fetch_prices(requests_mock):
 def test_fetch_prices_without_tomorrow(requests_mock):
     requests_mock.get(URL, json={"today": RESPONSE["today"], "tomorrow": None})
 
-    assert len(fetch_prices(EwsSchoenauTariffConfiguration(api_key="key"))) == 2
+    prices = fetch_prices(EwsSchoenauTariffConfiguration(api_key="key"))
+
+    assert prices == {"1794783600": 0.000305, "1794784500": 0.00029}
+
+
+def test_fetch_prices_without_any_prices(requests_mock):
+    requests_mock.get(URL, json={"today": [], "tomorrow": None})
+
+    with pytest.raises(ValueError):
+        fetch_prices(EwsSchoenauTariffConfiguration(api_key="key"))
 
 
 def test_fetch_prices_without_api_key():

@@ -16,8 +16,11 @@ def fetch_prices(config: EwsSchoenauTariffConfiguration) -> dict[str, float]:
     if not config.api_key:
         raise ValueError("Es ist kein API-Key konfiguriert.")
     response = req.get_http_session().get(URL, headers={"X-API-Key": config.api_key}, timeout=(2, 10)).json()
-    return {str(timecheck.convert_to_timestamp(entry["startsAt"])): entry["total"] / CT_PER_KWH_TO_EURO_PER_WH
-            for entry in (response.get("today") or []) + (response.get("tomorrow") or [])}
+    prices = {str(timecheck.convert_to_timestamp(entry["startsAt"])): entry["total"] / CT_PER_KWH_TO_EURO_PER_WH
+              for entry in (response.get("today") or []) + (response.get("tomorrow") or [])}
+    if not prices:
+        raise ValueError("Die EWS Schönau API hat keine Preise geliefert.")
+    return prices
 
 
 def create_electricity_tariff(config: EwsSchoenauTariff) -> Callable[[], TariffState]:
