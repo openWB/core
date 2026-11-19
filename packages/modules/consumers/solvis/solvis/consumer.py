@@ -18,7 +18,7 @@ def create_consumer(config: SolvisHeatPump):
         initializer()
 
     def update() -> ConsumerState:
-        power = client.read_input_registers(33545, ModbusDataType.INT_16, unit=config.configuration.modbus_id) * 100
+        power = client.read_holding_registers(33545, ModbusDataType.INT_16, unit=config.configuration.modbus_id) * 100
         return ConsumerState(power=power)
 
     return ConfigurableConsumer(consumer_config=config,
