@@ -1,6 +1,6 @@
 <template>
 	<div class="vehicleinfo justify-content-left">
-		<div class="titleline mb-3">
+		<div v-if="vehiclesToDisplay.length > 0" class="titleline mb-3">
 			<DisplayButton @click="openSettings('#chSettings')">
 				<div
 					class="carname d-flex justify-content-left align-items-center px-2"
@@ -17,6 +17,21 @@
 					/>
 				</div>
 			</DisplayButton>
+			<div
+				v-if="vehiclesToDisplay.length > 1 && vehiclesToDisplay.length <= 3"
+				class="carselector ms-4"
+			>
+				<RadioInput
+					:id="'vehicle-' + chargepoint.name"
+					v-model="connectedVehicle"
+					class="vehicles"
+					:options="
+						vehiclesToDisplay
+							.filter((v) => v.id != chargepoint.connectedVehicle)
+							.map((v) => [v.name, v.id])
+					"
+				/>
+			</div>
 		</div>
 		<div
 			v-if="editSoc"
@@ -55,15 +70,16 @@
 						:style="{ color: 'var(--color-fg)' }"
 					/>
 				</DisplayButton>
-				<DisplayButton v-else >
+				<DisplayButton v-else>
 					<i
 						class="fa-solid fa-sm fas py-0 px-3 mt-3"
-						:class="chargepoint.waitingForSoc ? 'fa-spinner fa-spin' : 'fa-sync'"
-					@click="loadSoc"
+						:class="
+							chargepoint.waitingForSoc ? 'fa-spinner fa-spin' : 'fa-sync'
+						"
+						@click="loadSoc"
 						:style="{ color: 'var(--color-fg)' }"
 					/>
 				</DisplayButton>
-				
 			</InfoItem>
 			<InfoItem
 				v-if="chargepoint.isSocConfigured"
@@ -126,16 +142,15 @@
 			v-model="chargeMode"
 			class="chargemodes mx-3 mt-4 mb-0"
 			:options="
-				(Object.values(chargemodes).map((v) => {
-						return {
-							text: v.name,
-							value: v.mode,
-							color: v.color,
-							icon: v.icon,
-							active: v.mode == chargepoint.chargeMode,
-						}
+				Object.values(chargemodes).map((v) => {
+					return {
+						text: v.name,
+						value: v.mode,
+						color: v.color,
+						icon: v.icon,
+						active: v.mode == chargepoint.chargeMode,
+					}
 				})
-			)
 			"
 		/>
 	</div>
@@ -143,12 +158,13 @@
 <script setup lang="ts">
 import { displayConfig, unlockDisplay } from '@/assets/js/model'
 import { type ChargePoint, chargePoints, vehicles } from './model'
-import { chargemodes } from '@/assets/js/themeConfig'
+import { chargemodes, globalConfig } from '@/assets/js/themeConfig'
 import { ref } from 'vue'
 
 import InfoItem from '@/components/shared/InfoItem.vue'
 import BatterySymbol from '@/components/shared/BatterySymbol.vue'
 import RadioBarInput from '@/components/shared/RadioBarInput.vue'
+import RadioInput from '@/components/shared/RadioInput.vue'
 import DisplayButton from '@/components/shared/DisplayButton.vue'
 import RangeInput from '../shared/RangeInput.vue'
 import { etData } from '../priceChart/model'
@@ -163,7 +179,11 @@ const cp = ref(props.chargepoint)
 const editSoc = ref(false)
 
 function setSoc() {
-	updateServer('setSoc', manualSoc.value ?? 0, props.chargepoint.connectedVehicle)
+	updateServer(
+		'setSoc',
+		manualSoc.value ?? 0,
+		props.chargepoint.connectedVehicle,
+	)
 	editSoc.value = false
 }
 const manualSoc = computed({
@@ -239,15 +259,35 @@ const currentPriceStyle = computed(() => {
 		? { color: 'var(--color-charging)' }
 		: { color: 'var(--color-menu)' }
 })
+const vehiclesToDisplay = computed(() => {
+	return Object.values(vehicles).filter(
+		(v) => v.visible && (v.id != 0 || globalConfig.showStandardVehicle),
+	)
+})
 function loadSoc() {
 	updateServer('socUpdate', 1, props.chargepoint.connectedVehicle)
 	chargePoints[props.chargepoint.id].waitingForSoc = true
 }
+const connectedVehicle = computed({
+	get() {
+		return props.chargepoint.connectedVehicle
+	},
+	set(newVehicle) {
+		if (!displayConfig.locked) {
+			if (!editSoc.value) {
+				chargePoints[props.chargepoint.id].connectedVehicle = newVehicle
+			}
+		} else {
+			unlockDisplay()
+		}
+	},
+})
 </script>
 <style scoped>
 .titleline {
 	display: flex;
 	justify-content: left;
+	align-items: center;
 }
 .infoline {
 	display: flex;
@@ -288,5 +328,14 @@ function loadSoc() {
 .vehicleinfo {
 	display: flex;
 	flex-direction: column;
+}
+.carselector {
+	display: flex;
+	justify-content: stretch;
+}
+.vehicles {
+	grid-column: 1 / 13;
+	justify-self: center;
+	width: 100%;
 }
 </style>

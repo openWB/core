@@ -91,6 +91,7 @@ def chargemode_config_factory() -> ChargemodeConfig:
 
 @dataclass
 class Prices:
+    cp: float = field(default=0, metadata={"topic": "prices/cp"})
     # Abrechnung der Ladekosten im Ladeprotokoll: "mix" (Preise nach Strommix), "grid" (alles zum Strompreis),
     # "fixed" (alles zum festen Preis fixed_price)
     cost_mode: str = field(default="mix", metadata={"topic": "prices/cost_mode"})

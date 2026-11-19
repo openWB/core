@@ -167,6 +167,8 @@ class Set:
     plug_time: Optional[float] = field(default=None, metadata={"topic": "set/plug_time"})
     required_power: float = field(default=0, metadata={"topic": "set/required_power"})
     rfid: Optional[str] = field(default=None, metadata={"topic": "set/rfid"})
+    # Letzten abschließend verarbeiteten Scan (zugeordnet oder abgelehnt) auch nach dem Abstecken behalten.
+    rfid_timestamp: Optional[float] = field(default=None, metadata={"topic": "set/rfid_timestamp"})
     # set current aus dem vorherigen Zyklus, um zu wissen, ob am Ende des Zyklus die Ladung freigegeben wird
     # (für Control-Pilot-Unterbrechung)
     current_prev: float = field(default=0.0, metadata={"topic": "set/current_prev"})

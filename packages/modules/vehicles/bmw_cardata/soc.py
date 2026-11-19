@@ -1,5 +1,6 @@
 import logging
 import time
+from datetime import datetime
 from typing import List, Optional
 
 from requests.exceptions import RequestException
@@ -99,12 +100,28 @@ def _extract_value(td: dict, key: str):
     return entry.get("value") if isinstance(entry, dict) else None
 
 
-def _extract_first_value(td: dict, keys: List[str]):
+def _extract_first_entry(td: dict, keys: List[str]) -> Optional[dict]:
     for key in keys:
-        value = _extract_value(td, key)
-        if value is not None:
-            return value
+        entry = td.get(key)
+        if isinstance(entry, dict) and entry.get("value") is not None:
+            return entry
     return None
+
+
+def _extract_first_value(td: dict, keys: List[str]):
+    entry = _extract_first_entry(td, keys)
+    return entry["value"] if entry else None
+
+
+def _parse_timestamp(value: Optional[str]) -> Optional[float]:
+    """Zeitpunkt, zu dem das Fahrzeug den Wert gemeldet hat. Ohne gültigen Zeitstempel nimmt CarState "jetzt" an."""
+    if not value:
+        return None
+    try:
+        return datetime.fromisoformat(value.replace("Z", "+00:00")).timestamp()
+    except (ValueError, AttributeError):
+        log.debug(f"Konnte Zeitstempel nicht parsen: {value!r}")
+        return None
 
 
 def _post_form(url: str, data: dict) -> dict:
@@ -283,7 +300,9 @@ def fetch_soc(config: BmwCardataSetup, vehicle: int = 0) -> CarState:
 
     td = raw.get("telematicData", raw)
 
-    soc_raw = _extract_first_value(td, FIELD_SOC_CANDIDATES)
+    soc_entry = _extract_first_entry(td, FIELD_SOC_CANDIDATES) or {}
+    soc_raw = soc_entry.get("value")
+    soc_timestamp = _parse_timestamp(soc_entry.get("timestamp"))
     range_raw = _extract_first_value(td, FIELD_RANGE_CANDIDATES)
     status = _extract_value(td, FIELD_STATUS)
     odometer_raw = _extract_first_value(td, FIELD_ODOMETER_CANDIDATES)
@@ -315,7 +334,7 @@ def fetch_soc(config: BmwCardataSetup, vehicle: int = 0) -> CarState:
         status,
         odometer,
     )
-    return CarState(soc=soc, range=vehicle_range, odometer=odometer, warning=warning)
+    return CarState(soc=soc, range=vehicle_range, soc_timestamp=soc_timestamp, odometer=odometer, warning=warning)
 
 
 def create_vehicle(vehicle_config: BmwCardataSetup, vehicle: int):

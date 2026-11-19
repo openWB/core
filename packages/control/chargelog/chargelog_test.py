@@ -48,7 +48,7 @@ def test_create_entry_logs_all_price_channels(mock_data, monkeypatch):
     assert entry["prices"]["pv"] == 0.00011
     assert entry["prices"]["bat"] == 0.00022
     assert entry["prices"]["feed_in"] == 0.00008
-    assert "cp" not in entry["prices"]
+    assert entry["prices"]["cp"] == 0
     assert entry["prices"]["fault_state"] == 0
 
 
@@ -81,15 +81,8 @@ def test_create_entry_logs_fallback_prices_without_providers(mock_data):
     with patch.object(process_log_entry_builder, "BrokerClient"):
         entry = process_log_entry_builder.create_entry(None, None)
 
-    assert entry["prices"] == {"grid": 0.0003, "pv": 0.00015, "bat": 0.0002, "feed_in": 0.00008,
+    assert entry["prices"] == {"grid": 0.0003, "pv": 0.00015, "bat": 0.0002, "feed_in": 0.00008, "cp": 0,
                                "fault_state": 0}
-
-
-def test_calc_costs_cp_energy_is_free_without_cp_price():
-    energy = {"bat": 100, "cp": 50, "grid": 200, "pv": 300}
-    prices = {"bat": 0.0002, "grid": 0.0003, "pv": 0.00015}
-
-    assert chargelog._calc_costs(energy, prices) == pytest.approx(100 * 0.0002 + 200 * 0.0003 + 300 * 0.00015)
 
 
 def mock_daily_log(monkeypatch):

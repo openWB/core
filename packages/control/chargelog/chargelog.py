@@ -342,7 +342,7 @@ def calc_energy_costs(cp, create_log_entry: bool = False):
             else:
                 entry_prices = reference_entries[-1]["prices"]
                 if prices.cost_mode == "grid":
-                    entry_prices = {source: entry_prices["grid"] for source in ("bat", "grid", "pv")}
+                    entry_prices = {source: entry_prices["grid"] for source in ("bat", "cp", "grid", "pv")}
                 cp.data.set.log.costs += _calc_costs(charged_energy_by_source, entry_prices)
     except Exception:
         log.exception(f"Fehler beim Berechnen der Ladekosten für Ladepunkt {cp.num}")
@@ -459,8 +459,7 @@ def get_daily_log(day):
 def _calc_costs(charged_energy_by_source: Dict[str, float], costs: Dict[str, float]) -> float:
 
     bat_costs = costs["bat"] * charged_energy_by_source["bat"]
-    # Energie aus anderen Ladepunkten wurde dort schon bezahlt und wird nicht erneut berechnet
-    cp_costs = costs.get("cp", 0) * charged_energy_by_source["cp"]
+    cp_costs = costs["cp"] * charged_energy_by_source["cp"]
     grid_costs = costs["grid"] * charged_energy_by_source["grid"]
     pv_costs = costs["pv"] * charged_energy_by_source["pv"]
 

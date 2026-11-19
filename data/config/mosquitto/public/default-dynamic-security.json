@@ -980,6 +980,12 @@
 				},
 				{
 					"acltype": "publishClientReceive",
+					"topic": "openWB/chargepoint/+/config",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
 					"topic": "openWB/consumer/+/config",
 					"priority": 0,
 					"allow": true
@@ -2753,6 +2759,132 @@
 				},
 				{
 					"acltype": "publishClientReceive",
+					"topic": "openWB/bat/+/get/fault_state",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/bat/+/get/fault_str",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/chargepoint/+/config",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/chargepoint/+/get/fault_state",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/chargepoint/+/get/fault_str",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/consumer/+/get/fault_state",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/consumer/+/get/fault_str",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/consumer/+/module",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/counter/+/get/fault_state",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/counter/+/get/fault_str",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/counter/get/hierarchy",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/io/states/+/get/fault_state",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/io/states/+/get/fault_str",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/optional/ep/flexible_tariff/get/fault_state",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/optional/ep/flexible_tariff/get/fault_str",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/optional/ep/grid_fee/get/fault_state",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/optional/ep/grid_fee/get/fault_str",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/optional/forecast/get/fault_state",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/optional/forecast/get/fault_str",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/pv/+/get/fault_state",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/pv/+/get/fault_str",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
 					"topic": "openWB/system/current_branch_commit",
 					"priority": 0,
 					"allow": true
@@ -2783,6 +2915,12 @@
 				},
 				{
 					"acltype": "publishClientReceive",
+					"topic": "openWB/system/io/+/config",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
 					"topic": "openWB/system/security/access/Support",
 					"priority": 0,
 					"allow": true
@@ -2790,6 +2928,18 @@
 				{
 					"acltype": "publishClientReceive",
 					"topic": "openWB/system/serial_number",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/vehicle/+/get/fault_state",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/vehicle/+/get/fault_str",
 					"priority": 0,
 					"allow": true
 				},

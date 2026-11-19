@@ -659,3 +659,25 @@ def test_remove_outdated_prices_of_source_price_without_tariff(monkeypatch, capl
 
     pub.pub.assert_called_once_with(f"openWB/set/optional/ep/{source}/get/prices", {200: 0.2, 300: 0.3})
     assert "Fehler beim Entfernen" not in caplog.text
+
+
+class TestForecastGetCurrentValue:
+    def test_returns_closest_past_or_current_value(self, monkeypatch):
+        opt = Optional()
+        opt.data.forecast.get.today_values = {"100": 1.0, "200": 2.0, "300": 3.0}
+        monkeypatch.setattr(timecheck, "create_timestamp", Mock(return_value=250))
+
+        assert opt.forecast_get_current_value() == 2.0
+
+    def test_returns_none_when_today_values_empty(self):
+        opt = Optional()
+        opt.data.forecast.get.today_values = {}
+
+        assert opt.forecast_get_current_value() is None
+
+    def test_returns_none_when_all_timestamps_are_in_the_future(self, monkeypatch):
+        opt = Optional()
+        opt.data.forecast.get.today_values = {"100": 1.0, "200": 2.0}
+        monkeypatch.setattr(timecheck, "create_timestamp", Mock(return_value=50))
+
+        assert opt.forecast_get_current_value() is None

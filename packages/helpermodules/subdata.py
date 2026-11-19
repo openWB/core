@@ -49,6 +49,7 @@ from modules.electricity_pricing.tariff_packages import tariff_module_path
 from modules.internal_chargepoint_handler.internal_chargepoint_handler_config import (
     GlobalHandlerData, InternalChargepoint, RfidData)
 from modules.vehicles.manual.config import ManualSoc
+from modules.internal_chargepoint_handler.wallbox_socket_config import WallboxSocket
 
 log = logging.getLogger(__name__)
 mqtt_log = logging.getLogger("mqtt")
@@ -79,6 +80,7 @@ class SubData:
         "global_data": GlobalHandlerData(),
         "rfid_data": RfidData()}
     io_actions = io_device.IoActions()
+    wallbox_socket_data = WallboxSocket()
     io_states: Dict[str, io_device.IoStates] = {}
     optional_data = optional.Optional()
     system_data = {"system": system.System()}
@@ -160,6 +162,7 @@ class SubData:
             ("openWB/consumer/+/control_parameter/#", 2),
             ("openWB/command/command_completed", 2),
             ("openWB/internal_chargepoint/#", 2),
+            ("openWB/internal_socket/#", 2),
             # MQTT Bridge Topics vor "openWB/system/+" abonnieren, damit sie auch vor
             # "openWB/system/subdata_initialized" empfangen werden!
             ("openWB/system/mqtt/bridge/+", 2),
@@ -208,6 +211,8 @@ class SubData:
             self.process_io_topic(self.io_states, msg)
         elif "openWB/internal_chargepoint/" in msg.topic:
             self.process_internal_chargepoint_topic(client, self.internal_chargepoint_data, msg)
+        elif "openWB/internal_socket/" in msg.topic:
+            self.process_wallbox_socket_topic(msg)
         elif "openWB/optional/" in msg.topic:
             self.process_optional_topic(self.optional_data, msg)
         elif "openWB/counter/" in msg.topic:
@@ -865,6 +870,14 @@ class SubData:
                         current_config = asdict(var.forecast_module.config) if var.forecast_module is not None else None
                         if current_config != asdict(config):
                             var.forecast_module = ConfigurableForecastProvider(config, mod.create_forecast)
+                elif re.search("/optional/forecast/get/values$", msg.topic) is not None:
+                    var.data.forecast.get.values = decode_payload(msg.payload)
+                elif re.search("/optional/forecast/get/today_values$", msg.topic) is not None:
+                    var.data.forecast.get.today_values = decode_payload(msg.payload)
+                elif re.search("/optional/forecast/get/tomorrow_values$", msg.topic) is not None:
+                    var.data.forecast.get.tomorrow_values = decode_payload(msg.payload)
+                elif re.search("/optional/forecast/get/daily_kwh$", msg.topic) is not None:
+                    var.data.forecast.get.daily_kwh = decode_payload(msg.payload)
                 elif re.search("/optional/forecast/get/", msg.topic) is not None:
                     self.set_json_payload_class(var.data.forecast.get, msg)
                 elif re.search("/optional/forecast/", msg.topic) is not None:
@@ -1273,6 +1286,15 @@ class SubData:
         else:
             internal_configured = False
         self.internal_chargepoint_data["global_data"].configured = internal_configured
+
+    def process_wallbox_socket_topic(self, msg):
+        try:
+            if msg.topic.startswith("openWB/internal_socket/data/"):
+                self.set_json_payload_class(self.wallbox_socket_data.data, msg)
+            elif msg.topic.startswith("openWB/internal_socket/get/"):
+                self.set_json_payload_class(self.wallbox_socket_data.get, msg)
+        except Exception:
+            log.exception("Fehler im subdata-Modul für die Wallbox-Steckdose")
 
     def process_legacy_smarthome_topic(self, client: mqtt.Client, var: counter_all.CounterAll, msg: mqtt.MQTTMessage):
         """ Handler für die SmartHome-Topics des alten

@@ -108,6 +108,7 @@ def get_default_charge_log_columns() -> Dict:
 #                              'power_exported': 0, # kW
 #                              'power_imported': 0.006}}, # kW
 #               'prices': {'bat': 0.0002, # €/Wh
+#                          'cp': 0, # €/Wh
 #                          'grid': 0.00014862, # €/Wh
 #                          'pv': 0.00015}, # €/Wh
 #               'pv': {'all': {'energy_exported': 4.697, # kWh

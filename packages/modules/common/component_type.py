@@ -12,6 +12,7 @@ class ComponentType(Enum):
     FEED_IN_PRICE = "feed_in_price"
     TARIFF = "electricity_tariff"
     GRID_FEE = "grid_tariff"
+    WALLBOX_SOCKET = "wallbox_socket"
     INVERTER = "inverter"
     IO = "io"
     PV_PRICE = "pv_price"
@@ -47,6 +48,8 @@ def type_to_topic_mapping(component_type: str) -> str:
         return "consumer"
     elif "counter" in component_type:
         return "counter"
+    elif "wallbox_socket" in component_type:
+        return "internal_socket"
     elif "inverter" in component_type:
         return "pv"
     elif ComponentType.TARIFF.value in component_type:

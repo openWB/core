@@ -53,7 +53,8 @@ class FaultState(Exception):
                                             component_type.ComponentType.GRID_FEE.value,
                                             component_type.ComponentType.PV_PRICE.value,
                                             component_type.ComponentType.BAT_PRICE.value,
-                                            component_type.ComponentType.FEED_IN_PRICE.value):
+                                            component_type.ComponentType.FEED_IN_PRICE.value,
+                                            component_type.ComponentType.WALLBOX_SOCKET.value):
                 topic_prefix = f"openWB/set/{topic}"
             else:
                 topic_prefix = f"openWB/set/{topic}/{self.component_info.id}"

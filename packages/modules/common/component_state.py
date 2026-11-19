@@ -163,7 +163,8 @@ class CarState:
         """Args:
             soc: actual state of charge in percent
             range: actual range in km
-            soc_timestamp: timestamp of last request as unix timestamp
+            soc_timestamp: unix timestamp of the SoC measurement, if the vehicle or its API provides one;
+                otherwise (default) the time of the request
             odometer: actual odometer of vehicle in km
             warning: informational message about a vehicle-side setting affecting charging
                 (eg. a manufacturer battery-care-mode limit), shown to the user but not an error
