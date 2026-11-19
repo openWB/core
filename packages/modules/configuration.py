@@ -1,11 +1,12 @@
 import importlib
 import logging
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
 
 import dataclass_utils
 from helpermodules.pub import Pub
 from modules.devices.vendors import READABLE_GROUP_NAME as READABLE_VENDOR_GROUP_NAME, VendorGroup
+from modules.electricity_pricing.tariff_packages import TARIFF_PACKAGES, tariff_packages
 from modules.io_actions.groups import READABLE_GROUP_NAME, ActionGroup
 import sys
 log = logging.getLogger(__name__)
@@ -146,26 +147,31 @@ def _pub_configurable_forecasts() -> None:
 
 
 def _pub_configurable_tariffs() -> None:
-    def pub(source: str):
+    def pub(source: str, packages: Tuple[str, ...]):
         try:
             tariffs: List[Dict] = []
-            path_list = Path(_get_packages_path()/"modules"/"electricity_pricing" /
-                             f"{source}").glob('**/tariff.py')
-            for path in path_list:
-                try:
-                    if path.name.endswith("_test.py"):
-                        # Tests überspringen
-                        continue
-                    dev_defaults = importlib.import_module(
-                        f".electricity_pricing.{source}.{path.parts[-2]}.tariff",
-                        "modules").device_descriptor.configuration_factory()
-                    tariffs.append({
-                        "value": dev_defaults.type,
-                        "text": dev_defaults.name,
-                        "defaults": dataclass_utils.asdict(dev_defaults)
-                    })
-                except Exception as e:
-                    log.exception(f"Fehler im configuration-Modul, {path}: {e}")
+            for package in packages:
+                path_list = Path(_get_packages_path()/"modules"/"electricity_pricing" /
+                                 f"{package}").glob('**/tariff.py')
+                for path in path_list:
+                    try:
+                        if path.name.endswith("_test.py"):
+                            # Tests überspringen
+                            continue
+                        dev_defaults = importlib.import_module(
+                            f".electricity_pricing.{package}.{path.parts[-2]}.tariff",
+                            "modules").device_descriptor.configuration_factory()
+                        entry = {
+                            "value": dev_defaults.type,
+                            "text": dev_defaults.name,
+                            "defaults": dataclass_utils.asdict(dev_defaults)
+                        }
+                        if package in TARIFF_PACKAGES:
+                            # Art der Preise: die Oberfläche zeigt zuerst die Art und dann die passenden Anbieter
+                            entry["price_type"] = TARIFF_PACKAGES[package].value
+                        tariffs.append(entry)
+                    except Exception as e:
+                        log.exception(f"Fehler im configuration-Modul, {path}: {e}")
             tariffs = sorted(tariffs, key=lambda d: d['text'].upper())
             # "leeren" Eintrag an erster Stelle einfügen
             tariffs.insert(0,
@@ -181,8 +187,8 @@ def _pub_configurable_tariffs() -> None:
             Pub().pub(f"openWB/set/system/configurable/{source}", tariffs)
         except Exception:
             log.exception("Fehler im configuration-Modul")
-    pub("flexible_tariffs")
-    pub("grid_fees")
+    pub("flexible_tariffs", tariff_packages())
+    pub("grid_fees", ("grid_fees",))
 
 
 def _pub_configurable_soc_modules() -> None:

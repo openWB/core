@@ -3,6 +3,7 @@ import { globalData } from '@/assets/js/model'
 
 class EtData {
 	active = false
+	controllable = false
 	etPriceList = new Map<Date, number>()
 	etProvider = ''
 	etMaxPrice = 0

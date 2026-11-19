@@ -324,7 +324,7 @@ class ChargeTemplate:
                 current = 0
                 sub_mode = ChargemodeEnum.STOP
                 message = self.AMOUNT_REACHED
-            elif data.data.optional_data.data.electricity_pricing.configured:
+            elif data.data.optional_data.data.electricity_pricing.controllable:
                 if data.data.optional_data.ep_is_charging_allowed_price_threshold(eco_charging.max_price):
                     sub_mode = ChargemodeEnum.INSTANT_CHARGING
                     message = self.CHARGING_PRICE_LOW

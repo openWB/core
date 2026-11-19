@@ -1168,6 +1168,12 @@ function processETProviderMessages(mqttTopic, mqttPayload) {
 		} else {
 			$('.ep-configured').addClass('hide');
 		}
+	} else if (mqttTopic == 'openWB/optional/ep/controllable') {
+		if (JSON.parse(mqttPayload)) {
+			$('.ep-controllable').removeClass('hide');
+		} else {
+			$('.ep-controllable').addClass('hide');
+		}
 	} else if (mqttTopic == 'openWB/optional/ep/get/prices') {
 		electricityPriceList = JSON.parse(mqttPayload);
 		$('.charge-point-eco-charge-max_price-button').prop('disabled', false);

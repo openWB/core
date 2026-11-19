@@ -999,12 +999,12 @@ export const useMqttStore = defineStore("mqtt", {
     },
 
     /* electricity tariff provider */
-    getEtConfigured(state){
+    getEtControllable(state){
       if (
-        state.topics["openWB/optional/ep/configured"] !==
+        state.topics["openWB/optional/ep/controllable"] !==
         undefined
       ) {
-        return state.topics["openWB/optional/ep/configured"];
+        return state.topics["openWB/optional/ep/controllable"];
       }
       return false;
     },

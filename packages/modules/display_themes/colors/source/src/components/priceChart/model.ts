@@ -2,6 +2,7 @@ import { reactive } from 'vue'
 // import { updateServer } from '@/assets/js/sendMessages'
 class EtData {
 	active = false
+	controllable = false
 	etPriceList = new Map<Date, number>()
 	etProvider = ''
 	etMaxPrice = 0

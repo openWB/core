@@ -4729,6 +4729,16 @@ export const useMqttStore = defineStore('mqtt', () => {
     );
   });
 
+  const etProviderControllable = computed(() => {
+    return (
+      (getValue.value(
+        'openWB/optional/ep/controllable',
+        undefined,
+        false,
+      ) as boolean) || false
+    );
+  });
+
   const etPrices = computed(() => {
     return getValue.value('openWB/optional/ep/get/prices', undefined, {}) as {
       [key: string]: number;
@@ -4962,6 +4972,7 @@ export const useMqttStore = defineStore('mqtt', () => {
     chartData,
     // electricity tariff provider
     etProviderConfigured,
+    etProviderControllable,
     etPrices,
   };
 });

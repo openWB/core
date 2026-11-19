@@ -1,5 +1,7 @@
 from dataclasses import dataclass, field
-from typing import TypedDict
+from typing import ClassVar, TypedDict
+
+from modules.electricity_pricing.price_type import PriceType
 
 
 class FixedHoursActiveTimes(TypedDict):
@@ -46,7 +48,8 @@ class FixedHoursTariffConfiguration:
 
 @dataclass
 class FixedHoursTariff:
-    name: str = "Feste Tarifstunden (z.b. §14a EnWG Modul3)"
+    name: str = "Zeitabhängiger Tarif (HT/NT)"
     type: str = "fixed_hours"
     official: bool = False
     configuration: FixedHoursTariffConfiguration = field(default_factory=FixedHoursTariffConfiguration)
+    price_type: ClassVar[PriceType] = PriceType.TIME_DEPENDENT

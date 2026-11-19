@@ -9,7 +9,8 @@ from datetime import datetime
 
 from control import data
 from control.ocpp import OcppMixin
-from control.optional_data import FlexibleTariff, ForecastGet, GridFee, OptionalData, PricingGet
+from control.optional_data import (BatPrice, FeedInPrice, FlexibleTariff, ForecastGet, GridFee, OptionalData,
+                                   PricingGet, PvPrice)
 from helpermodules import hardware_configuration
 from helpermodules.constants import NO_ERROR
 from helpermodules.pub import Pub
@@ -18,10 +19,32 @@ from helpermodules.utils import thread_handler
 from modules.common.configurable_forecast import ConfigurableForecast
 from modules.common.configurable_tariff import ConfigurableFlexibleTariff, ConfigurableGridFee
 from modules.common.configurable_monitoring import ConfigurableMonitoring
+from modules.electricity_pricing.price_type import PriceType, get_price_type
 
 log = logging.getLogger(__name__)
 AS_EURO_PER_KWH = 1000.0  # Umrechnung von €/Wh in €/kWh
 MQTT_PREFIX = "openWB/set/optional/ep"
+# Rückfallwerte in €/Wh, solange kein Preisanbieter bzw. keine Preisliste vorliegt
+FALLBACK_PRICES = {"grid": 0.0003, "pv": 0.00015, "bat": 0.0002, "feed_in": 0.00008}
+# Preiskanäle, die nicht in den kombinierten Strompreis (ep/get/prices) einfließen
+SOURCE_PRICES = ("pv_price", "bat_price", "feed_in_price")
+
+
+def _source_price_module_property(source: str) -> property:
+    attribute = f"_{source}_module"
+
+    def getter(self):
+        return getattr(self, attribute)
+
+    def setter(self, value):
+        if (value is None or
+                (getattr(self, attribute) and value and getattr(self, attribute).config != value.config)):
+            module_data = getattr(self.data.electricity_pricing, source)
+            module_data.get = PricingGet()
+            self._reset_source_price_state(module_data)
+        setattr(self, attribute, value)
+
+    return property(getter, setter)
 
 
 class Optional(OcppMixin):
@@ -30,6 +53,8 @@ class Optional(OcppMixin):
             self.data = OptionalData()
             self._flexible_tariff_module: TypingOptional[ConfigurableFlexibleTariff] = None
             self._grid_fee_module: TypingOptional[ConfigurableGridFee] = None
+            for source in SOURCE_PRICES:
+                setattr(self, f"_{source}_module", None)
             self._forecast_module: TypingOptional[ConfigurableForecast] = None
             self.monitoring_module: TypingOptional[ConfigurableMonitoring] = None
             self.data.dc_charging = hardware_configuration.get_hardware_configuration_setting("dc_charging")
@@ -102,13 +127,34 @@ class Optional(OcppMixin):
         self._grid_fee_module = value
         self._set_ep_configured()
 
+    pv_price_module = _source_price_module_property("pv_price")
+    bat_price_module = _source_price_module_property("bat_price")
+    feed_in_price_module = _source_price_module_property("feed_in_price")
+
+    def _reset_source_price_state(self, module: Union[PvPrice, BatPrice, FeedInPrice]):
+        Pub().pub(f"{MQTT_PREFIX}/{module.name}/get/fault_state", 0)
+        Pub().pub(f"{MQTT_PREFIX}/{module.name}/get/fault_str", NO_ERROR)
+        Pub().pub(f"{MQTT_PREFIX}/{module.name}/get/prices", {})
+        Pub().pub(f"{MQTT_PREFIX}/{module.name}/get/next_query_time", None)
+        Pub().pub(f"{MQTT_PREFIX}/{module.name}/get/last_update_time", 0)
+        Pub().pub(f"{MQTT_PREFIX}/{module.name}/get/force_update", False)
+
+    def _has_price_provider(self) -> bool:
+        """Es gibt einen Stromtarif oder Netzentgelte, deren Preise abgerufen, geloggt und angezeigt werden."""
+        return self._flexible_tariff_module is not None or self._grid_fee_module is not None
+
     def _set_ep_configured(self):
-        if self._grid_fee_module or self._flexible_tariff_module:
-            self.data.electricity_pricing.configured = True
-            Pub().pub("openWB/set/optional/ep/configured", True)
-        else:
-            self.data.electricity_pricing.configured = False
-            Pub().pub("openWB/set/optional/ep/configured", False)
+        """configured: Es gibt einen Stromtarif oder Netzentgelte, die Preise werden angezeigt und geloggt.
+        controllable: Preisbasiertes Laden ist möglich. Das ist nur bei zeitabhängigen oder dynamischen Preisen
+        sinnvoll, ein fester Stromtarif liefert nur den Preis für die Ladekosten."""
+        has_price_based_tariff = (self._flexible_tariff_module is not None and
+                                  get_price_type(self._flexible_tariff_module.config) != PriceType.FIXED)
+        configured = self._has_price_provider()
+        controllable = self._grid_fee_module is not None or has_price_based_tariff
+        self.data.electricity_pricing.configured = configured
+        self.data.electricity_pricing.controllable = controllable
+        Pub().pub("openWB/set/optional/ep/configured", configured)
+        Pub().pub("openWB/set/optional/ep/controllable", controllable)
 
     def _reset_state(self, module: Union[FlexibleTariff, GridFee]):
         if (module.get.fault_state != 0 or module.get.fault_str != NO_ERROR):
@@ -118,6 +164,8 @@ class Optional(OcppMixin):
             Pub().pub(f"openWB/set/optional/ep/{module.name}/get/fault_str", NO_ERROR)
         Pub().pub(f"openWB/set/optional/ep/{module.name}/get/prices", {})
         Pub().pub(f"openWB/set/optional/ep/{module.name}/get/next_query_time", None)
+        Pub().pub(f"openWB/set/optional/ep/{module.name}/get/last_update_time", 0)
+        Pub().pub(f"openWB/set/optional/ep/{module.name}/get/force_update", False)
         Pub().pub("openWB/set/optional/ep/get/prices", {})
 
     def monitoring_start(self):
@@ -142,7 +190,7 @@ class Optional(OcppMixin):
         False: Der aktuelle Zeitpunkt liegt in keinem günstigen Zeitslot
         """
         try:
-            if self.data.electricity_pricing.configured:
+            if self.data.electricity_pricing.controllable:
                 return self.__get_current_timeslot_start() in selected_hours
             else:
                 log.debug("Prüfe strompreisbasiertes Laden: Nicht konfiguriert")
@@ -160,7 +208,7 @@ class Optional(OcppMixin):
         False: Preis liegt darüber
         """
         try:
-            if self.data.electricity_pricing.configured:
+            if self.data.electricity_pricing.controllable:
                 current_price = self.ep_get_current_price()
                 log.info("Prüfe strompreisbasiertes Laden mit Preisgrenze %.5f €/kWh, aktueller Preis: %.5f €/kWh",
                          max_price * AS_EURO_PER_KWH,
@@ -194,8 +242,8 @@ class Optional(OcppMixin):
                     (int(timestamp) <= last_active_timestamp if last_active_timestamp > 0 else True)}
 
         try:
-            if self.data.electricity_pricing.configured:
-                ep = self.data.electricity_pricing
+            ep = self.data.electricity_pricing
+            if self._has_price_provider():
                 #  prices lists are updated in optional_data via mqtt listener
                 if len(ep.get.prices) > 0:
                     Pub().pub(f"{MQTT_PREFIX}/get/prices", remove(ep.get.prices))
@@ -206,6 +254,10 @@ class Optional(OcppMixin):
                               remove(ep.grid_fee.get.prices,
                                      last_active_timestamp=int(max(ep.get.prices.keys()))
                                      if ep.get.prices else 0))
+            for source in SOURCE_PRICES:
+                if getattr(self, f"_{source}_module"):
+                    source_data = getattr(ep, source)
+                    Pub().pub(f"{MQTT_PREFIX}/{source}/get/prices", remove(source_data.get.prices))
         except Exception as e:
             log.exception("Fehler beim Entfernen veralteter Preise: %s", e)
 
@@ -214,11 +266,26 @@ class Optional(OcppMixin):
         return int(timestamp)
 
     def ep_get_current_price(self) -> float:
-        if self.data.electricity_pricing.configured:
+        if self._has_price_provider():
             first = self.__get_first_entry()[1]
             return first
         else:
             raise Exception("Kein Anbieter für strompreisbasiertes Laden konfiguriert.")
+
+    def get_current_price(self, source: str) -> float:
+        """Aktueller Preis in €/Wh für "grid", "pv", "bat" oder "feed_in" (Einspeisung).
+        Liegt kein Preis vor, wird der Rückfallwert aus FALLBACK_PRICES verwendet."""
+        try:
+            if source == "grid":
+                return self.ep_get_current_price()
+            prices = getattr(self.data.electricity_pricing, f"{source}_price").get.prices
+            now = timecheck.create_timestamp()
+            current = max((float(timestamp) for timestamp in prices if float(timestamp) <= now), default=None)
+            if current is None:
+                raise Exception(f"Keine Preisdaten für {source} vorhanden.")
+            return next(price for timestamp, price in prices.items() if float(timestamp) == current)
+        except Exception:
+            return FALLBACK_PRICES[source]
 
     def forecast_get_current_value(self) -> TypingOptional[float]:
         """Liefert den aktuellen Prognosewert. Anders als bei den Strompreisen enthält
@@ -250,7 +317,7 @@ class Optional(OcppMixin):
         ------
         list: Key des Dictionary (Unix-Sekunden der günstigen Zeit-Slots)
         """
-        if self.data.electricity_pricing.configured is False:
+        if self.data.electricity_pricing.controllable is False:
             raise Exception("Kein Anbieter für strompreisbasiertes Laden konfiguriert.")
         try:
             prices = self.data.electricity_pricing.get.prices
@@ -295,8 +362,9 @@ class Optional(OcppMixin):
             log.exception("Fehler im Optional-Modul: %s", e)
             return []
 
-    def _is_et_price_update_required_for_module(self, module: Union[FlexibleTariff, GridFee]) -> bool:
-        if module.get.next_query_time is None:
+    def _is_et_price_update_required_for_module(
+            self, module: Union[FlexibleTariff, GridFee, PvPrice, BatPrice, FeedInPrice]) -> bool:
+        if module.get.force_update or module.get.next_query_time is None:
             return True
         now = timecheck.create_timestamp()
         next_query_formatted = datetime.fromtimestamp(module.get.next_query_time).strftime("%Y%m%d-%H:%M:%S")
@@ -309,7 +377,11 @@ class Optional(OcppMixin):
 
     def et_price_update_required(self) -> bool:
         self._set_ep_configured()
-        if self.data.electricity_pricing.configured is False:
+        ep = self.data.electricity_pricing
+        if any(getattr(self, f"_{source}_module") is not None and
+               self._is_et_price_update_required_for_module(getattr(ep, source)) for source in SOURCE_PRICES):
+            return True
+        if not self._has_price_provider():
             return False
         if len(self.data.electricity_pricing.get.prices) == 0:
             return True

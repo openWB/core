@@ -26,6 +26,16 @@ LATE_WARNING_OFFSET_HOURS: int = 2
 log = logging.getLogger(__name__)
 
 
+# Bezeichnungen für Meldungen in der Oberfläche
+DISPLAY_NAMES = {
+    "flexible_tariff": "Stromtarif",
+    "grid_fee": "Netzentgelte",
+    "pv_price": "Preis für Erzeugung",
+    "bat_price": "Preis für Speicherentladung",
+    "feed_in_price": "Einspeisevergütung",
+}
+
+
 class ConfigurableTariff(Generic[T_TARIFF_CONFIG]):
     # Default value, may be overridden in __init__ if config provides it
     tariff_update_hours = [14]
@@ -38,6 +48,7 @@ class ConfigurableTariff(Generic[T_TARIFF_CONFIG]):
         self.config = config
         self.get = get
         self.tariff_type = tariff_type
+        self.display_name = DISPLAY_NAMES.get(tariff_type, tariff_type)
 
         # Set update_hours from config if available, else default to [14]
         if hasattr(config.configuration, 'update_hours') and config.configuration.update_hours is not None:
@@ -56,20 +67,40 @@ class ConfigurableTariff(Generic[T_TARIFF_CONFIG]):
 
     def update(self) -> None:
         if hasattr(self, "_component_updater"):
-            if self.get.next_query_time is None or self.get.next_query_time <= timecheck.create_timestamp():
-                log.debug(f"Tarifaktualisierung für {self.tariff_type}")
+            force_update = self._is_force_update_requested()
+            if (force_update or self.get.next_query_time is None or
+                    self.get.next_query_time <= timecheck.create_timestamp()):
+                log.debug(f"Tarifaktualisierung für {self.tariff_type}" + (" (manuell)" if force_update else ""))
                 try:
                     # reraise=True, sonst verschluckt __exit__ die Exception vor dem except-Block (siehe #3703)
                     with SingleComponentUpdateContext(self.fault_state, reraise=True):
                         tariff_state, timeslot_length_seconds = self.__update_et_provider_data()
                         self.__store_and_publish_updated_data(tariff_state)
+                        self.__set_last_update_time()
                         self.__finalize_update_status(timeslot_length_seconds, tariff_state)
                 except Exception as e:
                     log.exception(f"Fehler beim Aktualisieren der Tarifdaten {e}")
                     self._delay_next_query()
+                finally:
+                    if force_update:
+                        self._clear_force_update_request()
             else:
                 log.info(f"nächste Tarifaktualisierung für {self.tariff_type}" +
                          f" um {datetime.fromtimestamp(self.get.next_query_time)}")
+
+    def __set_last_update_time(self) -> None:
+        self.get.last_update_time = int(timecheck.create_timestamp())
+        Pub().pub(f"openWB/set/optional/ep/{self.tariff_type}/get/last_update_time", self.get.last_update_time)
+
+    def _is_force_update_requested(self) -> bool:
+        """Der Auslöser wird per MQTT in die globale SubData-Instanz geschrieben. self.get ist eine eigene Instanz
+        des Moduls und bekommt davon nichts mit."""
+        from helpermodules import subdata
+        electricity_pricing = subdata.SubData.optional_data.data.electricity_pricing
+        return bool(getattr(electricity_pricing, self.tariff_type).get.force_update)
+
+    def _clear_force_update_request(self) -> None:
+        Pub().pub(f"openWB/set/optional/ep/{self.tariff_type}/get/force_update", False)
 
     def __update_et_provider_data(self) -> tuple[TariffState, int]:
         tariff_state = self.__call_component_updater()
@@ -141,18 +172,17 @@ class ConfigurableTariff(Generic[T_TARIFF_CONFIG]):
         # jede zuvor gesetzte Warnung/Fehler sofort wieder (siehe #3703)
         if tariff_state.prices is None or len(tariff_state.prices) < 2:
             self.fault_state.error(
-                f"Nicht genug Preiseinträge für {self.tariff_type}, um die Zeitschrittlänge zu berechnen.")
+                f"Nicht genug Preiseinträge ({self.display_name}), um die Zeitschrittlänge zu berechnen.")
             return
         if self.__is_tomorrow_price_missing_after_late_hour(tariff_state):
             self.fault_state.warning(
-                f"Noch keine aktuellen Preise für {self.tariff_type} erhalten - "
+                f"Noch keine aktuellen Preise ({self.display_name}) erhalten - "
                 "der Anbieter liefert bisher keine Daten für den Folgetag.")
             return
         expected_time_slots = int(24 * ONE_HOUR_SECONDS / timeslot_length_seconds)
-        message_extension = (f'nicht {expected_time_slots}, sondern ' if len(tariff_state.prices) < expected_time_slots
-                             else '')
+        expected = f' (erwartet: {expected_time_slots})' if len(tariff_state.prices) < expected_time_slots else ''
         self.fault_state.no_error(
-            f'Die {self.tariff_type} Preisliste hat {message_extension}{len(tariff_state.prices)} Einträge. ')
+            f'{self.display_name}: {len(tariff_state.prices)} Einträge in der Preisliste{expected}.')
 
     def __is_tomorrow_price_missing_after_late_hour(self, tariff_state: TariffState) -> bool:
         now = datetime.now()
@@ -195,7 +225,7 @@ class ConfigurableFlexibleTariff(ConfigurableTariff):
                  config: T_TARIFF_CONFIG,
                  component_initializer: Callable[[], float]) -> None:
         self.store = store.get_flexible_tariff_value_store()
-        self.fault_state = FaultState(ComponentInfo(None, config.name, ComponentType.FLEXIBLE_TARIFF.value))
+        self.fault_state = FaultState(ComponentInfo(None, config.name, ComponentType.TARIFF.value))
         super().__init__(config, component_initializer, OptionalData().electricity_pricing.flexible_tariff.get)
 
 
@@ -207,3 +237,33 @@ class ConfigurableGridFee(ConfigurableTariff):
         self.fault_state = FaultState(ComponentInfo(None, config.name, ComponentType.GRID_FEE.value))
         super().__init__(config, component_initializer, OptionalData().electricity_pricing.grid_fee.get,
                          tariff_type="grid_fee")
+
+
+class ConfigurablePvPrice(ConfigurableTariff):
+    def __init__(self,
+                 config: T_TARIFF_CONFIG,
+                 component_initializer: Callable[[], float]) -> None:
+        self.store = store.get_pv_price_value_store()
+        self.fault_state = FaultState(ComponentInfo(None, config.name, ComponentType.PV_PRICE.value))
+        super().__init__(config, component_initializer, OptionalData().electricity_pricing.pv_price.get,
+                         tariff_type="pv_price")
+
+
+class ConfigurableBatPrice(ConfigurableTariff):
+    def __init__(self,
+                 config: T_TARIFF_CONFIG,
+                 component_initializer: Callable[[], float]) -> None:
+        self.store = store.get_bat_price_value_store()
+        self.fault_state = FaultState(ComponentInfo(None, config.name, ComponentType.BAT_PRICE.value))
+        super().__init__(config, component_initializer, OptionalData().electricity_pricing.bat_price.get,
+                         tariff_type="bat_price")
+
+
+class ConfigurableFeedInPrice(ConfigurableTariff):
+    def __init__(self,
+                 config: T_TARIFF_CONFIG,
+                 component_initializer: Callable[[], float]) -> None:
+        self.store = store.get_feed_in_price_value_store()
+        self.fault_state = FaultState(ComponentInfo(None, config.name, ComponentType.FEED_IN_PRICE.value))
+        super().__init__(config, component_initializer, OptionalData().electricity_pricing.feed_in_price.get,
+                         tariff_type="feed_in_price")

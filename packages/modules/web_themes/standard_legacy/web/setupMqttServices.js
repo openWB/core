@@ -77,6 +77,7 @@ var topicsToSubscribe = [
 
 	// electricity tariff
 	["openWB/optional/ep/configured", 1], // ep provider information
+	["openWB/optional/ep/controllable", 1], // price based charging possible
 	["openWB/optional/ep/get/prices", 1], // current price list
 	["openWB/optional/dc_charging", 1], // dc charging is configured
 

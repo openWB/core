@@ -4,6 +4,8 @@ import { etData } from './model'
 export function processEtProviderMessages(topic: string, message: string) {
 	if (topic == 'openWB/optional/ep/configured') {
 		etData.active = message == 'true'
+	} else if (topic == 'openWB/optional/ep/controllable') {
+		etData.controllable = message == 'true'
 	} else if (topic == 'openWB/optional/ep/flexible_tariff/provider') {
 		const data = JSON.parse(message)
 		etData.etProvider = data.name

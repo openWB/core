@@ -549,7 +549,7 @@ class BatAll:
             return BatChargeMode.BAT_SELF_REGULATION
 
     def get_charge_mode_electricity_tariff(self):
-        if data.data.optional_data.data.electricity_pricing.configured:
+        if data.data.optional_data.data.electricity_pricing.controllable:
             if (self.data.config.price_charge_activated and
                     data.data.optional_data.ep_is_charging_allowed_price_threshold(
                     self.data.config.charge_limit)):

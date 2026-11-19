@@ -91,10 +91,11 @@ def chargemode_config_factory() -> ChargemodeConfig:
 
 @dataclass
 class Prices:
-    bat: float = field(default=0.0002, metadata={"topic": "prices/bat"})
     cp: float = field(default=0, metadata={"topic": "prices/cp"})
-    grid: float = field(default=0.0003, metadata={"topic": "prices/grid"})
-    pv: float = field(default=0.00015, metadata={"topic": "prices/pv"})
+    # Abrechnung der Ladekosten im Ladeprotokoll: "mix" (Preise nach Strommix), "grid" (alles zum Strompreis),
+    # "fixed" (alles zum festen Preis fixed_price)
+    cost_mode: str = field(default="mix", metadata={"topic": "prices/cost_mode"})
+    fixed_price: float = field(default=0.0003, metadata={"topic": "prices/fixed_price"})
 
 
 def prices_factory() -> Prices:

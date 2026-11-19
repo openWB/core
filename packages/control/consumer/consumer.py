@@ -268,7 +268,7 @@ class Consumer(ConsumerRfidMixin, Load):
         else:
             # Wenn dynamische Tarife aktiv sind, prüfen, ob jetzt ein günstiger Zeitpunkt zum Laden
             # ist.
-            if data.data.optional_data.data.electricity_pricing.configured:
+            if data.data.optional_data.data.electricity_pricing.controllable:
                 def get_hours_message() -> str:
                     def end_of_today_timestamp() -> float:
                         return datetime.datetime.now().replace(
@@ -386,7 +386,7 @@ class Consumer(ConsumerRfidMixin, Load):
 
     def eco_charging(self) -> Tuple[float, Optional[str], Chargemode]:
         message = None
-        if data.data.optional_data.data.electricity_pricing.configured:
+        if data.data.optional_data.data.electricity_pricing.controllable:
             if data.data.optional_data.ep_is_charging_allowed_price_threshold(
                     self.data.usage.eco_charging.price_limit):
                 required_current = self._parse_required_current_by_usage(

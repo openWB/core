@@ -40,7 +40,7 @@
       </q-btn-group>
     </div>
   </div>
-  <div v-if="etConfigured">
+  <div v-if="etControllable">
     <div class="text-subtitle2 q-my-sm">
       Preisgrenze für strompreisbasiertes Laden
     </div>
@@ -153,7 +153,7 @@ const numPhases = mqttStore.chargePointConnectedVehicleEcoChargePhases(
   props.chargePointId,
 );
 
-const etConfigured = computed(() => mqttStore.etProviderConfigured);
+const etControllable = computed(() => mqttStore.etProviderControllable);
 
 const maxPrice = mqttStore.chargePointConnectedVehicleEcoChargeMaxPrice(
   props.chargePointId,

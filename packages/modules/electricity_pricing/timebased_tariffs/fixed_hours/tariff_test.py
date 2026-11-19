@@ -3,14 +3,14 @@ import datetime
 import time
 import pytest
 
-from modules.electricity_pricing.flexible_tariffs.fixed_hours.tariff import (
+from modules.electricity_pricing.timebased_tariffs.fixed_hours.tariff import (
     _to_time,
     _to_date,
     _validate_tariff_times,
     _fetch,
     create_electricity_tariff,
 )
-from modules.electricity_pricing.flexible_tariffs.fixed_hours.config import (
+from modules.electricity_pricing.timebased_tariffs.fixed_hours.config import (
     FixedHoursTariff,
     FixedHoursTariffConfiguration,
 )
