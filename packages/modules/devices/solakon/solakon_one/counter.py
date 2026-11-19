@@ -30,8 +30,7 @@ class SolakonOneCounter(AbstractCounter):
     def update(self) -> None:
         unit = self.component_config.configuration.modbus_id
 
-        # Reg 39134 AC Leistung am Stecker (Grid Information laut Hersteller-Doku), Bezug hat positive Werte,
-        # Einspeisung hat negative Werte
+        # Reg 39134 Active power, AC-Leistung des Wechselrichters am Anschluss
         power = self.client.read_holding_registers(39134, ModbusDataType.INT_32, unit=unit) * -1
 
         # Gesamte Netzeinspeisung/-bezug in Wh
