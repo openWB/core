@@ -24,7 +24,8 @@ if ! sudo apt-get -q -y install --no-install-recommends \
 	python3-venv \
 	"${python_build_packages[@]}" \
 	"${python_binary_packages[@]}" \
-	xserver-xorg x11-xserver-utils openbox-lxde-session lightdm lightdm-autologin-greeter accountsservice \
+	xserver-xorg x11-xserver-utils openbox-lxde-session xinput \
+	lightdm lightdm-autologin-greeter accountsservice \
 	chromium chromium-l10n; then
 	echo "Failed to install required system packages" >&2
 	exit 1
