@@ -198,10 +198,8 @@ const chargingCurrent = computed(() => {
 const faultState = computed(() => mqttStore.chargePointFaultState(props.chargePointId))
 const faultMessage = computed(() => mqttStore.chargePointFaultMessage(props.chargePointId))
 
-// the badge shows what the charge point actually does, not what was requested: charge_state alone
-// can stay true while the control is still stopping the charge (or while a simulated charge point
-// keeps reporting it), so "charging" additionally needs real power. A lock only shows once
-// charging has really stopped, and only with a plugged-in vehicle (the lock button shows the lock otherwise).
+// the badge shows what the charge point really does: charging needs real power (charge_state can lag), and
+// "locked" only counts once charging has stopped and a vehicle is plugged in
 const isCharging = computed(() => chargeState.value && power.value > 0)
 const isLockedShown = computed(() => locked.value && plugState.value && !isCharging.value)
 

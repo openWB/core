@@ -404,6 +404,10 @@ const instances = computed<InstanceInfo[]>(() => {
         }
         const aktuelleWerteRows = [{ label: 'Leistung', value: formatKw(mqttStore.consumerInstancePower(id)) }]
         if (modeLabel) aktuelleWerteRows.push({ label: 'Betriebsmodus', value: modeLabel })
+        const extraMeterId = mqttStore.consumerExtraMeterId(id)
+        if (extraMeterId !== undefined) {
+          aktuelleWerteRows.push({ label: 'Messung über Zähler', value: mqttStore.counterName(extraMeterId) })
+        }
         sections.push({ kind: 'rows', title: 'Aktuelle Werte', rows: aktuelleWerteRows })
         if (temperatures.length > 0) {
           sections.push({

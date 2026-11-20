@@ -767,20 +767,26 @@ export const useMqttStore = defineStore('mqtt', () => {
       updateTopic(cpTopic, value, 'soc')
     }
   }
-  // force_soc_update goes back to false when update_soc.py starts the fetch, not when it ends - so the spinner waits
-  // for the module's result instead (published after the fetch), with a timeout as the fallback
+  // force_soc_update is cleared when the fetch starts, so the spinner waits for the result instead
   const socUpdatePending = ref<Record<number, true>>({})
+  const socUpdateTimers: Record<number, ReturnType<typeof setTimeout>> = {}
   const SOC_UPDATE_TIMEOUT_MS = 120_000
   const SOC_RESULT_TOPICS = ['soc', 'range', 'soc_timestamp', 'odometer', 'fault_state']
 
+  function endSocUpdate(vehicleId: number): void {
+    clearTimeout(socUpdateTimers[vehicleId])
+    delete socUpdatePending.value[vehicleId]
+  }
   function vehicleForceSocUpdate(vehicleId: number): void {
+    clearTimeout(socUpdateTimers[vehicleId])
     socUpdatePending.value[vehicleId] = true
-    setTimeout(() => delete socUpdatePending.value[vehicleId], SOC_UPDATE_TIMEOUT_MS)
+    socUpdateTimers[vehicleId] = setTimeout(() => endSocUpdate(vehicleId), SOC_UPDATE_TIMEOUT_MS)
     doPublish(`openWB/set/vehicle/${vehicleId}/get/force_soc_update`, 1, false)
   }
   function trackSocUpdate(topic: string): void {
+    if (!topic.startsWith('openWB/vehicle/')) return
     const match = /^openWB\/vehicle\/(\d+)\/get\/(\w+)$/.exec(topic)
-    if (match && SOC_RESULT_TOPICS.includes(match[2])) delete socUpdatePending.value[Number(match[1])]
+    if (match && SOC_RESULT_TOPICS.includes(match[2])) endSocUpdate(Number(match[1]))
   }
   /** True from the click until the module has delivered the result (or the timeout has passed). */
   function vehicleSocUpdateInProgress(vehicleId: number): boolean {
@@ -1181,6 +1187,10 @@ export const useMqttStore = defineStore('mqtt', () => {
   function consumerModuleConfig(id: number): ComponentConfiguration | undefined {
     return getValue.value<ComponentConfiguration | undefined>(`openWB/consumer/${id}/module`, undefined)
   }
+  /** Counter id of the separate meter that delivers this consumer's values, if one is assigned. */
+  function consumerExtraMeterId(id: number): number | undefined {
+    return getValue.value<number | null>(`openWB/consumer/${id}/extra_meter`, null) ?? undefined
+  }
   function consumerName(id: number): string {
     return consumerModuleConfig(id)?.name ?? `Verbraucher ${id}`
   }
@@ -1467,6 +1477,7 @@ export const useMqttStore = defineStore('mqtt', () => {
     consumerInstanceFaultMessage,
     consumerFaultStateTotal,
     consumerInstanceStateMessage,
+    consumerExtraMeterId,
     consumerPlugState,
     consumerChargeState,
     consumerOnTime,
