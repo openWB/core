@@ -40,7 +40,12 @@ def create_consumer(config: HeishaMon):
         session = req.get_http_session()
 
     def update() -> ConsumerState:
-        response = session.get(f"http://{config.configuration.ip_address}/json", timeout=5).json()
+        address = config.configuration.ip_address
+        if not isinstance(address, str) or not address.strip():
+            raise ValueError("Bitte IP-Adresse oder Hostname für HeishaMon konfigurieren.")
+        if session is None:
+            initializer()
+        response = session.get(f"http://{address.strip()}/json", timeout=5).json()
         if not isinstance(response, dict) or not isinstance(response.get("heatpump"), list):
             raise ValueError("HeishaMon-Antwort enthält keine 'heatpump'-Liste.")
         values = {entry["Name"]: entry.get("Value") for entry in response["heatpump"]
@@ -57,7 +62,7 @@ def create_consumer(config: HeishaMon):
 
         # Keep fixed positions even when one optional sensor is missing or invalid.
         temperatures = ([_get_temperature(values, name) for name in TEMPERATURE_NAMES]
-                        if config.configuration.read_temperatures else None)
+                        if config.configuration.read_temperatures else [])
         return ConsumerState(power=power, temperatures=temperatures)
 
     return ConfigurableConsumer(consumer_config=config,
