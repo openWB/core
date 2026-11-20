@@ -5,20 +5,40 @@
         <IconCar class="text-car" />
         <span class="text-[14px] font-bold">{{ name }}</span>
       </div>
-      <span
-        v-if="priority !== undefined"
-        class="badge badge-muted"
-      >Prio {{ priority }}</span>
+      <div class="flex items-center gap-1.5">
+        <BasePopover
+          v-if="faultState > 0 && faultMessage"
+          v-model="showFaultMessage"
+          panel-class="top-[calc(100%_+_8px)] right-0 w-64 max-w-[calc(100vw-2rem)] p-2"
+        >
+          <template #trigger="{ toggle }">
+            <BaseIconButton
+              size="sm"
+              :tone="faultState === 1 ? 'warning' : 'error'"
+              aria-label="Meldung des Fahrzeugmoduls anzeigen"
+              :title="faultMessage"
+              @click="toggle"
+            >
+              <IconAlert />
+            </BaseIconButton>
+          </template>
+          <div
+            class="status-box px-3 py-2 text-xs"
+            :class="faultState === 1 ? 'status-box-warning' : 'status-box-fault'"
+          >
+            {{ faultMessage }}
+          </div>
+        </BasePopover>
+        <span
+          v-if="priority !== undefined"
+          class="badge badge-muted"
+        >Prio {{ priority }}</span>
+      </div>
     </div>
 
     <p class="mt-0 mb-2.5 text-xs text-muted">
       {{ info?.manufacturer || 'keine Angabe' }} &middot; {{ info?.model || 'keine Angabe' }}
     </p>
-
-    <FaultMessage
-      :fault-state="faultState"
-      :fault-message="faultMessage"
-    />
 
     <div class="flex flex-wrap items-center gap-1.5">
       <span
@@ -34,20 +54,7 @@
         v-if="socValue !== undefined"
         class="ml-auto flex items-center gap-1 text-[13px] font-bold"
       >
-        <IconAlert
-          v-if="faultState === 1"
-          class="text-warning"
-          :title="faultMessage"
-        />
-        <BaseIconButton
-          v-if="canRefreshSoc"
-          size="sm"
-          aria-label="SoC jetzt abrufen"
-          :title="socUpdateInProgress ? 'SoC wird abgerufen …' : 'SoC jetzt abrufen'"
-          @click="mqttStore.vehicleForceSocUpdate(vehicleId)"
-        >
-          <IconRefresh :class="{ 'animate-spin': socUpdateInProgress }" />
-        </BaseIconButton>
+        <VehicleSocRefreshButton :vehicle-id="vehicleId" />
         {{ Math.round(socValue) }}&nbsp;%
         <VehicleSocEditor
           v-if="info"
@@ -81,29 +88,27 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useMqttStore } from '@/stores/mqtt-store'
 import { stateBadgeClass as stateBadgeClassFor } from '@/utils/badge'
 import IconAlert from './icons/IconAlert.vue'
 import IconCar from './icons/IconCar.vue'
-import IconRefresh from './icons/IconRefresh.vue'
 import StatBlock from './StatBlock.vue'
 import VehicleSocEditor from './VehicleSocEditor.vue'
+import VehicleSocRefreshButton from './VehicleSocRefreshButton.vue'
 import BaseIconButton from './BaseIconButton.vue'
-import FaultMessage from './FaultMessage.vue'
+import BasePopover from './BasePopover.vue'
 
 const props = defineProps<{ vehicleId: number }>()
 const mqttStore = useMqttStore()
 
 const name = computed(() => mqttStore.vehicleList.find((v) => v.id === props.vehicleId)?.name ?? `Fahrzeug ${props.vehicleId}`)
 const info = computed(() => mqttStore.vehicleInfo(props.vehicleId))
+const showFaultMessage = ref(false)
 const faultState = computed(() => mqttStore.vehicleFaultState(props.vehicleId))
 const faultMessage = computed(() => mqttStore.vehicleFaultMessage(props.vehicleId))
 const connectionState = computed(() => mqttStore.vehicleConnectionState(props.vehicleId))
 const socValue = computed(() => mqttStore.vehicleSocValue(props.vehicleId))
-const socUpdateInProgress = computed(() => mqttStore.vehicleSocUpdateInProgress(props.vehicleId))
-const socType = computed(() => mqttStore.vehicleSocType(props.vehicleId))
-const canRefreshSoc = computed(() => socType.value !== undefined && socType.value !== 'manual')
 const range = computed(() => mqttStore.vehicleRange(props.vehicleId))
 const odometer = computed(() => mqttStore.vehicleOdometer(props.vehicleId))
 const socTimestamp = computed(() => mqttStore.vehicleSocTimestamp(props.vehicleId))

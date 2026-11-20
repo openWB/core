@@ -58,6 +58,10 @@
         v-if="soc?.soc !== undefined"
         class="whitespace-nowrap text-xs text-muted"
       >{{ Math.round(soc.soc) }}&nbsp;%</span>
+      <VehicleSocRefreshButton
+        v-if="vehicleInfo"
+        :vehicle-id="vehicleInfo.id"
+      />
       <VehicleSocEditor
         v-if="vehicleInfo"
         :vehicle-id="vehicleInfo.id"
@@ -153,6 +157,7 @@ import ChargePointSettings from './ChargePointSettings.vue'
 import BaseIconButton from './BaseIconButton.vue'
 import BaseTabGroup from './BaseTabGroup.vue'
 import VehicleSocEditor from './VehicleSocEditor.vue'
+import VehicleSocRefreshButton from './VehicleSocRefreshButton.vue'
 import StatBlock from './StatBlock.vue'
 
 const props = defineProps<{ chargePointId: number }>()

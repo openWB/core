@@ -3,7 +3,7 @@
     :class="[
       'flex items-center justify-center rounded-full border border-border',
       size === 'sm' ? 'h-[22px] w-[22px] flex-none' : 'h-[26px] w-[26px]',
-      tone === 'ok' ? 'icon-btn-ok' : tone === 'error' ? 'icon-btn-error' : '',
+      tone ? `icon-btn-${tone}` : '',
       !tone && (active ? 'border-accent bg-accent text-white' : 'bg-transparent text-muted'),
     ]"
     :aria-pressed="active"
@@ -15,7 +15,7 @@
 </template>
 
 <script setup lang="ts">
-withDefaults(defineProps<{ active?: boolean; size?: 'sm' | 'md'; tone?: 'ok' | 'error' }>(), { size: 'md', tone: undefined })
+withDefaults(defineProps<{ active?: boolean; size?: 'sm' | 'md'; tone?: 'ok' | 'warning' | 'error' }>(), { size: 'md', tone: undefined })
 defineEmits<{ click: [] }>()
 </script>
 
@@ -24,6 +24,12 @@ defineEmits<{ click: [] }>()
   color: var(--pv);
   border-color: color-mix(in srgb, var(--pv) 45%, transparent);
   background: color-mix(in srgb, var(--pv) 14%, transparent);
+}
+
+.icon-btn-warning {
+  color: var(--warning);
+  border-color: color-mix(in srgb, var(--warning) 45%, transparent);
+  background: color-mix(in srgb, var(--warning) 14%, transparent);
 }
 
 .icon-btn-error {
