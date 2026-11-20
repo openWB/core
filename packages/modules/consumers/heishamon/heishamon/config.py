@@ -9,10 +9,8 @@ from ..vendor import vendor_descriptor
 @auto_str
 class HeishaMonConfiguration:
     def __init__(self,
-                 ip_address: Optional[str] = None,
-                 read_temperatures: bool = True):
+                 ip_address: Optional[str] = None):
         self.ip_address = ip_address
-        self.read_temperatures = read_temperatures
 
 
 @auto_str

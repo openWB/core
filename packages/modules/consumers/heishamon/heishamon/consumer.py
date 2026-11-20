@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-from math import isfinite
-from typing import Dict, Optional
+from typing import Optional
 
 from modules.common import req
 from modules.common.abstract_device import DeviceDescriptor
@@ -11,62 +10,32 @@ from modules.consumers.heishamon.heishamon.config import HeishaMon
 TEMPERATURE_NAMES = ("Main_Inlet_Temp", "Main_Outlet_Temp", "Main_Target_Temp")
 
 
-def _get_number(value: object, name: str) -> float:
+def _temperature(value: object) -> Optional[float]:
     try:
-        if isinstance(value, bool):
-            raise ValueError
-        number = float(value)
-    except (TypeError, ValueError, OverflowError):
-        raise ValueError(f"Kein gültiger Zahlenwert für HeishaMon-Feld '{name}'.") from None
-    if not isfinite(number):
-        raise ValueError(f"Kein endlicher Zahlenwert für HeishaMon-Feld '{name}'.")
-    return number
-
-
-def _get_temperature(values: Dict[str, object], name: str) -> Optional[float]:
-    try:
-        temperature = _get_number(values.get(name), name)
-    except ValueError:
+        temperature = float(value)
+    except (TypeError, ValueError):
         return None
-    # Water temperatures only: exclude disconnected sensor values such as -128 and -78 °C.
+    # Unbelegte Wassertemperatursensoren melden beispielsweise -128 oder -78 °C.
     return temperature if -50 <= temperature <= 100 else None
 
 
 def create_consumer(config: HeishaMon):
-    session: Optional[req.CustomSession] = None
-
-    def initializer():
-        nonlocal session
-        session = req.get_http_session()
-
     def update() -> ConsumerState:
-        address = config.configuration.ip_address
-        if not isinstance(address, str) or not address.strip():
-            raise ValueError("Bitte IP-Adresse oder Hostname für HeishaMon konfigurieren.")
-        if session is None:
-            initializer()
-        response = session.get(f"http://{address.strip()}/json", timeout=5).json()
-        if not isinstance(response, dict) or not isinstance(response.get("heatpump"), list):
-            raise ValueError("HeishaMon-Antwort enthält keine 'heatpump'-Liste.")
-        values = {entry["Name"]: entry.get("Value") for entry in response["heatpump"]
-                  if isinstance(entry, dict) and isinstance(entry.get("Name"), str)}
+        response = req.get_http_session().get(f"http://{config.configuration.ip_address}/json", timeout=5).json()
+        values = {entry["Name"]: entry.get("Value") for entry in response["heatpump"]}
 
-        # Deliberately use only this electrical consumption field, not thermal production
-        # or a sum across operating modes. Other HeishaMon power layouts are not supported here.
+        # Nur die elektrische Heizleistung auswerten.
         name = "Heat_Power_Consumption"
-        power = _get_number(values.get(name), name)
+        power = float(values[name])
         if power < 0:
             raise ValueError(
                 f"Ungültiger Wert für HeishaMon-Feld '{name}': {power} W. "
                 "Die Wärmepumpe liefert möglicherweise nur erweiterte Leistungswerte.")
 
-        # Keep fixed positions even when one optional sensor is missing or invalid.
-        temperatures = ([_get_temperature(values, name) for name in TEMPERATURE_NAMES]
-                        if config.configuration.read_temperatures else [])
+        temperatures = [_temperature(values.get(name)) for name in TEMPERATURE_NAMES]
         return ConsumerState(power=power, temperatures=temperatures)
 
     return ConfigurableConsumer(consumer_config=config,
-                                initializer=initializer,
                                 update=update)
 
 
