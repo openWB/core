@@ -53,7 +53,8 @@ def create_consumer(config: ShellyPM):
 
     def update() -> ConsumerState:
         status = request_status(config.configuration.ip_address, generation, auth=auth)
-        powers, voltages, currents, _, power, _ = parse_data(1, config.configuration.factor, status)
+        powers, voltages, currents, _, power, _ = parse_data(
+            1, config.configuration.factor, status, channel=config.configuration.channel)
         return ConsumerState(
             power=power,
             voltages=voltages,

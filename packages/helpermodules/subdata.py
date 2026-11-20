@@ -844,6 +844,14 @@ class SubData:
                         current_config = asdict(var.forecast_module.config) if var.forecast_module is not None else None
                         if current_config != asdict(config):
                             var.forecast_module = ConfigurableForecastProvider(config, mod.create_forecast)
+                elif re.search("/optional/forecast/get/values$", msg.topic) is not None:
+                    var.data.forecast.get.values = decode_payload(msg.payload)
+                elif re.search("/optional/forecast/get/today_values$", msg.topic) is not None:
+                    var.data.forecast.get.today_values = decode_payload(msg.payload)
+                elif re.search("/optional/forecast/get/tomorrow_values$", msg.topic) is not None:
+                    var.data.forecast.get.tomorrow_values = decode_payload(msg.payload)
+                elif re.search("/optional/forecast/get/daily_kwh$", msg.topic) is not None:
+                    var.data.forecast.get.daily_kwh = decode_payload(msg.payload)
                 elif re.search("/optional/forecast/get/", msg.topic) is not None:
                     self.set_json_payload_class(var.data.forecast.get, msg)
                 elif re.search("/optional/forecast/", msg.topic) is not None:
@@ -1083,6 +1091,7 @@ class SubData:
                 index = get_index(msg.topic)
                 if decode_payload(msg.payload) == "":
                     if "io"+index in var:
+                        var["io"+index].shutdown()
                         if (var[f"io{index}"].config.type == "add_on" and
                                 var[f"io{index}"].config.configuration.host == "localhost"):
                             var.pop("iolocal")
@@ -1104,6 +1113,8 @@ class SubData:
                     if (self.event_subdata_initialized.is_set() is False or
                             "io"+index not in var or
                             io_config != asdict(var["io"+index].config)):
+                        if "io"+index in var:
+                            var["io"+index].shutdown()
                         var["io"+index] = dev.create_io(config)
             elif re.search("^.+/io/[0-9]+/set/manual/analog_output", msg.topic) is not None:
                 index = get_index(msg.topic)
