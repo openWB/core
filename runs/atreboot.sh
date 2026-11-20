@@ -96,6 +96,11 @@ chmod 666 "$LOGFILE"
 		sudo chmod 440 /etc/sudoers.d/apache2
 	fi
 
+	# Hand DHCP NTP servers from NetworkManager to timesyncd, even without internet access.
+	if ! bash "${OPENWBBASEDIR}/runs/setup_timesync.sh"; then
+		echo "#### time synchronization setup failed, continuing startup"
+	fi
+
 	# network setup
 	echo "Network..."
 	if "${OPENWBBASEDIR}/runs/setup_network.sh"; then
