@@ -13,7 +13,7 @@ if ! sudo apt-get -q -o APT::Update::Error-Mode=any update; then
 	echo "Failed to refresh package indexes; aborting package installation" >&2
 	exit 1
 fi
-if ! sudo apt-get -q -y install \
+if ! sudo apt-get -q -y install --no-install-recommends \
 	vim bc jq curl socat sshpass sudo ssl-cert mmc-utils inotify-tools iptables \
 	systemd-zram-generator dosfstools \
 	apache2 libapache2-mod-php \
