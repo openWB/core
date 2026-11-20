@@ -1,5 +1,6 @@
 <template>
   <BasePopover
+    v-if="isManualSoc"
     v-model="showSocEditor"
     panel-class="top-[calc(100%_+_8px)] right-0 flex w-55 flex-col gap-2.5 p-3"
   >
@@ -62,7 +63,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useMqttStore } from '@/stores/mqtt-store'
 import IconPencil from './icons/IconPencil.vue'
 import BaseIconButton from './BaseIconButton.vue'
@@ -72,6 +73,7 @@ import BasePopover from './BasePopover.vue'
 const props = defineProps<{ vehicleId: number; vehicleName: string; chargePointId?: number }>()
 const mqttStore = useMqttStore()
 
+const isManualSoc = computed(() => mqttStore.vehicleSocType(props.vehicleId) === 'manual')
 const showSocEditor = ref(false)
 const socInputValue = ref(0)
 

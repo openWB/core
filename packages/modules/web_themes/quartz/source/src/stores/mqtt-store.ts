@@ -280,6 +280,7 @@ export const useMqttStore = defineStore('mqtt', () => {
       } catch {
         topics.value[topic] = payload.toString()
       }
+      trackSocUpdate(topic, topics.value[topic])
     })
   }
 
@@ -748,7 +749,7 @@ export const useMqttStore = defineStore('mqtt', () => {
       .sort((a, b) => a.id - b.id),
   )
 
-  /** The vehicle's current SoC override value - works regardless of which soc_module is configured. */
+  /** The vehicle's current manual SoC value (only meaningful for a vehicle with the manual SoC module). */
   function vehicleManualSoc(vehicleId: number): number {
     const state = getValue.value<Record<string, unknown>>(`openWB/vehicle/${vehicleId}/soc_module/calculated_soc_state`, {})
     return (state.manual_soc as number | undefined) ?? (state.soc_start as number | undefined) ?? 0
@@ -766,12 +767,30 @@ export const useMqttStore = defineStore('mqtt', () => {
       updateTopic(cpTopic, value, 'soc')
     }
   }
+  // 'requested' until update_soc.py starts the fetch (it clears force_soc_update then), 'running' until the module
+  // has published its result - force_soc_update alone goes back to false when the fetch starts, not when it ends
+  const socUpdatePending = ref<Record<number, 'requested' | 'running'>>({})
+  const SOC_UPDATE_TIMEOUT_MS = 120_000
+
   function vehicleForceSocUpdate(vehicleId: number): void {
+    socUpdatePending.value[vehicleId] = 'requested'
+    setTimeout(() => delete socUpdatePending.value[vehicleId], SOC_UPDATE_TIMEOUT_MS)
     doPublish(`openWB/set/vehicle/${vehicleId}/get/force_soc_update`, 1, false)
   }
-  /** True while a forced SoC update is pending - update_soc.py republishes this False once it's actually run the fetch. */
+  function trackSocUpdate(topic: string, value: unknown): void {
+    const match = /^openWB\/vehicle\/(\d+)\/get\/(\w+)$/.exec(topic)
+    if (!match) return
+    const vehicleId = Number(match[1])
+    const state = socUpdatePending.value[vehicleId]
+    if (state === 'requested' && (match[2] === 'soc_request_timestamp' || (match[2] === 'force_soc_update' && !value))) {
+      socUpdatePending.value[vehicleId] = 'running'
+    } else if (state === 'running' && ['soc', 'range', 'soc_timestamp', 'odometer', 'fault_state'].includes(match[2])) {
+      delete socUpdatePending.value[vehicleId]
+    }
+  }
+  /** True from the click until the module has delivered the result (or the timeout has passed). */
   function vehicleSocUpdateInProgress(vehicleId: number): boolean {
-    return getValue.value<boolean>(`openWB/vehicle/${vehicleId}/get/force_soc_update`, false)
+    return socUpdatePending.value[vehicleId] !== undefined
   }
 
   function vehicleInfo(id: number): VehicleInfo | undefined {
@@ -1342,6 +1361,7 @@ export const useMqttStore = defineStore('mqtt', () => {
     subscribeVehicleList,
     unsubscribeVehicleList,
     vehicleManualSoc,
+    vehicleSocType,
     setVehicleManualSoc,
     vehicleForceSocUpdate,
     vehicleSocUpdateInProgress,
