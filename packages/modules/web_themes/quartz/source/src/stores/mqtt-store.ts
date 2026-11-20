@@ -280,7 +280,7 @@ export const useMqttStore = defineStore('mqtt', () => {
       } catch {
         topics.value[topic] = payload.toString()
       }
-      trackSocUpdate(topic, topics.value[topic])
+      trackSocUpdate(topic)
     })
   }
 
@@ -767,26 +767,20 @@ export const useMqttStore = defineStore('mqtt', () => {
       updateTopic(cpTopic, value, 'soc')
     }
   }
-  // 'requested' until update_soc.py starts the fetch (it clears force_soc_update then), 'running' until the module
-  // has published its result - force_soc_update alone goes back to false when the fetch starts, not when it ends
-  const socUpdatePending = ref<Record<number, 'requested' | 'running'>>({})
+  // force_soc_update goes back to false when update_soc.py starts the fetch, not when it ends - so the spinner waits
+  // for the module's result instead (published after the fetch), with a timeout as the fallback
+  const socUpdatePending = ref<Record<number, true>>({})
   const SOC_UPDATE_TIMEOUT_MS = 120_000
+  const SOC_RESULT_TOPICS = ['soc', 'range', 'soc_timestamp', 'odometer', 'fault_state']
 
   function vehicleForceSocUpdate(vehicleId: number): void {
-    socUpdatePending.value[vehicleId] = 'requested'
+    socUpdatePending.value[vehicleId] = true
     setTimeout(() => delete socUpdatePending.value[vehicleId], SOC_UPDATE_TIMEOUT_MS)
     doPublish(`openWB/set/vehicle/${vehicleId}/get/force_soc_update`, 1, false)
   }
-  function trackSocUpdate(topic: string, value: unknown): void {
+  function trackSocUpdate(topic: string): void {
     const match = /^openWB\/vehicle\/(\d+)\/get\/(\w+)$/.exec(topic)
-    if (!match) return
-    const vehicleId = Number(match[1])
-    const state = socUpdatePending.value[vehicleId]
-    if (state === 'requested' && (match[2] === 'soc_request_timestamp' || (match[2] === 'force_soc_update' && !value))) {
-      socUpdatePending.value[vehicleId] = 'running'
-    } else if (state === 'running' && ['soc', 'range', 'soc_timestamp', 'odometer', 'fault_state'].includes(match[2])) {
-      delete socUpdatePending.value[vehicleId]
-    }
+    if (match && SOC_RESULT_TOPICS.includes(match[2])) delete socUpdatePending.value[Number(match[1])]
   }
   /** True from the click until the module has delivered the result (or the timeout has passed). */
   function vehicleSocUpdateInProgress(vehicleId: number): boolean {
