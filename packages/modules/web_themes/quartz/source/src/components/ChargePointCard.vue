@@ -201,9 +201,9 @@ const faultMessage = computed(() => mqttStore.chargePointFaultMessage(props.char
 // the badge shows what the charge point actually does, not what was requested: charge_state alone
 // can stay true while the control is still stopping the charge (or while a simulated charge point
 // keeps reporting it), so "charging" additionally needs real power. A lock only shows once
-// charging has really stopped.
+// charging has really stopped, and only with a plugged-in vehicle (the lock button shows the lock otherwise).
 const isCharging = computed(() => chargeState.value && power.value > 0)
-const isLockedShown = computed(() => locked.value && !isCharging.value)
+const isLockedShown = computed(() => locked.value && plugState.value && !isCharging.value)
 
 const stateBadgeText = computed(() => {
   if (isLockedShown.value) return 'Gesperrt'
