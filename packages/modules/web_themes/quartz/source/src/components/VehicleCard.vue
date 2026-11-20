@@ -40,6 +40,7 @@
           :title="faultMessage"
         />
         <BaseIconButton
+          v-if="canRefreshSoc"
           size="sm"
           aria-label="SoC jetzt abrufen"
           :title="socUpdateInProgress ? 'SoC wird abgerufen …' : 'SoC jetzt abrufen'"
@@ -101,6 +102,8 @@ const faultMessage = computed(() => mqttStore.vehicleFaultMessage(props.vehicleI
 const connectionState = computed(() => mqttStore.vehicleConnectionState(props.vehicleId))
 const socValue = computed(() => mqttStore.vehicleSocValue(props.vehicleId))
 const socUpdateInProgress = computed(() => mqttStore.vehicleSocUpdateInProgress(props.vehicleId))
+const socType = computed(() => mqttStore.vehicleSocType(props.vehicleId))
+const canRefreshSoc = computed(() => socType.value !== undefined && socType.value !== 'manual')
 const range = computed(() => mqttStore.vehicleRange(props.vehicleId))
 const odometer = computed(() => mqttStore.vehicleOdometer(props.vehicleId))
 const socTimestamp = computed(() => mqttStore.vehicleSocTimestamp(props.vehicleId))
