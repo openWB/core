@@ -222,26 +222,44 @@ create_archive() {
 		done <"$TEMPDIR/client_json_files"
 		rm "$TEMPDIR/client_json_files"
 
-		sudo tar --create \
-			--file="$BACKUPFILE" \
-			--exclude=".gitignore" \
-			--directory="$TEMPDIR/" \
-				"${DB_FILES[@]}" \
-				"GIT_BRANCH" \
-				"GIT_HASH" \
-				"GIT_UPDATE_BRANCH" \
-			--directory="/etc/mosquitto/" \
-				"conf_local.d/" \
-			--directory="$TARBASEDIR/" \
-				"$OPENWBDIRNAME/data/charge_log" \
-				"$OPENWBDIRNAME/data/daily_log" \
-				"$OPENWBDIRNAME/data/monthly_log" \
-				"$OPENWBDIRNAME/data/log/uuid" \
-				"${json_files[@]}" \
-			--directory="$HOMEDIR/" \
-				"configuration.json" \
-			--directory="/" \
-				"boot/config.txt"
+		tar_create() {
+			sudo tar --create \
+				--file="$BACKUPFILE" \
+				--exclude=".gitignore" \
+				--directory="$TEMPDIR/" \
+					"${DB_FILES[@]}" \
+					"GIT_BRANCH" \
+					"GIT_HASH" \
+					"GIT_UPDATE_BRANCH" \
+				--directory="/etc/mosquitto/" \
+					"conf_local.d/" \
+				--directory="$TARBASEDIR/" \
+					"$OPENWBDIRNAME/data/charge_log" \
+					"$OPENWBDIRNAME/data/daily_log" \
+					"$OPENWBDIRNAME/data/monthly_log" \
+					"$OPENWBDIRNAME/data/log/uuid" \
+					"${json_files[@]}" \
+				--directory="$HOMEDIR/" \
+					"configuration.json" \
+				--directory="/" \
+					"boot/config.txt"
+		}
+
+		# tar exits with 1 if a file changed while it was read (e.g. the daily log, which is rewritten every
+		# 5 minutes). That is a short race, so try again; with exit status 2 or higher the backup failed.
+		local tarStatus=0
+		local attempt
+		for attempt in 1 2 3; do
+			tarStatus=0
+			tar_create || tarStatus=$?
+			((tarStatus == 1)) || break
+			echo "warning: tar reported a file that changed while reading (attempt $attempt of 3)"
+		done
+		if ((tarStatus == 1)); then
+			echo "warning: continuing with the last archive, a file changed while it was read"
+		elif ((tarStatus != 0)); then
+			return "$tarStatus"
+		fi
 		
 		if [ -f "$VAR_LIB/mosquitto/dynamic-security.json" ]; then
 			echo "adding mosquitto/dynamic-security.json"
