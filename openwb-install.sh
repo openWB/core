@@ -146,14 +146,14 @@ echo "installing openwb2 remote support service..."
 cp "${OPENWBBASEDIR}/data/config/openwbRemoteSupport.service" /etc/systemd/system/openwbRemoteSupport.service
 systemctl daemon-reload
 
-# Complete provisioning before openwb2's ExecStartPre can request a reboot.
-echo "installing the native display on supported Trixie arm64 display systems..."
-native_display_status=0
-OPENWB_APT_INDEX_READY=1 bash "${OPENWBBASEDIR}/runs/install_native_display.sh" --install-only || native_display_status=$?
-case "$native_display_status" in
-	0|10) ;; # 10 means this run found no supported native display profile.
-	*) echo "Native display installation failed; see the error above." >&2; exit 1 ;;
-esac
+# # Complete provisioning before openwb2's ExecStartPre can request a reboot.
+# echo "installing the native display on supported Trixie arm64 display systems..."
+# native_display_status=0
+# OPENWB_APT_INDEX_READY=1 bash "${OPENWBBASEDIR}/runs/install_native_display.sh" --install-only || native_display_status=$?
+# case "$native_display_status" in
+# 	0|10) ;; # 10 means this run found no supported native display profile.
+# 	*) echo "Native display installation failed; see the error above." >&2; exit 1 ;;
+# esac
 
 systemctl enable openwb2 openwb-simpleAPI openwbRemoteSupport
 sync
@@ -162,15 +162,15 @@ systemctl start openwbRemoteSupport
 systemctl start openwb2
 systemctl start openwb-simpleAPI
 
-# If startup rebooted the system, Core's MQTT display updates perform this
-# activation on the next boot. Unknown broker state never enables a display.
-if [[ $native_display_status == 0 && -f /etc/openwb/display-managed-externally &&
-      -f /usr/local/lib/openwb-native-display/native_display_settings.py ]]; then
-	if ! python3 /usr/local/lib/openwb-native-display/native_display_settings.py apply --force --reload-power; then
-		echo "Native display activation failed; see the error above." >&2
-		exit 1
-	fi
-fi
+# # If startup rebooted the system, Core's MQTT display updates perform this
+# # activation on the next boot. Unknown broker state never enables a display.
+# if [[ $native_display_status == 0 && -f /etc/openwb/display-managed-externally &&
+# 		-f /usr/local/lib/openwb-native-display/native_display_settings.py ]]; then
+# 	if ! python3 /usr/local/lib/openwb-native-display/native_display_settings.py apply --force --reload-power; then
+# 		echo "Native display activation failed; see the error above." >&2
+# 		exit 1
+# 	fi
+# fi
 
 echo "all done"
 echo "if you want to use this installation for development, add a password for user 'openwb'"
