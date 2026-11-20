@@ -8,6 +8,7 @@ SELECTED_TAG="${2:-$DEFAULT_TAG}"
 DRY_RUN=0 # set to 1 for testing without writing to files or publishing to MQTT
 
 source "$OPENWB_BASE_DIR/runs/update_version_helpers.sh"
+source "$OPENWB_BASE_DIR/runs/os_update_guard.sh" || exit 1
 
 validateTag() {
 	local tag=$1
@@ -57,6 +58,28 @@ echo "#### running update ####" >"$LOG_FILE"
 	echo "#### 1. fetching latest data from '$GIT_REMOTE' ####"
 	fetchVersionRefs "$OPENWB_BASE_DIR" "$GIT_REMOTE" || exit 1
 	echo "#### done"
+
+	legacyFallback=0
+	if [[ $SELECTED_BRANCH == "trixie-next" ]]; then
+		requiresSystemUpdate
+		guardStatus=$?
+		case "$guardStatus" in
+			0)
+				SELECTED_TAG=$(selectLegacyReleaseTag) || {
+					echo "#### ERROR: no OS-compatible Release tag available; no checkout or reboot ####"
+					exit 1
+				}
+				SELECTED_BRANCH="Release"
+				legacyFallback=1
+				echo "#### old OS: selecting compatible Release '$SELECTED_TAG' instead of trixie-next ####"
+				;;
+			1) ;;
+			*)
+				echo "#### ERROR: cannot read OS identity; no checkout or reboot ####"
+				exit 1
+				;;
+		esac
+	fi
 
 	if [[ -z $SELECTED_TAG ]] || [[ $SELECTED_TAG == "$DEFAULT_TAG" ]]; then
 		fallbackTag=$(selectLatestTrainTag "$SELECTED_BRANCH")
@@ -128,6 +151,11 @@ echo "#### running update ####" >"$LOG_FILE"
 	fi
 
 	# notify system
+	if [[ $legacyFallback -eq 1 && $DRY_RUN -eq 0 ]]; then
+		publishSystemUpdateMessage || true
+		echo "#### compatible Release installed; allowing 30 seconds to read the system-update notice ####"
+		sleep 30
+	fi
 	# set boot_done first to prevent flickering in gui
 	if [[ $DRY_RUN -eq 0 ]]; then
 		mosquitto_pub -p 1886 -t "openWB/system/boot_done" -r -m 'false'
