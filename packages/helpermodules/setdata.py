@@ -728,6 +728,8 @@ class SetData:
                   "openWB/set/bat/config/power_limit_condition" in msg.topic or
                   "openWB/set/bat/config/manual_mode" in msg.topic):
                 self._validate_value(msg, str)
+            elif re.search("^openWB/set/bat/[0-9]+/config/max_power$", msg.topic) is not None:
+                self._validate_value(msg, float, [(0, float("inf"))])
             elif "/config" in msg.topic:
                 self._validate_value(msg, "json")
             elif "/get/power" in msg.topic:
