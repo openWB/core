@@ -1,3 +1,4 @@
+import copy
 import logging
 
 from control import data
@@ -33,10 +34,13 @@ class PurgeInverterState:
         self.delegate = delegate
 
     def set(self, state: InverterState) -> None:
+        self._raw_state = state
         self.delegate.set(state)
 
     def update(self) -> None:
-        state = self.fix_hybrid_values(self.delegate.delegate.state)
+        # Kopie, damit bei ausbleibendem set() (Lesefehler) die Hybrid-Korrektur nicht erneut auf den bereits
+        # korrigierten Wert angewendet wird.
+        state = self.fix_hybrid_values(copy.copy(self._raw_state))
         self.delegate.set(state)
         self.delegate.update()
 
