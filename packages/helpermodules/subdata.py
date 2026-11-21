@@ -628,6 +628,8 @@ class SubData:
                         var["bat"+index] = bat.Bat(int(index))
                     if re.search("/bat/[0-9]+/config$", msg.topic) is not None:
                         self.set_json_payload(var["bat"+index].data, msg)
+                    elif re.search("/bat/[0-9]+/config/", msg.topic) is not None:
+                        self.set_json_payload_class(var["bat"+index].data.config, msg)
                     elif re.search("/bat/[0-9]+/get/", msg.topic) is not None:
                         self.set_json_payload_class(var["bat"+index].data.get, msg)
                     elif re.search("/bat/[0-9]+/set/", msg.topic) is not None:
