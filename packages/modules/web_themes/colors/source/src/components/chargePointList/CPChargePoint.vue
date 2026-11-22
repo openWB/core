@@ -36,7 +36,7 @@
 			<transition name="status-fade">
 				<div
 					v-if="showInfo"
-					class="statustext status-entry py-1 px-2 mb-2 rounded shadow"
+					class="statustext status-entry py-3 px-3 mb-2 rounded shadow"
 				>
 					{{ cp.stateStr }}
 				</div>
@@ -201,18 +201,20 @@ function toggleConfigMode() {
 .statustext {
 	grid-column: 1 / 13;
 	justify-self: center;
-	font-size: var(--font-small);
-	color: black;
-	background: var(--color-menu);
+	font-size: var(--font-settings);
+	color: var(--color-charging);
+	background: var(--color-input);
+	font-style: italic;
 }
 
 .faulttext {
 	grid-column: 1 / 13;
 	border: 1px solid var(--color-battery);
 	justify-self: center;
-	font-size: var(--font-small);
-	color: black;
-	background: var(--color-battery);
+	font-size: var(--font-settings);
+	color: var(--color-evu);
+	background: var(--color-input);
+	font-style: italic;
 }
 
 .status-entry {
