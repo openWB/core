@@ -122,7 +122,7 @@
 				:width="boxwidth"
 			/>
 			<PgToolTipLine
-				v-if="etData.active && entry.price != null && Number.isFinite(entry.price)"
+				v-if="etData.active"
 				cat="price"
 				:indent="5"
 				:power="entry.price"

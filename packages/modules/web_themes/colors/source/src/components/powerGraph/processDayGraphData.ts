@@ -186,7 +186,7 @@ function transformRow(currentRow: RawDayGraphDataItem): GraphDataItem {
 		}
 	})
 	// Prices
-	if (currentRow.prices && currentRow.prices.grid > 0) {
+	if (currentRow.prices.grid > 0) {
 		currentItem.price = currentRow.prices.grid * 100000
 	}
 

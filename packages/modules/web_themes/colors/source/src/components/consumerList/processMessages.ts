@@ -55,12 +55,6 @@ function processConsumerDeviceMessages(topic: string, message: string) {
 		try {
 			const moduleData = JSON.parse(message)
 			if (moduleData) {
-				console.log(
-					'Consumer module data for consumer ' +
-						index +
-						' received: ' +
-						JSON.stringify(moduleData),
-				)
 				dev.name = moduleData.name
 				dev.icon = moduleData.name
 			}
@@ -73,12 +67,6 @@ function processConsumerDeviceMessages(topic: string, message: string) {
 		try {
 			const usage = JSON.parse(message)
 			if (usage) {
-				console.log(
-					'Consumer usage data for consumer ' +
-						index +
-						' received: ' +
-						JSON.stringify(usage),
-				)
 				dev.usage = usage
 				dev.consumerType = usage.type
 			}

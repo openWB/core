@@ -51,7 +51,7 @@ export interface RawDayGraphDataItem {
 	ev: object
 	sh: object
 	consumer: object
-	prices?: {
+	prices: {
 		grid: number
 		pv: number
 		bat: number
