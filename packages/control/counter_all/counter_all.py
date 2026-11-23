@@ -122,7 +122,7 @@ class CounterAll(HierarchyMixin, LoadmanagementPrioMixin):
                 local_power -= comp.data.get.power
             else:
                 log.warning(
-                    f"Komponente {element['type']}{comp.num} ist im Fehlerzustand und wird nicht berücksichtigt.")
+                    f"Komponente {child['type']}{comp.num} ist im Fehlerzustand und wird nicht berücksichtigt.")
 
         return local_power
 
