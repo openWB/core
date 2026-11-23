@@ -249,11 +249,12 @@ create_archive() {
 		# 5 minutes). That is a short race, so try again; with exit status 2 or higher the backup failed.
 		local tarStatus=0
 		local attempt
-		for attempt in 1 2 3; do
+		local max_attempts=3
+		for ((attempt = 1; attempt <= max_attempts; attempt++)); do
 			tarStatus=0
 			tar_create || tarStatus=$?
 			((tarStatus == 1)) || break
-			echo "warning: tar reported a file that changed while reading (attempt $attempt of 3)"
+			echo "warning: tar reported a file that changed while reading (attempt $attempt of $max_attempts)"
 		done
 		if ((tarStatus == 1)); then
 			echo "warning: continuing with the last archive, a file changed while it was read"
