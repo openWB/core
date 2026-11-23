@@ -171,8 +171,9 @@ class SubData:
             ("openWB/LegacySmartHome/Status/wattnichtHaus", 2),
             ("openWB/io/#", 2),
         ])
-        self.processing_counter.add_task()
-        Pub().pub("openWB/system/subdata_initialized", True)
+        if not self.event_subdata_initialized.is_set():
+            self.processing_counter.add_task()
+            Pub().pub("openWB/system/subdata_initialized", True)
 
     def on_message(self, client: mqtt.Client, userdata, msg: mqtt.MQTTMessage):
         """ wait for incoming topics.
@@ -346,8 +347,9 @@ class SubData:
                                     add_acl_role("vehicle-<id>-write-access", int(index))
                                 else:
                                     remove_acl_role("vehicle-<id>-write-access", int(index))
-                            self.processing_counter.add_task()
-                            Pub().pub("openWB/system/subdata_initialized", True)
+                            if not self.event_subdata_initialized.is_set():
+                                self.processing_counter.add_task()
+                                Pub().pub("openWB/system/subdata_initialized", True)
                         self.event_soc.set()
                     else:
                         # temporäres ChargeTemplate aktualisieren, wenn dem Fahrzeug ein anderes Ladeprofil zugeordnet
@@ -989,8 +991,9 @@ class SubData:
                     # Durch das erneute Subscribe werden die Komponenten mit dem aktualisierten TCP-Client angelegt.
                     client.subscribe(f"openWB/system/device/{index}/component/+/config", 2)
                     client.subscribe(f"openWB/system/device/{index}/error_timestamp", 2)
-                    self.processing_counter.add_task()
-                    Pub().pub("openWB/system/subdata_initialized", True)
+                    if not self.event_subdata_initialized.is_set():
+                        self.processing_counter.add_task()
+                        Pub().pub("openWB/system/subdata_initialized", True)
             elif re.search("^.+/device/[0-9]+/component/[0-9]+/simulation$", msg.topic) is not None:
                 index = get_index(msg.topic)
                 index_second = get_second_index(msg.topic)
@@ -1027,8 +1030,9 @@ class SubData:
                     config = dataclass_from_dict(component.component_descriptor.configuration_factory, component_config)
                     var["device"+index].add_component(config)
                     client.subscribe(f"openWB/system/device/{index}/component/{index_second}/simulation", 2)
-                    self.processing_counter.add_task()
-                    Pub().pub("openWB/system/subdata_initialized", True)
+                    if not self.event_subdata_initialized.is_set():
+                        self.processing_counter.add_task()
+                        Pub().pub("openWB/system/subdata_initialized", True)
             elif "mqtt" and "bridge" in msg.topic:
                 # do not reconfigure mqtt bridges if topic is received on startup
                 if self.event_subdata_initialized.is_set():
@@ -1302,8 +1306,9 @@ class SubData:
                             var["consumer"+index].module = con.create_consumer(config)
                             var["consumer"+index].data.module = config
                             client.subscribe(f"openWB/consumer/{index}/module/simulation", 2)
-                            self.processing_counter.add_task()
-                            Pub().pub("openWB/system/subdata_initialized", True)
+                            if not self.event_subdata_initialized.is_set():
+                                self.processing_counter.add_task()
+                                Pub().pub("openWB/system/subdata_initialized", True)
                         except Exception:
                             fault_str = (
                                 f"Verbraucher {index}: Modul für "
@@ -1339,7 +1344,7 @@ class SubData:
                     elif re.search("openWB/consumer/[0-9]+/usage$", msg.topic) is not None:
                         usage = dataclass_from_dict(Usage, decode_payload(msg.payload))
                         var[f"consumer{index}"].data.usage = usage
-                        if ((self.event_subdata_initialized.is_set() or not msg.retain) and
+                        if (self.event_subdata_initialized.is_set() and
                                 self.counter_all_data.update_consumer_loadmanagement_prio(int(index), usage.type)):
                             Pub().pub("openWB/set/counter/get/loadmanagement_prios",
                                       self.counter_all_data.data.get.loadmanagement_prios)
