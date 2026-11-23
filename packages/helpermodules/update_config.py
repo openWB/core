@@ -52,7 +52,7 @@ from dataclass_utils import asdict
 from modules.common.abstract_vehicle import GeneralVehicleConfig
 from modules.common.component_type import ComponentType
 from modules.devices.sungrow.sungrow_sh.version import Version
-from modules.display_themes.cards.config import CardsDisplayTheme
+from modules.display_themes.qt_display.config import QtDisplayTheme
 from modules.io_actions.controllable_consumers.ripple_control_receiver.config import RippleControlReceiverSetup
 from modules.web_themes.koala.config import KoalaWebTheme
 from modules.devices.good_we.good_we.version import GoodWeVersion
@@ -817,7 +817,7 @@ class UpdateConfig:
         ("openWB/optional/int_display/pin_code", "0000"),
         ("openWB/optional/int_display/standby", 60),
         ("openWB/optional/int_display/rotation", 0),
-        ("openWB/optional/int_display/theme", asdict(CardsDisplayTheme())),
+        ("openWB/optional/int_display/theme", asdict(QtDisplayTheme())),
         ("openWB/optional/int_display/only_local_charge_points", False),
         ("openWB/optional/monitoring/config", NO_MODULE),
         ("openWB/optional/ocpp/config", asdict(OcppConfig())),

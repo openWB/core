@@ -1,6 +1,6 @@
 from typing import Optional
-from helpermodules.auto_str import auto_str
 
+from helpermodules.auto_str import auto_str
 from modules.common.abstract_device import DeviceDescriptor
 
 
@@ -22,7 +22,7 @@ class ColorsDisplayTheme:
                  type: str = "colors",
                  official: bool = False,
                  userManagementSupported: bool = False,
-                 configuration: ColorsDisplayThemeConfiguration = None) -> None:
+                 configuration: Optional[ColorsDisplayThemeConfiguration] = None) -> None:
         self.name = name
         self.type = type
         self.official = official

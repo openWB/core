@@ -1,6 +1,6 @@
 from typing import Optional
-from helpermodules.auto_str import auto_str
 
+from helpermodules.auto_str import auto_str
 from modules.common.abstract_device import DeviceDescriptor
 
 
@@ -51,7 +51,7 @@ class CardsDisplayTheme:
                  type: str = "cards",
                  official: bool = True,
                  userManagementSupported: bool = True,
-                 configuration: CardsDisplayThemeConfiguration = None) -> None:
+                 configuration: Optional[CardsDisplayThemeConfiguration] = None) -> None:
         self.name = name
         self.type = type
         self.official = official
