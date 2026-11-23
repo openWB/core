@@ -1,3 +1,4 @@
+import os
 from typing import Optional
 
 from helpermodules.auto_str import auto_str
@@ -31,5 +32,8 @@ class QtDisplayTheme:
         self.userManagementSupported = userManagementSupported
         self.configuration = configuration or QtDisplayThemeConfiguration()
 
-
-theme_descriptor = DeviceDescriptor(configuration_factory=QtDisplayTheme)
+# check if the runtime symlink and target exists
+if not os.path.islink("./runtime") or not os.path.exists("./runtime"):
+    raise FileNotFoundError("QT Display runtime not found!")
+else:
+    theme_descriptor = DeviceDescriptor(configuration_factory=QtDisplayTheme)
