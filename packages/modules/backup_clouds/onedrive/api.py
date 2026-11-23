@@ -1,9 +1,9 @@
 import logging
 import pickle
 import json
-import paho.mqtt.publish as publish
 import base64
 
+from helpermodules.pub import pub_single
 from helpermodules.utils.error_handling import ImportErrorContext
 with ImportErrorContext():
     import msal
@@ -33,7 +33,7 @@ def save_tokencache(config: OneDriveBackupCloudConfiguration, cache: str) -> Non
     backupcloud_to_mqtt = json.dumps(backupcloud.__dict__, default=lambda o: o.__dict__)
     log.debug("Config to MQTT:" + str(backupcloud_to_mqtt))
 
-    publish.single("openWB/set/system/backup_cloud/config", backupcloud_to_mqtt, retain=True, hostname="localhost")
+    pub_single("openWB/set/system/backup_cloud/config", backupcloud_to_mqtt, no_json=True)
 
 
 def get_tokens(config: OneDriveBackupCloudConfiguration) -> dict:
@@ -106,9 +106,7 @@ def generateMSALAuthCode(cloudbackup: OneDriveBackupCloud) -> dict:
     cloudbackup.configuration.authurl = flow["verification_uri"]
     cloudbackupconfig_to_mqtt = json.dumps(cloudbackup.__dict__, default=lambda o: o.__dict__)
 
-    publish.single(
-        "openWB/set/system/backup_cloud/config", cloudbackupconfig_to_mqtt, retain=True, hostname="localhost"
-    )
+    pub_single("openWB/set/system/backup_cloud/config", cloudbackupconfig_to_mqtt, no_json=True)
 
     result["message"] = """Autorisierung gestartet, bitte den Link öffnen, Code eingeben,
         und Zugang autorisieren. Anschließend Zugangsberechtigung abrufen."""
