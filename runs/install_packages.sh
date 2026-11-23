@@ -1,4 +1,6 @@
 #!/bin/bash
+OPENWB_BASE_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
+
 . /etc/os-release
 
 echo "install required packages with 'apt-get'..."
@@ -31,3 +33,7 @@ if ! sudo apt-get -q -y install --no-install-recommends \
 	exit 1
 fi
 echo "done"
+
+echo "installing openWB packages..."
+"${OPENWB_BASE_DIR}"/runs/install_native_display.sh
+echo "done installing openWB packages"
