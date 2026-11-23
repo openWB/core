@@ -32,8 +32,4 @@ class QtDisplayTheme:
         self.userManagementSupported = userManagementSupported
         self.configuration = configuration or QtDisplayThemeConfiguration()
 
-# check if the runtime symlink and target exists
-if not os.path.islink("./runtime") or not os.path.exists("./runtime"):
-    raise FileNotFoundError("QT Display runtime not found!")
-else:
-    theme_descriptor = DeviceDescriptor(configuration_factory=QtDisplayTheme)
+theme_descriptor = DeviceDescriptor(configuration_factory=QtDisplayTheme)
