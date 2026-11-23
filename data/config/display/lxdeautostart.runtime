@@ -1,0 +1,7 @@
+# openwb-version:1
+# enable screen blanking / power management
+xset s 60
+# initial display rotation
+/var/www/html/openWB/runs/rotate_display.sh
+# Start theme runtime
+#RUNTIME#

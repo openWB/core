@@ -1,7 +1,10 @@
 #!/bin/bash
-OPENWBBASEDIR=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
+OPENWB_BASE_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 # set "forceUpdate" to parameter $1, set to 0 if not set
 forceUpdate=${1:-0}
+
+# set X-Display if the script is executed via SSH or TTY
+export DISPLAY="${DISPLAY:-:0}"
 
 # # Native profiles consume local broker rotation, standby and PIN settings.
 # # Do not edit LXDE/firmware settings or restart a healthy native X11 session.
@@ -21,10 +24,21 @@ else
 fi
 sudo sed -i '/^xset -dpms/d' "/home/openwb/.config/lxsession/LXDE/autostart"
 if [[ "$timeout" == 0 ]]; then
-	sudo sed -i "s/^xset s .*$/xset s off\nxset -dpms/" "/home/openwb/.config/lxsession/LXDE/autostart"
+	# disable display standby and DPMS
+	sed -i "s/^xset s .*$/xset s off\nxset -dpms/" "/home/openwb/.config/lxsession/LXDE/autostart"
+	# apply display standby settings immediately
+	xset s off
+	xset -dpms
 else
-	sudo sed -i "s/^xset s .*$/xset s ${timeout}/" "/home/openwb/.config/lxsession/LXDE/autostart"
+	# set display standby timeout and enable DPMS
+	sed -i "s/^xset s .*$/xset s ${timeout}/" "/home/openwb/.config/lxsession/LXDE/autostart"
+	# apply display standby settings immediately
+	xset s "$timeout"
+	xset +dpms
 fi
+
+# update display rotation
+"${OPENWB_BASE_DIR}/runs/rotate_display.sh"
 
 # enable/disable display
 default_target=$(systemctl get-default)
@@ -36,7 +50,7 @@ if display_active=$(mosquitto_sub -p 1886 -t "openWB/optional/int_display/active
 		sudo systemctl set-default graphical.target
 	fi
 	# only restart display manager if boot done or forceUpdate is set
-	if [[ -f "${OPENWBBASEDIR}/ramdisk/bootdone" ]] || ((forceUpdate == 1)); then
+	if [[ -f "${OPENWB_BASE_DIR}/ramdisk/bootdone" ]] || ((forceUpdate == 1)); then
 		echo "restarting lightdm service"
 		sudo systemctl restart lightdm.service
 	fi
@@ -50,6 +64,3 @@ else
 	echo "internal display not activated, stopping lightdm service if running"
 	sudo systemctl stop lightdm.service
 fi
-
-# rotate display with VC4 driver and update touchscreen matrix accordingly
-"${OPENWBBASEDIR}/runs/rotate_display.sh"

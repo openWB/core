@@ -264,15 +264,33 @@ chmod 666 "$LOGFILE"
 		sudo cp "${OPENWBBASEDIR}/data/config/display/lightdm-hide-mouse-cursor.conf" "/etc/lightdm/lightdm.conf.d/lightdm-hide-mouse-cursor.conf"
 		displaySetupModified=1
 	fi
-	if versionMatch "${OPENWBBASEDIR}/data/config/display/lxdeautostart" "/home/openwb/.config/lxsession/LXDE/autostart"; then
-		echo "lxde session autostart already configured"
-	else
-		echo "updating lxde session autostart"
-		cp "${OPENWBBASEDIR}/data/config/display/lxdeautostart" "/home/openwb/.config/lxsession/LXDE/autostart"
-		displaySetupModified=1
-	fi
-	if ((displaySetupModified == 1)) || ((forceDisplaySetup == 1)); then
-		"${OPENWBBASEDIR}/runs/update_local_display.sh" $forceDisplaySetup
+	if displayTheme=$(mosquitto_sub -p 1886 -t "openWB/optional/int_display/theme" -C 1 -W 1); then
+		displayThemeType=$(jq -r '.type' <<< "$displayTheme")
+		# check if file "runtime" exists in theme runtime directory
+		if [[ -f "${OPENWBBASEDIR}/packages/modules/display_themes/$displayThemeType/runtime" ]]; then
+			echo "runtime file exists in theme directory"
+			if versionMatch "${OPENWBBASEDIR}/data/config/display/lxdeautostart.runtime" "/home/openwb/.config/lxsession/LXDE/autostart"; then
+				echo "lxde session autostart already configured"
+			else
+				echo "updating lxde session autostart"
+				cp "${OPENWBBASEDIR}/data/config/display/lxdeautostart.runtime" "/home/openwb/.config/lxsession/LXDE/autostart"
+				# replace pattern "#RUNTIME#" with the actual runtime file path
+				sed -i "s|#RUNTIME#|${OPENWBBASEDIR}/packages/modules/display_themes/$displayThemeType/runtime|g" "/home/openwb/.config/lxsession/LXDE/autostart"
+				displaySetupModified=1
+			fi
+		else
+			echo "runtime file missing in theme directory, using browser based display"
+			if versionMatch "${OPENWBBASEDIR}/data/config/display/lxdeautostart.browser" "/home/openwb/.config/lxsession/LXDE/autostart"; then
+				echo "lxde session autostart already configured"
+			else
+				echo "updating lxde session autostart"
+				cp "${OPENWBBASEDIR}/data/config/display/lxdeautostart.browser" "/home/openwb/.config/lxsession/LXDE/autostart"
+				displaySetupModified=1
+			fi
+		fi
+		if ((displaySetupModified == 1)) || ((forceDisplaySetup == 1)); then
+			"${OPENWBBASEDIR}/runs/update_local_display.sh" $forceDisplaySetup
+		fi
 	fi
 
 	# check apache configuration

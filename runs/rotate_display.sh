@@ -1,16 +1,16 @@
 #!/bin/bash
 
-# X-Display setzen, falls das Skript per SSH ausgeführt wird
+# set X-Display if the script is executed via SSH or TTY
 export DISPLAY="${DISPLAY:-:0}"
 
-# Parameter übernehmen (Standard: 0)
+# take parameter (default: 0)
 ORIENTATION="${1}"
 
 if [ -z "$ORIENTATION" ]; then
 	if rotation=$(mosquitto_sub -p 1886 -t "openWB/optional/int_display/rotation" -C 1 -W 1); then
 		ORIENTATION=$(((rotation / 90 + 4) % 4)) # this allows negative rotation angles
 	else
-		echo "Keine Ausrichtung angegeben, setze Ausrichtung zurück"
+		echo "No orientation specified, resetting orientation"
 		ORIENTATION=0
 	fi
 fi
@@ -33,29 +33,29 @@ case "$ORIENTATION" in
 		MATRIX="0 -1 1 1 0 0 0 0 1"
 		;;
 	*)
-		echo "Ungültige Ausrichtung: $ORIENTATION (Erlaubt: 0, 1, 2, 3)" >&2
+		echo "Invalid orientation: $ORIENTATION (Allowed: 0, 1, 2, 3)" >&2
 		exit 1
 		;;
 esac
 
-# Ersten verbundenen Display-Ausgang automatisch ermitteln
+# detect first connected display output automatically
 OUTPUT=$(xrandr | grep " connected" | awk '{print $1}' | head -n 1)
 
 if [ -n "$OUTPUT" ]; then
 	echo "Drehe Display: $OUTPUT"
 	xrandr --output "$OUTPUT" --rotate "$ROTATE"
 else
-	echo "Kein verbundenes Display gefunden." >&2
+	echo "No connected display found." >&2
 	exit 1
 fi
 
-# Touchscreen-ID automatisch über bekannte Suchmuster ermitteln (ignoriert Groß-/Kleinschreibung)
+# detect Touchscreen ID automatically using known patterns (case-insensitive)
 TOUCH_ID=$(xinput list | grep -iE "ft5x06|touch|goodix|ilitek|egalax" | grep "slave  pointer" | grep -oE "id=[0-9]+" | head -n 1 | cut -d'=' -f2)
 
-# xinput nur aufrufen, wenn eine ID gefunden wurde
+# only call xinput if an ID was found
 if [ -n "$TOUCH_ID" ]; then
-	echo "Toucheingabe: $TOUCH_ID"
+	echo "Touch ID: $TOUCH_ID"
 	xinput set-prop "$TOUCH_ID" "Coordinate Transformation Matrix" $MATRIX
 else
-	echo "keine Toucheingabe gefunden"
+	echo "no touch input detected"
 fi
