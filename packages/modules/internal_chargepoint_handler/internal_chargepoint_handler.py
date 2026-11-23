@@ -7,16 +7,24 @@ import time
 from typing import Optional
 from helpermodules import timecheck
 
-from helpermodules.logger import clear_in_memory_log_handler
+from helpermodules import pub
+from helpermodules.logger import ModifyLoglevelContext, clear_in_memory_log_handler
 from helpermodules.pub import Pub
 from helpermodules.subdata import SubData
 from modules.chargepoints.internal_openwb.config import InternalChargepointMode
 from modules.common.component_context import SingleComponentUpdateContext
+from modules.common.connector_unlock import UnlockRequest, take_unlock_request
 from modules.common.fault_state import ComponentInfo, FaultState
+from modules.common.modbus import ModbusSerialClient_
+from modules.common.serial_modbus_devices import BUS_SOURCES, get_serial_modbus_devices
 from modules.internal_chargepoint_handler import chargepoint_module
-from modules.internal_chargepoint_handler.clients import ClientHandler, client_factory
+from modules.internal_chargepoint_handler.clients import ClientHandler, client_factory, get_modbus_client
+from modules.internal_chargepoint_handler.hardware_definition import WALLBOX_SOCKET_METERS
 from modules.internal_chargepoint_handler.pro_plus import ProPlus
 from modules.internal_chargepoint_handler.socket import Socket
+from modules.internal_chargepoint_handler.wallbox_socket import WallboxSocketModule
+from modules.internal_chargepoint_handler.wallbox_socket_config import WallboxSocket, WallboxSocketData
+
 from modules.internal_chargepoint_handler.internal_chargepoint_handler_config import (
     GlobalHandlerData, InternalChargepoint, InternalChargepointData, RfidData)
 log = logging.getLogger(__name__)
@@ -33,6 +41,8 @@ class UpdateState:
         self.old_set_current = 0
         self.phase_switch_thread = None  # type: Optional[Thread]
         self.cp_interruption_thread = None  # type: Optional[Thread]
+        # Entriegelung in einem eigenen Hardware-Thread ausführen.
+        self.unlock_thread = None  # type: Optional[Thread]
         self.actor_cooldown_thread = None  # type: Optional[Thread]
         self.cp_module = cp_module
         self.hierarchy_id = hierarchy_id
@@ -43,6 +53,10 @@ class UpdateState:
         else:
             set_current = data.set_current
         log.debug(f"Values from parentWB: {data}")
+
+        # Während eines Entriegelungsauftrags keine Stromvorgaben oder Umschaltungen ausführen.
+        if self.handle_unlock():
+            return
 
         if self.phase_switch_thread:
             if self.phase_switch_thread.is_alive():
@@ -55,6 +69,11 @@ class UpdateState:
                           " noch aktiv. Es muss erst gewartet werden, bis die CP-Unterbrechung abgeschlossen ist.")
                 return
         self.cp_module.set_current(set_current)
+        if getattr(self.cp_module, "unlock_blocked", False):
+            # Socket erzwingt lokal 0 A. Auch nach Thread-Ende bleiben weitere
+            # Hardwareaktionen bis zum sicher erkannten Abstecken gesperrt.
+            Pub().pub(f"openWB/set/chargepoint/{self.hierarchy_id}/set/current", payload=0)
+            return
         Pub().pub(f"openWB/set/chargepoint/{self.hierarchy_id}/set/current", payload=set_current)
         if data.trigger_phase_switch:
             log.debug("Switch Phases from "+str(self.old_phases_to_use) + " to " + str(data.phases_to_use))
@@ -65,6 +84,55 @@ class UpdateState:
 
         if data.cp_interruption_duration > 0:
             self.__thread_cp_interruption(data.cp_interruption_duration)
+
+    def handle_unlock(self) -> bool:
+        # True bedeutet: Der Auftrag wird bearbeitet oder wurde in diesem Aufruf
+        # beantwortet; das normale Hardware-Update darf dann nicht fortgesetzt werden.
+        if self.unlock_thread and self.unlock_thread.is_alive():
+            log.debug(f"Entriegelungs-Thread an LP{self.cp_module.local_charge_point_num} noch aktiv. "
+                      "Es muss erst gewartet werden, bis die Entriegelung abgeschlossen ist.")
+            return True
+        # Lokalen Auftrag genau einmal übernehmen. Abgelaufene oder bereits
+        # abgebrochene Aufträge werden von take_unlock_request nicht herausgegeben.
+        request = take_unlock_request(self.cp_module.local_charge_point_num)
+        if request is None:
+            return False
+        if not isinstance(self.cp_module, Socket):
+            request.result.set_result("not_supported")
+        elif any(thread and thread.is_alive()
+                 for thread in (self.phase_switch_thread, self.cp_interruption_thread)):
+            # Entriegelung nicht parallel zu einer laufenden Hardwareumschaltung starten.
+            request.result.set_result("failed")
+        else:
+            self.__thread_unlock(request)
+        return True
+
+    def __thread_unlock(self, request: UnlockRequest) -> None:
+        def unlock():
+            status = "failed"
+            try:
+                # Hardwarefehler dem Ladepunkt zuordnen und an den Worker weiterreichen,
+                # damit sie nicht versehentlich als erfolgreiche Entriegelung gelten.
+                with SingleComponentUpdateContext(self.cp_module.fault_state, update_always=False, reraise=True):
+                    # Nur die verbleibende Auftragszeit nutzen. Das Abbruchsignal
+                    # wird auch während der Strom- und EVSE-Prüfung berücksichtigt.
+                    remaining = request.deadline - time.monotonic()
+                    if self.cp_module.perform_unlock(timeout=remaining, cancelled=request.cancelled):
+                        status = "unlocked"
+            except Exception:
+                log.exception("Entriegelung an LP %s fehlgeschlagen", self.cp_module.local_charge_point_num)
+            finally:
+                # Das threadsichere Future weckt den asynchron wartenden OCPP-Aufruf
+                # mit dem tatsächlichen Ergebnis; ein MQTT-Antwortkanal ist nicht nötig.
+                request.result.set_result(status)
+
+        self.unlock_thread = Thread(target=unlock, name=f"perform unlock cp{self.cp_module.local_charge_point_num}")
+        try:
+            self.unlock_thread.start()
+        except Exception:
+            # Auch bei einem fehlgeschlagenen Thread-Start den wartenden Aufruf beenden.
+            request.result.set_result("failed")
+            raise
 
     def __thread_phase_switch(self, phases_to_use: int) -> None:
         self.phase_switch_thread = Thread(
@@ -83,14 +151,26 @@ class UpdateState:
             f"openWB/internal_chargepoint/{self.cp_module.local_charge_point_num}/data/cp_interruption_duration", 0)
 
 
+class UpdateWallboxSocketState:
+    def __init__(self, wallbox_socket_module: WallboxSocketModule) -> None:
+        self.module = wallbox_socket_module
+
+    def update_state(self, data: WallboxSocketData, heartbeat_expired: bool) -> None:
+        if not data.set_state or heartbeat_expired:
+            self.module.set_state(False)
+        else:
+            self.module.set_state(True)
+
+
 class InternalChargepointHandler:
     def __init__(self,
                  mode: InternalChargepointMode,
                  global_data: GlobalHandlerData,
-                 parent_cp0: str,
+                 parent_cp0: InternalChargepoint,
                  hierarchy_id_cp0: int,
-                 parent_cp1: Optional[str],
+                 parent_cp1: Optional[InternalChargepoint],
                  hierarchy_id_cp1: Optional[int],
+                 parent_wallbox_socket: WallboxSocket,
                  event_start: Event,
                  event_stop: Event) -> None:
         log.debug(f"Init internal chargepoint as {mode}")
@@ -99,28 +179,37 @@ class InternalChargepointHandler:
         self.heartbeat = False
         self.fault_state_info_cp0 = FaultState(
             ComponentInfo(0, "Interner Ladepunkt 0", "internal_chargepoint", hierarchy_id=hierarchy_id_cp0))
-        fault_state_info_cp1 = FaultState(
-            ComponentInfo(1, "Interner Ladepunkt 1", "internal_chargepoint", hierarchy_id=hierarchy_id_cp1))
+        self.fault_state_info_wallbox_socket = FaultState(ComponentInfo(None, "Wallbox-Steckdose", "wallbox_socket"))
+
         with SingleComponentUpdateContext(self.fault_state_info_cp0, reraise=True):
-            self.init_gpio()
-        try:
-            with SingleComponentUpdateContext(self.fault_state_info_cp0, reraise=True):
-                # Allgemeine Fehlermeldungen an LP 1:
-                if mode == InternalChargepointMode.PRO_PLUS:
-                    self.cp0_client_handler = None
-                else:
-                    self.cp0_client_handler = client_factory(mode, 0, self.fault_state_info_cp0)
+            self.init_gpio(mode)
+        self.cp0_client_handler = None
+        self.cp0_modbus_client = None
+        self.cp0 = None
+        self.wallbox_socket = None
+        if mode != InternalChargepointMode.PRO_PLUS:
+            with SingleComponentUpdateContext(self.fault_state_info_cp0):
+                self.cp0_modbus_client, evse_ids = get_modbus_client(
+                    mode, 0, fault_state=self.fault_state_info_cp0)
+        if parent_wallbox_socket.data.detected and self.cp0_modbus_client is not None:
+            with SingleComponentUpdateContext(self.fault_state_info_wallbox_socket):
+                self.wallbox_socket = HandlerWallboxSocket(
+                    self.cp0_modbus_client, global_data, parent_wallbox_socket)
+        if self.cp0_modbus_client is not None or mode == InternalChargepointMode.PRO_PLUS:
+            with SingleComponentUpdateContext(self.fault_state_info_cp0):
+                if self.cp0_modbus_client is not None:
+                    self.cp0_client_handler = ClientHandler(
+                        0, self.cp0_modbus_client, evse_ids, self.fault_state_info_cp0)
                 self.cp0 = HandlerChargepoint(self.cp0_client_handler, 0, mode,
                                               global_data, parent_cp0, hierarchy_id_cp0)
-        except Exception:
-            self.cp0_client_handler = None
-            self.cp0 = None
         try:
             if ((mode == InternalChargepointMode.DUO or mode == InternalChargepointMode.SE) and
-                    hierarchy_id_cp0 is not None):
+                    hierarchy_id_cp1 is not None):
+                fault_state_info_cp1 = FaultState(
+                    ComponentInfo(1, "Interner Ladepunkt 1", "internal_chargepoint", hierarchy_id=hierarchy_id_cp1))
                 with SingleComponentUpdateContext(fault_state_info_cp1, reraise=True):
                     log.debug("Zweiter Ladepunkt für Duo konfiguriert.")
-                    self.cp1_client_handler = client_factory(mode, 1, fault_state_info_cp1, self.cp0_client_handler)
+                    self.cp1_client_handler = client_factory(mode, 1, fault_state_info_cp1, self.cp0_modbus_client)
                     self.cp1 = HandlerChargepoint(self.cp1_client_handler, 1, mode,
                                                   global_data, parent_cp1, hierarchy_id_cp1)
             else:
@@ -130,7 +219,7 @@ class InternalChargepointHandler:
             self.cp1 = None
             self.cp1_client_handler = None
 
-    def init_gpio(self) -> None:
+    def init_gpio(self, mode: InternalChargepointMode) -> None:
         GPIO.setwarnings(False)
         GPIO.setmode(GPIO.BOARD)
         GPIO.setup(37, GPIO.OUT)
@@ -139,38 +228,64 @@ class InternalChargepointHandler:
         GPIO.setup(29, GPIO.OUT)
         GPIO.setup(11, GPIO.OUT)
         GPIO.setup(15, GPIO.OUT)
-        # GPIOs for socket
-        GPIO.setup(23, GPIO.OUT)
-        GPIO.setup(26, GPIO.OUT)
+
+        if mode in (InternalChargepointMode.SERIES, InternalChargepointMode.SE):
+            GPIO.setup(26, GPIO.OUT, initial=GPIO.LOW)
+            GPIO.setup(23, GPIO.OUT, initial=GPIO.LOW)
+        else:
+            # GPIOs for socket
+            GPIO.setup(23, GPIO.OUT)
+            GPIO.setup(26, GPIO.OUT)
         GPIO.setup(19, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
     def loop(self) -> None:
         def _loop():
             while True:
                 if self.event_stop.is_set():
+                    # Entriegelung beenden lassen, bevor der Hardware-Client geschlossen
+                    # oder der Handler neu erzeugt wird.
+                    for cp in (self.cp0, self.cp1):
+                        if cp and cp.update_state.unlock_thread:
+                            cp.update_state.unlock_thread.join()
                     break
+                # Während der Entriegelung gehört der Hardware-Client dem Unlock-Thread.
+                # Auch andere interne Ladepunkte pausieren, da sie denselben Bus nutzen können.
+                if any(cp and cp.update_state.unlock_thread and cp.update_state.unlock_thread.is_alive()
+                       for cp in (self.cp0, self.cp1)):
+                    time.sleep(0.1)
+                    continue
                 clear_in_memory_log_handler("internal_chargepoint")
                 log.debug("***Start***")
                 data = copy.deepcopy(SubData.internal_chargepoint_data)
                 log.debug(data)
                 log.setLevel(SubData.system_data["system"].data["debug_level"])
-                heartbeat_cp0, heartbeat_cp1 = True, True
+                heartbeat_cp0, heartbeat_cp1 = self.cp0 is not None, True
                 if self.cp0:
                     heartbeat_cp0 = self.cp0.update(data["global_data"], data["cp0"].data, data["rfid_data"])
+                    if self.cp0.update_state.unlock_thread and self.cp0.update_state.unlock_thread.is_alive():
+                        # Ein gerade gestarteter Unlock-Thread sperrt den gemeinsamen Bus
+                        # sofort, also bereits vor dem Update des zweiten Ladepunkts.
+                        continue
                 if self.cp1:
                     heartbeat_cp1 = self.cp1.update(data["global_data"], data["cp1"].data, data["rfid_data"])
-                self.heartbeat = True if heartbeat_cp0 and heartbeat_cp1 else False
+                if self.wallbox_socket:
+                    wallbox_socket_data = copy.deepcopy(SubData.wallbox_socket_data.data)
+                    heartbeat_wallbox_socket = self.wallbox_socket.update(data["global_data"], wallbox_socket_data)
+                self.heartbeat = True if heartbeat_cp0 and heartbeat_cp1 and (
+                    self.wallbox_socket is None or heartbeat_wallbox_socket) else False
                 time.sleep(1.1)
         # Allgemeine Fehlermeldungen an LP 1
         with SingleComponentUpdateContext(self.fault_state_info_cp0, update_always=False):
             clients = []
             is_pro_plus = self.cp0 is not None and self.cp0.mode == InternalChargepointMode.PRO_PLUS
             if not is_pro_plus:
+                if self.cp0_modbus_client is not None:
+                    clients.append(self.cp0_modbus_client)
                 for handler in (self.cp0_client_handler, self.cp1_client_handler):
                     if handler is not None and handler.client not in clients:
                         clients.append(handler.client)
                 if not clients:
-                    log.error("Kein ClientHandler vorhanden. Beende.")
+                    log.error("Kein Modbus-Client vorhanden. Beende.")
                     return
 
             with ExitStack() as stack:
@@ -214,12 +329,44 @@ class HandlerChargepoint:
             else:
                 return False
         with SingleComponentUpdateContext(self.module.fault_state):
+            # Auftrag vor get_values übernehmen, damit weder Messwertabfragen noch
+            # die automatische Buchsenverriegelung parallel zum Unlock-Thread laufen.
+            if self.update_state.handle_unlock():
+                return True
             if self.local_charge_point_num == 1:
                 time.sleep(0.1)
             phase_switch_cp_active = __thread_active(self.update_state.cp_interruption_thread) or __thread_active(
                 self.update_state.phase_switch_thread)
-            state = self.module.get_values(phase_switch_cp_active, rfid_data.last_tag)
+            state = self.module.get_values(phase_switch_cp_active, rfid_data.last_tag,
+                                           rfid_data.last_tag_timestamp)
             log.debug("Published plug state "+str(state.plug_state))
+            heartbeat_expired = self._check_heartbeat_expired(global_data.heartbeat)
+            self.update_state.update_state(data, heartbeat_expired)
+            return True
+        return False
+
+    def _check_heartbeat_expired(self, heartbeat) -> bool:
+        if heartbeat+80 < timecheck.create_timestamp():
+            log.error(f"Heartbeat Fehler seit {timecheck.create_timestamp()-heartbeat}"
+                      "s keine Verbindung. Stoppe Ladung.")
+            return True
+        else:
+            return False
+
+
+class HandlerWallboxSocket:
+    def __init__(self,
+                 client: ModbusSerialClient_,
+                 global_data: GlobalHandlerData,
+                 wallbox_socket: WallboxSocket) -> None:
+        self.module = WallboxSocketModule(client, wallbox_socket)
+        self.global_data = global_data
+        with SingleComponentUpdateContext(self.module.fault_state):
+            self.update_state = UpdateWallboxSocketState(self.module)
+
+    def update(self, global_data: GlobalHandlerData, data: WallboxSocketData) -> bool:
+        with SingleComponentUpdateContext(self.module.fault_state):
+            self.module.get_values(data.last_tag)
             heartbeat_expired = self._check_heartbeat_expired(global_data.heartbeat)
             self.update_state.update_state(data, heartbeat_expired)
             return True
@@ -239,7 +386,25 @@ class GeneralInternalChargepointHandler:
         self.event_stop = Event()
         self.event_start = Event()
 
+    def auto_detect_wallbox_socket(self):
+        try:
+            device, count = get_serial_modbus_devices()
+            if count == 1 and device[0] in BUS_SOURCES:
+                port = device[0]
+                client = ModbusSerialClient_(port)
+                fault_state = FaultState(ComponentInfo(None, "Wallbox-Steckdose", "wallbox_socket"))
+                if ClientHandler.find_meter_client(WALLBOX_SOCKET_METERS, client, fault_state) is not None:
+                    pub.pub_single("openWB/internal_socket/data/detected", True)
+                    with ModifyLoglevelContext(log, logging.DEBUG):
+                        log.debug("Wallbox-Steckdose verbaut.")
+                    return
+            with ModifyLoglevelContext(log, logging.DEBUG):
+                log.debug("Es konnte keine Wallbox-Steckdose erkannt werden.")
+        except Exception:
+            log.exception("Fehler bei der automatischen Erkennung einer Wallbox-Steckdose")
+
     def handler(self):
+        self.auto_detect_wallbox_socket()
         while True:
             try:
                 self.event_start.wait()
@@ -266,6 +431,7 @@ class GeneralInternalChargepointHandler:
                         hierarchy_id_cp0,
                         data["cp1"],
                         hierarchy_id_cp1,
+                        copy.deepcopy(SubData.wallbox_socket_data),
                         self.event_start,
                         self.event_stop)
                     self.internal_chargepoint_handler.loop()

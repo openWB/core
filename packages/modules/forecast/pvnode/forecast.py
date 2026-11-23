@@ -13,7 +13,7 @@ log = logging.getLogger("forecast")
 
 
 def is_configuration_complete(config: PvNodeConfiguration) -> bool:
-    """Prüfe, ob die PVNode-Konfiguration alle erforderlichen Felder hat."""
+    """Prüfe, ob die pvnode-Konfiguration alle erforderlichen Felder hat."""
     return (config.plant_id is not None and len(config.plant_id.strip()) > 0
             and config.api_key is not None and len(config.api_key.strip()) > 0)
 
@@ -51,14 +51,14 @@ def _mask_identifier(value: str) -> str:
 def fetch_forecast(config: PvNodeConfiguration) -> Tuple[Dict[str, float], Dict[str, float]]:
     plant_id = _require(config.plant_id, "plant_id")
     masked_plant_id = _mask_identifier(str(plant_id))
-    log.info(f"PVNode-Abruf gestartet (plant_id={masked_plant_id})")
+    log.info(f"pvnode-Abruf gestartet (plant_id={masked_plant_id})")
 
     path = f"/v2/forecast/{plant_id}"
     url = f"https://api.pvnode.com{path}"
     api_key = _require(config.api_key, "api_key")
     headers = {"Authorization": f"Bearer {api_key}"}
     response = req.get_http_session().get(url, headers=headers, timeout=(2, 6)).json()
-    log.debug(f"PVNode-Antwort erhalten: {response}")
+    log.debug(f"pvnode-Antwort erhalten: {response}")
     values: Dict[str, float] = {}
     daily_kwh: Dict[str, float] = {}
 
@@ -105,7 +105,7 @@ def fetch_forecast(config: PvNodeConfiguration) -> Tuple[Dict[str, float], Dict[
             estimated_power_w = max(0.0, float(value))
             values[str(timestamp)] = estimated_power_w
 
-    log.info(f"PVNode-Abruf beendet (Werte={len(values)}, Tage={len(daily_kwh)})")
+    log.info(f"pvnode-Abruf beendet (Werte={len(values)}, Tage={len(daily_kwh)})")
 
     return values, daily_kwh
 

@@ -66,7 +66,7 @@ class ConsumerConfig:
     rfid_enabled: bool = False
     valid_tags: List[str] = field(default_factory=empty_list_factory)
     rfid_reset: RfidReset = RfidReset.AFTER_TIME
-    rfid_timeout: int = 300
+    rfid_timeout: int = 3600
 
 
 @dataclass
@@ -88,7 +88,7 @@ class Get:
     set_power: Optional[float] = None
     state: Optional[bool] = False
     state_str: Optional[str] = field(default=None, metadata={"topic": "get/state_str"})
-    temperatures: Optional[List[float]] = None
+    temperatures: Optional[List[Optional[float]]] = None
     voltages: List[float] = field(default_factory=voltages_list_factory)
 
 

@@ -12,6 +12,14 @@ class ConsumerValueStoreBroker(ValueStore[ConsumerState]):
         self.num = component_num
 
     def set(self, state: ConsumerState) -> None:
+        try:
+            consumer_data = data.data.consumer_data[f"consumer{self.num}"].data
+            # Ein separater Zähler liefert die Werte je Phase selbst.
+            if consumer_data.extra_meter is None:
+                state.distribute_total_power(int(consumer_data.config.connected_phases))
+        except (AttributeError, KeyError, TypeError, ValueError):
+            # Verbraucher (noch) nicht bekannt: die Werte bleiben unverändert
+            pass
         self.state = state
 
     def zero_power_on_sustained_error(self) -> None:

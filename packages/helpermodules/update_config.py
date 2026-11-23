@@ -41,6 +41,7 @@ from helpermodules.utils.topic_parser import decode_payload, get_index, get_seco
 from control.counter_all import counter_all, counter_all_data
 from control.bat_all import BatConsiderationMode
 from control.chargepoint.charging_type import ChargingType
+from control.chargepoint.chargepoint_data import get_ocpp_config_default
 from control.counter import get_counter_default_config, CounterMode
 from control.ev.charge_template import EcoCharging, get_charge_template_default
 from control.ev import ev
@@ -63,7 +64,7 @@ NO_MODULE = {"type": None, "configuration": {}}
 
 class UpdateConfig:
 
-    DATASTORE_VERSION = 158
+    DATASTORE_VERSION = 161
 
     valid_topic = [
         "^openWB/bat/config/bat_control_activated$",
@@ -164,6 +165,22 @@ class UpdateConfig:
         "^openWB/chargepoint/[0-9]+/get/connected_vehicle/config$",
         "^openWB/chargepoint/[0-9]+/get/rfid$",
         "^openWB/chargepoint/[0-9]+/get/rfid_timestamp$",
+        "^openWB/chargepoint/[0-9]+/get/ocpp/availability$",
+        "^openWB/chargepoint/[0-9]+/get/ocpp/authorization_flow_status$",
+        "^openWB/chargepoint/[0-9]+/get/ocpp/backend_message$",
+        "^openWB/chargepoint/[0-9]+/get/ocpp/remote_start$",
+        "^openWB/chargepoint/[0-9]+/get/ocpp/config$",
+        "^openWB/chargepoint/[0-9]+/get/ocpp/last_connection_settings$",
+        "^openWB/chargepoint/[0-9]+/get/ocpp/pending_availability$",
+        "^openWB/chargepoint/[0-9]+/get/ocpp/pending_transactions$",
+        "^openWB/chargepoint/[0-9]+/get/ocpp/previous_chargebox_id$",
+        "^openWB/chargepoint/[0-9]+/get/ocpp/remote_stop$",
+        "^openWB/chargepoint/[0-9]+/get/ocpp/reset$",
+        "^openWB/chargepoint/[0-9]+/get/ocpp/rfid_stop$",
+        "^openWB/chargepoint/[0-9]+/get/ocpp/tag_accepted$",
+        "^openWB/chargepoint/[0-9]+/get/ocpp/transaction_id$",
+        "^openWB/chargepoint/[0-9]+/get/ocpp/transaction_id_tag$",
+        "^openWB/chargepoint/[0-9]+/get/ocpp/unlock_stop$",
         "^openWB/chargepoint/[0-9]+/set/charge_template$",
         "^openWB/chargepoint/[0-9]+/set/current$",
         "^openWB/chargepoint/[0-9]+/set/manual_lock$",
@@ -171,9 +188,9 @@ class UpdateConfig:
         "^openWB/chargepoint/[0-9]+/set/plug_state_prev$",
         "^openWB/chargepoint/[0-9]+/set/plug_time$",
         "^openWB/chargepoint/[0-9]+/set/rfid$",
+        "^openWB/chargepoint/[0-9]+/set/rfid_timestamp$",
         "^openWB/chargepoint/[0-9]+/set/log$",
         "^openWB/chargepoint/[0-9]+/set/phases_to_use$",
-        "^openWB/chargepoint/[0-9]+/set/ocpp_transaction_id$",
         "^openWB/chargepoint/[0-9]+/set/ocpp_transaction_active$",
 
         "^openWB/command/max_id/autolock_plan$",
@@ -362,6 +379,22 @@ class UpdateConfig:
         "^openWB/internal_chargepoint/[0-1]/get/state_str$",
         "^openWB/internal_chargepoint/[0-1]/get/rfid$",
         "^openWB/internal_chargepoint/[0-1]/get/rfid_timestamp$",
+        "^openWB/internal_chargepoint/[0-1]/get/unlock_blocked$",
+
+        "^openWB/internal_socket/data/set_state$",
+        "^openWB/internal_socket/data/detected$",
+        "^openWB/internal_socket/data/last_tag$",
+        "^openWB/internal_socket/get/state$",
+        "^openWB/internal_socket/get/rfid$",
+        "^openWB/internal_socket/get/power$",
+        "^openWB/internal_socket/get/imported$",
+        "^openWB/internal_socket/get/exported$",
+        "^openWB/internal_socket/get/currents$",
+        "^openWB/internal_socket/get/voltages$",
+        "^openWB/internal_socket/get/powers$",
+        "^openWB/internal_socket/get/fault_state$",
+        "^openWB/internal_socket/get/fault_str$",
+        "^openWB/internal_socket/get/error_timestamp$",
 
         "^openWB/io/action/[0-9]+/config$",
         "^openWB/io/action/[0-9]+/timestamp$",
@@ -369,6 +402,8 @@ class UpdateConfig:
         "^openWB/io/states/[0-9]+/get/analog_output$",
         "^openWB/io/states/[0-9]+/get/digital_input$",
         "^openWB/io/states/[0-9]+/get/digital_output$",
+        "^openWB/io/states/[0-9]+/get/fault_state$",
+        "^openWB/io/states/[0-9]+/get/fault_str$",
         "^openWB/io/states/[0-9]+/set/analog_input$",
         "^openWB/io/states/[0-9]+/set/analog_output$",
         "^openWB/io/states/[0-9]+/set/digital_input$",
@@ -391,6 +426,7 @@ class UpdateConfig:
         "^openWB/mqtt/chargepoint/[0-9]+/get/voltages$",
         "^openWB/mqtt/chargepoint/[0-9]+/get/power_factors$",
         "^openWB/mqtt/chargepoint/[0-9]+/get/rfid$",
+        "^openWB/mqtt/chargepoint/[0-9]+/get/rfid_timestamp$",
         "^openWB/mqtt/consumer/[0-9]+/get/currents$",
         "^openWB/mqtt/consumer/[0-9]+/get/rfid$",
         "^openWB/mqtt/consumer/[0-9]+/get/rfid_timestamp$",
@@ -413,6 +449,7 @@ class UpdateConfig:
         "^openWB/mqtt/inverter/[0-9]+/get/power$",
         "^openWB/mqtt/inverter/[0-9]+/get/exported$",
         "^openWB/mqtt/inverter/[0-9]+/get/dc_power$",
+        "^openWB/mqtt/vehicle/[0-9]+/get/odometer$",
         "^openWB/mqtt/vehicle/[0-9]+/get/range$",
         "^openWB/mqtt/vehicle/[0-9]+/get/soc$",
         "^openWB/mqtt/vehicle/[0-9]+/get/soc_timestamp$",
@@ -493,6 +530,7 @@ class UpdateConfig:
         "^openWB/vehicle/[0-9]+/get/fault_state$",
         "^openWB/vehicle/[0-9]+/get/fault_str$",
         "^openWB/vehicle/[0-9]+/get/force_soc_update$",
+        "^openWB/vehicle/[0-9]+/get/odometer$",
         "^openWB/vehicle/[0-9]+/get/range$",
         "^openWB/vehicle/[0-9]+/get/soc$",
         "^openWB/vehicle/[0-9]+/get/soc_request_timestamp$",
@@ -673,6 +711,27 @@ class UpdateConfig:
         "^openWB/system/usage_terms_acknowledged$",
         "^openWB/system/version$",
     ]
+
+    default_topics_with_wildcards = (
+        ("openWB/chargepoint/{}/get/ocpp/backend_message", None),
+        ("openWB/chargepoint/{}/get/ocpp/remote_start", False),
+        ("openWB/chargepoint/{}/get/ocpp/authorization_flow_status", None),
+        ("openWB/chargepoint/{}/get/ocpp/availability", [True, True]),
+        ("openWB/chargepoint/{}/get/ocpp/connected", False),
+        ("openWB/chargepoint/{}/get/ocpp/config", get_ocpp_config_default()),
+        ("openWB/chargepoint/{}/get/ocpp/last_connection_settings", None),
+        ("openWB/chargepoint/{}/get/ocpp/pending_availability", [False, False]),
+        ("openWB/chargepoint/{}/get/ocpp/pending_transactions", []),
+        ("openWB/chargepoint/{}/get/ocpp/previous_chargebox_id", None),
+        ("openWB/chargepoint/{}/get/ocpp/remote_stop", False),
+        ("openWB/chargepoint/{}/get/ocpp/reset", False),
+        ("openWB/chargepoint/{}/get/ocpp/rfid_stop", False),
+        ("openWB/chargepoint/{}/get/ocpp/tag_accepted", False),
+        ("openWB/chargepoint/{}/get/ocpp/transaction_id", None),
+        ("openWB/chargepoint/{}/get/ocpp/transaction_id_tag", None),
+        ("openWB/chargepoint/{}/get/ocpp/unlock_stop", False),
+    )
+
     default_topic = (
         ("openWB/bat/config/bat_control_activated", False),
         ("openWB/bat/config/power_limit_mode", "mode_no_discharge"),
@@ -901,11 +960,31 @@ class UpdateConfig:
         for topic in topics_to_delete:
             self.__update_topic(topic, "")
 
+    def __default_topic_with_wildcards(self):
+        """Expand default topic patterns for all discovered numeric IDs.
+        """
+        expanded_defaults = []
+        for topic_template, default_payload in self.default_topics_with_wildcards:
+            prefix, wildcard, suffix = topic_template.partition("{}")
+            if not wildcard:
+                continue
+            id_pattern = re.compile(rf"^{re.escape(prefix)}([0-9]+)(?:/|$)")
+            topic_ids = {
+                match.group(1)
+                for topic in self.all_received_topics
+                if (match := id_pattern.match(topic)) is not None
+            }
+            for topic_id in topic_ids:
+                topic = f"{prefix}{topic_id}{suffix}"
+                expanded_defaults.append((topic, default_payload))
+        return expanded_defaults
+
     def __pub_missing_defaults(self):
         """ publish missing required default topics to broker and update all_received_topics
         """
         missing_topics = {}
-        for topic, default_payload in self.default_topic:
+        default_topics = (*self.default_topic, *self.__default_topic_with_wildcards())
+        for topic, default_payload in default_topics:
             if topic not in self.all_received_topics.keys():
                 log.debug(f"Setze Topic '{topic}' auf Standardwert '{str(default_payload)}'")
                 missing_topics[topic] = default_payload
@@ -4215,3 +4294,60 @@ class UpdateConfig:
 
         self._loop_all_received_topics(upgrade)
         self._append_datastore_version(158)
+
+    def upgrade_datastore_159(self) -> None:
+        """Vorgabe des pvnode-Teams: Schreibweise des Anbieternamens vereinheitlicht."""
+        def upgrade(topic: str, payload) -> Optional[dict]:
+            if topic == "openWB/optional/forecast/provider":
+                provider = decode_payload(payload)
+                if (isinstance(provider, dict) and provider.get("type") == "pvnode"
+                        and provider.get("name") == "PVNode V2"):
+                    provider["name"] = "pvnode V2"
+                    return {topic: provider}
+            return None
+
+        self._loop_all_received_topics(upgrade)
+        self._append_datastore_version(159)
+
+    def upgrade_datastore_160(self) -> None:
+        """Solax Speicher: Einstellung battery_index (Nummer der Batterie, Standard 1) ergänzen."""
+        def upgrade(topic: str, payload) -> Optional[dict]:
+            match = re.fullmatch(r"openWB/system/device/([0-9]+)/component/[0-9]+/config", topic)
+            if match is None:
+                return None
+            device_topic = f"openWB/system/device/{match.group(1)}/config"
+            device_config = decode_payload(self.all_received_topics.get(device_topic))
+            if not isinstance(device_config, dict) or device_config.get("type") != "solax":
+                return None
+            component_config = decode_payload(payload)
+            if component_config.get("type") != "bat" or "battery_index" in component_config["configuration"]:
+                return None
+            component_config["configuration"]["battery_index"] = 1
+            return {topic: component_config}
+
+        self._loop_all_received_topics(upgrade)
+        self._append_datastore_version(160)
+
+    def upgrade_datastore_161(self) -> None:
+        """Fronius SunSpec Speicher: mppt_index in mppt_index_charge/mppt_index_discharge aufgeteilt."""
+        def upgrade(topic: str, payload) -> Optional[dict]:
+            match = re.fullmatch(r"openWB/system/device/([0-9]+)/component/[0-9]+/config", topic)
+            if match is None:
+                return None
+            device_topic = f"openWB/system/device/{match.group(1)}/config"
+            device_config = decode_payload(self.all_received_topics.get(device_topic))
+            if not isinstance(device_config, dict) or device_config.get("type") != "fronius_sunspec":
+                return None
+            config = decode_payload(payload)
+            if config.get("type") != "bat":
+                return None
+            configuration = config["configuration"]
+            if "mppt_index_charge" in configuration or "mppt_index_discharge" in configuration:
+                return None
+            mppt_index = configuration.pop("mppt_index", None)
+            configuration["mppt_index_charge"] = mppt_index if mppt_index is not None else 3
+            configuration["mppt_index_discharge"] = 4
+            return {topic: config}
+
+        self._loop_all_received_topics(upgrade)
+        self._append_datastore_version(161)
