@@ -284,3 +284,13 @@ def test_process_optional_topic_forecast_get_dict_fields_store_whole_payload(fie
     subdata.process_optional_topic(var, msg)
 
     assert getattr(var.data.forecast.get, field) == payload
+
+
+def test_process_bat_topic_config_max_power_is_applied():
+    subdata = SubData.__new__(SubData)
+    var = {}
+    msg = Mock(topic="openWB/bat/4/config/max_power", payload=b"6000")
+
+    subdata.process_bat_topic(var, msg)
+
+    assert var["bat4"].data.config.max_power == 6000
