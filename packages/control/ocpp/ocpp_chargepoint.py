@@ -125,7 +125,7 @@ class OcppChargePoint(cp):
         try:
             log.debug(f"Boot Notification für CP_Nr: {self.openwb_num} mit OCPP_Nr: {self.chargebox_id}")
             request = call.BootNotification(
-                charge_point_model=self.openwb_cp.chargepoint_module.config.type,
+                charge_point_model=self.openwb_cp.chargepoint_module.config.type[:20],
                 charge_point_vendor="openWB",
                 firmware_version=data.data.system_data["system"].data["version"],
                 meter_serial_number=self.openwb_cp.data.get.serial_number
