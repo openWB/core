@@ -8,12 +8,14 @@ from control.consumer.rfid import ConsumerRfidMixin
 from control.chargemode import Chargemode
 from control.chargepoint.chargepoint_state import CHARGING_STATES, ChargepointState
 from control.consumer.consumer_data import ConsumerData, ConsumerUsage, WaitForStartStates
+from control.error_state import error_duration_exceeded, tick_error_timer
 from control.load_protocol import Load
 from control.text import format_next_time_charging_start
 from helpermodules import timecheck
 from helpermodules.abstract_plans import ScheduledPlanConsumer
 from helpermodules.phase_handling import convert_single_evu_phase_to_cp_phase, voltages_mean
 from modules.common.configurable_consumer import ConfigurableConsumer
+from modules.common.utils.component_parser import get_component_name_by_id
 
 log = logging.getLogger(__name__)
 
@@ -51,6 +53,9 @@ class Consumer(ConsumerRfidMixin, Load):
             self.process_on_time()
             self.update_rfid()
 
+            # power ist bei andauerndem Fehler bereits vom Modul auf 0 gesetzt; error_timer wird hier
+            # nur noch für das Schaltbefehl-Gate in get_parameter() getickt.
+            self.data.set.error_timer = tick_error_timer(self.data.get.fault_state, self.data.set.error_timer)
             if self.data.usage.type in NOT_CONTROLLED:
                 return
             else:
@@ -112,6 +117,10 @@ class Consumer(ConsumerRfidMixin, Load):
                                        "Verbraucher nicht abgeschaltet werden darf.")
 
     def get_parameter(self) -> Tuple[float, Optional[str], Optional[Chargemode], Chargemode]:
+        if error_duration_exceeded(self.data.get.fault_state, self.data.set.error_timer):
+            message = (f"Fehler beim Auslesen des Verbrauchers {get_component_name_by_id(self.num)}. "
+                       "Es wird nicht mehr angesteuert.")
+            return (0, message, self.data.control_parameter.chargemode, Chargemode.STOP)
         if self.rfid_required() and self.data.set.rfid is None:
             return (0, "Verbraucher gesperrt. Bitte per RFID freischalten.",
                     self.data.usage.chargemode, Chargemode.STOP)

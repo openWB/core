@@ -22,6 +22,12 @@ class ConsumerValueStoreBroker(ValueStore[ConsumerState]):
             pass
         self.state = state
 
+    def zero_power_on_sustained_error(self) -> None:
+        if hasattr(self, "state"):
+            self.state.power = 0
+        else:
+            self.state = ConsumerState(power=0)
+
     def update(self) -> None:
         if self.state.currents is not None:
             pub_to_broker(f"openWB/set/consumer/{self.num}/get/currents", self.state.currents, 2)
@@ -52,20 +58,29 @@ class PurgeConsumerState(ValueStore[ConsumerState]):
     def set(self, state: ConsumerState) -> None:
         self.delegate.set(state)
 
+    def zero_power_on_sustained_error(self) -> None:
+        self.delegate.zero_power_on_sustained_error()
+
     def update(self) -> None:
-        extra_meter_id = data.data.consumer_data[f"consumer{self.delegate.delegate.num}"].data.extra_meter
+        consumer = data.data.consumer_data[f"consumer{self.delegate.delegate.num}"]
+        extra_meter_id = consumer.data.extra_meter
         if extra_meter_id is not None:
             try:
-                consumer = get_hierarchy_obj_by_id(extra_meter_id, ComponentType.COUNTER.value)
-                consumer_state = consumer.store.delegate.delegate.state
+                counter = get_hierarchy_obj_by_id(extra_meter_id, ComponentType.COUNTER.value)
+                counter_state = counter.store.delegate.delegate.state
                 self.set(ConsumerState(
-                    power=consumer_state.power,
-                    imported=consumer_state.imported,
-                    exported=consumer_state.exported,
-                    voltages=consumer_state.voltages,
-                    currents=consumer_state.currents,
-                    powers=consumer_state.powers,
+                    power=counter_state.power,
+                    imported=counter_state.imported,
+                    exported=counter_state.exported,
+                    voltages=counter_state.voltages,
+                    currents=counter_state.currents,
+                    powers=counter_state.powers,
                 ))
+                if consumer.module.fault_state.fault_state == 0:
+                    consumer.module.fault_state.from_exception(counter.fault_state)
+                    if consumer.module.fault_state.fault_state != 0:
+                        consumer.module.fault_state.fault_str = (
+                            f"Verknüpfter Zähler: {counter.fault_state.fault_str}")
             except ValueError:
                 raise Exception(
                     f"Zähler {extra_meter_id} für die separate Leistungsmessung von Verbraucher "
