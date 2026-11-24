@@ -17,10 +17,16 @@
     "cors_enabled": true
   },
   "auth": {
-    "enabled": false,
+    "enabled": true,
     "require_https": false,
     "tokens": [],
-    "users": {}
+    "users": {},
+    "broker": {
+      "host": "localhost",
+      "port": 8883,
+      "use_tls": true,
+      "validate_cert": false
+    }
   },
   "debug": false
 }

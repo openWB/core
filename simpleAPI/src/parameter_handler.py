@@ -4,6 +4,7 @@ Mirrors the parameter whitelist, auto-ID resolution and response-shape rules
 of the HTTP dispatch layer, and reads every value straight out of the running
 daemon's caches - no MQTT round-trip is made per request.
 """
+import re
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
 # Write parameters, in the order they are evaluated when several are present
@@ -58,7 +59,7 @@ READ_PARAMETER_ORDER: List[str] = [
     'get_chargepoint_config_name', 'get_chargepoint_connected_vehicle_name',
     'get_chargepoint_charge_template_name', 'get_chargepoint_charge_template_min_current',
     'get_chargepoint_instant_charging_current', 'get_chargepoint_pv_charging_min_current',
-    'get_chargepoint_soc', 'get_chargepoint_state_str', 'get_chargepoint_fault_str',
+    'get_chargepoint_soc', 'get_chargepoint_state_str', 'get_chargepoint_limit', 'get_chargepoint_fault_str',
     'get_chargepoint_fault_state', 'get_chargepoint_phases_in_use', 'get_chargepoint_plug_state',
     'get_chargepoint_charge_state', 'get_chargepoint_chargemode',
     'get_counter',
@@ -67,12 +68,13 @@ READ_PARAMETER_ORDER: List[str] = [
     'get_counter_power', 'get_counter_powers', 'get_counter_power_factors',
     'get_counter_imported', 'get_counter_exported',
     'get_counter_daily_imported', 'get_counter_daily_exported',
-    'get_counter_frequency', 'get_counter_fault_str', 'get_counter_fault_state',
+    'get_counter_frequency', 'get_counter_fault_str', 'get_counter_fault_state', 'get_counter_local_power',
     'battery', 'get_battery',
     'get_battery_power', 'get_battery_soc', 'get_battery_currents',
     'get_battery_imported', 'get_battery_exported',
     'get_battery_daily_imported', 'get_battery_daily_exported',
     'get_battery_fault_str', 'get_battery_fault_state', 'get_battery_power_limit_controllable',
+    'get_battery_state_str', 'get_battery_max_charge_power', 'get_battery_max_discharge_power',
     'pv', 'get_pv',
     'get_pv_power', 'get_pv_currents', 'get_pv_imported', 'get_pv_exported',
     'get_pv_daily_exported', 'get_pv_monthly_exported', 'get_pv_yearly_exported',
@@ -82,7 +84,10 @@ READ_PARAMETER_ORDER: List[str] = [
     'get_consumer_imported', 'get_consumer_exported', 'get_consumer_daily_imported',
     'get_consumer_phases_in_use', 'get_consumer_charge_state', 'get_consumer_state_str',
     'get_consumer_fault_str', 'get_consumer_fault_state', 'get_consumer_usage_type',
-    'get_io_output_all', 'get_io_output',
+    'get_consumer_temperatures', 'get_consumer_set_power', 'get_consumer_state', 'get_consumer_plug_state',
+    'get_consumer_rfid', 'get_consumer_rfid_timestamp',
+    'get_home_consumption',
+    'get_io_output_all', 'get_io_output', 'get_io_input_all',
 ]
 
 COMPLEX_PARAMETERS = {
@@ -90,10 +95,15 @@ COMPLEX_PARAMETERS = {
     'get_chargepoint_voltages', 'get_chargepoint_currents', 'get_chargepoint_powers',
     'get_chargepoint_power_factors',
     'get_counter_voltages', 'get_counter_currents', 'get_counter_powers', 'get_counter_power_factors',
-    'get_battery_currents', 'get_pv_currents', 'get_io_output_all',
+    'get_battery_currents', 'get_pv_currents', 'get_io_output_all', 'get_io_input_all',
+    'get_chargepoint_limit',
     'get_consumer_all', 'get_consumer', 'consumer',
-    'get_consumer_currents', 'get_consumer_voltages', 'get_consumer_powers',
+    'get_consumer_currents', 'get_consumer_voltages', 'get_consumer_powers', 'get_consumer_temperatures',
+    'get_home_consumption',
 }
+
+# Not tied to a component ID - the ID in the request is ignored.
+GLOBAL_READ_PARAMETERS = {'get_home_consumption'}
 
 TYPE_PUBLIC_NAMES = {'bat': 'battery'}
 SCAN_TYPES = ['chargepoint', 'bat', 'pv', 'counter', 'consumer', 'io']
@@ -186,6 +196,20 @@ def _as_bool(value: Any, default: Any = None) -> bool:
     return bool(value)
 
 
+def _opt_float(value: Any, default: Any = None) -> Optional[float]:
+    # missing/invalid stays null - for values where 0 would be a misleading default
+    try:
+        return default if value is None else float(value)
+    except (TypeError, ValueError):
+        return default
+
+
+def _float_list(value: Any, default: Any = None) -> List[Optional[float]]:
+    if not isinstance(value, (list, tuple)):
+        return []
+    return [_opt_float(item) for item in value]
+
+
 def _as_str(value: Any, default: Any = '') -> Any:
     if value is None:
         return default
@@ -210,6 +234,13 @@ def _raw(daemon: Any, topic: str) -> Any:
 
 def _comp_scalar(component: str, id_: Any, field: str, value: Any) -> Dict[str, Any]:
     return {f"{component}_{id_}": {field: value}}
+
+
+def _parse_limit(value: Any) -> Dict[str, Any]:
+    # control_parameter/limit: why the charge power is currently limited (e.g. §14a dimming, load management,
+    # counter fuse). Both fields are null when no limit is active.
+    limit = value if isinstance(value, dict) else {}
+    return {'message': limit.get('message'), 'limiting_value': limit.get('limiting_value')}
 
 
 def _get_chargepoint_all(daemon: Any, id_: Any) -> Dict[str, Any]:
@@ -249,6 +280,7 @@ def _get_chargepoint_all(daemon: Any, id_: Any) -> Dict[str, Any]:
             'powers': _phases(_raw(daemon, prefix + 'powers')),
             'state_str': _as_str(_raw(daemon, prefix + 'state_str'), 'Unbekannt'),
             'fault_str': _as_str(_raw(daemon, prefix + 'fault_str'), 'Kein Fehler'),
+            'limit': _parse_limit(_raw(daemon, f"openWB/chargepoint/{id_}/control_parameter/limit")),
             'fault_state': _as_int(_raw(daemon, prefix + 'fault_state')),
             'imported': _as_float(_raw(daemon, prefix + 'imported')),
             'exported': _as_float(_raw(daemon, prefix + 'exported')),
@@ -295,6 +327,9 @@ def _make_scalar_handler(
     continuously aggregated across all known IDs of a component type."""
     def handler(daemon: Any, id_: Any) -> Dict[str, Any]:
         if total_aware and _is_total(id_):
+            record = getattr(daemon, 'record_total', None)
+            if record:
+                record(mqtt_component, field)
             return {f"{component}_total": {field: daemon.total_sums[mqtt_component][field]}}
         raw = _raw(daemon, f"openWB/{mqtt_component}/{id_}/get/{suffix}")
         return _comp_scalar(component, id_, field, coercer(raw, default))
@@ -340,6 +375,7 @@ SCALAR_READ_TABLE: List[Tuple[str, str, str, str, Callable[[Any, Any], Any], Any
     ('counter', 'counter', 'frequency', 'frequency', _as_float, 50.0, False),
     ('counter', 'counter', 'fault_str', 'fault_str', _as_str, 'Kein Fehler', False),
     ('counter', 'counter', 'fault_state', 'fault_state', _as_int, 0, False),
+    ('counter', 'counter', 'local_power', 'local_power', _as_float, 0.0, False),
     # battery (mqtt topic path is "bat", output/field prefix is "battery")
     ('battery', 'bat', 'power', 'power', _as_float, 0.0, False),
     ('battery', 'bat', 'soc', 'soc', _as_int, 0, False),
@@ -351,6 +387,9 @@ SCALAR_READ_TABLE: List[Tuple[str, str, str, str, Callable[[Any, Any], Any], Any
     ('battery', 'bat', 'fault_str', 'fault_str', _as_str, 'Kein Fehler', False),
     ('battery', 'bat', 'fault_state', 'fault_state', _as_int, 0, False),
     ('battery', 'bat', 'power_limit_controllable', 'power_limit_controllable', _as_bool, None, False),
+    ('battery', 'bat', 'state_str', 'state_str', _as_str, '', False),
+    ('battery', 'bat', 'max_charge_power', 'max_charge_power', _as_float, 0.0, False),
+    ('battery', 'bat', 'max_discharge_power', 'max_discharge_power', _as_float, 0.0, False),
     # pv
     ('pv', 'pv', 'power', 'power', _as_float, 0.0, True),
     ('pv', 'pv', 'currents', 'currents', _phases, None, False),
@@ -374,6 +413,12 @@ SCALAR_READ_TABLE: List[Tuple[str, str, str, str, Callable[[Any, Any], Any], Any
     ('consumer', 'consumer', 'state_str', 'state_str', _as_str, None, False),
     ('consumer', 'consumer', 'fault_str', 'fault_str', _as_str, 'Kein Fehler', False),
     ('consumer', 'consumer', 'fault_state', 'fault_state', _as_int, 0, False),
+    ('consumer', 'consumer', 'temperatures', 'temperatures', _float_list, None, False),
+    ('consumer', 'consumer', 'set_power', 'set_power', _opt_float, None, False),
+    ('consumer', 'consumer', 'state', 'state', _as_bool, None, False),
+    ('consumer', 'consumer', 'plug_state', 'plug_state', _as_bool, None, False),
+    ('consumer', 'consumer', 'rfid', 'rfid', _as_str, '', False),
+    ('consumer', 'consumer', 'rfid_timestamp', 'rfid_timestamp', _as_int, 0, False),
 ]
 
 
@@ -445,6 +490,11 @@ def _get_chargepoint_pv_charging_min_current(daemon, id_):
     return _comp_scalar('chargepoint', id_, 'pv_charging_min_current', _as_float(min_current))
 
 
+def _get_chargepoint_limit(daemon, id_):
+    limit = _raw(daemon, f"openWB/chargepoint/{id_}/control_parameter/limit")
+    return _comp_scalar('chargepoint', id_, 'limit', _parse_limit(limit))
+
+
 def _get_counter(daemon, id_):
     prefix = f"openWB/counter/{id_}/get/"
     return {
@@ -455,6 +505,7 @@ def _get_counter(daemon, id_):
             'powers': _phases(_raw(daemon, prefix + 'powers')),
             'power_factors': _phases(_raw(daemon, prefix + 'power_factors')),
             'frequency': _as_float(_raw(daemon, prefix + 'frequency'), 50.0),
+            'local_power': _as_float(_raw(daemon, prefix + 'local_power')),
             'exported': _as_float(_raw(daemon, prefix + 'exported')),
             'daily_exported': _as_float(_raw(daemon, prefix + 'daily_exported')),
             'imported': _as_float(_raw(daemon, prefix + 'imported')),
@@ -479,6 +530,9 @@ def _get_battery(daemon, id_):
             'fault_str': _as_str(_raw(daemon, prefix + 'fault_str'), 'Kein Fehler'),
             'fault_state': _as_int(_raw(daemon, prefix + 'fault_state')),
             'power_limit_controllable': _as_bool(_raw(daemon, prefix + 'power_limit_controllable')),
+            'state_str': _as_str(_raw(daemon, prefix + 'state_str'), ''),
+            'max_charge_power': _as_float(_raw(daemon, prefix + 'max_charge_power')),
+            'max_discharge_power': _as_float(_raw(daemon, prefix + 'max_discharge_power')),
         }
     }
 
@@ -516,6 +570,12 @@ def _get_consumer_all(daemon, id_):
             'phases_in_use': _as_int(_raw(daemon, prefix + 'phases_in_use')),
             'charge_state': _as_bool(_raw(daemon, prefix + 'charge_state')),
             'state_str': _as_str(_raw(daemon, prefix + 'state_str'), None),
+            'plug_state': _as_bool(_raw(daemon, prefix + 'plug_state')),
+            'set_power': _opt_float(_raw(daemon, prefix + 'set_power')),
+            'state': _as_bool(_raw(daemon, prefix + 'state')),
+            'temperatures': _float_list(_raw(daemon, prefix + 'temperatures')),
+            'rfid': _as_str(_raw(daemon, prefix + 'rfid'), None),
+            'rfid_timestamp': _raw(daemon, prefix + 'rfid_timestamp'),
             'fault_str': _as_str(_raw(daemon, prefix + 'fault_str'), 'Kein Fehler'),
             'fault_state': _as_int(_raw(daemon, prefix + 'fault_state')),
         }
@@ -533,6 +593,25 @@ def _get_io_output_all(daemon, id_):
         f"io_{id_}": {
             'digital_output': daemon._get_io_output_map(id_, 'digital_output'),
             'analog_output': daemon._get_io_output_map(id_, 'analog_output'),
+        }
+    }
+
+
+def _get_home_consumption(daemon, id_):
+    return {
+        'home_consumption': {
+            'power': _as_float(_raw(daemon, 'openWB/counter/set/home_consumption')),
+            'daily_imported': _as_float(_raw(daemon, 'openWB/counter/set/daily_yield_home_consumption')),
+            'imported': _as_float(_raw(daemon, 'openWB/counter/set/imported_home_consumption')),
+        }
+    }
+
+
+def _get_io_input_all(daemon, id_):
+    return {
+        f"io_{id_}": {
+            'digital_input': daemon._get_io_output_map(id_, 'digital_input'),
+            'analog_input': daemon._get_io_output_map(id_, 'analog_input'),
         }
     }
 
@@ -574,6 +653,7 @@ def _build_scalar_read_dispatch() -> Dict[str, Callable[..., Dict[str, Any]]]:
 READ_DISPATCH: Dict[str, Callable[..., Dict[str, Any]]] = {
     'get_chargepoint_all': _get_chargepoint_all,
     **_build_scalar_read_dispatch(),
+    'get_chargepoint_limit': _get_chargepoint_limit,
     'get_chargepoint_config_name': _get_chargepoint_config_name,
     'get_chargepoint_connected_vehicle_name': _get_chargepoint_connected_vehicle_name,
     'get_chargepoint_charge_template_name': _get_chargepoint_charge_template_name,
@@ -591,6 +671,8 @@ READ_DISPATCH: Dict[str, Callable[..., Dict[str, Any]]] = {
     'get_consumer_usage_type': _get_consumer_usage_type,
     'get_io_output_all': _get_io_output_all,
     'get_io_output': _get_io_output,
+    'get_io_input_all': _get_io_input_all,
+    'get_home_consumption': _get_home_consumption,
 }
 
 # Read handlers that need the request's io_output/io_output_type options in
@@ -616,6 +698,85 @@ WRITE_DISPATCH: Dict[str, Callable[..., Tuple[bool, str]]] = {
     'manual_soc': lambda d, v, i, o: d._set_manual_soc(i, v),
     'set_io_output': lambda d, v, i, o: d._set_io_output(i, v, o.get('io_output'), o.get('io_output_type')),
 }
+
+
+class _RecordingCache:
+    """dict-like read-only wrapper that remembers every topic a handler asked for."""
+
+    def __init__(self, source: Dict[str, Any], topics: set):
+        self._source = source
+        self._topics = topics
+
+    def get(self, topic: str, default: Any = None) -> Any:
+        if topic in self._source:
+            self._topics.add(topic)
+        return self._source.get(topic, default)
+
+
+class _RecordingTemplates:
+    def __init__(self, source: Dict[str, Any], topics: set):
+        self._source = source
+        self._topics = topics
+
+    def get(self, chargepoint_id: str, default: Any = None) -> Any:
+        topic = f"openWB/chargepoint/{chargepoint_id}/set/charge_template"
+        if chargepoint_id in self._source:
+            self._topics.add(topic)
+        return self._source.get(chargepoint_id, default)
+
+
+class ReadView:
+    """Per-request stand-in for the daemon in the read handlers. It records the openWB topics behind the
+    values that are returned, so the caller's broker permissions can be checked for exactly those topics."""
+
+    def __init__(self, daemon: Any):
+        self.topics: set = set()
+        # (aggregate topic, per-ID topics): a total is readable with the sum role (e.g. chargepoint-sum-access) or
+        # with the roles of all single components
+        self.alternatives: List[Tuple[str, set]] = []
+        self.lowest_ids = daemon.lowest_ids
+        self.all_ids = daemon.all_ids
+        self.total_sums = daemon.total_sums
+        self.raw_value_cache = _RecordingCache(daemon.raw_value_cache, self.topics)
+        self.charge_template_cache = _RecordingTemplates(daemon.charge_template_cache, self.topics)
+        self._normalize_io_output_type = daemon._normalize_io_output_type
+        self._source = daemon
+
+    def _get_io_output_map(self, io_id: Any, output_type: str) -> Dict[str, Any]:
+        value = self.raw_value_cache.get(f"openWB/io/states/{io_id}/get/{output_type}")
+        return value if isinstance(value, dict) else {}
+
+    def record_total(self, component: str, field: str) -> None:
+        # totals are sums over every ID of a component type, so every contributing topic is read
+        pattern = re.compile(rf"^openWB/{re.escape(component)}/\d+/get/{re.escape(field)}$")
+        per_id = {t for t in list(self._source.raw_value_cache) if pattern.match(t)}
+        self.alternatives.append((f"openWB/{component}/get/{field}", per_id))
+
+    def probe_topics(self) -> set:
+        """Every topic the caller's permissions have to be tested for."""
+        probe = set(self.topics)
+        for aggregate, per_id in self.alternatives:
+            probe.add(aggregate)
+            probe.update(per_id)
+        return probe
+
+    def blocking_topics(self, denied: set) -> List[str]:
+        """The topics that keep the caller from reading the whole response, given the denied ones."""
+        blocking = [t for t in self.topics if t in denied]
+        for aggregate, per_id in self.alternatives:
+            aggregate_ok = aggregate in self._source.raw_value_cache and aggregate not in denied
+            if not aggregate_ok and (denied & per_id or not per_id):
+                blocking.append(aggregate)
+        return sorted(blocking)
+
+    def record_components(self) -> None:
+        # an ID is visible if one of its get topics is; one per ID is enough
+        for type_, ids in self.all_ids.items():
+            for id_ in ids:
+                prefix = f"openWB/io/states/{id_}/get/" if type_ == 'io' else f"openWB/{type_}/{id_}/get/"
+                topics = sorted(t for t in list(self._source.raw_value_cache) if t.startswith(prefix))
+                if topics:
+                    self.topics.add(topics[0])
 
 
 def list_components(daemon: Any) -> Dict[str, List[int]]:
@@ -715,7 +876,9 @@ def dispatch_read(
 
     for param, id_ in read_params.items():
         resolved_id = id_
-        if id_ in ('auto', ''):
+        if param in GLOBAL_READ_PARAMETERS:
+            pass
+        elif id_ in ('auto', ''):
             type_ = get_type_from_parameter(param)
             resolved_id = ph.daemon.lowest_ids.get(type_)
             if resolved_id is None:

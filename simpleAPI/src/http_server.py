@@ -8,8 +8,10 @@ from typing import Any, Dict
 from urllib.parse import parse_qs, urlsplit
 
 from .authenticator import AuthConfig, Authenticator
+from .broker_access import BrokerAccess, Principal
 from .parameter_handler import (
     ParameterHandler,
+    ReadView,
     dispatch_read,
     dispatch_write,
     extract_read_params,
@@ -86,20 +88,56 @@ class SimpleAPIRequestHandler(BaseHTTPRequestHandler):
         merged = {**get_params, **post_params}
         self._handle(merged)
 
+    def _deny_unreadable(self, principal: Principal, view: ReadView, debug: bool) -> bool:
+        """Answers 403 and returns True if the caller may not read every topic behind the response."""
+        denied = set(self.server.broker_access.denied_topics(principal, view.probe_topics()))
+        denied = view.blocking_topics(denied)
+        if not denied:
+            return False
+        log.info(f"simpleAPI read denied for user '{principal.username or 'anonymous'}': {denied[:3]}")
+        body = {'success': False, 'message': 'Permission denied'}
+        if debug:
+            body['denied_topics'] = denied
+        self._send(403, body)
+        return True
+
+    def _write_as(self, principal: Principal, write_params: Dict[str, Any], params: Dict[str, str]) -> Dict[str, Any]:
+        """Runs the write with the caller's own broker connection, so the broker's ACLs decide."""
+        try:
+            session = self.server.broker_access.open_session(principal)
+        except PermissionError as exc:
+            return {'success': False, 'message': str(exc)}
+        try:
+            with self.server.daemon_ref.publish_as(session):
+                return dispatch_write(self.server.parameter_handler, write_params, params)
+        finally:
+            session.close()
+
     def _handle(self, params: Dict[str, str]):
         debug = bool(self.server.config.get('debug', False)) or params.get('debug') == 'true'
         try:
-            if not self.server.authenticator.authenticate(params, self._bearer_token(), self._is_https()):
+            principal = self.server.authenticator.authenticate(params, self._bearer_token(), self._is_https())
+            if principal is None:
                 self._send(401, {'success': False, 'message': 'Authentication failed'})
                 return
+            enforce_acl = self.server.enforces_broker_acl(principal)
 
             if 'list_components' in params:
-                self._send(200, self.server.parameter_handler.list_components())
+                view = ReadView(self.server.daemon_ref)
+                result = ParameterHandler(view).list_components()
+                if enforce_acl:
+                    view.record_components()
+                    if self._deny_unreadable(principal, view, debug):
+                        return
+                self._send(200, result)
                 return
 
             write_params = extract_write_params(params)
             if write_params:
-                result = dispatch_write(self.server.parameter_handler, write_params, params)
+                if enforce_acl:
+                    result = self._write_as(principal, write_params, params)
+                else:
+                    result = dispatch_write(self.server.parameter_handler, write_params, params)
                 if params.get('raw') == 'true':
                     text = 'OK' if result['success'] else f"ERROR: {result.get('message', 'Unknown error')}"
                     self._send(200, text, raw=True)
@@ -109,7 +147,10 @@ class SimpleAPIRequestHandler(BaseHTTPRequestHandler):
 
             read_params = extract_read_params(params)
             if read_params:
-                result, debug_info = dispatch_read(self.server.parameter_handler, read_params, params, debug)
+                view = ReadView(self.server.daemon_ref)
+                result, debug_info = dispatch_read(ParameterHandler(view), read_params, params, debug)
+                if enforce_acl and self._deny_unreadable(principal, view, debug):
+                    return
                 if debug and debug_info:
                     result = {'debug_info': debug_info, **result}
 
@@ -151,13 +192,19 @@ class SimpleAPIRequestHandler(BaseHTTPRequestHandler):
 
 class SimpleAPIServer(ThreadingHTTPServer):
     def __init__(self, server_address, daemon, parameter_handler: ParameterHandler,
-                 authenticator: Authenticator, config: Dict):
+                 authenticator: Authenticator, broker_access: BrokerAccess, config: Dict):
         super().__init__(server_address, SimpleAPIRequestHandler)
         self.daemon_ref = daemon
         self.parameter_handler = parameter_handler
         self.authenticator = authenticator
+        self.broker_access = broker_access
         self.config = config
         self.api_config = config.get('api', {})
+
+    def enforces_broker_acl(self, principal: Principal) -> bool:
+        """Broker users are limited to what the broker lets them see and change. Without user management the
+        broker grants everything anyway, so the extra round trips are skipped - but only once that is known."""
+        return not principal.trusted and self.daemon_ref.user_management_active is not False
 
 
 def build_http_server(daemon, config: Dict) -> SimpleAPIServer:
@@ -166,13 +213,15 @@ def build_http_server(daemon, config: Dict) -> SimpleAPIServer:
     port = http_config.get('port', 8099)
 
     auth_config = AuthConfig.from_dict(config.get('auth', {}))
-    mqtt_params = {
-        'host': config['host'],
-        'port': config['port'],
-        'use_tls': config['use_tls'],
-        'validate_cert': config.get('validate_cert', False),
-    }
-    authenticator = Authenticator(auth_config, mqtt_params)
+    broker_access = BrokerAccess.from_config(config.get('auth', {}).get('broker', {}))
+
+    def broker_login(username: str, password: str) -> bool:
+        # without user management the broker accepts everybody, so there is nothing to ask it
+        if daemon.user_management_active is False:
+            return True
+        return broker_access.check_credentials(username, password)
+
+    authenticator = Authenticator(auth_config, broker_login)
     parameter_handler = ParameterHandler(daemon)
 
-    return SimpleAPIServer((host, port), daemon, parameter_handler, authenticator, config)
+    return SimpleAPIServer((host, port), daemon, parameter_handler, authenticator, broker_access, config)

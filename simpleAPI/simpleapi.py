@@ -7,9 +7,11 @@ Listens to openWB/* topics and republishes them under openWB/simpleAPI/*
 with JSON/tuple expansion and ID simplification.
 """
 
+import contextlib
 import json
 import logging
 from logging.handlers import RotatingFileHandler
+import threading
 import time
 import sys
 import ssl
@@ -31,6 +33,8 @@ file_handler = RotatingFileHandler(RAMDISK_PATH + 'simple_api.log', maxBytes=500
 file_handler.setFormatter(logging.Formatter(FORMAT_STR_SHORT))
 log.addHandler(file_handler)
 
+HIERARCHY_TOPIC = "openWB/counter/get/hierarchy"
+USER_MANAGEMENT_TOPIC = "openWB/system/security/user_management_active"
 CONFIG_FILE_PATH = "/var/www/html/openWB/data/config/simpleapi_config.json"
 
 
@@ -46,6 +50,10 @@ class SimpleMQTTDaemon:
 
         # Cache for tracking lowest IDs per component type
         self.lowest_ids: Dict[str, int] = {}
+
+        # Component types whose "primary" ID is not simply the lowest one (counter: the grid counter, first entry
+        # of openWB/counter/get/hierarchy) - the ID that "auto" and the ID-less simpleAPI topics refer to
+        self.primary_ids: Dict[str, int] = {}
 
         # Cache of every known ID per component type (used for list_components
         # and as the basis for lowest_ids)
@@ -73,6 +81,12 @@ class SimpleMQTTDaemon:
             component: {metric: 0.0 for metric in metrics}
             for component, metrics in self.total_metrics.items()
         }
+
+        # Set by the HTTP request thread while a write runs with the caller's own broker connection
+        self._request_publisher = threading.local()
+
+        # openWB/system/security/user_management_active; None until the retained value has arrived
+        self.user_management_active: Optional[bool] = None
 
         # MQTT client setup
         self.client = mqtt.Client()
@@ -135,6 +149,7 @@ class SimpleMQTTDaemon:
             client.subscribe("openWB/counter/#", qos=0)
             client.subscribe("openWB/consumer/#", qos=0)
             client.subscribe("openWB/io/#", qos=0)
+            client.subscribe(USER_MANAGEMENT_TOPIC, qos=0)
 
             # Subscribe to simpleAPI set topics for write operations
             client.subscribe("openWB/simpleAPI/set/#", qos=0)
@@ -183,6 +198,10 @@ class SimpleMQTTDaemon:
 
             log.debug(f"Received: {topic} = {payload}")
 
+            if topic == USER_MANAGEMENT_TOPIC:
+                self.user_management_active = self._parse_payload(payload) is True
+                return
+
             # Handle write operations (simpleAPI set topics)
             if topic.startswith('openWB/simpleAPI/set/'):
                 self._handle_write_operation(topic, payload)
@@ -201,6 +220,9 @@ class SimpleMQTTDaemon:
 
             # Raw per-topic cache backing the simpleAPI HTTP read parameters
             self.raw_value_cache[topic] = parsed_payload
+
+            if topic == HIERARCHY_TOPIC:
+                self._update_grid_counter(parsed_payload)
 
             # Update aggregated total topics from component ID metrics
             self._update_total_topics(topic, parsed_payload)
@@ -223,6 +245,23 @@ class SimpleMQTTDaemon:
 
         except Exception as e:
             log.error(f"Error transforming topic {original_topic}: {e}")
+
+    def _update_grid_counter(self, hierarchy: Any):
+        """Make the grid counter the primary counter. openWB only guarantees it to be the first hierarchy entry,
+        not to have the lowest ID."""
+        if not (isinstance(hierarchy, list) and hierarchy and isinstance(hierarchy[0], dict)
+                and hierarchy[0].get('type') == 'counter' and isinstance(hierarchy[0].get('id'), int)):
+            return
+        grid_id = hierarchy[0]['id']
+        if self.primary_ids.get('counter') == grid_id:
+            return
+        self.primary_ids['counter'] = grid_id
+        self.lowest_ids['counter'] = grid_id
+        self.all_ids.setdefault('counter', set()).add(grid_id)
+        # the ID-less topics so far belonged to the old primary counter
+        for topic, value in list(self.raw_value_cache.items()):
+            if topic.startswith(f"openWB/counter/{grid_id}/"):
+                self._transform_and_publish(topic, value)
 
     def _update_total_topics(self, original_topic: str, parsed_value: Any):
         """Maintain and publish aggregated total topics from all numeric component IDs."""
@@ -433,6 +472,8 @@ class SimpleMQTTDaemon:
 
     def _register_component_id(self, component_type: str, component_id: int):
         self.all_ids.setdefault(component_type, set()).add(component_id)
+        if component_type in self.primary_ids:
+            return
         if component_type not in self.lowest_ids:
             self.lowest_ids[component_type] = component_id
         else:
@@ -640,6 +681,10 @@ class SimpleMQTTDaemon:
                 success = self._handle_chargepoint_operation(topic_parts, payload)
                 if success:
                     self._clear_set_topic(topic)
+            elif operation == 'io':
+                success = self._handle_io_operation(topic_parts, payload)
+                if success:
+                    self._clear_set_topic(topic)
             elif operation == 'bat_mode':
                 success, _ = self._handle_bat_mode_operation(payload)
                 if success:
@@ -695,10 +740,37 @@ class SimpleMQTTDaemon:
             success, _ = self._set_max_price_eco(chargepoint_id, payload)
         elif parameter == 'chargepoint_lock':
             success, _ = self._set_chargepoint_lock(chargepoint_id, payload)
+        elif parameter == 'vehicle':
+            success, _ = self._set_vehicle(chargepoint_id, payload)
+        elif parameter == 'manual_soc':
+            success, _ = self._set_manual_soc(chargepoint_id, payload)
         else:
             log.error(f"Unknown chargepoint parameter: {parameter}")
             return False
 
+        return success
+
+    def _handle_io_operation(self, topic_parts: list, payload: str) -> bool:
+        """Set an IO output: io/[<id>/][digital_output|analog_output/]<name>, the ID defaults to the lowest one."""
+        parts = topic_parts[1:]
+        if parts and parts[0].isdigit():
+            io_id = parts[0]
+            parts = parts[1:]
+        elif 'io' in self.lowest_ids:
+            io_id = str(self.lowest_ids['io'])
+        else:
+            log.error("No io ID found and no lowest ID available")
+            return False
+
+        output_type = None
+        if len(parts) == 2 and self._normalize_io_output_type(parts[0]) is not None:
+            output_type = parts[0]
+            parts = parts[1:]
+        if len(parts) != 1:
+            log.error(f"Invalid io topic format: {'/'.join(topic_parts)}")
+            return False
+
+        success, _ = self._set_io_output(io_id, payload, parts[0], output_type)
         return success
 
     def _get_charge_template(self, chargepoint_id: str) -> Optional[Dict[str, Any]]:
@@ -835,7 +907,7 @@ class SimpleMQTTDaemon:
             lock_value = str(lock_state).lower() in ('true', '1', 'yes', 'on')
             target_topic = f"openWB/set/chargepoint/{chargepoint_id}/set/manual_lock"
 
-            self.client.publish(target_topic, str(lock_value).lower(), qos=0, retain=True)
+            self._publish(target_topic, str(lock_value).lower())
             log.info(f"Set chargepoint {chargepoint_id} lock to {lock_value}")
             return True, f"Chargepoint lock set to {lock_value} for chargepoint {chargepoint_id}"
         except Exception as e:
@@ -853,7 +925,7 @@ class SimpleMQTTDaemon:
             return False, message
 
         target_topic = "openWB/set/general/chargemode_config/bat/mode"
-        self.client.publish(target_topic, payload, qos=0, retain=True)
+        self._publish(target_topic, payload)
         log.info(f"Set bat_mode to {payload}")
         return True, f"Bat mode set to {payload}"
 
@@ -879,7 +951,7 @@ class SimpleMQTTDaemon:
             return False, message
 
         target_topic = "openWB/set/general/chargemode_config/bat/power_reserve"
-        self.client.publish(target_topic, watts, qos=0, retain=True)
+        self._publish(target_topic, watts)
         log.info(f"Set bat_power_reserve to {watts}W")
         return True, f"bat_power_reserve set to {watts}W"
 
@@ -1018,12 +1090,32 @@ class SimpleMQTTDaemon:
         """Handle PV charging limit amount operation."""
         return self._set_charging_limit_amount('pv_charging', 'PV charging', payload, chargepoint_id)
 
+    def _publish(self, topic: str, payload: Any) -> None:
+        """Publish a write operation - through the caller's own broker connection if the request runs
+        with one (see publish_as), otherwise through the daemon's connection."""
+        publisher = getattr(self._request_publisher, 'session', None)
+        if publisher is not None:
+            publisher.publish(topic, payload, retain=True)
+        else:
+            self.client.publish(topic, payload, qos=0, retain=True)
+
+    @contextlib.contextmanager
+    def publish_as(self, session):
+        """Run the write handlers of the current thread with the caller's broker permissions."""
+        self._request_publisher.session = session
+        try:
+            yield
+        finally:
+            self._request_publisher.session = None
+
     def _publish_json(self, topic: str, data: Dict[str, Any]):
         """Publish JSON data to a topic."""
         try:
             json_payload = json.dumps(data)
-            self.client.publish(topic, json_payload, qos=0, retain=True)
+            self._publish(topic, json_payload)
             log.debug(f"Published JSON to {topic}")
+        except PermissionError:
+            raise
         except Exception as e:
             log.error(f"Failed to publish JSON to {topic}: {e}")
 
@@ -1051,7 +1143,7 @@ class SimpleMQTTDaemon:
             return False, message
 
         topic = f"openWB/set/chargepoint/{chargepoint_id}/config/ev"
-        self.client.publish(topic, str(vehicle_id), qos=0, retain=True)
+        self._publish(topic, str(vehicle_id))
         log.info(f"Assigned vehicle {vehicle_id} to chargepoint {chargepoint_id}")
         return True, f"Vehicle {vehicle_id} assigned to chargepoint {chargepoint_id}"
 
@@ -1075,7 +1167,7 @@ class SimpleMQTTDaemon:
             return False, message
 
         topic = f"openWB/set/vehicle/{vehicle_id}/soc_module/calculated_soc_state/manual_soc"
-        self.client.publish(topic, str(soc), qos=0, retain=True)
+        self._publish(topic, str(soc))
         log.info(f"Set manual SoC to {soc}% for vehicle {vehicle_id} (chargepoint {chargepoint_id})")
         return True, f"Manual SoC set to {soc}% for vehicle {vehicle_id} (chargepoint {chargepoint_id})"
 
@@ -1148,7 +1240,7 @@ class SimpleMQTTDaemon:
             payload = '1' if parsed_value is True else '0' if parsed_value is False else str(parsed_value)
 
         topic = f"openWB/set/system/io/{io_id}/set/manual/{normalized_type}/{output_name}"
-        self.client.publish(topic, payload, qos=0, retain=True)
+        self._publish(topic, payload)
         log.info(f"Set {normalized_type}/{output_name} to {payload} for io {io_id}")
         return True, f"Set {normalized_type}/{output_name} to {payload} for io {io_id}"
 
