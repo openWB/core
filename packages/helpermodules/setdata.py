@@ -1349,6 +1349,8 @@ class SetData:
                     "openWB/set/consumer/get/daily_imported" in msg.topic or
                     "openWB/set/consumer/get/daily_exported" in msg.topic):
                 self._validate_value(msg, float)
+            elif re.search("openWB/set/consumer/[0-9]+/config$", msg.topic) is not None:
+                self._validate_value(msg, "json")
             elif subdata.SubData.consumer_data.get(f"consumer{get_index(msg.topic)}"):
                 if (re.search("openWB/set/consumer/[0-9]+/module$", msg.topic) is not None or
                     re.search("openWB/set/consumer/[0-9]+/module/simulation$", msg.topic) is not None or
