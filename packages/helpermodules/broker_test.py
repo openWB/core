@@ -120,9 +120,10 @@ def test_collecting_after_complete_data_is_limited_by_timeout(fake_client):
     received = broker.publish_and_collect(
         "10.0.0.5", 1883, MESSAGES, "x/get/#", lambda topics: "x/get/t0" in topics, timeout=0.3, settle=0.1)
 
-    assert time.monotonic() - start < 0.6
+    elapsed = time.monotonic() - start
+    assert 0.25 <= elapsed < 0.6
     assert "x/get/t0" in received
-    assert len(received) < 40
+    assert 5 <= len(received) < 40
 
 
 def test_returns_partial_data_after_timeout(fake_client):
