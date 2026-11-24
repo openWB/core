@@ -48,14 +48,17 @@ class UpdateState:
         self.hierarchy_id = hierarchy_id
 
     def update_state(self, data: InternalChargepoint, heartbeat_expired: bool) -> None:
-        if heartbeat_expired:
-            set_current = 0
-        else:
-            set_current = data.set_current
         log.debug(f"Values from parentWB: {data}")
 
         # Während eines Entriegelungsauftrags keine Stromvorgaben oder Umschaltungen ausführen.
         if self.handle_unlock():
+            return
+
+        # Bei Kommunikationsverlust auch während einer CP-Unterbrechung stoppen.
+        # Weitere Hardwareaufträge erst wieder mit gültigem Heartbeat bearbeiten.
+        if heartbeat_expired:
+            self.cp_module.set_current(0)
+            Pub().pub(f"openWB/set/chargepoint/{self.hierarchy_id}/set/current", payload=0)
             return
 
         if self.phase_switch_thread:
@@ -68,19 +71,20 @@ class UpdateState:
                 log.debug("Thread zur CP-Unterbrechung an LP"+str(self.cp_module.local_charge_point_num) +
                           " noch aktiv. Es muss erst gewartet werden, bis die CP-Unterbrechung abgeschlossen ist.")
                 return
-        self.cp_module.set_current(set_current)
+        self.cp_module.set_current(data.set_current)
         if getattr(self.cp_module, "unlock_blocked", False):
             # Socket erzwingt lokal 0 A. Auch nach Thread-Ende bleiben weitere
             # Hardwareaktionen bis zum sicher erkannten Abstecken gesperrt.
             Pub().pub(f"openWB/set/chargepoint/{self.hierarchy_id}/set/current", payload=0)
             return
-        Pub().pub(f"openWB/set/chargepoint/{self.hierarchy_id}/set/current", payload=set_current)
+        Pub().pub(f"openWB/set/chargepoint/{self.hierarchy_id}/set/current", payload=data.set_current)
         if data.trigger_phase_switch:
             log.debug("Switch Phases from "+str(self.old_phases_to_use) + " to " + str(data.phases_to_use))
             self.__thread_phase_switch(data.phases_to_use)
             Pub().pub(
                 f"openWB/set/internal_chargepoint/{self.cp_module.local_charge_point_num}/data/trigger_phase_switch",
                 False)
+            return
 
         if data.cp_interruption_duration > 0:
             self.__thread_cp_interruption(data.cp_interruption_duration)
@@ -242,11 +246,6 @@ class InternalChargepointHandler:
         def _loop():
             while True:
                 if self.event_stop.is_set():
-                    # Entriegelung beenden lassen, bevor der Hardware-Client geschlossen
-                    # oder der Handler neu erzeugt wird.
-                    for cp in (self.cp0, self.cp1):
-                        if cp and cp.update_state.unlock_thread:
-                            cp.update_state.unlock_thread.join()
                     break
                 # Während der Entriegelung gehört der Hardware-Client dem Unlock-Thread.
                 # Auch andere interne Ladepunkte pausieren, da sie denselben Bus nutzen können.
@@ -291,7 +290,18 @@ class InternalChargepointHandler:
             with ExitStack() as stack:
                 for client in clients:
                     stack.enter_context(client)
-                _loop()
+                try:
+                    _loop()
+                finally:
+                    # Hardwareaufträge auch bei Fehlern beenden lassen, bevor Clients
+                    # geschlossen werden oder ein neuer Handler Stellbefehle sendet.
+                    for cp in (self.cp0, self.cp1):
+                        if cp:
+                            for thread in (cp.update_state.unlock_thread,
+                                           cp.update_state.phase_switch_thread,
+                                           cp.update_state.cp_interruption_thread):
+                                if thread:
+                                    thread.join()
 
 
 class HandlerChargepoint:

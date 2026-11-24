@@ -82,6 +82,6 @@ class ProPlus(ChargepointModule):
     def perform_cp_interruption(self, duration: int) -> None:
         with SingleComponentUpdateContext(self.fault_state, update_always=False):
             super().interrupt_cp(duration)
-            # Die Pro-API startet nur den geräteinternen Timer. Den Thread für die
-            # gesamte Unterbrechung aktiv halten, damit keine Stellbefehle eingreifen.
-            time.sleep(duration)
+        # Auch bei einer fehlenden Antwort kann der geräteinterne Timer bereits laufen.
+        # Den Thread für die gesamte Unterbrechung aktiv halten, damit keine Stellbefehle eingreifen.
+        time.sleep(duration)

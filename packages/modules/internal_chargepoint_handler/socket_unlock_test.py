@@ -288,12 +288,13 @@ def test_unlock_worker_returns_failure_on_hardware_exception(hardware, monkeypat
 
 def test_loop_skips_shared_bus_chargepoint_and_joins_unlock_before_shutdown(monkeypatch):
     runner = object.__new__(handler.InternalChargepointHandler)
-    state = SimpleNamespace(unlock_thread=None)
+    state = SimpleNamespace(unlock_thread=None, phase_switch_thread=None, cp_interruption_thread=None)
     thread = Mock(is_alive=Mock(return_value=True))
     runner.cp0 = SimpleNamespace(
         mode=handler.InternalChargepointMode.PRO_PLUS, update_state=state,
         update=Mock(side_effect=lambda *args: setattr(state, "unlock_thread", thread)))
-    runner.cp1 = SimpleNamespace(update=Mock(), update_state=SimpleNamespace(unlock_thread=None))
+    runner.cp1 = SimpleNamespace(update=Mock(), update_state=SimpleNamespace(
+        unlock_thread=None, phase_switch_thread=None, cp_interruption_thread=None))
     runner.event_stop = Mock(is_set=Mock(side_effect=[False, True]))
     runner.fault_state_info_cp0 = Mock()
     monkeypatch.setattr(handler, "SingleComponentUpdateContext", lambda *args, **kwargs: nullcontext())
