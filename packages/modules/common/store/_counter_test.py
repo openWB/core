@@ -44,7 +44,8 @@ def test_counter_sustained_read_error_zeroes_and_publishes_without_hierarchy(pri
     component = Mock(store=store, fault_state=FaultState(ComponentInfo(9, "HTTP-Zähler", "counter")))
     _wire_sustained_error_handler(component)
     if prior_read:
-        store.set(CounterState(power=1234, imported=100, exported=50))
+        store.set(CounterState(power=1234, imported=100, exported=50,
+                               powers=[230, 460, 544], currents=[1, 2, 2.4], voltages=[229, 230, 231]))
 
     with SingleComponentUpdateContext(component.fault_state):
         raise Exception("HTTP 404")
@@ -56,22 +57,29 @@ def test_counter_sustained_read_error_zeroes_and_publishes_without_hierarchy(pri
 
     assert store.delegate.delegate.state.power == 0
     mock_pub.pub.assert_any_call("openWB/set/counter/9/get/power", 0)
+    mock_pub.pub.assert_any_call("openWB/set/counter/9/get/powers", [0.0]*3)
+    mock_pub.pub.assert_any_call("openWB/set/counter/9/get/currents", [0.0]*3)
     if prior_read:
         assert store.delegate.delegate.state.imported == 100
         assert store.delegate.delegate.state.exported == 50
+        assert store.delegate.delegate.state.voltages == [229, 230, 231]
 
     # Ein erfolgreicher neuer Abruf ersetzt die Nullung wieder durch den Messwert.
     with SingleComponentUpdateContext(component.fault_state):
-        store.set(CounterState(power=789, imported=101, exported=50))
+        store.set(CounterState(power=789, imported=101, exported=50,
+                               powers=[230, 230, 329], currents=[1, 1, 1.4]))
     update_values(component)
     assert store.delegate.delegate.state.power == 789
     mock_pub.pub.assert_any_call("openWB/set/counter/9/get/power", 789)
+    mock_pub.pub.assert_any_call("openWB/set/counter/9/get/powers", [230, 230, 329])
+    mock_pub.pub.assert_any_call("openWB/set/counter/9/get/currents", [1, 1, 1.4])
 
 
 def test_counter_zeroes_power_after_virtual_calculation(monkeypatch, mock_pub):
     store = _counter.get_counter_value_store(9, add_child_values=True)
     store.set(CounterState(power=1234))
-    calc_virtual = Mock(return_value=CounterState(power=5678, imported=100, exported=50))
+    calc_virtual = Mock(return_value=CounterState(power=5678, imported=100, exported=50,
+                                                  powers=[1000, 2000, 2678], currents=[4, 8, 12]))
     monkeypatch.setattr(store, "calc_virtual", calc_virtual)
 
     store.zero_power_on_sustained_error()
@@ -79,6 +87,8 @@ def test_counter_zeroes_power_after_virtual_calculation(monkeypatch, mock_pub):
 
     calc_virtual.assert_called_once()
     assert store.delegate.delegate.state.power == 0
+    assert store.delegate.delegate.state.powers == [0.0]*3
+    assert store.delegate.delegate.state.currents == [0.0]*3
     assert store.delegate.delegate.state.imported == 100
     assert store.delegate.delegate.state.exported == 50
     mock_pub.pub.assert_any_call("openWB/set/counter/9/get/power", 0)

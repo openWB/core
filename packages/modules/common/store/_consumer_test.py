@@ -94,7 +94,7 @@ def test_extra_meter_forwards_fault_only_when_consumer_module_healthy(consumer_f
     expected_state = counter_fault if consumer_fault == FaultStateLevel.NO_ERROR else consumer_fault
     expected_str = "Zählerstatus" if consumer_fault == FaultStateLevel.NO_ERROR else "Verbraucherstatus"
     if consumer_fault == FaultStateLevel.NO_ERROR and counter_fault != FaultStateLevel.NO_ERROR:
-        expected_str = f"Verknüpfter Zähler 9: {fault_state.fault_str}"
+        expected_str = f"Verknüpfter Zähler: {fault_state.fault_str}"
     assert consumer_fault_state.fault_state == expected_state
     assert consumer_fault_state.fault_str == expected_str
     assert fault_state.fault_str == "Zählerstatus"

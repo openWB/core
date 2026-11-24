@@ -64,6 +64,8 @@ class PurgeCounterState:
         if self.zeroed_on_sustained_error:
             # Erst nach der virtuellen Berechnung nullen, damit sie die Nullung nicht aufhebt.
             state.power = 0
+            state.powers = [0.0]*3
+            state.currents = [0.0]*3
             self.zeroed_on_sustained_error = False
         self.delegate.delegate.set(state)  # Logging in update Methode
         self.delegate.update()
