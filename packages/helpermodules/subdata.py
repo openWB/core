@@ -807,10 +807,26 @@ class SubData:
                     self.set_json_payload_class(var.data.ocpp, msg)
                 elif re.search("/optional/int_display/", msg.topic) is not None:
                     self.set_json_payload_class(var.data.int_display, msg)
-                    if re.search("/(standby|active|rotation|detected)$", msg.topic) is not None:
-                        # some topics require an update of the display manager or boot settings
+                    action = msg.topic.split("/")[-1]
+                    if action == "standby":
                         run_command([
-                            str(Path(__file__).resolve().parents[2] / "runs" / "update_local_display.sh")
+                            str(Path(__file__).resolve().parents[2] / "runs" / "display" / "update_standby.sh")
+                        ], process_exception=True)
+                    elif action == "active":
+                        run_command([
+                            str(Path(__file__).resolve().parents[2] / "runs" / "display" / "update_state.sh")
+                        ], process_exception=True)
+                    elif action == "rotation":
+                        run_command([
+                            str(Path(__file__).resolve().parents[2] / "runs" / "display" / "update_rotation.sh")
+                        ], process_exception=True)
+                    elif action == "detected":
+                        run_command([
+                            str(Path(__file__).resolve().parents[2] / "runs" / "display" / "update_state.sh")
+                        ], process_exception=True)
+                    elif action == "theme":
+                        run_command([
+                            str(Path(__file__).resolve().parents[2] / "runs" / "display" / "update_autostart.sh"), "1"
                         ], process_exception=True)
                 elif re.search("/optional/ep/(flexible_tariff|grid_fee)/", msg.topic) is not None:
                     if re.search("/optional/ep/flexible_tariff/provider$", msg.topic) is not None:

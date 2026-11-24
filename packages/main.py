@@ -258,7 +258,7 @@ class HandlerAlgorithm:
         log.warning("Display wird neu geladen.")  # nur zur Info im Log
         # chromium neu starten, um größere Auswirkungen eines Speicherlecks zu vermeiden
         run_command.run_command([
-            str(Path(__file__).resolve().parents[1] / "runs" / "update_local_display.sh"), "1"
+            str(Path(__file__).resolve().parents[1] / "runs" / "display" / "update_autostart.sh"), "1"
         ], process_exception=True)
         try:
             sub.system_data["system"].thread_backup_and_send_to_cloud()

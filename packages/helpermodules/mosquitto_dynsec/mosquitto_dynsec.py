@@ -167,5 +167,5 @@ def check_roles_at_start():
     if display_reload_required:
         log.warning("ACLs wurden aktualisiert, lokale Displays werden neu geladen, um die Änderungen zu übernehmen.")
         run_command([
-            f"{_get_base_path()}/runs/update_local_display.sh", "1"
+            f"{_get_base_path()}/runs/display/update_autostart.sh", "1"
         ], process_exception=True)
