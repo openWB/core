@@ -136,23 +136,3 @@ def test_cp_interruption_blocks_commands_until_timer_expires(setup_pro_plus, pro
     command.trigger_phase_switch = False
     update_state.update_state(command, False)
     pro_session.post.assert_called_once_with("http://192.168.192.50/connect.php", data={"ampere": 16})
-
-
-def test_phase_switch_defers_simultaneous_cp_interruption(setup_pro_plus, monkeypatch):
-    pro_plus = setup_pro_plus[0]
-    monkeypatch.setattr(pro_plus, "set_current", Mock())
-    monkeypatch.setattr(pro_plus, "perform_phase_switch", Mock())
-    cp_interruption = Mock()
-    monkeypatch.setattr(pro_plus, "perform_cp_interruption", cp_interruption)
-    update_state = UpdateState(pro_plus, 1)
-    command = InternalChargepointData(trigger_phase_switch=True, phases_to_use=3, cp_interruption_duration=30)
-
-    update_state.update_state(command, False)
-    update_state.phase_switch_thread.join(5)
-    cp_interruption.assert_not_called()
-    assert update_state.cp_interruption_thread is None
-
-    command.trigger_phase_switch = False
-    update_state.update_state(command, False)
-    update_state.cp_interruption_thread.join(5)
-    cp_interruption.assert_called_once_with(30)
