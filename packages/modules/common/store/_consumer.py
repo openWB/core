@@ -62,21 +62,25 @@ class PurgeConsumerState(ValueStore[ConsumerState]):
         self.delegate.zero_power_on_sustained_error()
 
     def update(self) -> None:
-        extra_meter_id = data.data.consumer_data[f"consumer{self.delegate.delegate.num}"].data.extra_meter
+        consumer = data.data.consumer_data[f"consumer{self.delegate.delegate.num}"]
+        extra_meter_id = consumer.data.extra_meter
         if extra_meter_id is not None:
             try:
                 counter = get_hierarchy_obj_by_id(extra_meter_id, ComponentType.COUNTER.value)
                 counter_state = counter.store.delegate.delegate.state
-                # Leistung kommt vom Zähler, nicht vom Verbraucher - dessen Fehlerzustand zählt hier nicht.
-                power = 0 if counter.fault_state.error_duration_exceeded() else counter_state.power
                 self.set(ConsumerState(
-                    power=power,
+                    power=counter_state.power,
                     imported=counter_state.imported,
                     exported=counter_state.exported,
                     voltages=counter_state.voltages,
                     currents=counter_state.currents,
                     powers=counter_state.powers,
                 ))
+                if consumer.module.fault_state.fault_state == 0:
+                    consumer.module.fault_state.from_exception(counter.fault_state)
+                    if consumer.module.fault_state.fault_state != 0:
+                        consumer.module.fault_state.fault_str = (
+                            f"Verknüpfter Zähler: {counter.fault_state.fault_str}")
             except ValueError:
                 raise Exception(
                     f"Zähler {extra_meter_id} für die separate Leistungsmessung von Verbraucher "

@@ -7,7 +7,9 @@ from control import data
 from helpermodules import timecheck
 from modules.common.abstract_device import AbstractDevice
 from modules.common.component_state import ConsumerState, CounterState
+from modules.common.component_context import SingleComponentUpdateContext
 from modules.common.fault_state import ComponentInfo, FaultState
+from modules.common.fault_state_level import FaultStateLevel
 from modules.common.store import _consumer
 from modules.common.store._consumer import ConsumerValueStoreBroker, PurgeConsumerState
 
@@ -18,7 +20,9 @@ def mock_data() -> None:
 
 
 def _extra_meter_consumer(counter_fault_state: FaultState, counter_state: CounterState):
-    data.data.consumer_data["consumer1"] = Mock(data=Mock(extra_meter=9))
+    data.data.consumer_data["consumer1"] = Mock(
+        data=Mock(extra_meter=9),
+        module=Mock(fault_state=FaultState(ComponentInfo(1, "Verbraucher", "consumer"))))
     counter_component = Mock(
         fault_state=counter_fault_state,
         store=Mock(delegate=Mock(delegate=Mock(state=counter_state))))
@@ -45,7 +49,8 @@ def test_extra_meter_zeroes_power_after_counter_sustained_error():
     fault_state = FaultState(ComponentInfo(9, "Zähler", "counter"))
     fault_state.error("Fehler")
     fault_state.error_timestamp = timecheck.create_timestamp() - 61
-    counter_state = CounterState(power=1234, imported=100, exported=50, currents=[1, 2, 3], powers=[1, 2, 3])
+    # Die Leistung wurde bereits vom gemeinsamen Zähler-Store genullt.
+    counter_state = CounterState(power=0, imported=100, exported=50, currents=[1, 2, 3], powers=[1, 2, 3])
     purge = _extra_meter_consumer(fault_state, counter_state)
 
     # execution
@@ -71,6 +76,53 @@ def test_extra_meter_keeps_power_within_counter_grace_period():
 
     # evaluation
     assert purge.delegate.set.call_args.args[0].power == 1234
+
+
+@pytest.mark.parametrize("consumer_fault", list(FaultStateLevel))
+@pytest.mark.parametrize("counter_fault", list(FaultStateLevel))
+def test_extra_meter_forwards_fault_only_when_consumer_module_healthy(consumer_fault, counter_fault, mock_pub):
+    fault_state = FaultState(ComponentInfo(9, "Zähler", "counter"))
+    fault_state.fault_state = counter_fault
+    fault_state.fault_str = "Zählerstatus"
+    purge = _extra_meter_consumer(fault_state, CounterState(power=1234))
+    data.data.consumer_data["consumer1"].module.fault_state.fault_state = consumer_fault
+    data.data.consumer_data["consumer1"].module.fault_state.fault_str = "Verbraucherstatus"
+
+    consumer_fault_state = data.data.consumer_data["consumer1"].module.fault_state
+    with SingleComponentUpdateContext(consumer_fault_state, update_always=False):
+        purge.update()
+
+    expected_state = counter_fault if consumer_fault == FaultStateLevel.NO_ERROR else consumer_fault
+    expected_str = "Zählerstatus" if consumer_fault == FaultStateLevel.NO_ERROR else "Verbraucherstatus"
+    if consumer_fault == FaultStateLevel.NO_ERROR and counter_fault != FaultStateLevel.NO_ERROR:
+        expected_str = f"Verknüpfter Zähler: {fault_state.fault_str}"
+    assert consumer_fault_state.fault_state == expected_state
+    assert consumer_fault_state.fault_str == expected_str
+    assert fault_state.fault_str == "Zählerstatus"
+    if expected_state != FaultStateLevel.NO_ERROR:
+        mock_pub.pub.assert_any_call("openWB/set/consumer/1/get/fault_state", expected_state.value)
+        mock_pub.pub.assert_any_call("openWB/set/consumer/1/get/fault_str", expected_str)
+
+
+def test_extra_meter_clears_forwarded_fault_after_counter_recovers(mock_pub):
+    fault_state = FaultState(ComponentInfo(9, "Zähler", "counter"))
+    fault_state.error("Zähler nicht erreichbar")
+    purge = _extra_meter_consumer(fault_state, CounterState(power=1234))
+    consumer_fault_state = data.data.consumer_data["consumer1"].module.fault_state
+    with SingleComponentUpdateContext(consumer_fault_state, update_always=False):
+        purge.update()
+    mock_pub.pub.reset_mock()
+
+    fault_state.no_error()
+    # Der nächste erfolgreiche Modulabruf setzt den eigenen Fehlerstatus regulär zurück.
+    with SingleComponentUpdateContext(consumer_fault_state):
+        pass
+    with SingleComponentUpdateContext(consumer_fault_state, update_always=False):
+        purge.update()
+
+    assert consumer_fault_state.fault_state == FaultStateLevel.NO_ERROR
+    mock_pub.pub.assert_any_call("openWB/set/consumer/1/get/fault_state", 0)
+    mock_pub.pub.assert_any_call("openWB/set/consumer/1/get/fault_str", fault_state.fault_str)
 
 
 def test_no_extra_meter_just_delegates():
