@@ -36,5 +36,5 @@ fi
 echo "done"
 
 echo "installing openWB packages..."
-"${OPENWB_BASE_DIR}"/runs/install_native_display.sh
+sudo "${OPENWB_BASE_DIR}"/runs/install_native_display.sh
 echo "done installing openWB packages"
