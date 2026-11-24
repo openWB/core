@@ -45,12 +45,26 @@ class PurgeCounterState:
         self.delegate = delegate
         self.add_child_values = add_child_values
         self.sim_counter = simcounter
+        self.zeroed_on_sustained_error = False
 
     def set(self, state: CounterState) -> None:
         self.delegate.set(state)
 
+    def zero_power_on_sustained_error(self) -> None:
+        self.zeroed_on_sustained_error = True
+
     def update(self) -> None:
-        state = self.calc_virtual(self.delegate.delegate.state)
+        if not hasattr(self.delegate.delegate, "state"):
+            if not self.zeroed_on_sustained_error:
+                raise AttributeError  # noch nie erfolgreich gelesen, nichts zu publizieren
+            # Auch ohne erfolgreichen Abruf einen alten MQTT-Retained-Leistungswert ersetzen.
+            state = CounterState(power=0)
+        else:
+            state = self.calc_virtual(self.delegate.delegate.state)
+        if self.zeroed_on_sustained_error:
+            # Erst nach der virtuellen Berechnung nullen, damit sie die Nullung nicht aufhebt.
+            state.power = 0
+            self.zeroed_on_sustained_error = False
         self.delegate.delegate.set(state)  # Logging in update Methode
         self.delegate.update()
 

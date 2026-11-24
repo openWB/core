@@ -145,9 +145,6 @@ class Counter:
             loadmanagement_available = self._get_loadmanagement_state()
             self._set_current_left(loadmanagement_available)
             self._set_power_left(loadmanagement_available)
-            if loadmanagement_available is False:
-                self.data.get.power = 0
-                return
         except Exception:
             log.exception("Fehler in der Zähler-Klasse von "+str(self.num))
 

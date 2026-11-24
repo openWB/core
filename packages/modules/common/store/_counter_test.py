@@ -10,12 +10,17 @@ from control import data
 from control.chargepoint.chargepoint import Chargepoint
 from control.counter import Counter, CounterData, Get
 from control.counter_all.counter_all import CounterAll
+from helpermodules import timecheck
+from modules.common.component_context import SingleComponentUpdateContext
+from modules.common.configurable_device import _wire_sustained_error_handler
+from modules.common.fault_state import ComponentInfo, FaultState
 from modules.chargepoints.mqtt.chargepoint_module import ChargepointModule
 from modules.common.component_state import BatState, ChargepointState, CounterState, InverterState
 from modules.common.component_type import ComponentType
 from modules.common.simcount._simcounter import SimCounter
 from modules.common.store import _counter
 from modules.common.store._api import LoggingValueStore
+from modules.common.store._api import update_values
 from modules.common.store._battery import BatteryValueStoreBroker, PurgeBatteryState
 from modules.common.store._counter import CounterValueStoreBroker, PurgeCounterState
 from modules.common.store._inverter import InverterValueStoreBroker, PurgeInverterState
@@ -29,6 +34,54 @@ def mock_data() -> None:
     data.data_init(Mock())
     data.data.counter_all_data = CounterAll()
     data.data.counter_all_data.data.get.hierarchy = []
+
+
+@pytest.mark.parametrize("prior_read", [False, True])
+def test_counter_sustained_read_error_zeroes_and_publishes_without_hierarchy(prior_read, monkeypatch, mock_pub):
+    now = 1000
+    monkeypatch.setattr(timecheck, "create_timestamp", lambda: now)
+    store = _counter.get_counter_value_store(9)
+    component = Mock(store=store, fault_state=FaultState(ComponentInfo(9, "HTTP-Zähler", "counter")))
+    _wire_sustained_error_handler(component)
+    if prior_read:
+        store.set(CounterState(power=1234, imported=100, exported=50))
+
+    with SingleComponentUpdateContext(component.fault_state):
+        raise Exception("HTTP 404")
+    assert not any(call.args[0].endswith("/get/power") for call in mock_pub.pub.call_args_list)
+
+    now += 61
+    with SingleComponentUpdateContext(component.fault_state):
+        raise Exception("HTTP 404")
+
+    assert store.delegate.delegate.state.power == 0
+    mock_pub.pub.assert_any_call("openWB/set/counter/9/get/power", 0)
+    if prior_read:
+        assert store.delegate.delegate.state.imported == 100
+        assert store.delegate.delegate.state.exported == 50
+
+    # Ein erfolgreicher neuer Abruf ersetzt die Nullung wieder durch den Messwert.
+    with SingleComponentUpdateContext(component.fault_state):
+        store.set(CounterState(power=789, imported=101, exported=50))
+    update_values(component)
+    assert store.delegate.delegate.state.power == 789
+    mock_pub.pub.assert_any_call("openWB/set/counter/9/get/power", 789)
+
+
+def test_counter_zeroes_power_after_virtual_calculation(monkeypatch, mock_pub):
+    store = _counter.get_counter_value_store(9, add_child_values=True)
+    store.set(CounterState(power=1234))
+    calc_virtual = Mock(return_value=CounterState(power=5678, imported=100, exported=50))
+    monkeypatch.setattr(store, "calc_virtual", calc_virtual)
+
+    store.zero_power_on_sustained_error()
+    store.update()
+
+    calc_virtual.assert_called_once()
+    assert store.delegate.delegate.state.power == 0
+    assert store.delegate.delegate.state.imported == 100
+    assert store.delegate.delegate.state.exported == 50
+    mock_pub.pub.assert_any_call("openWB/set/counter/9/get/power", 0)
 
 
 def add_chargepoint(id: int):
