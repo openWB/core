@@ -70,6 +70,9 @@ class PurgeConsumerState(ValueStore[ConsumerState]):
                 ))
                 if consumer.module.fault_state.fault_state == 0:
                     consumer.module.fault_state.from_exception(counter.fault_state)
+                    if consumer.module.fault_state.fault_state != 0:
+                        consumer.module.fault_state.fault_str = (
+                            f"Verknüpfter Zähler: {counter.fault_state.fault_str}")
             except ValueError:
                 raise Exception(
                     f"Zähler {extra_meter_id} für die separate Leistungsmessung von Verbraucher "
