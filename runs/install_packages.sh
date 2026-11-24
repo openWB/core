@@ -16,7 +16,8 @@ if ! sudo apt-get -q -o APT::Update::Error-Mode=any update; then
 	exit 1
 fi
 if ! sudo apt-get -q -y install --no-install-recommends \
-	vim bc jq curl socat sshpass sudo ssl-cert mmc-utils inotify-tools iptables \
+	vim bc jq curl socat sshpass sudo ssl-cert mmc-utils inotify-tools \
+	iptables net-tools nmap netdiscover ieee-data arp-scan \
 	systemd-zram-generator dosfstools \
 	apache2 libapache2-mod-php \
 	php php-gd php-curl php-xml php-json \
