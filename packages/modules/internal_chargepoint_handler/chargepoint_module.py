@@ -1,10 +1,8 @@
 import logging
+import time
 from typing import List, Optional
 
-import time
-from typing import Optional
 from helpermodules.broker import BrokerClient
-
 from helpermodules.utils import run_command
 from helpermodules.utils.error_handling import CP_ERROR, ErrorTimerContext
 from helpermodules.utils.topic_parser import decode_payload
