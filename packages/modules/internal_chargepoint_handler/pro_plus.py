@@ -6,7 +6,6 @@ from modules.chargepoints.openwb_pro.chargepoint_module import ChargepointModule
 from modules.chargepoints.openwb_pro.config import OpenWBPro, OpenWBProConfiguration
 from modules.common.component_state import ChargepointState
 from modules.common.component_context import SingleComponentUpdateContext
-from modules.common.store._chargepoint import get_chargepoint_value_store
 from modules.common.store._chargepoint_internal import get_internal_chargepoint_value_store
 from modules.internal_chargepoint_handler.internal_chargepoint_handler_config import InternalChargepoint
 
@@ -20,7 +19,6 @@ class ProPlus(ChargepointModule):
                  hierarchy_id: int) -> None:
         self.local_charge_point_num = local_charge_point_num
         self.store_internal = get_internal_chargepoint_value_store(local_charge_point_num)
-        self.store = get_chargepoint_value_store(hierarchy_id)
         self.old_chargepoint_state = None
         try:
             self.version = SubData.system_data["system"].data["version"]
@@ -35,8 +33,6 @@ class ProPlus(ChargepointModule):
     def get_values(self, phase_switch_cp_active: bool, last_tag: str,
                    last_tag_timestamp: Optional[float] = None) -> ChargepointState:
         def store_state(chargepoint_state: ChargepointState) -> None:
-            self.store.set(chargepoint_state)
-            self.store.update()
             self.store_internal.set(chargepoint_state)
             self.store_internal.update()
             self.old_chargepoint_state = chargepoint_state

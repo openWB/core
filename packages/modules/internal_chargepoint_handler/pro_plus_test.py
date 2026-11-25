@@ -9,10 +9,12 @@ import requests
 from modules.internal_chargepoint_handler.pro_plus import SubData
 from modules.common.component_state import ChargepointState
 from modules.common import req
+from modules.common.store._chargepoint_internal import get_internal_chargepoint_value_store
 from modules.internal_chargepoint_handler.internal_chargepoint_handler import InternalChargepointHandler, UpdateState
+from modules.internal_chargepoint_handler import internal_chargepoint_handler as handler_module
 from modules.chargepoints.internal_openwb.config import InternalChargepointMode
 from modules.internal_chargepoint_handler.internal_chargepoint_handler_config import (
-    InternalChargepoint, InternalChargepointData)
+    GlobalHandlerData, InternalChargepoint, InternalChargepointData, RfidData)
 from modules.internal_chargepoint_handler.pro_plus import ProPlus
 
 
@@ -29,11 +31,62 @@ def setup_pro_plus(monkeypatch, pro_session) -> Tuple[ProPlus, Mock]:
     monkeypatch.setattr(SubData, "system_data", {"system": system_data_mock})
     pro_plus = ProPlus(0, InternalChargepoint(), 1)
     mock_store_set = Mock()
-    monkeypatch.setattr(pro_plus.store, "set", mock_store_set)
-    monkeypatch.setattr(pro_plus.store, "update", lambda: None)
-    monkeypatch.setattr(pro_plus.store_internal, "set", lambda x: None)
+    monkeypatch.setattr(pro_plus.store_internal, "set", mock_store_set)
     monkeypatch.setattr(pro_plus.store_internal, "update", lambda: None)
     return pro_plus, mock_store_set
+
+
+@pytest.mark.parametrize("secondary", [False, True])
+@pytest.mark.parametrize("read_error", [False, True])
+def test_get_values_publishes_local_status_only_on_secondary(
+        setup_pro_plus, monkeypatch, mock_pub, secondary, read_error):
+    pro_plus = setup_pro_plus[0]
+    pro_plus.store_internal = get_internal_chargepoint_value_store(0)
+    monkeypatch.setattr(SubData, "general_data", SimpleNamespace(data=SimpleNamespace(extern=secondary)))
+    monkeypatch.setattr(handler_module, "ProPlus", Mock(return_value=pro_plus))
+    handler_module.HandlerChargepoint(
+        None, 0, InternalChargepointMode.PRO_PLUS,
+        GlobalHandlerData(parent_ip="primary" if secondary else "localhost"), InternalChargepoint(), 1)
+    states = [
+        ChargepointState(power=6900, imported=1000, exported=0, currents=[30, 0, 0],
+                         phases_in_use=1, charge_state=True, plug_state=True),
+        ChargepointState(power=0, imported=1001, exported=0, currents=[0, 0, 0],
+                         phases_in_use=1, charge_state=False, plug_state=True),
+    ]
+    monkeypatch.setattr(pro_plus, "request_values", Mock(side_effect=[
+        states[0], requests.exceptions.ConnectTimeout() if read_error else states[1]]))
+    monkeypatch.setattr(pro_plus.client_error_context, "error_counter_exceeded", Mock(return_value=read_error))
+    mock_pub.pub.reset_mock()
+
+    # Ein abrupter Ladestopp muss auf der Secondary sichtbar sein, darf aber auf der
+    # Primary den zusammen mit virtuellen Zählern publizierten Datenstand nicht überschreiben.
+    assert pro_plus.get_values(False, None) is states[0]
+    if read_error:
+        with pytest.raises(Exception, match=re.escape(ProPlus.NO_CONNECTION_TO_INTERNAL_CP)):
+            pro_plus.get_values(False, None)
+    else:
+        assert pro_plus.get_values(False, None) is states[1]
+
+    assert [call.args[1] for call in mock_pub.pub.call_args_list
+            if call.args[0] == "openWB/set/internal_chargepoint/0/get/power"] == [6900, 0]
+    status_calls = [call for call in mock_pub.pub.call_args_list
+                    if call.args[0].startswith("openWB/set/chargepoint/")]
+    if secondary:
+        assert [call.args[1] for call in status_calls
+                if call.args[0] == "openWB/set/chargepoint/1/get/power"] == [6900, 0]
+        expected_values = {
+            "currents": [[30, 0, 0], [0, 0, 0]],
+            "charge_state": [True, False],
+            "plug_state": [True, True],
+            "phases_in_use": [1] if read_error else [1, 1],
+            "imported": [1000] if read_error else [1000, 1001],
+            "version": ["1.0.0", None if read_error else "1.0.0"],
+        }
+        for field, expected in expected_values.items():
+            assert [call.args[1] for call in status_calls
+                    if call.args[0] == f"openWB/set/chargepoint/1/get/{field}"] == expected
+    else:
+        assert status_calls == []
 
 
 @pytest.fixture()
@@ -63,6 +116,42 @@ def test_get_values(request_values_return: ChargepointState,
     # evalutation
     assert chargepoint_state == expected_chargepoint_state
     assert mock_store_set.call_args.args[0].__dict__ == expected_chargepoint_state.__dict__
+
+
+@pytest.mark.parametrize("read_error", [False, True])
+def test_handler_updates_publication_targets_after_role_change(setup_pro_plus, monkeypatch, mock_pub, read_error):
+    pro_plus = setup_pro_plus[0]
+    pro_plus.store_internal = get_internal_chargepoint_value_store(0)
+    general_data = SimpleNamespace(data=SimpleNamespace(extern=False))
+    monkeypatch.setattr(SubData, "general_data", general_data)
+    monkeypatch.setattr(handler_module, "ProPlus", Mock(return_value=pro_plus))
+    status_store_factory = Mock(wraps=handler_module.get_chargepoint_value_store)
+    monkeypatch.setattr(handler_module, "get_chargepoint_value_store", status_store_factory)
+    handler = handler_module.HandlerChargepoint(
+        None, 0, InternalChargepointMode.PRO_PLUS, GlobalHandlerData(parent_ip="localhost"), InternalChargepoint(), 1)
+    handler.update_state = Mock(
+        handle_unlock=Mock(return_value=False), cp_interruption_thread=None, phase_switch_thread=None)
+    monkeypatch.setattr(handler, "_check_heartbeat_expired", Mock(return_value=False))
+    state = ChargepointState(
+        power=6900, imported=1000, exported=0, currents=[30, 0, 0],
+        phases_in_use=1, charge_state=True, plug_state=True)
+    pro_plus.old_chargepoint_state = state
+    monkeypatch.setattr(pro_plus, "request_values", Mock(
+        return_value=state, side_effect=requests.exceptions.ConnectTimeout() if read_error else None))
+    monkeypatch.setattr(pro_plus.client_error_context, "error_counter_exceeded", Mock(return_value=read_error))
+
+    # Derselbe Handler muss Wechsel in beide Richtungen vor der nächsten Abfrage übernehmen,
+    # auch wenn die Abfrage Ersatzwerte publiziert und anschließend eine Exception auslöst.
+    for secondary in (False, True, False, True):
+        general_data.data.extern = secondary
+        mock_pub.pub.reset_mock()
+        assert handler.update(GlobalHandlerData(), InternalChargepointData(), RfidData()) is not read_error
+        mock_pub.pub.assert_any_call("openWB/set/internal_chargepoint/0/get/power", 0 if read_error else 6900)
+        status_power = [call.args[1] for call in mock_pub.pub.call_args_list
+                        if call.args[0] == "openWB/set/chargepoint/1/get/power"]
+        assert status_power == ([0 if read_error else 6900] if secondary else [])
+
+    status_store_factory.assert_called_once_with(1)
 
 
 def test_get_values_no_data_since_boot(setup_pro_plus: Callable[[], Tuple[ProPlus, Mock]], monkeypatch):

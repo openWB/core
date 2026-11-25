@@ -268,17 +268,24 @@ def test_scan_timestamp_topics_are_validated_and_applied(duo, mock_pub, monkeypa
             assert getattr(target, attribute) == value
 
 
-def test_internal_chargepoint_forwards_scan_timestamp_unchanged(duo, rfid_tag, monkeypatch, mock_pub):
+@pytest.mark.parametrize("secondary", [False, True])
+def test_internal_chargepoint_forwards_scan_timestamp_unchanged(duo, rfid_tag, monkeypatch, mock_pub, secondary):
     from unittest.mock import MagicMock
     from modules.common.component_state import ChargepointState, CounterState
     from modules.common.store._chargepoint_internal import InternalChargepointValueStore
+    from modules.common.fault_state import ComponentInfo, FaultState
     from modules.internal_chargepoint_handler import chargepoint_module as internal_module
+    from modules.internal_chargepoint_handler import internal_chargepoint_handler as handler_module
+    from modules.internal_chargepoint_handler.internal_chargepoint_handler_config import (
+        GlobalHandlerData, InternalChargepoint)
+    from modules.chargepoints.internal_openwb.config import InternalChargepointMode
 
     monkeypatch.setattr(internal_module.time, "sleep", Mock())
+    monkeypatch.setattr(internal_module.SubData, "general_data",
+                        SimpleNamespace(data=SimpleNamespace(extern=secondary)))
     module = object.__new__(internal_module.ChargepointModule)
-    module.store = Mock()
     module.store_internal = InternalChargepointValueStore(0)
-    module.fault_state = Mock()
+    module.fault_state = FaultState(ComponentInfo(0, "Ladepunkt", "internal_chargepoint", hierarchy_id=5))
     module.old_chargepoint_state = ChargepointState(
         phases_in_use=3, imported=0, exported=0, power=0, currents=[0]*3,
         charge_state=False, plug_state=True)
@@ -289,6 +296,10 @@ def test_internal_chargepoint_forwards_scan_timestamp_unchanged(duo, rfid_tag, m
     module._client.request_and_check_hardware.return_value = (
         SimpleNamespace(plug_state=True, charge_state=False, set_current=0, max_current=32), CounterState())
     module.version, module.current_branch, module.current_commit = "test", "test", "test"
+    monkeypatch.setattr(internal_module, "ChargepointModule", Mock(return_value=module))
+    handler_module.HandlerChargepoint(
+        None, 0, InternalChargepointMode.SERIES,
+        GlobalHandlerData(parent_ip="primary" if secondary else "localhost"), InternalChargepoint(), 5)
     scanned_at = duo.clock.return_value - 1.125
 
     for _ in range(2):
@@ -300,6 +311,9 @@ def test_internal_chargepoint_forwards_scan_timestamp_unchanged(duo, rfid_tag, m
     # Nach der Quittierung darf kein alter Scanzeitstempel retained bleiben.
     module.get_values(False, None, None)
     mock_pub.pub.assert_any_call("openWB/set/internal_chargepoint/0/get/rfid_timestamp", None)
+    status_calls = [call for call in mock_pub.pub.call_args_list
+                    if call.args[0] == "openWB/set/chargepoint/5/get/rfid_timestamp"]
+    assert [call.args[1] for call in status_calls] == ([scanned_at, scanned_at] if secondary else [])
 
 
 def test_processed_scan_remains_blocked_after_unplugging(duo, rfid_tag, monkeypatch):

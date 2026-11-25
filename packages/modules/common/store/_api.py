@@ -21,6 +21,25 @@ class ValueStore(Generic[T]):
         pass
 
 
+class MultiValueStore(Generic[T], ValueStore[T]):
+    """Leitet Messwerte an die vorgegebenen Stores weiter."""
+
+    def __init__(self, *stores: ValueStore[T]):
+        self.stores = stores
+
+    def set(self, state: T) -> None:
+        for store in self.stores:
+            store.set(state)
+
+    def update(self) -> None:
+        for store in self.stores:
+            store.update()
+
+    def zero_power_on_sustained_error(self) -> None:
+        for store in self.stores:
+            store.zero_power_on_sustained_error()
+
+
 class LoggingValueStore(Generic[T], ValueStore[T]):
     def __init__(self, delegate: ValueStore[T]):
         self.delegate = delegate
