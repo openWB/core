@@ -136,3 +136,26 @@ def test_vehicle_and_manual_soc_have_mqtt_set_topics(simpleapi):
     assert daemon._handle_chargepoint_operation(['chargepoint', '3', 'vehicle'], '2') is True
     assert daemon._handle_chargepoint_operation(['chargepoint', '3', 'manual_soc'], '55') is True
     assert calls == [('vehicle', '3', '2'), ('manual_soc', '3', '55')]
+
+
+def test_instant_charging_current_is_published_from_the_charge_template(simpleapi):
+    daemon = make_daemon(simpleapi)
+    daemon.lowest_ids = {'chargepoint': 3}
+    daemon._publish_if_changed = lambda topic, value: daemon.published.append((topic, value))
+
+    daemon._publish_charge_template_read_topics(
+        '3', {'chargemode': {'instant_charging': {'current': 16}, 'pv_charging': {'min_current': 6}}})
+
+    assert ("openWB/simpleAPI/chargepoint/3/instant_charging_current", 16) in daemon.published
+    assert ("openWB/simpleAPI/chargepoint/instant_charging_current", 16) in daemon.published
+
+
+def test_chargepoint_all_returns_the_charge_template_values_clients_set():
+    daemon = FakeDaemon()
+    daemon.charge_template_cache['3'] = {
+        'chargemode': {'instant_charging': {'current': 16}, 'pv_charging': {'min_current': 6, 'min_soc': 20}}}
+
+    result, _ = dispatch_read(ParameterHandler(daemon), {'get_chargepoint_all': '3'}, {}, False)
+
+    assert result['chargepoint_3']['instant_charging_current'] == 16.0
+    assert result['chargepoint_3']['minimal_pv_soc'] == 20

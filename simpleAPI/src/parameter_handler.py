@@ -309,6 +309,7 @@ def _get_chargepoint_all(daemon: Any, id_: Any) -> Dict[str, Any]:
             'pv_charging_limit': pv_limit.get('selected', 'none'),
             'pv_charging_amount': _as_int(pv_limit.get('amount', 0)),
             'pv_charging_soc': _as_int(pv_limit.get('soc', 0)),
+            'minimal_pv_soc': _as_int(pv_charging.get('min_soc', 0)),
             'max_price_eco': _as_float(eco_charging.get('max_price', 0)) * 100000,
             'soc': _as_float(connected_vehicle_soc.get('soc', 0)),
             'range_charged': _as_float(connected_vehicle_soc.get('range_charged', 0)),

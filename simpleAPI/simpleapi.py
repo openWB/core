@@ -582,6 +582,7 @@ class SimpleMQTTDaemon:
     # optional value transform) - the set of charge_template values that get
     # mirrored out as simpleAPI read topics whenever a charge_template is cached.
     _CHARGE_TEMPLATE_READ_FIELDS: Tuple[Tuple[Tuple[str, ...], str, str, Optional[Callable[[Any], Any]]], ...] = (
+        (('chargemode', 'instant_charging'), 'current', 'instant_charging_current', None),
         (('chargemode', 'pv_charging'), 'min_current', 'minimal_permanent_current', None),
         (('chargemode', 'pv_charging'), 'min_soc', 'minimal_pv_soc', None),
         # max_price is stored internally in EUR/Wh - published in ct/kWh
