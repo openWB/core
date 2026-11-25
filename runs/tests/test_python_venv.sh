@@ -56,6 +56,7 @@ if [[ "${1:-}" == -c && "${2:-}" == *sysconfig* ]]; then
 	exit 0
 fi
 if [[ "$*" == '-m pip install '* ]]; then
+	[[ " $* " == *' --no-cache-dir '* ]] || exit 1
 	[[ -z "${PIP_TARGET:-}${PIP_PREFIX:-}${PIP_ROOT:-}${PIP_USER:-}" ]] || exit 1
 	if [[ -n "${PIP_CAPTURE:-}" ]]; then
 		printf '%s\n' "$*" >> "$PIP_CAPTURE"

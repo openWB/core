@@ -177,7 +177,8 @@ requirements=(-r "$base_dir/requirements.txt")
 if is_raspberry_pi; then
 	requirements+=(-r "$base_dir/requirements-raspberrypi.txt")
 fi
-if ! "$new_env/bin/python" -m pip install --no-user "${binary_options[@]}" --extra-index-url https://www.piwheels.org/simple "${requirements[@]}"; then
+# Bullseye's pip HTTP cache buffers large wheels in RAM and can exhaust a 1 GB Pi.
+if ! "$new_env/bin/python" -m pip install --no-cache-dir --no-user "${binary_options[@]}" --extra-index-url https://www.piwheels.org/simple "${requirements[@]}"; then
 	fail_rebuild "Failed to install Python dependencies"
 fi
 if ! "$new_env/bin/python" -m pip check; then
