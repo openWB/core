@@ -501,6 +501,7 @@ def test_phase_switch_waits_for_restart_before_checking_phases(
     monkeypatch.setattr(phase_switch, "thread_phase_switch", switch)
     now = 1000
     monkeypatch.setattr(timecheck, "create_timestamp", lambda: now)
+    monkeypatch.setattr("control.load_protocol.create_timestamp", lambda: now)
 
     # Nach der Umschaltung ist noch kein Strom freigegeben. Automatisches PV-Laden
     # muss die drei Phasen beibehalten, statt wegen des Ladestopps auf eine zurückzufallen.
@@ -514,8 +515,9 @@ def test_phase_switch_waits_for_restart_before_checking_phases(
 
     # Erst ab Stromfreigabe läuft die Wiederanlaufzeit, auch wenn das Auto noch nicht lädt.
     cp.data.set.current = 6
-    cp.data.set.current_prev = 6
-    cp.data.control_parameter.timestamp_charge_start = now
+    cp.set_timestamp_charge_start()
+    assert cp.data.control_parameter.timestamp_charge_start == now
+    cp.remember_previous_values()
     now += 39
     cp.check_phase_switch_completed()
     assert cp.data.control_parameter.state == ChargepointState.WAIT_FOR_USING_PHASES

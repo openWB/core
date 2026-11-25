@@ -74,8 +74,17 @@ def test_get_values_publishes_local_status_only_on_secondary(
     if secondary:
         assert [call.args[1] for call in status_calls
                 if call.args[0] == "openWB/set/chargepoint/1/get/power"] == [6900, 0]
-        for field in ("currents", "charge_state", "plug_state", "phases_in_use", "imported", "version"):
-            assert any(call.args[0] == f"openWB/set/chargepoint/1/get/{field}" for call in status_calls)
+        expected_values = {
+            "currents": [[30, 0, 0], [0, 0, 0]],
+            "charge_state": [True, False],
+            "plug_state": [True, True],
+            "phases_in_use": [1] if read_error else [1, 1],
+            "imported": [1000] if read_error else [1000, 1001],
+            "version": ["1.0.0", None if read_error else "1.0.0"],
+        }
+        for field, expected in expected_values.items():
+            assert [call.args[1] for call in status_calls
+                    if call.args[0] == f"openWB/set/chargepoint/1/get/{field}"] == expected
     else:
         assert status_calls == []
 
