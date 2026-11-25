@@ -221,7 +221,9 @@ def process_agreement(agreement: dict, current_utc: datetime, horizon_utc: datet
     if forecast_intervals:
         step = forecast_intervals[0][1] - forecast_intervals[0][0]
         round_to_hour = False
-        fill_until = max(end for _, end in forecast_intervals)
+        fill_until = min(max(end for _, end in forecast_intervals), horizon_utc)
+    elif forecast:
+        return  # Forecast ohne aktuelle Einträge: keine Platzhalter
     else:
         step = timedelta(hours=1)
         round_to_hour = True
