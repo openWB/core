@@ -1,4 +1,6 @@
 import json
+from threading import Event
+from types import SimpleNamespace
 from typing import Dict, List
 from unittest.mock import Mock
 
@@ -9,6 +11,7 @@ from control.consumer.usage import ConsumerUsage
 from control.counter_all.counter_all import CounterAll
 from control.optional import Optional
 from helpermodules.subdata import SubData
+from modules.consumers.shelly.shelly_pm.config import ShellyPM
 
 
 @pytest.mark.parametrize("change", ["ski", "remote_ski", "port", "unchanged", "delete"])
@@ -152,6 +155,39 @@ def test_process_consumer_usage_does_not_update_loadmanagement_prios_on_startup(
     mock_pub.pub.assert_not_called()
 
 
+def test_consumer_usage_is_updated_during_module_reload_but_not_initial_startup(monkeypatch, mock_pub):
+    subdata = SubData(*[Event() for _ in range(16)])
+    monkeypatch.setattr(SubData, "counter_all_data", CounterAll())
+    consumers = {"consumer2": Consumer(2)}
+    usage_msg = Mock(topic="openWB/consumer/2/usage",
+                     payload=json.dumps({"type": ConsumerUsage.SUSPENDABLE_ONOFF.value}).encode(), retain=False)
+    system_msg = Mock(topic="openWB/system/subdata_initialized", payload=b"true")
+    system_data = {"system": SimpleNamespace(data={})}
+
+    # Live-Nachrichten dürfen vor dem ersten vollständigen Einlesen keine Prioritäten ändern.
+    subdata.processing_counter.add_task()
+    subdata.process_consumer_topic(Mock(), consumers, usage_msg)
+    assert subdata.counter_all_data.data.get.loadmanagement_prios == []
+    mock_pub.pub.assert_not_called()
+
+    subdata.process_system_topic(Mock(), system_data, system_msg)
+    assert subdata.event_subdata_initialized.is_set()
+    mock_pub.reset_mock()
+
+    # Modul-Neuladen im laufenden Betrieb meldet keine neue Initialisierungsaufgabe an.
+    module = SimpleNamespace(device_descriptor=SimpleNamespace(configuration_factory=ShellyPM), create_consumer=Mock())
+    monkeypatch.setattr("helpermodules.subdata.importlib.import_module", Mock(return_value=module))
+    module_msg = Mock(topic="openWB/consumer/2/module", payload=b'{"vendor":"shelly","type":"shelly_pm","id":2}')
+    subdata.process_consumer_topic(Mock(), consumers, module_msg)
+    assert subdata.event_subdata_initialized.is_set()
+    assert subdata.processing_counter.is_done()
+    mock_pub.pub.assert_not_called()
+    subdata.process_consumer_topic(Mock(), consumers, usage_msg)
+    assert subdata.counter_all_data.data.get.loadmanagement_prios == [{"type": "consumer", "id": 2}]
+    mock_pub.pub.assert_called_once_with(
+        "openWB/set/counter/get/loadmanagement_prios", [{"type": "consumer", "id": 2}])
+
+
 def test_process_consumer_extra_meter_removes_linked_counter_from_hierarchy(monkeypatch: pytest.MonkeyPatch,
                                                                             mock_pub: Mock):
     subdata = SubData.__new__(SubData)
@@ -284,3 +320,13 @@ def test_process_optional_topic_forecast_get_dict_fields_store_whole_payload(fie
     subdata.process_optional_topic(var, msg)
 
     assert getattr(var.data.forecast.get, field) == payload
+
+
+def test_process_bat_topic_config_max_power_is_applied():
+    subdata = SubData.__new__(SubData)
+    var = {}
+    msg = Mock(topic="openWB/bat/4/config/max_power", payload=b"6000")
+
+    subdata.process_bat_topic(var, msg)
+
+    assert var["bat4"].data.config.max_power == 6000

@@ -41,6 +41,75 @@ def test_remove_invalid_topics(mock_pub):
     assert mock_pub.method_calls[1][1][0] == 'openWB/optional/int_display/theme'
 
 
+def test_startup_cleanup_keeps_ocpp_server_binding(mock_pub):
+    updater = UpdateConfig()
+    settings = {"url": "wss://old.example/ocpp", "subprotocol": "ocpp1.6"}
+    topic = "openWB/chargepoint/1/get/ocpp/last_connection_settings"
+    updater.all_received_topics = {
+        "openWB/chargepoint/1/config": b'{}',
+        topic: json.dumps(settings).encode(),
+    }
+
+    updater._UpdateConfig__remove_outdated_topics()
+    updater._remove_invalid_topics()
+
+    assert json.loads(updater.all_received_topics[topic]) == settings
+    mock_pub.pub.assert_not_called()
+
+
+def test_pub_missing_defaults_expands_chargepoint_topics(mock_pub, monkeypatch):
+    update_con = UpdateConfig()
+    update_con.all_received_topics = {
+        "openWB/chargepoint/1/config": b'{}',
+        "openWB/chargepoint/10/config": b'{}',
+        "openWB/chargepoint/2/get/voltages": b'[]',
+    }
+    monkeypatch.setattr(UpdateConfig, "default_topic", (
+        ("openWB/counter/get/hierarchy", []),
+    ))
+    monkeypatch.setattr(UpdateConfig, "default_topics_with_wildcards", (
+        ("openWB/chargepoint/{}/get/ocpp/connected", False),
+        ("openWB/chargepoint/{}/get/ocpp/authorization_flow_status", None),
+    ))
+
+    update_con._UpdateConfig__pub_missing_defaults()
+
+    published_defaults = {
+        call.args[0]: call.args[1]
+        for call in mock_pub.pub.call_args_list
+    }
+    assert published_defaults == {
+        "openWB/counter/get/hierarchy": [],
+        "openWB/chargepoint/1/get/ocpp/connected": False,
+        "openWB/chargepoint/1/get/ocpp/authorization_flow_status": None,
+        "openWB/chargepoint/2/get/ocpp/connected": False,
+        "openWB/chargepoint/2/get/ocpp/authorization_flow_status": None,
+        "openWB/chargepoint/10/get/ocpp/connected": False,
+        "openWB/chargepoint/10/get/ocpp/authorization_flow_status": None,
+    }
+
+
+def test_pub_missing_defaults_expands_non_chargepoint_topics(mock_pub, monkeypatch):
+    update_con = UpdateConfig()
+    update_con.all_received_topics = {
+        "openWB/vehicle/2/name": b'"EV 2"',
+        "openWB/vehicle/12/config": b'{}',
+        "openWB/counter/3/config": b'{}',
+    }
+    monkeypatch.setattr(UpdateConfig, "default_topic", ())
+    monkeypatch.setattr(UpdateConfig, "default_topics_with_wildcards", (
+        ("openWB/vehicle/{}/get/soc", 0),
+    ))
+
+    update_con._UpdateConfig__pub_missing_defaults()
+
+    published_topics = {call.args[0] for call in mock_pub.pub.call_args_list}
+    assert published_topics == {
+        "openWB/vehicle/2/get/soc",
+        "openWB/vehicle/12/get/soc",
+    }
+
+
 @pytest.mark.parametrize("index_test_template, expected_index", [
     pytest.param(0, [2, 1], id="IDs korrekt"),
     pytest.param(1, [0, 3], id="IDs gleich"),

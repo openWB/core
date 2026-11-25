@@ -177,8 +177,9 @@ class SubData:
             ("openWB/LegacySmartHome/Status/wattnichtHaus", 2),
             ("openWB/io/#", 2),
         ])
-        self.processing_counter.add_task()
-        Pub().pub("openWB/system/subdata_initialized", True)
+        if not self.event_subdata_initialized.is_set():
+            self.processing_counter.add_task()
+            Pub().pub("openWB/system/subdata_initialized", True)
 
     def on_message(self, client: mqtt.Client, userdata, msg: mqtt.MQTTMessage):
         """ wait for incoming topics.
@@ -354,8 +355,9 @@ class SubData:
                                     add_acl_role("vehicle-<id>-write-access", int(index))
                                 else:
                                     remove_acl_role("vehicle-<id>-write-access", int(index))
-                            self.processing_counter.add_task()
-                            Pub().pub("openWB/system/subdata_initialized", True)
+                            if not self.event_subdata_initialized.is_set():
+                                self.processing_counter.add_task()
+                                Pub().pub("openWB/system/subdata_initialized", True)
                         self.event_soc.set()
                     else:
                         # temporäres ChargeTemplate aktualisieren, wenn dem Fahrzeug ein anderes Ladeprofil zugeordnet
@@ -485,6 +487,14 @@ class SubData:
                                 var["cp"+index].chargepoint.data.get.connected_vehicle.info, msg)
                         elif re.search("/chargepoint/[0-9]+/get/connected_vehicle/soc", msg.topic) is not None:
                             self.set_json_payload_class(var["cp"+index].chargepoint.data.get.connected_vehicle.soc, msg)
+                        elif re.search("/chargepoint/[0-9]+/get/ocpp/config$", msg.topic) is not None:
+                            self.set_json_payload_class(
+                                var["cp"+index].chargepoint.data.get.ocpp.config, msg)
+                        elif msg.topic.endswith("/get/ocpp/last_connection_settings"):
+                            var["cp"+index].chargepoint.data.get.ocpp.last_connection_settings = (
+                                decode_payload(msg.payload))
+                        elif re.search("/chargepoint/[0-9]+/get/ocpp/", msg.topic) is not None:
+                            self.set_json_payload_class(var["cp"+index].chargepoint.data.get.ocpp, msg)
                         elif (re.search("/chargepoint/[0-9]+/get/soc$", msg.topic) is not None and
                               decode_payload(msg.payload) != var["cp"+index].chargepoint.data.get.soc):
                             Pub().pub(f'openWB/set/vehicle/{var["cp"+index].chargepoint.data.config.ev}'
@@ -600,6 +610,8 @@ class SubData:
                         self.set_json_payload_class(var["pv"+index].data.config, msg)
                     elif re.search("/pv/[0-9]+/get/", msg.topic) is not None:
                         self.set_json_payload_class(var["pv"+index].data.get, msg)
+                    elif re.search("/pv/[0-9]+/set/", msg.topic) is not None:
+                        self.set_json_payload_class(var["pv"+index].data.set, msg)
             elif re.search("/pv/", msg.topic) is not None:
                 if re.search("/pv/config/", msg.topic) is not None:
                     self.set_json_payload_class(self.pv_all_data.data.config, msg)
@@ -631,6 +643,8 @@ class SubData:
                         var["bat"+index] = bat.Bat(int(index))
                     if re.search("/bat/[0-9]+/config$", msg.topic) is not None:
                         self.set_json_payload(var["bat"+index].data, msg)
+                    elif re.search("/bat/[0-9]+/config/", msg.topic) is not None:
+                        self.set_json_payload_class(var["bat"+index].data.config, msg)
                     elif re.search("/bat/[0-9]+/get/", msg.topic) is not None:
                         self.set_json_payload_class(var["bat"+index].data.get, msg)
                     elif re.search("/bat/[0-9]+/set/", msg.topic) is not None:
@@ -1015,8 +1029,9 @@ class SubData:
                     # Durch das erneute Subscribe werden die Komponenten mit dem aktualisierten TCP-Client angelegt.
                     client.subscribe(f"openWB/system/device/{index}/component/+/config", 2)
                     client.subscribe(f"openWB/system/device/{index}/error_timestamp", 2)
-                    self.processing_counter.add_task()
-                    Pub().pub("openWB/system/subdata_initialized", True)
+                    if not self.event_subdata_initialized.is_set():
+                        self.processing_counter.add_task()
+                        Pub().pub("openWB/system/subdata_initialized", True)
             elif re.search("^.+/device/[0-9]+/component/[0-9]+/simulation$", msg.topic) is not None:
                 index = get_index(msg.topic)
                 index_second = get_second_index(msg.topic)
@@ -1053,8 +1068,9 @@ class SubData:
                     config = dataclass_from_dict(component.component_descriptor.configuration_factory, component_config)
                     var["device"+index].add_component(config)
                     client.subscribe(f"openWB/system/device/{index}/component/{index_second}/simulation", 2)
-                    self.processing_counter.add_task()
-                    Pub().pub("openWB/system/subdata_initialized", True)
+                    if not self.event_subdata_initialized.is_set():
+                        self.processing_counter.add_task()
+                        Pub().pub("openWB/system/subdata_initialized", True)
             elif "mqtt" and "bridge" in msg.topic:
                 # do not reconfigure mqtt bridges if topic is received on startup
                 if self.event_subdata_initialized.is_set():
@@ -1337,8 +1353,9 @@ class SubData:
                             var["consumer"+index].module = con.create_consumer(config)
                             var["consumer"+index].data.module = config
                             client.subscribe(f"openWB/consumer/{index}/module/simulation", 2)
-                            self.processing_counter.add_task()
-                            Pub().pub("openWB/system/subdata_initialized", True)
+                            if not self.event_subdata_initialized.is_set():
+                                self.processing_counter.add_task()
+                                Pub().pub("openWB/system/subdata_initialized", True)
                         except Exception:
                             fault_str = (
                                 f"Verbraucher {index}: Modul für "

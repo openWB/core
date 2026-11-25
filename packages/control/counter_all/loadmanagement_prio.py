@@ -1,16 +1,66 @@
 import logging
-from typing import Dict, Generator, List, Tuple
+from typing import AbstractSet, Dict, Generator, List, Tuple
 
+from control import data
 from control.chargepoint.chargepoint import Chargepoint
 from control.consumer.usage import ConsumerUsage, NOT_CONTROLLED
 from control.counter_all.counter_all_data import LoadmanagementPrioProtocol
-from modules.common.component_type import ComponentType
+from helpermodules.messaging import MessageType, pub_system_message
+from modules.common.component_type import ComponentType, component_type_to_readable_text
 
 
 log = logging.getLogger(__name__)
 
 
 class LoadmanagementPrioMixin:
+    def validate_loadmanagement_prios(self: LoadmanagementPrioProtocol) -> None:
+        try:
+            valid_ids = {
+                ComponentType.VEHICLE: {vehicle.num for vehicle in data.data.ev_data.values()},
+                ComponentType.CONSUMER: {
+                    consumer.num for consumer in data.data.consumer_data.values()
+                    if consumer.data.usage.type not in NOT_CONTROLLED
+                },
+            }
+
+            self._remove_obsolete_loadmanagement_prio_entries(self.data.get.loadmanagement_prios, valid_ids)
+            self._add_missing_loadmanagement_prio_entries(self.data.get.loadmanagement_prios, valid_ids)
+
+        except Exception:
+            log.exception("Fehler bei der Validierung der Prioritätensteuerung")
+
+    def _remove_obsolete_loadmanagement_prio_entries(
+            self, entries: List[Dict], valid_ids: Dict[ComponentType, AbstractSet[int]]) -> None:
+        for entry in entries.copy():
+            if entry["type"] == "group":
+                children = entry["children"]
+                had_children = bool(children)
+                self._remove_obsolete_loadmanagement_prio_entries(children, valid_ids)
+                if had_children and not children:
+                    entries.remove(entry)
+            else:
+                for type_name, ids in valid_ids.items():
+                    if entry["type"] == type_name.value and entry["id"] not in ids:
+                        entries.remove(entry)
+                        if type_name == ComponentType.CONSUMER and any(
+                                consumer.num == entry["id"] for consumer in data.data.consumer_data.values()):
+                            reason = "er nicht durch openWB gesteuert wird."
+                        else:
+                            reason = "keine gültige Konfiguration gefunden wurde"
+                        pub_system_message(
+                            {}, f"{component_type_to_readable_text(type_name)} mit ID {entry['id']} wurde "
+                            f"aus der Prioritätensteuerung entfernt, da {reason}.", MessageType.WARNING)
+
+    def _add_missing_loadmanagement_prio_entries(
+            self, entries: List[Dict], valid_ids: Dict[ComponentType, AbstractSet[int]]) -> None:
+        for type_name, ids in valid_ids.items():
+            for id in ids:
+                if not self._has_loadmanagement_prio_item(type_name, id, entries):
+                    self.add_loadmanagement_prio_item(type_name, id)
+                    pub_system_message(
+                        {}, f"{component_type_to_readable_text(type_name)} mit ID {id} wurde "
+                        "der Prioritätensteuerung hinzugefügt.", MessageType.INFO)
+
     def add_loadmanagement_prio_item(self: LoadmanagementPrioProtocol, type: ComponentType, id: int) -> None:
         self.data.get.loadmanagement_prios.append({"type": type.value, "id": id})
 

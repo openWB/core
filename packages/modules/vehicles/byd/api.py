@@ -24,7 +24,7 @@ import logging
 import secrets
 import threading
 import time
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, Tuple
 
 from modules.common import req
 from modules.common.component_state import CarState
@@ -41,6 +41,9 @@ REALTIME_POLL_ENDPOINT = "/vehicleInfo/vehicle/vehicleRealTimeResult"
 
 SESSION_EXPIRED_CODES = {"1002", "1005", "1010"}
 ENDPOINT_NOT_SUPPORTED_CODES = {"1001"}
+USER_TYPE_GUEST = "1"
+GUEST_NOT_DECLARED_CODE = "1001"
+NOT_A_GUEST_CODE = "8003"
 VEHICLE_UNREACHABLE_CODES = {"6002"}
 
 POLL_ATTEMPTS = 10
@@ -60,6 +63,10 @@ _LOGIN_FAILURE_COOLDOWN_S = 3600
 
 # Fingerprint-Cache je Account, analog zu _session_cache
 _fingerprint_cache: Dict[str, str] = {}
+
+_guest_vins: Dict[Tuple[str, str], bool] = {}
+_user_type_settled: Dict[Tuple[str, str, str], float] = {}
+_USER_TYPE_SETTLED_TTL_S = 3600
 
 # Lock je Account, da update_soc.py jedes Fahrzeug in einem eigenen Thread aktualisiert
 _account_locks: Dict[str, threading.Lock] = {}
@@ -89,6 +96,10 @@ def resolve_account_fingerprint(username: str, persisted: str) -> str:
 
 class BydApiError(Exception):
     """API hat einen Fehlercode != 0 geliefert."""
+
+    def __init__(self, message: str, code: Optional[str] = None) -> None:
+        super().__init__(message)
+        self.code = code
 
 
 class BydAuthenticationError(BydApiError):
@@ -253,7 +264,7 @@ def _get_session(config: BydConfiguration, force_relogin: bool = False,
 
 
 def _post_token_json(endpoint: str, config: BydConfiguration, session: Dict[str, Any],
-                     inner: Dict[str, str]) -> Any:
+                     inner: Dict[str, str], user_type: Optional[str] = None) -> Any:
     keys = crypto.session_keys(session["sign_token"], session["encry_token"])
     device = _device(config)
     imei_md5 = device["imeiMd5"]
@@ -268,6 +279,8 @@ def _post_token_json(endpoint: str, config: BydConfiguration, session: Dict[str,
         "language": "en",
         "reqTimestamp": req_timestamp,
     }
+    if user_type is not None:
+        sign_fields["userType"] = user_type
     sign = crypto.sha1_mixed(crypto.build_sign_string(sign_fields, keys["sign_key"]))
 
     outer = {
@@ -286,6 +299,8 @@ def _post_token_json(endpoint: str, config: BydConfiguration, session: Dict[str,
         "mod": device["mod"],
         "serviceTime": str(int(time.time() * 1000)),
     }
+    if user_type is not None:
+        outer["userType"] = user_type
     outer["checkcode"] = crypto.compute_checkcode(outer)
 
     response = _post_secure(endpoint, outer)
@@ -294,10 +309,10 @@ def _post_token_json(endpoint: str, config: BydConfiguration, session: Dict[str,
         if code in SESSION_EXPIRED_CODES:
             raise BydAuthenticationError(f"{endpoint}: Session abgelaufen (code={code})")
         if code in ENDPOINT_NOT_SUPPORTED_CODES:
-            raise BydApiError(f"{endpoint}: von diesem Fahrzeug nicht unterstützt (code={code})")
+            raise BydApiError(f"{endpoint}: von diesem Fahrzeug nicht unterstützt (code={code})", code)
         if code in VEHICLE_UNREACHABLE_CODES:
-            raise BydApiError(f"{endpoint}: Fahrzeug nicht erreichbar, z.B. im Tiefschlaf (code={code})")
-        raise BydApiError(f"{endpoint} fehlgeschlagen: code={code} message={response.get('message')}")
+            raise BydApiError(f"{endpoint}: Fahrzeug nicht erreichbar, z.B. im Tiefschlaf (code={code})", code)
+        raise BydApiError(f"{endpoint} fehlgeschlagen: code={code} message={response.get('message')}", code)
 
     respond_data = response.get("respondData")
     if not respond_data:
@@ -306,6 +321,41 @@ def _post_token_json(endpoint: str, config: BydConfiguration, session: Dict[str,
     if not plaintext.strip():
         return {}
     return json.loads(plaintext)
+
+
+def _post_vehicle_json(endpoint: str, config: BydConfiguration, session: Dict[str, Any],
+                       inner: Dict[str, str]) -> Any:
+    key = (config.username, config.vin)
+    guest = _guest_vins.get(key, False)
+    try:
+        return _post_token_json(endpoint, config, session, inner, USER_TYPE_GUEST if guest else None)
+    except BydAuthenticationError:
+        raise
+    except BydApiError as first:
+        wrong_user_type = NOT_A_GUEST_CODE if guest else GUEST_NOT_DECLARED_CODE
+        settled_at = _user_type_settled.get((*key, endpoint))
+        if settled_at is not None and time.monotonic() - settled_at >= _USER_TYPE_SETTLED_TTL_S:
+            del _user_type_settled[(*key, endpoint)]
+            settled_at = None
+        if first.code != wrong_user_type or settled_at is not None:
+            raise
+        retry_inner = {**inner, "random": secrets.token_hex(16).upper(),
+                       "timeStamp": str(int(time.time() * 1000))}
+        try:
+            result = _post_token_json(endpoint, config, session, retry_inner, None if guest else USER_TYPE_GUEST)
+        except BydAuthenticationError:
+            raise
+        except BydApiError as second:
+            if second.code == (GUEST_NOT_DECLARED_CODE if guest else NOT_A_GUEST_CODE):
+                _user_type_settled[(*key, endpoint)] = time.monotonic()
+                raise first from None
+            if second.code is not None:
+                _guest_vins[key] = not guest
+            raise
+        _guest_vins[key] = not guest
+        log.info("BYD: Account %s für Fahrzeug %s als %s erkannt", config.username, config.vin,
+                 "Besitzer" if guest else "Gast (geteiltes Fahrzeug)")
+        return result
 
 
 def _inner_base(config: BydConfiguration, request_serial: Optional[str] = None) -> Dict[str, str]:
@@ -345,7 +395,7 @@ def _fetch_realtime(config: BydConfiguration, session: Dict[str, Any]) -> Dict[s
     trigger_inner = _inner_base(config)
     trigger_inner["energyType"] = _ENERGY_TYPE_CODES.get(config.energy_type, "0")
     trigger_inner["tboxVersion"] = "3"
-    result = _post_token_json(REALTIME_TRIGGER_ENDPOINT, config, session, trigger_inner)
+    result = _post_vehicle_json(REALTIME_TRIGGER_ENDPOINT, config, session, trigger_inner)
     request_serial = result.get("requestSerial") if isinstance(result, dict) else None
 
     if isinstance(result, dict) and _is_realtime_ready(result):
@@ -357,7 +407,7 @@ def _fetch_realtime(config: BydConfiguration, session: Dict[str, Any]) -> Dict[s
         poll_inner["energyType"] = _ENERGY_TYPE_CODES.get(config.energy_type, "0")
         poll_inner["tboxVersion"] = "3"
         try:
-            result = _post_token_json(REALTIME_POLL_ENDPOINT, config, session, poll_inner)
+            result = _post_vehicle_json(REALTIME_POLL_ENDPOINT, config, session, poll_inner)
         except BydAuthenticationError:
             # durchreichen, damit fetch_soc()s Relogin-Pfad greift statt den Poll-Loop zu verbrauchen
             raise

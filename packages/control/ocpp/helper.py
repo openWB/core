@@ -1,0 +1,52 @@
+from datetime import datetime, timezone
+import logging
+from typing import TypeVar, cast
+from control import data
+from helpermodules.pub import Pub
+
+log = logging.getLogger(__name__)
+T = TypeVar("T", int, str)
+
+
+def _get_formatted_time() -> str:
+    return datetime.now(timezone.utc).isoformat()
+
+
+def is_ocpp_stop_active(ocpp_data) -> bool:
+    """Prüft, ob mindestens eine OCPP-Stop-Sperre aktiv ist."""
+    return any(
+        getattr(ocpp_data, flag, False)
+        for flag in ("remote_stop", "rfid_stop", "reset", "unlock_stop")
+    )
+
+
+def get_chargebox_id(cp):
+    """Während eines ID-Wechsels gehört der Vorgang noch zur bisherigen ID."""
+    return getattr(cp.data.get.ocpp, "previous_chargebox_id", None) or cp.data.config.ocpp_chargebox_id
+
+
+def get_cp_from_chargebox_id(chargebox_id):
+    for cp in data.data.cp_data.values():
+        if get_chargebox_id(cp) == chargebox_id:
+            return cp
+    return None
+
+
+def report_ocpp_error(chargebox_id: str, message: str) -> None:
+    """Übergibt die letzte Backendmeldung zur einmaligen Anzeige am Ladepunkt."""
+    if not chargebox_id:
+        return
+    cp = get_cp_from_chargebox_id(chargebox_id)
+    if cp is not None:
+        Pub().pub(f"openWB/set/chargepoint/{cp.num}/get/ocpp/backend_message", message)
+
+
+def _get_config(openwb_cp, key: str, default: T, minimum: int = 1) -> T:
+    try:
+        parameter = getattr(openwb_cp.data.get.ocpp.config, key)
+        value = cast(T, type(default)(parameter["value"]))
+    except (AttributeError, KeyError, TypeError, ValueError):
+        value = default
+    if isinstance(value, int):
+        return cast(T, max(minimum, value))
+    return value
