@@ -26,11 +26,10 @@ Unterstützt wird jedes Fahrzeug, das den AC Ladestandard unterstützt.
 
 openWB gibt es unter <https://openwb.de/shop/>.
 
-Ein Image für Raspberry Pi 3 gibt es hier:
+Diese Anleitung bezieht sich auf den Entwicklungszweig **`trixie-next`**.
 
-https://link.openwb.de/lateststableimage
-
-Bitte nur mit balena Etcher flashen!
+Für eine eigene Installation wird **Raspberry Pi OS Lite (64-bit)** auf Basis von **Debian 13 "Trixie"** verwendet.
+Das Basisbetriebssystem ist über <https://www.raspberrypi.com/software/operating-systems/> erhältlich und kann mit Raspberry Pi Imager auf die SD-Karte geschrieben werden.
 
 ## Installation
 
@@ -38,17 +37,16 @@ Bei fertig erworbenen openWB ist die Software bereits vorinstalliert.
 
 Software:
 
-- Installiertes Raspberry Pi OS auf einem Raspberry Pi 3b oder besser.
-- Raspberry Pi OS Lite installieren. Aktuell wird nur **Debian 11 "Bullseye"** unterstützt.
-<https://downloads.raspberrypi.org/raspios_oldstable_lite_armhf/images/raspios_oldstable_lite_armhf-2025-05-07/>
-- alternativ kann auch ein x86_64 System (Hardware oder als VM) mit installiertem **Debian 11 "Bullseye"** als Basis verwendet werden.
-- Eine Installation unter neueren Versionen (**Debian 12 "Bookworm"** oder aktueller) wird noch nicht unterstützt!
-- Bitte beachten das **Debian 11 "Bullseye"** nur mit erheblichem Aufwand mit einem Raspberry Pi 5 kompatibel ist. Wir empfehlen die Nutzung von einem Raspberry Pi 3b.
+- Ein 64-Bit-fähiger Raspberry Pi, zum Beispiel Raspberry Pi 3B, 3B+ oder 4.
+- Installiertes **Raspberry Pi OS Lite (64-bit), Debian 13 "Trixie", Architektur `arm64`**.
+- Alternativ kann ein x86_64-System (Hardware oder VM) mit **Debian 13 "Trixie" (64 Bit)** als Basis verwendet werden.
+
+Die folgenden Schritte dienen der Neuinstallation von openWB auf dieser Basis. Sie führen kein Betriebssystem-Upgrade einer bestehenden Installation durch.
 
 In der Shell folgendes eingeben:
 
 ```bash
-curl -s https://raw.githubusercontent.com/openWB/core/master/openwb-install.sh | sudo bash
+curl -fsSL https://raw.githubusercontent.com/openWB/core/trixie-next/openwb-install.sh | sudo bash
 ```
 
 ## Entwicklung
