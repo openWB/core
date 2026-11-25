@@ -10,6 +10,8 @@ from control.chargepoint.charging_type import ChargingType
 from control.chargepoint.chargepoint import Chargepoint
 from control.chargepoint.chargepoint_state import ChargepointState
 from control.chargepoint.chargepoint_template import CpTemplate
+from control import phase_switch
+from helpermodules import timecheck
 from control.counter import Counter
 from control.ev.ev import Ev
 from modules.common.configurable_vehicle import ConfigurableVehicle
@@ -472,6 +474,59 @@ def test_is_phase_switch_required(params: Params):
 
     # assertion
     assert ret == params.phase_switch_required
+
+
+@pytest.mark.parametrize("actual_phases, expected_state, failed_switches", [
+    (3, ChargepointState.CHARGING_ALLOWED, 0),
+    (1, ChargepointState.PHASE_SWITCH_AWAITED, 1),
+])
+def test_phase_switch_waits_for_restart_before_checking_phases(
+        mock_data, monkeypatch, caplog, actual_phases, expected_state, failed_switches):
+    data.data.general_data.data.chargemode_config.surplus.vehicle.retry_failed_phase_switches = True
+    cp = Chargepoint(0, None)
+    cp.data.set.charging_ev_data = Ev(0)
+    cp.data.set.charging_ev_data.ev_template.data.keep_charge_active_duration = 40
+    cp.data.config.auto_phase_switch_hw = True
+    cp.data.set.phases_to_use = 3
+    cp.data.control_parameter.phases = 3
+    cp.data.control_parameter.state = ChargepointState.WAIT_FOR_USING_PHASES
+    cp.data.get.phases_in_use = 1
+    cp.data.get.charge_state = False
+    cp.data.set.current = 0
+    cp.data.set.current_prev = 0
+    cp.data.control_parameter.timestamp_charge_start = None
+    monkeypatch.setattr(data.data.counter_all_data, "get_evu_counter", Mock(return_value=Counter(0)))
+    monkeypatch.setattr(cp, "hw_supports_phase_switch", Mock(return_value=True))
+    switch = Mock()
+    monkeypatch.setattr(phase_switch, "thread_phase_switch", switch)
+    now = 1000
+    monkeypatch.setattr(timecheck, "create_timestamp", lambda: now)
+
+    # Nach der Umschaltung ist noch kein Strom freigegeben. Automatisches PV-Laden
+    # muss die drei Phasen beibehalten, statt wegen des Ladestopps auf eine zurückzufallen.
+    cp.check_phase_switch_completed()
+    cp.data.control_parameter.phases = cp.get_phases_by_selected_chargemode(0)
+    cp.initiate_phase_switch()
+    assert cp.data.control_parameter.phases == 3
+    assert cp.data.control_parameter.state == ChargepointState.WAIT_FOR_USING_PHASES
+    assert cp.data.control_parameter.failed_phase_switches == 0
+    switch.assert_not_called()
+
+    # Erst ab Stromfreigabe läuft die Wiederanlaufzeit, auch wenn das Auto noch nicht lädt.
+    cp.data.set.current = 6
+    cp.data.set.current_prev = 6
+    cp.data.control_parameter.timestamp_charge_start = now
+    now += 39
+    cp.check_phase_switch_completed()
+    assert cp.data.control_parameter.state == ChargepointState.WAIT_FOR_USING_PHASES
+
+    now += 2
+    cp.data.get.phases_in_use = actual_phases
+    cp.data.get.charge_state = True
+    cp.check_phase_switch_completed()
+    assert cp.data.control_parameter.state == expected_state
+    assert cp.data.control_parameter.failed_phase_switches == failed_switches
+    assert not any(record.levelname == "ERROR" for record in caplog.records)
 
 
 @pytest.mark.parametrize(
