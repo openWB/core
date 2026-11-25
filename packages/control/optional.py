@@ -18,6 +18,7 @@ from modules.common.configurable_monitoring import ConfigurableMonitoring
 from modules.electricity_pricing.price_type import PriceType, get_price_type
 
 log = logging.getLogger(__name__)
+tariff_log = logging.getLogger("tariff")
 AS_EURO_PER_KWH = 1000.0  # Umrechnung von €/Wh in €/kWh
 MQTT_PREFIX = "openWB/set/optional/ep"
 # Rückfallwerte in €/Wh, solange kein Preisanbieter bzw. keine Preisliste vorliegt
@@ -365,10 +366,11 @@ class Optional:
         now = timecheck.create_timestamp()
         next_query_formatted = datetime.fromtimestamp(module.get.next_query_time).strftime("%Y%m%d-%H:%M:%S")
         if now > module.get.next_query_time:
-            log.debug(f'Wartezeit {next_query_formatted} für {module.name} abgelaufen, Strompreise werden abgefragt')
+            tariff_log.debug(
+                f'Wartezeit {next_query_formatted} für {module.name} abgelaufen, Strompreise werden abgefragt')
             return True
         else:
-            log.debug(f'Nächster Abruf der {module.name} Strompreise {next_query_formatted}.')
+            tariff_log.debug(f'Nächster Abruf der {module.name} Strompreise {next_query_formatted}.')
             return False
 
     def et_price_update_required(self) -> bool:

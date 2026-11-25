@@ -14,7 +14,7 @@ from modules.common.abstract_device import DeviceDescriptor
 from modules.common.component_state import TariffState
 from modules.electricity_pricing.flexible_tariffs.westfalen_wind.config import WestfalenWindTariff, WestfalenWindToken
 
-log = logging.getLogger(__name__)
+log = logging.getLogger("tariff")
 
 
 def validate_token(config: WestfalenWindTariff) -> None:

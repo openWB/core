@@ -10,7 +10,7 @@ from modules.common import req
 from modules.common.abstract_device import DeviceDescriptor
 from modules.common.component_state import TariffState
 
-log = logging.getLogger(__name__)
+log = logging.getLogger("tariff")
 
 GERMAN_TZ = pytz.timezone("Europe/Berlin")
 

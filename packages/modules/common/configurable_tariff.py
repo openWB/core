@@ -23,7 +23,7 @@ RETRY_BACKOFF_SECONDS: int = 5 * 60
 # vorher ist das noch der normale, erwartete Fall
 LATE_WARNING_OFFSET_HOURS: int = 2
 
-log = logging.getLogger(__name__)
+log = logging.getLogger("tariff")
 
 
 # Bezeichnungen für Meldungen in der Oberfläche
