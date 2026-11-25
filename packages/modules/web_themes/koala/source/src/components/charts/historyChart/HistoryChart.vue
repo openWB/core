@@ -1,7 +1,8 @@
 <template>
   <div class="chart-container">
-    <div class="chart-wrapper">
+    <div ref="plot" class="chart-wrapper">
       <ChartjsLine
+        v-if="fontsReady"
         :key="chartInstanceKey"
         :data="lineChartData"
         :options="chartOptions"
@@ -17,7 +18,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
+import { computed, onMounted, onBeforeUnmount, ref, watch } from 'vue';
 import { useQuasar } from 'quasar';
 import type { ChartOptions, Point } from 'chart.js';
 import { Line as ChartjsLine } from 'vue-chartjs';
@@ -38,6 +39,11 @@ import { useLocalDataStore } from 'src/stores/localData-store';
 import { GraphDataPoint } from 'src/stores/mqtt-store-model';
 import HistoryChartLegend from 'src/components/charts/historyChart/HistoryChartLegend.vue';
 import 'chartjs-adapter-luxon';
+import {
+  timeSeriesAxisFont,
+  timeSeriesTooltip,
+  wrapTooltipLabel,
+} from '../time-series-options';
 import {
   CONSUMER_TOTAL_LABEL,
   CONSUMER_TOTAL_KEY,
@@ -65,9 +71,33 @@ const localDataStore = useLocalDataStore();
 const $q = useQuasar();
 const props = defineProps<{
   showLegend: boolean;
+  dashboard?: boolean;
 }>();
 
 const chartRef = ref<ChartComponentRef | null>(null);
+const plot = ref<HTMLElement>();
+const plotWidth = ref(600);
+const fontsReady = ref(false);
+let observer: ResizeObserver | undefined;
+onMounted(() => {
+  observer = new ResizeObserver(([entry]) => {
+    plotWidth.value = entry.contentRect.width;
+  });
+  if (plot.value) observer.observe(plot.value);
+  const family = getComputedStyle(document.body).fontFamily;
+  void Promise.allSettled(
+    [400, 500, 700].map((weight) =>
+      document.fonts.load(`${weight} 16px ${family}`),
+    ),
+  ).then(() => {
+    fontsReady.value = true;
+  });
+});
+onBeforeUnmount(() => observer?.disconnect());
+const axisColor = computed(() => {
+  void $q.dark.isActive;
+  return getComputedStyle(document.body).color;
+});
 
 const chartInstance = computed(() => {
   return (chartRef.value?.chart as Chart) ?? null;
@@ -487,11 +517,24 @@ const chartOptions = computed<ChartOptions<'line'>>(() => ({
       display: false,
     },
     tooltip: {
+      ...(props.dashboard ? timeSeriesTooltip : {}),
       mode: 'index' as const,
       intersect: false,
       callbacks: {
-        label: (item: HistoryChartTooltipItem) =>
-          `${item.dataset.label}: ${item.formattedValue} ${item.dataset.unit}`,
+        label: (item: HistoryChartTooltipItem) => {
+          const text = `${item.dataset.label}: ${item.formattedValue} ${item.dataset.unit}`;
+          if (!props.dashboard) return text;
+          const context = item.chart.ctx;
+          context.save();
+          context.font = `${timeSeriesTooltip.bodyFont.size}px ${Chart.defaults.font.family}`;
+          const lines = wrapTooltipLabel(
+            text,
+            context,
+            Math.max(60, Math.min(480, item.chart.width - 64)),
+          );
+          context.restore();
+          return lines;
+        },
       },
     },
   },
@@ -505,7 +548,13 @@ const chartOptions = computed<ChartOptions<'line'>>(() => ({
         },
       },
       ticks: {
-        maxTicksLimit: 40,
+        color: axisColor.value,
+        font: props.dashboard ? timeSeriesAxisFont : undefined,
+        padding: props.dashboard ? 8 : undefined,
+        maxTicksLimit: props.dashboard
+          ? Math.max(2, Math.floor(plotWidth.value / 70))
+          : 40,
+        maxRotation: props.dashboard ? 0 : undefined,
         source: 'labels' as const,
       },
       grid: {
@@ -522,10 +571,14 @@ const chartOptions = computed<ChartOptions<'line'>>(() => ({
       title: {
         display: true,
         text: 'Leistung [kW]',
+        color: axisColor.value,
+        font: props.dashboard ? timeSeriesAxisFont : undefined,
       },
       ticks: {
+        color: axisColor.value,
+        font: props.dashboard ? timeSeriesAxisFont : undefined,
         stepSize: 0.2,
-        maxTicksLimit: 11,
+        maxTicksLimit: props.dashboard ? 6 : 11,
       },
       grid: {
         color: $q.dark.isActive
@@ -540,11 +593,16 @@ const chartOptions = computed<ChartOptions<'line'>>(() => ({
       title: {
         display: true,
         text: 'SoC [%]',
+        color: axisColor.value,
+        font: props.dashboard ? timeSeriesAxisFont : undefined,
       },
       min: 0,
       max: 100,
       ticks: {
+        color: axisColor.value,
+        font: props.dashboard ? timeSeriesAxisFont : undefined,
         stepSize: 10,
+        maxTicksLimit: props.dashboard ? 6 : undefined,
       },
       grid: {
         display: false,

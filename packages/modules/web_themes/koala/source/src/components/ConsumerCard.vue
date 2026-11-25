@@ -1,13 +1,20 @@
 <template>
   <q-card class="consumer-card" :class="{ 'full-height': props.fullHeight }">
-    <q-card-section class="row no-wrap items-center justify-between">
-      <div class="row no-wrap items-center ellipsis">
-        <ConsumerStateIcon :consumer-id="props.consumerId" class="q-mr-sm" />
-        <div class="text-h6 text-bold ellipsis" :title="name">
+    <q-card-section
+      class="row no-wrap items-center justify-between device-card-heading"
+    >
+      <div class="col device-card-title">
+        <ConsumerStateIcon
+          :consumer-id="props.consumerId"
+          class="device-card-icon"
+        />
+        <div
+          class="col text-h6 text-bold ellipsis device-card-name"
+          :title="name"
+        >
           {{ name }}
         </div>
       </div>
-      <q-space />
       <q-btn
         icon="settings"
         flat

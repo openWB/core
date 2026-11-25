@@ -1,35 +1,48 @@
 <template>
-  <div class="chart-container">
+  <div ref="container" class="chart-container">
     <div class="chart-wrapper">
       <ChartjsSankey
-        v-if="hasFlows"
+        v-if="hasFlows && fontsReady"
         :key="edgeCount"
         :data="chartData"
         :options="chartOptions"
         :plugins="chartPlugins"
       />
-      <div v-else class="sankey-empty text-grey text-center">
+      <div v-else-if="!hasFlows" class="sankey-empty text-grey text-center">
         Aktuell kein Energiefluss
       </div>
     </div>
     <div
-      v-if="compact && showLegend && hasFlows"
-      class="legend-wrapper row wrap justify-center q-mt-sm"
+      v-if="hasFlows && (fallbackNodes.length || fallbackFlows.length)"
+      class="sankey-details legend-wrapper"
+      tabindex="0"
+      aria-label="Beschriftungen und weitere Energieflüsse"
     >
-      <div
-        v-for="item in legendItems"
-        :key="item.id"
-        class="legend-item row items-center no-wrap text-caption"
-      >
-        <span class="legend-swatch" :style="{ backgroundColor: item.color }" />
-        {{ item.label }}
+      <div v-if="fallbackNodes.length" class="sankey-node-legend">
+        <div v-for="item in fallbackNodes" :key="item.id" class="legend-item">
+          <span
+            class="legend-swatch"
+            :style="{ backgroundColor: item.color }"
+          />
+          <span>{{ item.label }}</span>
+        </div>
       </div>
+      <ul
+        v-if="fallbackFlows.length"
+        class="sankey-flow-list"
+        aria-label="Weitere Leistungswerte"
+      >
+        <li v-for="item in fallbackFlows" :key="item.id">
+          <span class="flow-route">{{ item.from }} → {{ item.to }}</span>
+          <strong>{{ item.power }}</strong>
+        </li>
+      </ul>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, onMounted, onBeforeUnmount, ref, shallowRef } from 'vue';
 import { useQuasar } from 'quasar';
 import { createTypedChart } from 'vue-chartjs';
 import { LinearScale, Tooltip } from 'chart.js';
@@ -39,15 +52,13 @@ import type { SankeyDataPoint } from 'chartjs-chart-sankey';
 import { useSankeyData } from './useSankeyData';
 import { useSankeyHover } from './useSankeyHover';
 import { createFlowLabels } from './sankey-flow-labels';
+import type { SankeyLabelLayout } from './sankey-flow-labels';
 import { NODE_HOUSE, NODE_HOUSE_REST } from './energy-allocation';
 
 // A typed sankey component (like vue-chartjs's built-in Line/Bar) so the
 // `data`/`options` props are fixed to 'sankey' instead of the whole ChartType
 // union. createTypedChart also registers what we pass: the sankey controller
-// and element, plus the LinearScale its defaults require (non-obvious, since a
-// sankey shows no axes). The Tooltip is the fallback for values that
-// sankey-flow-labels could not draw on the flow itself: a band too thin to
-// hold a line of text, or a label with nowhere to go that did not collide.
+// and element, plus the LinearScale its defaults require (a sankey has no axes).
 const ChartjsSankey = createTypedChart('sankey', [
   SankeyController,
   Flow,
@@ -57,12 +68,44 @@ const ChartjsSankey = createTypedChart('sankey', [
 
 defineOptions({ name: 'SankeyChart' });
 
-// The legend is only shown in compact mode, where node names are hidden.
-// When chart has three columns.
-defineProps<{ showLegend?: boolean }>();
+const props = defineProps<{ showLegend?: boolean; dashboard?: boolean }>();
 
 const $q = useQuasar();
-const { allocation, compact, colorForNode, labelColor } = useSankeyData();
+const { allocation, colorForNode, labelColor } = useSankeyData();
+const container = ref<HTMLElement>();
+const fontsReady = ref(false);
+const containerSize = shallowRef({ width: 0, height: 0 });
+let observer: ResizeObserver | undefined;
+onMounted(() => {
+  observer = new ResizeObserver(([entry]) => {
+    containerSize.value = {
+      width: entry.contentRect.width,
+      height: entry.contentRect.height,
+    };
+  });
+  if (container.value) observer.observe(container.value);
+  // Canvas text is not repainted automatically after a webfont loads.
+  // Load the medium weight before the first measurement and collision pass.
+  const family = container.value
+    ? getComputedStyle(container.value).fontFamily
+    : 'sans-serif';
+  const ready = () => {
+    fontsReady.value = true;
+  };
+  void document.fonts.load(`500 16px ${family}`).then(ready, ready);
+});
+onBeforeUnmount(() => observer?.disconnect());
+// Use the card's real dimensions, including the space beside an open drawer.
+const compact = computed(
+  () =>
+    containerSize.value.width <
+      (allocation.value.houseParts.length ? 640 : 480) ||
+    containerSize.value.height < 240,
+);
+const labelLayout = shallowRef<SankeyLabelLayout>({
+  missingNodes: [],
+  missingFlows: [],
+});
 
 const hasFlows = computed(() => allocation.value.edges.length > 0);
 
@@ -84,12 +127,17 @@ const formatWatts = (watts: number): string => {
   return `${Math.round(watts)} W`;
 };
 
-const { hoverPlugin, focusColors, dimIfUnfocused } =
-  useSankeyHover(colorForNode);
+const { hoverPlugin, focusColors } = useSankeyHover(colorForNode);
 
 const flowLabels = createFlowLabels({
   format: formatWatts,
-  color: (dataIndex) => dimIfUnfocused(labelColor(), dataIndex),
+  color: labelColor,
+  showNodeNames: () => !compact.value,
+  onLayout: (layout) => {
+    // Avoid Vue updates on every hover/repaint when the fallback is unchanged.
+    if (JSON.stringify(layout) !== JSON.stringify(labelLayout.value))
+      labelLayout.value = layout;
+  },
 });
 const chartPlugins = [hoverPlugin, flowLabels.plugin];
 
@@ -166,12 +214,14 @@ const chartData = computed<ChartData<'sankey'>>(() => {
             (ctx.raw as SankeyDataPoint | undefined)?.to ?? '',
             ctx.dataIndex,
           ),
-        colorMode: 'gradient',
+        colorMode: 'from',
         borderWidth: 0,
         color: textColor,
-        nodeLabels: { color: textColor, display: !compact.value },
-        nodeWidth: 16,
-        nodePadding: 12,
+        // Names and values share the custom collision pass below.
+        nodeLabels: { display: false },
+        nodeWidth: props.dashboard ? 8 : 16,
+        nodePadding: compact.value ? 16 : 24,
+        alpha: props.dashboard ? 0.3 : 0.5,
       },
     ],
   };
@@ -192,10 +242,40 @@ const legendItems = computed(() => {
     }));
 });
 
+const fallbackNodes = computed(() =>
+  legendItems.value.filter(
+    (item) => compact.value || labelLayout.value.missingNodes.includes(item.id),
+  ),
+);
+const fallbackFlows = computed(() =>
+  labelLayout.value.missingFlows.flatMap((index) => {
+    const edge = allocation.value.edges[index];
+    if (!edge) return [];
+    const name = (id: string) =>
+      allocation.value.nodes.find((node) => node.id === id)?.label ?? id;
+    return [
+      {
+        id: `${edge.from}-${edge.to}`,
+        from: name(edge.from),
+        to: name(edge.to),
+        power: formatWatts(edge.flow),
+      },
+    ];
+  }),
+);
+
 const chartOptions = computed<ChartOptions<'sankey'>>(() => ({
   responsive: true,
   maintainAspectRatio: false,
   animation: false,
+  font: {
+    family: container.value
+      ? getComputedStyle(container.value).fontFamily
+      : 'sans-serif',
+    size: 16,
+    lineHeight: 1.2,
+  },
+  layout: { padding: 8 },
   plugins: {
     tooltip: {
       displayColors: false,
@@ -203,7 +283,12 @@ const chartOptions = computed<ChartOptions<'sankey'>>(() => ({
       filter: (item) => !flowLabels.labelled.has(item.dataIndex),
       callbacks: {
         title: () => '',
-        label: (item) => formatWatts((item.raw as SankeyDataPoint).flow),
+        label: (item) => {
+          const edge = item.raw as SankeyDataPoint;
+          const name = (id: string) =>
+            allocation.value.nodes.find((node) => node.id === id)?.label ?? id;
+          return `${name(edge.from)} → ${name(edge.to)}: ${formatWatts(edge.flow)}`;
+        },
       },
     },
   },
@@ -233,7 +318,54 @@ const chartOptions = computed<ChartOptions<'sankey'>>(() => ({
 
 .legend-wrapper {
   flex: 0 0 auto;
-  gap: 2px 10px;
+  max-height: 45%;
+  overflow-y: auto;
+  min-height: 0;
+  margin-top: 6px;
+  font-size: 16px;
+  line-height: 1.4;
+  scrollbar-gutter: stable;
+}
+
+.sankey-node-legend {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 4px 14px;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+
+.sankey-flow-list {
+  list-style: none;
+  padding: 0;
+  margin: 6px 0 0;
+  display: grid;
+  gap: 4px;
+}
+
+.sankey-flow-list li {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.flow-route {
+  overflow-wrap: anywhere;
+  min-width: 0;
+}
+
+.sankey-flow-list strong {
+  flex-shrink: 0;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
 }
 
 .legend-swatch {

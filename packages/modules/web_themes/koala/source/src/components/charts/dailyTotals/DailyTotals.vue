@@ -1,23 +1,34 @@
 <template>
-  <div class="container" ref="rootRef">
+  <div
+    class="container"
+    :class="{ 'totals-desktop': props.desktop }"
+    ref="rootRef"
+  >
     <div class="centered-panel">
       <div class="scroll-container narrow-scrollbar">
         <div
+          v-if="!props.desktop"
           class="flex justify-between text-subtitle1 text-weight-bold q-mb-xs"
           ref="titleRef"
         >
-          <div v-if="currentPowerVisible">Aktuelle Leistung</div>
-          <div>Tageswerte</div>
+          <div v-if="currentPowerVisible && !props.desktop">
+            Aktuelle Leistung
+          </div>
+          <div>
+            {{
+              props.desktop ? 'Aktuelle Leistung und Tageswerte' : 'Tageswerte'
+            }}
+          </div>
         </div>
         <!-- grid -->
         <q-expansion-item
           v-if="showGrid"
           dense
-          expand-separator
+          :expand-separator="!props.desktop"
           v-model="expanded.grid"
           class="grid card"
           :header-class="
-            secondaryComponentsConfigured('counter')
+            props.desktop || secondaryComponentsConfigured('counter')
               ? 'cursor-pointer'
               : 'no-pointer'
           "
@@ -27,8 +38,9 @@
               :item="gridData"
               :rowHeight="rowHeight"
               :rowExpanded="expanded.grid"
+              :hideDailyTotals="props.desktop && !expanded.grid"
               :secondaryComponentsConfigured="
-                secondaryComponentsConfigured('counter')
+                props.desktop || secondaryComponentsConfigured('counter')
               "
               :componentNameVisible="componentNameVisible"
               :currentPowerVisible="currentPowerVisible"
@@ -55,11 +67,11 @@
           v-for="item in componentData"
           :key="item.id"
           dense
-          expand-separator
+          :expand-separator="!props.desktop"
           v-model="expanded[item.id]"
           :class="[item.id, 'card']"
           :header-class="
-            secondaryComponentsConfigured(item.id)
+            props.desktop || secondaryComponentsConfigured(item.id)
               ? 'cursor-pointer'
               : 'no-pointer'
           "
@@ -69,8 +81,9 @@
               :item="item"
               :rowHeight="rowHeight"
               :rowExpanded="expanded[item.id]"
+              :hideDailyTotals="props.desktop && !expanded[item.id]"
               :secondaryComponentsConfigured="
-                secondaryComponentsConfigured(item.id)
+                props.desktop || secondaryComponentsConfigured(item.id)
               "
               :componentNameVisible="componentNameVisible"
               :currentPowerVisible="currentPowerVisible"
@@ -234,11 +247,14 @@ import {
 } from 'vue';
 import { useQuasar } from 'quasar';
 import { useMqttStore } from 'src/stores/mqtt-store';
+import { useLocalDataStore } from 'src/stores/localData-store';
 import DailyTotalsRow from './DailyTotalsRow.vue';
 import type { DailyTotalsItem } from 'src/components/models/daily-totals-model';
 
 const $q = useQuasar();
+const props = defineProps<{ desktop?: boolean }>();
 const mqttStore = useMqttStore();
+const localDataStore = useLocalDataStore();
 const gridPower = computed(() => mqttStore.counterPower('value'));
 const showGrid = computed(
   () =>
@@ -251,11 +267,25 @@ const expanded = ref<Record<string, boolean>>({
   battery: false,
   pv: false,
   consumer: false,
+  ...Object.fromEntries(
+    localDataStore.expandedDailyTotals.map((name) => [name, true]),
+  ),
 });
+watch(
+  expanded,
+  (value) => {
+    localDataStore.expandedDailyTotals = Object.keys(value).filter(
+      (name) => value[name],
+    );
+  },
+  { deep: true },
+);
 
 const componentNameVisible = computed(() => $q.screen.width >= 300);
-const currentPowerVisible = computed(() => $q.screen.width >= 500);
-const socValueVisible = computed(() => $q.screen.width >= 700);
+const currentPowerVisible = computed(
+  () => props.desktop || $q.screen.width >= 500,
+);
+const socValueVisible = computed(() => props.desktop || $q.screen.width >= 700);
 
 const showHomePower = computed(() => {
   return mqttStore.homePower('value') !== undefined;
@@ -611,6 +641,172 @@ watch(
 </script>
 
 <style scoped>
+.totals-desktop.container {
+  height: auto;
+  --totals-icon-size: 24px;
+}
+.totals-desktop .centered-panel {
+  max-width: none;
+  height: auto;
+  overflow: visible;
+}
+.totals-desktop .scroll-container {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  align-items: start;
+  gap: var(--dashboard-gap, 12px);
+  max-height: none;
+  overflow: visible;
+  padding: 0;
+}
+.totals-desktop .card {
+  margin-bottom: 0;
+  min-width: 0;
+}
+.totals-desktop :deep(.component-container) {
+  display: grid;
+  grid-template-areas:
+    'heading reading'
+    'labels values';
+  grid-template-columns: minmax(0, 1fr) auto;
+  height: auto;
+  min-height: 96px;
+  gap: 0.5rem 0.2rem;
+  padding: 0.6rem 0.5rem;
+}
+.totals-desktop :deep(.component-heading) {
+  grid-area: heading;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  line-height: 1.4;
+}
+.totals-desktop :deep(.col-icon) {
+  flex: 0 0 var(--totals-icon-size);
+  width: var(--totals-icon-size);
+  height: var(--totals-icon-size);
+  align-items: center;
+}
+.totals-desktop :deep(.col-title) {
+  flex: 1 1 auto;
+}
+.totals-desktop :deep(.component-reading) {
+  grid-area: reading;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+  min-width: 0;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+.totals-desktop :deep(.col-soc-spacer) {
+  display: none;
+}
+.totals-desktop :deep(.col-soc),
+.totals-desktop :deep(.col-arrow),
+.totals-desktop :deep(.col-power) {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex: 0 0 auto;
+  line-height: 1.4;
+}
+.totals-desktop :deep(.col-arrow) {
+  line-height: 1;
+}
+.totals-desktop :deep(.col-arrow .q-icon) {
+  /* Align the arrow's visible centre with the adjacent numerals. */
+  position: relative;
+  top: -0.5px;
+}
+.totals-desktop :deep(.col-power) {
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+.totals-desktop :deep(.col-flex) {
+  display: none;
+}
+.totals-desktop :deep(.col-right-label) {
+  grid-area: labels;
+  text-align: left;
+}
+.totals-desktop :deep(.col-right-value) {
+  grid-area: values;
+}
+.totals-desktop :deep(.col-title),
+.totals-desktop :deep(.title-wrapper),
+.totals-desktop :deep(.ellipsis-wrapper) {
+  white-space: nowrap;
+  min-width: 0;
+}
+.totals-desktop :deep(.base-icon) {
+  display: block;
+  width: var(--totals-icon-size) !important;
+  height: var(--totals-icon-size) !important;
+}
+.totals-desktop :deep(.expand-icon) {
+  flex-shrink: 0;
+  font-size: 1rem;
+}
+.totals-desktop :deep(.col-title) {
+  font-size: 0.85rem;
+}
+.totals-desktop .sub-row :deep(.component-container) {
+  min-height: 96px;
+}
+
+.totals-desktop :deep(.totals-hidden) {
+  grid-template-areas: 'heading reading';
+  min-height: 52px;
+}
+
+@media (max-width: 1199px) {
+  .totals-desktop .scroll-container {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 599px) {
+  .totals-desktop.container {
+    --totals-icon-size: 20px;
+  }
+  .totals-desktop :deep(.component-container) {
+    grid-template-areas:
+      'heading heading'
+      'reading reading'
+      'labels labels'
+      'values values';
+    gap: 0.25rem 0.15rem;
+    padding: 0.4rem 0.3rem;
+  }
+  .totals-desktop :deep(.totals-hidden) {
+    grid-template-areas:
+      'heading heading'
+      'reading reading';
+    min-height: 64px;
+  }
+  .totals-desktop :deep(.col-title) {
+    font-size: 0.75rem;
+  }
+  .totals-desktop :deep(.component-reading) {
+    font-size: 0.8rem;
+  }
+  .totals-desktop :deep(.col-power) {
+    font-size: 0.8rem;
+    white-space: nowrap;
+  }
+  .totals-desktop :deep(.col-soc) {
+    font-size: 0.7rem;
+  }
+  .totals-desktop :deep(.col-right-label),
+  .totals-desktop :deep(.col-right-value) {
+    font-size: 0.75rem;
+    text-align: left;
+  }
+}
+
 .container {
   height: 100%;
   display: flex;

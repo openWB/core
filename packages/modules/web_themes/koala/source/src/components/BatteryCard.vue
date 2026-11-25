@@ -8,11 +8,23 @@
       'has-custom-color': batteryColor,
     }"
   >
-    <q-card-section class="row no-wrap items-center justify-between">
-      <div class="text-h6 text-bold ellipsis" :title="cardTitle">
-        {{ cardTitle }}
+    <q-card-section
+      class="row no-wrap items-center justify-between device-card-heading"
+    >
+      <div class="col device-card-title">
+        <q-icon
+          name="battery_full"
+          size="sm"
+          class="device-card-icon"
+          :style="{ color: batteryColor }"
+        />
+        <div
+          class="col text-h6 text-bold ellipsis device-card-name"
+          :title="cardTitle"
+        >
+          {{ cardTitle }}
+        </div>
       </div>
-      <q-space />
       <q-btn
         v-if="showSettings"
         icon="settings"

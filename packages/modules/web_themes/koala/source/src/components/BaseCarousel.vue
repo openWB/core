@@ -52,6 +52,7 @@ const currentSlide = ref(0);
 const itemWidth = ref(100);
 const carouselWidth = ref(0);
 const carouselPadding = ref(0);
+const itemGap = ref(0);
 const showArrows = ref(false);
 
 function measure() {
@@ -68,6 +69,7 @@ function measure() {
         carouselPadding.value =
           parseFloat(style.paddingLeft || '0') +
           parseFloat(style.paddingRight || '0');
+        itemGap.value = parseFloat(style.columnGap) || 0;
       } else {
         console.warn('Could not find .q-carousel__slide element');
       }
@@ -93,8 +95,9 @@ const groupSize = computed(() => {
     Math.floor(
       (carouselWidth.value -
         2 -
-        (showArrows.value ? carouselPadding.value : 50)) /
-        itemWidth.value,
+        (showArrows.value ? carouselPadding.value : 50) +
+        itemGap.value) /
+        (itemWidth.value + itemGap.value),
     ),
   );
   // Spezialfall: Alle passen nebeneinander
@@ -103,7 +106,11 @@ const groupSize = computed(() => {
     props.items.length <= maxGroup + 1 &&
     props.items.length - maxGroup === 1
   ) {
-    if (props.items.length * itemWidth.value < carouselWidth.value) {
+    if (
+      props.items.length * itemWidth.value +
+        (props.items.length - 1) * itemGap.value <
+      carouselWidth.value
+    ) {
       return props.items.length;
     }
   }

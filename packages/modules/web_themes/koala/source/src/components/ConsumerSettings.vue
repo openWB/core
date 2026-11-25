@@ -55,7 +55,7 @@
 
             <div
               v-if="resetMode === 'weekly'"
-              class="row items-center q-gutter-sm justify-center no-wrap q-mt-xs"
+              class="row items-center q-gutter-sm justify-center q-mt-xs"
             >
               <div v-for="(day, index) in weekDays" :key="day">
                 <q-btn

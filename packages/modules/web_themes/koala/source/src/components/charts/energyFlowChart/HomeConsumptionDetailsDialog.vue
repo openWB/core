@@ -18,7 +18,7 @@
       </q-card-section>
       <q-separator />
       <q-card-section class="q-pa-none">
-        <q-list dense class="q-pt-sm">
+        <q-list class="details-list">
           <q-item v-for="item in items" :key="item.key">
             <q-item-section avatar>
               <component
@@ -136,10 +136,16 @@ const items = computed((): DetailsItem[] => {
   color: var(--q-primary);
 }
 .q-item__section--avatar {
-  min-width: 0;
+  min-width: 44px;
+  padding-right: 16px;
 }
 
-.q-list {
+.details-list {
   background-color: transparent;
+  padding: 16px 0;
+}
+.details-list .q-item {
+  min-height: 46px;
+  padding: 8px 16px;
 }
 </style>
