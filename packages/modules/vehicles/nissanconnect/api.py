@@ -1,4 +1,4 @@
-"""Passive MyNISSAN EU client; tested with Leaf ZE1. No vehicle commands.
+"""MyNISSAN EU client with optional battery refresh; tested with Leaf ZE1.
 
 Adapted by wippofax from dan-r/HomeAssistant-NissanConnect, revision
 b0bafe9108d4574e243aa182324584dbc68369ad (MIT), kamereon/kamereon.py.
@@ -52,6 +52,9 @@ OAUTH_LOGIN_SCOPE = "openid name profile email offline_access"
 JSON_API_CONTENT_TYPE = "application/vnd.api+json"
 REQUEST_TIMEOUT_SECONDS = 10
 MAX_VEHICLE_CONNECTION_RETRIES = 1
+BATTERY_REFRESH_INTERVAL_SECONDS = 3600
+BATTERY_REFRESH_POLL_INTERVAL_SECONDS = 15
+MAX_BATTERY_REFRESH_POLLS = 4
 DEFAULT_TOKEN_LIFETIME_SECONDS = 3600
 TOKEN_REFRESH_MARGIN_SECONDS = 30
 MAX_MEASUREMENT_FUTURE_SKEW_SECONDS = 300
@@ -84,6 +87,10 @@ for _logger_name in ("urllib3.connection", "urllib3.connectionpool", "urllib3.po
 
 class NissanError(Exception):
     """Errors omit response bodies, credentials and account identifiers."""
+
+
+class NissanTransportError(NissanError):
+    """Connection or timeout failure; TLS and HTTP failures are excluded."""
 
 
 class AuthenticationError(NissanError):
@@ -191,6 +198,7 @@ class NissanClient:
         self._vin = None
         self._access_token = self._refresh_token = None
         self._expires_at_monotonic_seconds = 0
+        self._last_battery_refresh_monotonic_seconds = None
         self._session = get_http_session()
         # The shared response hook logs full tokens/payloads. Check status locally instead.
         self._session.hooks["response"] = []
@@ -212,11 +220,11 @@ class NissanClient:
                     self._session.close()
                     log.debug("Nissan vehicle connection failed; retrying once.")
         except Timeout:
-            raise NissanError("Nissan request timed out.") from None
+            raise NissanTransportError("Nissan request timed out.") from None
         except SSLError:
             raise NissanError("Nissan TLS connection failed.") from None
         except ConnectionError as error:
-            raise NissanError(_connection_error_message(error)) from None
+            raise NissanTransportError(_connection_error_message(error)) from None
         except RequestException:
             raise NissanError("Nissan could not be reached.") from None
         finally:
@@ -349,17 +357,72 @@ class NissanClient:
         else:
             raise NissanError("Could not select a unique vehicle. Please configure the VIN.")
 
-    def fetch_battery(self) -> Tuple[float, Optional[float], float, Optional[float]]:
+    def _refresh_battery(self, vehicle_url, newly_plugged=False):
+        """Refresh hourly, including failures, or once per newly observed plug-in.
+
+        Poll a bounded number of times with pauses. A completed action does not
+        prove a new measurement; fetch_battery still returns Nissan's actual timestamp.
+        """
+        now_monotonic_seconds = time.monotonic()
+        if (not newly_plugged and self._last_battery_refresh_monotonic_seconds is not None
+                and now_monotonic_seconds - self._last_battery_refresh_monotonic_seconds
+                < BATTERY_REFRESH_INTERVAL_SECONDS):
+            return
+        self._last_battery_refresh_monotonic_seconds = now_monotonic_seconds
+        try:
+            self._authenticate()
+            # Count from command submission if authentication took time. Never replay this POST.
+            self._last_battery_refresh_monotonic_seconds = time.monotonic()
+            # Avoid reusing an idle connection for this non-replayed command; retain session credentials.
+            self._session.close()
+            log.debug("Requesting Nissan battery refresh.")
+            body = self._json("POST", vehicle_url + "/actions/refresh-battery-status",
+                              headers={"Authorization": "Bearer " + self._access_token,
+                                       "Content-Type": JSON_API_CONTENT_TYPE},
+                              json={"data": {"type": "RefreshBatteryStatus"}})
+            action_id = body["data"]["id"]
+            if not isinstance(action_id, str) or not action_id:
+                raise ValueError
+            status_url = vehicle_url + "/actions/status?" + urlencode({"actionId": action_id})
+            for poll_index in range(MAX_BATTERY_REFRESH_POLLS):
+                if poll_index:
+                    time.sleep(BATTERY_REFRESH_POLL_INTERVAL_SECONDS)
+                try:
+                    status = self._get(status_url)["data"]["attributes"]["status"]
+                except NissanTransportError:
+                    # A failed status read consumes this poll, not another vehicle command.
+                    log.debug("Nissan battery refresh status transport error.")
+                    continue
+                if not isinstance(status, str):
+                    raise ValueError
+                if status.lower() == "completed":
+                    log.debug("Nissan battery refresh completed.")
+                    return
+                if status.lower() in ("cancelled", "failed"):
+                    # Log only these fixed terminal states, never arbitrary server text.
+                    log.debug("Nissan battery refresh %s; reading cached data.", status.lower())
+                    return
+            log.debug("Nissan battery refresh did not complete; reading cached data.")
+        except (NissanError, KeyError, TypeError, ValueError):
+            # Do not discard readable cloud data or expose action IDs and response bodies.
+            log.debug("Nissan battery refresh failed; reading cached data.")
+
+    def fetch_battery(self, refresh_from_vehicle=False,
+                      newly_plugged=False) -> Tuple[float, Optional[float], float, Optional[float]]:
         """Return SoC (%), range (km), battery measurement time (Unix seconds), odometer (km).
 
         Range and odometer may be None; valid zero values are preserved. The timestamp
         belongs only to the battery data, not the separately retrieved odometer.
         Battery or required login failures raise NissanError. Odometer failures do not
-        invalidate a valid SoC and return None for mileage.
+        invalidate a valid SoC and return None for mileage. Active refresh is opt-in
+        and rate-limited; a newly observed plug-in bypasses the hourly limit only when
+        refresh_from_vehicle is enabled. Failures leave normal cloud reads available.
         """
         if not self._vin:
             self._select_vehicle()
         url = CARS_BASE_URL + "v1/cars/" + self._vin
+        if refresh_from_vehicle:
+            self._refresh_battery(url, newly_plugged=newly_plugged)
         soc_percent, range_km, measurement_unix_seconds = parse_battery(self._get(url + "/battery-status"))
         # Cockpit availability differs by vehicle. Never discard a valid SoC or invent mileage.
         odometer_km = None
