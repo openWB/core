@@ -2,11 +2,11 @@
 # Install the precompiled alpha display on the supported Trixie arm64 DSI profile.
 set -euo pipefail
 SUPPORTED_ARCH=("arm64")
-PACKAGE_VERSION='0.1.0~alpha4.20261124'
+PACKAGE_VERSION='0.1.0~alpha7.20261125'
 DEB_PACKAGE_NAME="openwb-native-display"
 PACKAGE_BASE_NAME="${DEB_PACKAGE_NAME}_${PACKAGE_VERSION}"
 PACKAGE_BASE_URL="https://openwb.de/uploads/display"
-PACKAGE_SHA256='c3c95fb169970f3b885c60047fc68f03b412cee80dc196c66e240e65ebd827a8'
+PACKAGE_SHA256='5fbca413ee71f6e97e3606e5f888e97f27765603110a47c87dffc2e35f7836a5'
 
 unsupported() {
 	echo "$1"
