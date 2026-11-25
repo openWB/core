@@ -215,18 +215,20 @@ def process_agreement(agreement: dict, current_utc: datetime, horizon_utc: datet
                 timestamp = str(int(valid_from.astimezone(GERMAN_TZ).timestamp()))
                 prices[timestamp] = rate
 
-    # Lücken im Forecast (oder sein komplettes Fehlen) werden mit unitRateInformation aufgefüllt, im selben
-    # Takt wie der Forecast - sonst leitet ep_get_loading_hours() aus den ersten beiden Preisen eine falsche,
-    # global geltende Slot-Länge ab.
+    # Lücken im Forecast (oder sein komplettes Fehlen) werden im Takt des Forecasts mit unitRateInformation aufgefüllt,
+    # sonst leitet ep_get_loading_hours() eine falsche Slot-Länge ab. Nicht hinter dem Forecast: bei dynamischen
+    # Tarifen ist das nur ein Platzhalter, der fehlende Folgetagspreise vortäuscht.
     if forecast_intervals:
         step = forecast_intervals[0][1] - forecast_intervals[0][0]
         round_to_hour = False
+        fill_until = max(end for _, end in forecast_intervals)
     else:
         step = timedelta(hours=1)
         round_to_hour = True
+        fill_until = horizon_utc
 
     offset = timedelta()
-    while current_utc + offset < horizon_utc:
+    while current_utc + offset < fill_until:
         time_utc = current_utc + offset
         if (not any(start <= time_utc < end for start, end in forecast_intervals)
                 and agreement_active_at(agreement, time_utc)):
