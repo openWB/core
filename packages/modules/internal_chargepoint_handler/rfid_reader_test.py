@@ -34,4 +34,5 @@ def test_read_events_publishes_tag(monkeypatch, enter_key: int):
     assert publisher.pub.call_args_list == [
         call("openWB/set/internal_chargepoint/last_tag_timestamp", 123),
         call("openWB/set/internal_chargepoint/last_tag", "12"),
+        call("openWB/set/internal_socket/data/last_tag", "12"),
     ]
