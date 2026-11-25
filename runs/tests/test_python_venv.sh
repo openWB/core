@@ -65,8 +65,14 @@ fi
 if [[ "${FAIL_INSTALL:-0}" == 1 && "$*" == '-m pip install '* ]]; then
 	exit 1
 fi
-if [[ "${FAIL_GPIO_INSTALL:-0}" == 1 && "$*" == '-m pip install '*requirements-raspberrypi.txt ]]; then
-	exit 1
+if [[ "${FAIL_GPIO_INSTALL:-0}" == 1 && "$*" == '-m pip install '* ]]; then
+	previous_argument=
+	for argument in "$@"; do
+		if [[ "$previous_argument" == -r && "$argument" == */requirements-raspberrypi.txt ]]; then
+			exit 1
+		fi
+		previous_argument=$argument
+	done
 fi
 exit 0
 PYTHON
@@ -301,7 +307,7 @@ for architecture in armhf arm64; do
 	[[ "$status" == 10 ]]
 	grep -q '^import RPi.GPIO$' "$pi_root/python.log"
 	! grep -q -- '--no-binary' "$pi_root/pip.log"
-	grep 'requirements-raspberrypi.txt' "$pi_root/pip.log" > "$pi_root/gpio-pip.log"
+	grep -F -- "-r $pi_root/requirements-raspberrypi.txt" "$pi_root/pip.log" > "$pi_root/gpio-pip.log"
 	grep -q -- '--only-binary=:all:' "$pi_root/gpio-pip.log"
 	grep -q -- "-r $pi_root/requirements.txt" "$pi_root/gpio-pip.log"
 	[[ $(wc -l < "$pi_root/pip.log") == 1 ]]
