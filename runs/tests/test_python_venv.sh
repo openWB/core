@@ -5,6 +5,8 @@ script_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 workdir=$(mktemp -d)
 trap 'rm -rf -- "$workdir"' EXIT
 mkdir -p "$workdir/openwb/runs" "$workdir/bin"
+export OPENWB_DEVICE_MODEL="$workdir/non-pi-model"
+printf 'Virtual machine\n' > "$OPENWB_DEVICE_MODEL"
 cp "$script_dir/run_python.sh" "$workdir/openwb/runs/"
 printf 'example==1\n' > "$workdir/openwb/requirements.txt"
 
@@ -41,7 +43,10 @@ if [[ "$*" == '-m pip check' ]]; then
 	[[ ${PIP_CHECK_RESULT:-0} == 0 ]]
 	exit $?
 fi
-if [[ "$1" == -c && "$2" == 'import aiohttp, evdev, grpc, jq, lxml, paho.mqtt.client, pymodbus, telnetlib3' ]]; then
+if [[ "$1" == -c && "$2" == 'import aiohttp, evdev, grpc, jq, lxml, paho.mqtt.client, pymodbus, telnetlib3'* ]]; then
+	if [[ "$2" == *'import RPi.GPIO'* && ${GPIO_IMPORT_RESULT:-0} != 0 ]]; then
+		exit 1
+	fi
 	[[ ${IMPORT_PROBE_RESULT:-0} == 0 ]]
 	exit $?
 fi
@@ -51,6 +56,7 @@ if [[ "${1:-}" == -c && "${2:-}" == *sysconfig* ]]; then
 	exit 0
 fi
 if [[ "$*" == '-m pip install '* ]]; then
+	[[ " $* " == *' --no-cache-dir '* ]] || exit 1
 	[[ -z "${PIP_TARGET:-}${PIP_PREFIX:-}${PIP_ROOT:-}${PIP_USER:-}" ]] || exit 1
 	if [[ -n "${PIP_CAPTURE:-}" ]]; then
 		printf '%s\n' "$*" >> "$PIP_CAPTURE"
@@ -58,6 +64,15 @@ if [[ "$*" == '-m pip install '* ]]; then
 fi
 if [[ "${FAIL_INSTALL:-0}" == 1 && "$*" == '-m pip install '* ]]; then
 	exit 1
+fi
+if [[ "${FAIL_GPIO_INSTALL:-0}" == 1 && "$*" == '-m pip install '* ]]; then
+	previous_argument=
+	for argument in "$@"; do
+		if [[ "$previous_argument" == -r && "$argument" == */requirements-raspberrypi.txt ]]; then
+			exit 1
+		fi
+		previous_argument=$argument
+	done
 fi
 exit 0
 PYTHON
@@ -259,11 +274,13 @@ chmod +x "$workdir/arch-bin/dpkg"
 for architecture in armhf arm64 amd64; do
 	mkdir "$workdir/$architecture"
 	cp "$workdir/openwb/requirements.txt" "$workdir/$architecture/requirements.txt"
+	cp "$script_dir/../requirements-raspberrypi.txt" "$workdir/$architecture/"
 	status=0
 	PATH="$workdir/arch-bin:$PATH" TEST_ARCH="$architecture" PIP_CAPTURE="$workdir/$architecture/pip.log" \
 		OPENWB_EVDEV_SOURCE="$workdir/system-evdev" \
 		bash "$script_dir/setup_python_venv.sh" "$workdir/$architecture" 1 || status=$?
 	[[ "$status" == 10 ]]
+	! grep -q 'requirements-raspberrypi.txt' "$workdir/$architecture/pip.log"
 	grep -q -- '--only-binary=:all:' "$workdir/$architecture/pip.log"
 	if [[ "$architecture" == amd64 ]]; then
 		grep -q -- '--no-binary=evdev' "$workdir/$architecture/pip.log"
@@ -274,6 +291,49 @@ for architecture in armhf arm64 amd64; do
 		[[ -d "$workdir/$architecture/.venv/site-packages/evdev-1.9.1.dist-info" ]]
 	fi
 done
+printf 'Raspberry Pi 4 Model B Rev 1.5\0' > "$workdir/pi-model"
+for architecture in armhf arm64; do
+	pi_root="$workdir/pi-$architecture"
+	mkdir -p "$pi_root/runs"
+	cp "$script_dir/run_python.sh" "$pi_root/runs/"
+	cp "$workdir/openwb/requirements.txt" "$pi_root/requirements.txt"
+	cp "$script_dir/../requirements-raspberrypi.txt" "$pi_root/"
+	status=0
+	PATH="$workdir/arch-bin:$PATH" TEST_ARCH="$architecture" \
+		OPENWB_DEVICE_MODEL="$workdir/pi-model" \
+		OPENWB_EVDEV_SOURCE="$workdir/system-evdev" MOCK_PYTHON_LOG="$pi_root/python.log" \
+		PIP_CAPTURE="$pi_root/pip.log" \
+		bash "$script_dir/setup_python_venv.sh" "$pi_root" 1 || status=$?
+	[[ "$status" == 10 ]]
+	grep -q '^import RPi.GPIO$' "$pi_root/python.log"
+	! grep -q -- '--no-binary' "$pi_root/pip.log"
+	grep -F -- "-r $pi_root/requirements-raspberrypi.txt" "$pi_root/pip.log" > "$pi_root/gpio-pip.log"
+	grep -q -- '--only-binary=:all:' "$pi_root/gpio-pip.log"
+	grep -q -- "-r $pi_root/requirements.txt" "$pi_root/gpio-pip.log"
+	[[ $(wc -l < "$pi_root/pip.log") == 1 ]]
+	[[ $(bash "$pi_root/runs/run_python.sh" --probe) == "$(readlink -f "$pi_root/.venv")/bin/python" ]]
+	printf '# Changed GPIO requirement\n' >> "$pi_root/requirements-raspberrypi.txt"
+	if bash "$pi_root/runs/run_python.sh" --probe > "$pi_root/stale.out" 2> "$pi_root/stale.err"; then
+		exit 1
+	fi
+	grep -q 'does not match the current requirements' "$pi_root/stale.err"
+	# An unusable GPIO extension must reject both the current and fallback environment.
+	if OPENWB_DEVICE_MODEL="$workdir/pi-model" GPIO_IMPORT_RESULT=1 \
+		bash "$script_dir/setup_python_venv.sh" "$pi_root" 0; then
+		exit 1
+	fi
+	[[ ! -e "$pi_root/.venv/.openwb-fallback" ]]
+done
+mkdir "$workdir/pi-missing-gpio"
+cp "$workdir/openwb/requirements.txt" "$workdir/pi-missing-gpio/requirements.txt"
+cp "$script_dir/../requirements-raspberrypi.txt" "$workdir/pi-missing-gpio/"
+if OPENWB_DEVICE_MODEL="$workdir/pi-model" FAIL_GPIO_INSTALL=1 \
+	bash "$script_dir/setup_python_venv.sh" "$workdir/pi-missing-gpio" 1; then
+	exit 1
+fi
+[[ ! -e "$workdir/pi-missing-gpio/.venv" ]]
+[[ $(find "$workdir/pi-missing-gpio/.venvs" -maxdepth 1 -type d -name 'env.*' | wc -l) == 0 ]]
+
 mkdir -p "$workdir/system-evdev-egg/evdev" "$workdir/system-evdev-egg/evdev-1.9.1.egg-info" "$workdir/arm64-egg"
 cp "$workdir/openwb/requirements.txt" "$workdir/arm64-egg/requirements.txt"
 status=0

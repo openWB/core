@@ -9,7 +9,7 @@ if [[ -f "$base_dir/.venvs/.lock" ]]; then
 	flock -s 9
 	base_python=${OPENWB_PYTHON:-/usr/bin/python3}
 	expected_fingerprint=$({
-		sha256sum "$base_dir/requirements.txt"
+		sha256sum "$base_dir"/requirements*.txt
 		"$base_python" -c 'import os, sys; print(os.path.realpath(sys.executable), sys.version)'
 	} | sha256sum | cut -d ' ' -f 1)
 	if [[ -L "$venv" && -f "$venv/.openwb-ready" && -f "$venv/.openwb-lock" && -x "$venv/bin/python" ]]; then
