@@ -1,5 +1,6 @@
 #!/bin/bash
 set -euo pipefail
+. "$(dirname "${BASH_SOURCE[0]}")/hardware_helpers.sh"
 
 base_dir=$(cd "${1:?Missing openWB directory}" && pwd -P)
 online=${2:-1}
@@ -10,6 +11,13 @@ venv_dir="$base_dir/.venvs"
 unset PYTHONHOME PYTHONPATH PIP_TARGET PIP_PREFIX PIP_ROOT PIP_USER
 export PYTHONNOUSERSITE=1
 umask 022
+
+dependency_check='import aiohttp, evdev, grpc, jq, lxml, paho.mqtt.client, pymodbus, telnetlib3
+from passlib.hash import bcrypt
+assert bcrypt.verify("openwb-dependency-check", bcrypt.hash("openwb-dependency-check"))'
+if is_raspberry_pi; then
+	dependency_check+=$'\nimport RPi.GPIO'
+fi
 
 mkdir -p "$venv_dir"
 exec 9>"$venv_dir/.lock"
@@ -72,11 +80,11 @@ if [[ ${3:-} == --boot-cleanup ]]; then
 	exit 0
 fi
 
-fingerprint=$({ sha256sum "$base_dir/requirements.txt"; "$python" -c 'import os, sys; print(os.path.realpath(sys.executable), sys.version)'; } | sha256sum | cut -d ' ' -f 1)
+fingerprint=$({ sha256sum "$base_dir"/requirements*.txt; "$python" -c 'import os, sys; print(os.path.realpath(sys.executable), sys.version)'; } | sha256sum | cut -d ' ' -f 1)
 if [[ -x "$venv_link/bin/python" && -f "$venv_link/.openwb-ready" ]] &&
 	[[ $(<"$venv_link/.openwb-ready") == "$fingerprint" ]] &&
 	"$venv_link/bin/python" -m pip check &&
-	"$venv_link/bin/python" -c 'import aiohttp, evdev, grpc, jq, lxml, paho.mqtt.client, pymodbus, telnetlib3'; then
+	"$venv_link/bin/python" -c "$dependency_check"; then
 	rm -f "$venv_link/.openwb-fallback"
 	touch "$venv_dir/.migrated"
 	rm -f "$venv_dir/.legacy"
@@ -94,7 +102,7 @@ use_existing_environment_fallback() {
 	esac
 	if ! rm -f "$active_env/.openwb-fallback" ||
 		! "$active_env/bin/python" -m pip check ||
-		! "$active_env/bin/python" -c 'import aiohttp, evdev, grpc, jq, lxml, paho.mqtt.client, pymodbus, telnetlib3'; then
+		! "$active_env/bin/python" -c "$dependency_check"; then
 		return 1
 	fi
 	marker_tmp="$active_env/.openwb-fallback.$$"
@@ -165,13 +173,17 @@ case $(dpkg --print-architecture) in
 	arm*) ;;
 	*) binary_options+=(--no-binary=evdev) ;;
 esac
-if ! "$new_env/bin/python" -m pip install --no-user "${binary_options[@]}" --extra-index-url https://www.piwheels.org/simple -r "$base_dir/requirements.txt"; then
+requirements=(-r "$base_dir/requirements.txt")
+if is_raspberry_pi; then
+	requirements+=(-r "$base_dir/requirements-raspberrypi.txt")
+fi
+if ! "$new_env/bin/python" -m pip install --no-user "${binary_options[@]}" --extra-index-url https://www.piwheels.org/simple "${requirements[@]}"; then
 	fail_rebuild "Failed to install Python dependencies"
 fi
 if ! "$new_env/bin/python" -m pip check; then
 	fail_rebuild "Python dependency consistency check failed"
 fi
-if ! "$new_env/bin/python" -c 'import aiohttp, evdev, grpc, jq, lxml, paho.mqtt.client, pymodbus, telnetlib3'; then
+if ! "$new_env/bin/python" -c "$dependency_check"; then
 	fail_rebuild "Python dependency import check failed"
 fi
 if ! touch "$new_env/.openwb-lock" || ! printf '%s\n' "$fingerprint" > "$new_env/.openwb-ready"; then
