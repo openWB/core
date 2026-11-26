@@ -27,9 +27,15 @@ class BrokerClient:
                  on_message: Callable,
                  host: str = "localhost",
                  port: int = 1886) -> None:
+        self.client = None
         try:
             self.name = f"openWB-{name}-{get_name_suffix()}"
-            self.client = mqtt.Client(self.name)
+            # Try to create client with paho-mqtt 2.0+ API first (requires callback_api_version)
+            try:
+                self.client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION1, self.name)
+            except TypeError:
+                # Fall back to older paho-mqtt API
+                self.client = mqtt.Client(self.name)
             self.client.on_connect = on_connect
             self.client.on_message = on_message
             self.client.connect(host, port)
@@ -37,16 +43,19 @@ class BrokerClient:
             log.exception("Fehler beim Abonnieren des internen Brokers")
 
     def start_infinite_loop(self) -> None:
-        self.client.loop_forever()
+        if self.client:
+            self.client.loop_forever()
 
     def start_finite_loop(self, timeout: float = 1) -> None:
-        self.client.loop_start()
-        time.sleep(timeout)
-        self.client.loop_stop()
+        if self.client:
+            self.client.loop_start()
+            time.sleep(timeout)
+            self.client.loop_stop()
 
     def disconnect(self) -> None:
-        self.client.disconnect()
-        log.info(f"Verbindung von Client {self.name} geschlossen.")
+        if self.client:
+            self.client.disconnect()
+            log.info(f"Verbindung von Client {self.name} geschlossen.")
 
 
 def publish_and_collect(host: str,
@@ -134,11 +143,19 @@ def publish_and_collect(host: str,
 
 class InternalBrokerPublisher:
     def __init__(self) -> None:
+        self.client = None
         try:
-            self.client = mqtt.Client(f"openWB-python-bulk-publisher-{get_name_suffix()}")
+            # Try to create client with paho-mqtt 2.0+ API first (requires callback_api_version)
+            try:
+                self.client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION1,
+                                          f"openWB-python-bulk-publisher-{get_name_suffix()}")
+            except TypeError:
+                # Fall back to older paho-mqtt API
+                self.client = mqtt.Client(f"openWB-python-bulk-publisher-{get_name_suffix()}")
             self.client.connect("localhost", 1886)
         except Exception:
             log.exception("Fehler beim Verbindungsaufbau zum Bulk-Publisher")
 
     def start_loop(self) -> None:
-        self.client.loop_start()
+        if self.client:
+            self.client.loop_start()

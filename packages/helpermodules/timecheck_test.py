@@ -73,7 +73,10 @@ def test_check_end_time_with_deadline_across_dst(
         try:
             now_timestamp = datetime.datetime.fromisoformat(now_utc).timestamp()
             deadline_timestamp = datetime.datetime.fromisoformat(expected_deadline_utc).timestamp()
-            datetime.datetime.today.return_value = datetime.datetime.fromtimestamp(now_timestamp)
+            now = datetime.datetime.fromtimestamp(now_timestamp)
+            datetime_mock = MagicMock(wraps=datetime.datetime)
+            timezone_patch.setattr(datetime_mock, "today", lambda: now)
+            timezone_patch.setattr(datetime, "datetime", datetime_mock)
             plan = Mock(spec=ScheduledChargingPlan, time=plan_time, frequency=Mock(
                 spec=FrequencyDate, selected=frequency, once=now_utc[:10],
                 weekly=[False, False, False, False, False, False, True]))
