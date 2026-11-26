@@ -653,6 +653,7 @@ class UpdateConfig:
         "^openWB/system/current_commit",
         "^openWB/system/current_missing_commits",
         "^openWB/system/dataprotection_acknowledged$",
+        "^openWB/system/update_feedback$",
         "^openWB/system/installAssistantDone$",
         "^openWB/system/datastore_version",
         "^openWB/system/debug_level$",
@@ -830,6 +831,8 @@ class UpdateConfig:
         ("openWB/system/current_commit", None),
         ("openWB/system/installAssistantDone", False),
         ("openWB/system/dataprotection_acknowledged", False),
+        # None requests the initial choice; an existing acceptance or rejection is preserved.
+        ("openWB/system/update_feedback", None),
         ("openWB/system/datastore_version", list(range(DATASTORE_VERSION))),
         ("openWB/system/usage_terms_acknowledged", False),
         ("openWB/system/debug_level", 30),
