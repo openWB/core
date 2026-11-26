@@ -226,4 +226,94 @@ describe('isolated charge point settings', () => {
         .scheduled_charging.plans[0].id,
     ).toBe(43);
   });
+
+  it('discards consumer modes and schedules without changing the live consumer', () => {
+    const key = 'openWB/consumer/5/usage';
+    f.source.topics[key] = {
+      type: 'continuous',
+      chargemode: 'pv_charging',
+      reset_chargemode: {
+        active: false,
+        frequency: { selected: 'daily', weekly: Array(7).fill(false) },
+        time: '07:00',
+      },
+    };
+    const original = JSON.stringify(f.source.topics[key]);
+    f.store.consumerMode(5).value = 'stop';
+    f.store.consumerResetEnabled(5).value = true;
+    f.store.consumerResetTrigger(5).value = 'weekly';
+    f.store.consumerResetWeeklyDays(5).value = [
+      true,
+      false,
+      true,
+      false,
+      false,
+      false,
+      false,
+    ];
+    expect(f.store.consumerMode(5).value).toBe('stop');
+    expect(JSON.stringify(f.source.topics[key])).toBe(original);
+    f.draft.reset();
+    expect(f.store.consumerMode(5).value).toBe('pv_charging');
+    expect(f.source.sendTopicToBroker).not.toHaveBeenCalled();
+  });
+
+  it('applies a consumer schedule in one publication and preserves unrelated live updates', async () => {
+    const key = 'openWB/consumer/5/usage';
+    f.source.topics[key] = { type: 'continuous', chargemode: 'pv_charging' };
+    f.store.consumerResetEnabled(5).value = true;
+    f.store.consumerResetTime(5).value = '08:30';
+    f.store.consumerResetTrigger(5).value = 'once';
+    f.store.consumerResetOnceDate(5).value = '2026-12-01';
+    f.store.consumerResetTargetMode(5).value = 'stop';
+    (f.source.topics[key] as { chargemode: string }).chargemode =
+      'instant_charging';
+    await f.draft.apply();
+    expect(f.source.sendTopicToBroker).toHaveBeenCalledTimes(1);
+    expect(f.source.sendTopicToBroker).toHaveBeenCalledWith(
+      key,
+      {
+        type: 'continuous',
+        chargemode: 'instant_charging',
+        reset_chargemode: {
+          active: true,
+          time: '08:30',
+          frequency: { selected: 'once', once: '2026-12-01' },
+          chargemode: 'stop',
+        },
+      },
+      expect.anything(),
+    );
+  });
+
+  it('keeps battery priority and SoC bounds local until confirmation', async () => {
+    const base = 'openWB/general/chargemode_config/bat/';
+    f.source.topics[base + 'mode'] = 'ev_mode';
+    f.source.topics[base + 'min_soc'] = 20;
+    f.source.topics[base + 'max_soc'] = 80;
+    f.store.batteryMode().value = 'min_soc_bat_mode';
+    f.store.batteryChargePriorityRange = { min: 30, max: 90 };
+    expect(f.source.topics[base + 'min_soc']).toBe(20);
+    expect(f.source.sendTopicToBroker).not.toHaveBeenCalled();
+    f.draft.reset();
+    expect(f.store.batteryChargePriorityRange).toEqual({ min: 20, max: 80 });
+    f.store.batteryMode().value = 'min_soc_bat_mode';
+    f.store.batteryChargePriorityRange = { min: 40, max: 95 };
+    await f.draft.apply();
+    expect(f.source.topics[base + 'min_soc']).toBe(40);
+    expect(f.source.topics[base + 'max_soc']).toBe(95);
+    expect(f.source.sendTopicToBroker).toHaveBeenCalledTimes(3);
+  });
+
+  it('queues a manual vehicle SoC only until apply and uses the existing command topic', async () => {
+    const key = 'openWB/vehicle/1/soc_module/calculated_soc_state/manual_soc';
+    f.store.vehicleSocManualValue(1).value = 61;
+    expect(f.source.sendTopicToBroker).not.toHaveBeenCalled();
+    f.draft.reset();
+    await f.draft.apply();
+    expect(f.source.sendTopicToBroker).not.toHaveBeenCalled();
+    f.store.vehicleSocManualValue(1).value = 72;
+    await f.draft.apply();
+    expect(f.source.sendTopicToBroker).toHaveBeenCalledWith(key, 72, undefined);
+  });
 });
