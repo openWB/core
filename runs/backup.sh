@@ -261,6 +261,15 @@ create_archive() {
 		else
 			echo "mosquitto_ctrl file not found, skipping"
 		fi
+		if [ -f "$HOMEDIR/simpleapi_config.json" ]; then
+			echo "adding simpleapi_config.json"
+			sudo tar --append \
+				--file="$BACKUPFILE" \
+				--directory="$HOMEDIR/" \
+					"simpleapi_config.json"
+		else
+			echo "simpleapi_config.json not found, skipping"
+		fi
 	}
 
 	calculate_checksums() {

@@ -206,6 +206,13 @@ chmod 666 "$LOGFILE"
 		sudo reboot now &
 	fi
 
+	# simpleAPI configuration (access tokens, users) is kept outside of the web root
+	if [[ ! -f "/home/openwb/simpleapi_config.json" ]]; then
+		sudo cp "${OPENWBBASEDIR}/data/config/simpleapi_config.json" "/home/openwb/simpleapi_config.json"
+		sudo chown openwb:openwb "/home/openwb/simpleapi_config.json"
+		sudo chmod 600 "/home/openwb/simpleapi_config.json"
+	fi
+
 	# check for openwb-simpleAPI service definition
 	if find /etc/systemd/system/ -maxdepth 1 -name openwb-simpleAPI.service -type l | grep -q "."; then
 		echo "openwb-simpleAPI.service definition is already a symlink"

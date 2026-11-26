@@ -53,6 +53,9 @@ declare resultStatus
 			if [[ ! -f "$WORKING_DIR/mosquitto_ctrl" ]]; then
 				echo "mosquitto_ctrl file missing; continue anyway"
 			fi
+			if [[ ! -f "$WORKING_DIR/simpleapi_config.json" ]]; then
+				echo "simpleapi_config.json missing; continue anyway"
+			fi
 			if [[ ! -f "$WORKING_DIR/dynamic-security.json" ]]; then
 				echo "dynamic-security.json file missing; continue anyway"
 			fi

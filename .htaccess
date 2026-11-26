@@ -8,4 +8,5 @@ RedirectMatch 404 \.conf$
 RedirectMatch 404 \.ini$
 RedirectMatch 404 \.py$
 RedirectMatch 404 \.sh$
+RedirectMatch 404 /simpleapi_config\.json$
 ErrorDocument 404 /openWB/web/error.html
