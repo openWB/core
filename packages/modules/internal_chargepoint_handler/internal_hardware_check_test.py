@@ -11,10 +11,14 @@ from modules.common.component_context import SingleComponentUpdateContext
 from modules.common.component_state import ChargepointState, CounterState, EvseState
 from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.modbus import ModbusSerialClient_, ModbusTcpClient_
-from modules.internal_chargepoint_handler import chargepoint_module
+from modules.chargepoints.internal_openwb.config import InternalChargepointMode
+from modules.internal_chargepoint_handler import chargepoint_module, clients, internal_chargepoint_handler
 from modules.internal_chargepoint_handler.chargepoint_module import ChargepointModule
+from modules.internal_chargepoint_handler.internal_chargepoint_handler_config import (
+    GlobalHandlerData, InternalChargepoint)
 from modules.internal_chargepoint_handler.internal_hardware_check import (
     METER_PROBLEM, METER_UNREACHABLE, READ_LAN_ADAPTER_AGAIN, READ_USB_ADAPTER_AGAIN, SeriesHardwareCheckMixin)
+from modules.internal_chargepoint_handler.wallbox_socket_config import WallboxSocket
 
 
 @pytest.mark.parametrize("tcp", [False, True])
@@ -92,3 +96,34 @@ def test_meter_error_message_after_timeout_and_recovery(tcp, evse_available, mon
     assert METER_PROBLEM in caplog.text
     assert METER_UNREACHABLE not in caplog.text
     assert module.fault_state.fault_state.value == 0
+
+
+@pytest.mark.parametrize("error_timestamp", [None, 1000])
+def test_handler_initialization_reports_meter_error_immediately(error_timestamp, monkeypatch, mock_pub):
+    monkeypatch.setattr(ExceptionRegistry, "registry", [])
+    clock = Mock(return_value=1000)
+    monkeypatch.setattr(timecheck, "create_timestamp", clock)
+    monkeypatch.setattr(internal_chargepoint_handler.InternalChargepointHandler, "init_gpio", Mock())
+    client = MagicMock(spec=ModbusSerialClient_)
+    get_modbus_client = Mock(return_value=(client, [11]))
+    monkeypatch.setattr(clients, "get_modbus_client", get_modbus_client)
+    monkeypatch.setattr(internal_chargepoint_handler, "get_modbus_client", get_modbus_client)
+    evse = Mock(get_evse_state=Mock(return_value=EvseState(True, False, 6, 16)))
+    monkeypatch.setattr(clients.ClientHandler, "_evse_factory", Mock(return_value=evse))
+    # Wie auf dem Gerät: Nach dem Neustart wird der ausgefallene Zähler nicht mehr erkannt.
+    monkeypatch.setattr(clients.ClientHandler, "find_meter_client", Mock(return_value=None))
+    chargepoints = [InternalChargepoint(), InternalChargepoint()]
+    for cp in chargepoints:
+        cp.get.error_timestamp = error_timestamp
+    for elapsed in (0, 59, 61, 71, 300):
+        clock.return_value = 1000 + elapsed
+        mock_pub.reset_mock()
+        handler = internal_chargepoint_handler.InternalChargepointHandler(
+            InternalChargepointMode.DUO, GlobalHandlerData(), chargepoints[0], 3, chargepoints[1], 4,
+            WallboxSocket(), Mock(), Mock())
+        assert handler.cp0 is None
+        assert handler.cp1 is None
+        for num in range(len(chargepoints)):
+            mock_pub.pub.assert_any_call(f"openWB/set/internal_chargepoint/{num}/get/fault_str", METER_UNREACHABLE)
+            mock_pub.pub.assert_any_call(f"openWB/set/chargepoint/{num + 3}/get/fault_str", METER_UNREACHABLE)
+        assert not any(call.args[0].endswith("/error_timestamp") for call in mock_pub.pub.call_args_list)

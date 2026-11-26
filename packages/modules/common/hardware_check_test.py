@@ -12,7 +12,8 @@ from modules.common.modbus import NO_CONNECTION, ModbusSerialClient_, ModbusTcpC
 from modules.conftest import SAMPLE_IP, SAMPLE_PORT
 from modules.internal_chargepoint_handler.clients import ClientHandler
 from modules.internal_chargepoint_handler.internal_hardware_check import (
-    METER_PROBLEM, READ_EVSE_AGAIN, READ_LAN_ADAPTER_AGAIN, READ_USB_ADAPTER_AGAIN, SeriesHardwareCheckMixin)
+    METER_PROBLEM, METER_UNREACHABLE, READ_EVSE_AGAIN, READ_LAN_ADAPTER_AGAIN, READ_USB_ADAPTER_AGAIN,
+    SeriesHardwareCheckMixin)
 
 
 @pytest.mark.parametrize(
@@ -24,7 +25,7 @@ from modules.internal_chargepoint_handler.internal_hardware_check import (
                   READ_EVSE_AGAIN + " " + READ_METER_VOLTAGES_AGAIN.format([230, 0, 230]),
                   id="EVSE defekt und Zähler eine Phase defekt"),
      pytest.param(None, Exception("Modbus"), None, None, None,
-                  ModbusSerialClient_, METER_PROBLEM, id="Zähler falsch konfiguriert"),
+                  ModbusSerialClient_, METER_UNREACHABLE, id="Zähler falsch konfiguriert"),
      pytest.param(Exception("Modbus"), Exception("Modbus"), None, None, False, ModbusSerialClient_,
                   READ_USB_ADAPTER_AGAIN, id="USB-Adapter defekt"),
      pytest.param(Exception("Modbus"), Exception("Modbus"), None, None, False, ModbusTcpClient_,
