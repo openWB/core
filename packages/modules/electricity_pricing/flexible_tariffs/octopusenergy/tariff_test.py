@@ -4,6 +4,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
+from modules.common.tariff_errors import PermanentTariffError
 from modules.electricity_pricing.flexible_tariffs.octopusenergy import tariff
 from modules.electricity_pricing.flexible_tariffs.octopusenergy.tariff import build_tariff_state, OctopusEnergyApiError
 
@@ -289,8 +290,8 @@ def test_graphql_request_raises_on_graphql_errors(monkeypatch):
     mock_session.post.return_value = mock_response
     monkeypatch.setattr(tariff.req, "get_http_session", lambda: mock_session)
 
-    # execution & assert: Authentifizierung im Konstruktor schlägt fehl
-    with pytest.raises(OctopusEnergyApiError, match="Token invalid or expired"):
+    # execution & assert: Authentifizierung im Konstruktor schlägt fehl, das ist ein dauerhafter Fehler
+    with pytest.raises(PermanentTariffError, match="Token invalid or expired"):
         tariff.OctopusEnergyClient(email="test@example.com", password="secret")
 
 

@@ -9,6 +9,7 @@ from modules.electricity_pricing.flexible_tariffs.octopusenergy.config import (O
 from modules.common import req
 from modules.common.abstract_device import DeviceDescriptor
 from modules.common.component_state import TariffState
+from modules.common.tariff_errors import PermanentTariffError
 
 log = logging.getLogger(__name__)
 
@@ -19,6 +20,10 @@ class OctopusEnergyApiError(Exception):
     """Wird geworfen, wenn die Kraken-API kein verwertbares 'data'-Feld liefert
     (z.B. GraphQL-Fehler, abgelaufener Token, Wartungsarbeiten bei Octopus)."""
     pass
+
+
+class OctopusEnergyGraphQlError(OctopusEnergyApiError):
+    """Die API hat mit HTTP 200 ein 'errors'-Array geliefert."""
 
 
 class OctopusEnergyClient:
@@ -54,7 +59,7 @@ class OctopusEnergyClient:
             error_messages = "; ".join(
                 err.get("message", str(err)) for err in body["errors"]
             )
-            raise OctopusEnergyApiError(f"GraphQL-Fehler: {error_messages}")
+            raise OctopusEnergyGraphQlError(f"GraphQL-Fehler: {error_messages}")
 
         data = body.get("data")
         if data is None:
@@ -72,10 +77,13 @@ class OctopusEnergyClient:
         }
         """
         variables = {"email": email, "password": password}
-        data = self._graphql_request(mutation, variables)
+        try:
+            data = self._graphql_request(mutation, variables)
+        except OctopusEnergyGraphQlError as e:
+            raise PermanentTariffError(f"Anmeldung bei Octopus fehlgeschlagen, bitte E-Mail und Passwort prüfen: {e}")
 
         if "obtainKrakenToken" not in data or data["obtainKrakenToken"] is None:
-            raise OctopusEnergyApiError("Authentifizierung fehlgeschlagen: Kein Token in der Antwort enthalten.")
+            raise PermanentTariffError("Anmeldung bei Octopus fehlgeschlagen: Kein Token in der Antwort enthalten.")
 
         self.token = data["obtainKrakenToken"]["token"]
 

@@ -4,12 +4,17 @@ from typing import Optional
 from unittest.mock import Mock
 from helpermodules import timecheck
 import pytest
+import requests
 
 from modules.common.component_state import TariffState
 from modules.common import configurable_tariff
-from modules.common.configurable_tariff import ConfigurableFlexibleTariff, RETRY_BACKOFF_SECONDS
+from modules.common.configurable_tariff import (ConfigurableFlexibleTariff, PERMANENT_ERROR_PARK_SECONDS,
+                                                RETRY_BACKOFF_SECONDS, RETRY_INTERVAL_SECONDS)
+from modules.common.tariff_errors import PermanentTariffError
 from modules.common.fault_state_level import FaultStateLevel
 from modules.electricity_pricing.flexible_tariffs.awattar.config import AwattarTariff
+from modules.electricity_pricing.flexible_tariffs.ekz.config import EkzTariff
+from modules.electricity_pricing.flexible_tariffs.rabot.config import RabotTariff
 
 
 def _patch_now(monkeypatch: pytest.MonkeyPatch, fixed_now: datetime) -> None:
@@ -134,98 +139,125 @@ def test_accept_no_prices_at_start(monkeypatch):
     tariff._remove_outdated_prices(TariffState(), 1)  # pyright: ignore[reportPrivateUsage]
 
 
-def test_calculate_next_query_time(monkeypatch: pytest.MonkeyPatch):
-    # setup
-    fixed_now = datetime(2022, 5, 16, 10, 10, 0)
+def _prices_until(end: datetime, step_minutes: int = 15) -> dict:
+    # Viertelstunden-Preise von 2022-05-16 00:00 bis end (inklusive)
+    prices = {}
+    slot = datetime(2022, 5, 16, 0, 0, 0)
+    while slot <= end:
+        prices[str(int(slot.timestamp()))] = 1e-4
+        slot = datetime.fromtimestamp(slot.timestamp() + step_minutes * 60)
+    return prices
 
-    class FixedDateTime(datetime):
-        @classmethod
-        def now(cls, tz: Optional[tzinfo] = None):
-            return fixed_now if tz is None else fixed_now.replace(tzinfo=tz)
 
-    monkeypatch.setattr(configurable_tariff, "datetime", FixedDateTime)
-    monkeypatch.setattr(configurable_tariff.random, "randint", Mock(return_value=1))
+def _last_slot_of_the_previous_day() -> dict:
+    return {str(int(datetime(2022, 5, 15, 23, 45, 0).timestamp())): 1e-4}
 
+
+def _schedule(monkeypatch: pytest.MonkeyPatch, now: datetime, prices: dict, config=None) -> int:
+    _patch_now(monkeypatch, now)
+    monkeypatch.setattr(configurable_tariff.random, "randint", Mock(return_value=6))  # 30 Minuten vor 14 Uhr
+    tariff = ConfigurableFlexibleTariff(config or AwattarTariff(), Mock(return_value=Mock()))
+    tariff._schedule_next_query(prices, 900)  # pyright: ignore[reportPrivateUsage]
+    return tariff.get.next_query_time
+
+
+def test_next_query_is_the_first_try_of_tomorrow_when_tomorrow_is_known(monkeypatch: pytest.MonkeyPatch):
+    next_query = _schedule(monkeypatch, datetime(2022, 5, 16, 14, 10, 0), _prices_until(datetime(2022, 5, 17, 23, 45)))
+
+    assert next_query == int(datetime(2022, 5, 17, 13, 30, 0).timestamp())
+
+
+def test_first_try_is_5_to_30_minutes_before_14(monkeypatch: pytest.MonkeyPatch):
+    _patch_now(monkeypatch, datetime(2022, 5, 16, 10, 10, 0))
+    randint = Mock(return_value=1)
+    monkeypatch.setattr(configurable_tariff.random, "randint", randint)
     tariff = ConfigurableFlexibleTariff(AwattarTariff(), Mock(return_value=Mock()))
-    tariff.tariff_update_hours = [14]
 
-    latest_price_timestamp = datetime(2022, 5, 17, 13, 55, 0)
+    prices = _prices_until(datetime(2022, 5, 17, 23, 45))
 
-    # execution
-    tariff._calculate_next_query_time(latest_price_timestamp)  # pyright: ignore[reportPrivateUsage]
+    tariff._schedule_next_query(prices, 900)  # pyright: ignore[reportPrivateUsage]
 
-    # evaluation
-    expected_timestamp = int(datetime(2022, 5, 16, 13, 55, 0).timestamp())
-    assert tariff.get.next_query_time == expected_timestamp
+    randint.assert_called_once_with(1, 6)
+    assert tariff.get.next_query_time == int(datetime(2022, 5, 17, 13, 55, 0).timestamp())
 
 
-def test_calculate_next_query_time_uses_latest_price_timestamp(monkeypatch: pytest.MonkeyPatch):
-    # Preise reichen bereits in den Folgetag, enden dort aber vor dem naechsten geplanten Abruf -
-    # der Abruf darf auf das Ende der bekannten (Folgetags-)Preise vorgezogen werden.
-    fixed_now = datetime(2022, 5, 16, 15, 10, 0)
+def test_tomorrow_missing_before_the_first_try_waits_for_the_first_try(monkeypatch: pytest.MonkeyPatch):
+    # morgens, oder nach Mitternacht: die Wiederholung vom Vortag endet, der nächste Abruf ist der erste des Tages
+    next_query = _schedule(monkeypatch, datetime(2022, 5, 16, 0, 10, 0), _prices_until(datetime(2022, 5, 16, 23, 45)))
 
-    class FixedDateTime(datetime):
-        @classmethod
-        def now(cls, tz: Optional[tzinfo] = None):
-            return fixed_now if tz is None else fixed_now.replace(tzinfo=tz)
-
-    monkeypatch.setattr(configurable_tariff, "datetime", FixedDateTime)
-    monkeypatch.setattr(configurable_tariff.random, "randint", Mock(return_value=1))
-
-    tariff = ConfigurableFlexibleTariff(AwattarTariff(), Mock(return_value=Mock()))
-    tariff.tariff_update_hours = [14]
-
-    latest_price_timestamp = datetime(2022, 5, 17, 2, 30, 0)
-
-    # execution
-    tariff._calculate_next_query_time(latest_price_timestamp)  # pyright: ignore[reportPrivateUsage]
-
-    # evaluation
-    expected_timestamp = int(latest_price_timestamp.timestamp())
-    assert tariff.get.next_query_time == expected_timestamp
+    assert next_query == int(datetime(2022, 5, 16, 13, 30, 0).timestamp())
 
 
-def test_calculate_next_query_time_same_day_rollover_before_late_hour_schedules_short_backoff(
-        monkeypatch: pytest.MonkeyPatch):
-    # Regression-Test für #3703: Preise reichen nur bis spaeter am selben Tag (noch kein Folgetag),
-    # Warnschwelle noch nicht erreicht - kurzer Backoff statt Sprung auf das Tagesende, sonst pausiert
-    # der Abruf bei Anbietern mit rollierender Tagesantwort stundenlang, bevor ueberhaupt gewarnt wurde.
-    fixed_now = datetime(2022, 5, 16, 15, 10, 0)
-    _patch_now(monkeypatch, fixed_now)
-    monkeypatch.setattr(configurable_tariff.random, "randint", Mock(return_value=1))
+def test_tomorrow_missing_after_the_first_try_retries_hourly(monkeypatch: pytest.MonkeyPatch):
+    now = datetime(2022, 5, 16, 14, 10, 0)
 
-    tariff = ConfigurableFlexibleTariff(AwattarTariff(), Mock(return_value=Mock()))
-    tariff.tariff_update_hours = [14]
+    next_query = _schedule(monkeypatch, now, _prices_until(datetime(2022, 5, 16, 23, 45)))
 
-    latest_price_timestamp = datetime(2022, 5, 16, 23, 45, 0)
-
-    # execution
-    tariff._calculate_next_query_time(latest_price_timestamp)  # pyright: ignore[reportPrivateUsage]
-
-    # evaluation
-    expected_timestamp = int(fixed_now.timestamp()) + RETRY_BACKOFF_SECONDS
-    assert tariff.get.next_query_time == expected_timestamp
+    assert next_query == int(now.timestamp()) + RETRY_INTERVAL_SECONDS
 
 
-def test_calculate_next_query_time_same_day_rollover_after_late_hour_still_uses_clamp(
-        monkeypatch: pytest.MonkeyPatch):
-    # Nach der Warnschwelle ist das Tagesende als naechster Abruf wieder in Ordnung - es wurde ja
-    # bereits gewarnt, staendiges Nachfragen bringt nichts mehr.
-    fixed_now = datetime(2022, 5, 16, 16, 10, 0)
-    _patch_now(monkeypatch, fixed_now)
-    monkeypatch.setattr(configurable_tariff.random, "randint", Mock(return_value=1))
+def test_no_price_for_the_current_time_retries_hourly(monkeypatch: pytest.MonkeyPatch):
+    now = datetime(2022, 5, 16, 0, 10, 0)
 
-    tariff = ConfigurableFlexibleTariff(AwattarTariff(), Mock(return_value=Mock()))
-    tariff.tariff_update_hours = [14]
+    next_query = _schedule(monkeypatch, now, _last_slot_of_the_previous_day())
 
-    latest_price_timestamp = datetime(2022, 5, 16, 23, 45, 0)
+    assert next_query == int(now.timestamp()) + RETRY_INTERVAL_SECONDS
 
-    # execution
-    tariff._calculate_next_query_time(latest_price_timestamp)  # pyright: ignore[reportPrivateUsage]
 
-    # evaluation
-    expected_timestamp = int(latest_price_timestamp.timestamp())
-    assert tariff.get.next_query_time == expected_timestamp
+def test_provider_with_prices_of_the_current_day_retries_quickly_after_midnight(monkeypatch: pytest.MonkeyPatch):
+    now = datetime(2022, 5, 16, 0, 3, 0)
+
+    next_query = _schedule(monkeypatch, now, _last_slot_of_the_previous_day(), config=RabotTariff())
+
+    assert next_query == int(now.timestamp()) + RETRY_BACKOFF_SECONDS
+
+
+def test_provider_with_prices_of_the_current_day_is_queried_when_the_prices_end(monkeypatch: pytest.MonkeyPatch):
+    # z.B. Rabot: Preise des Tages ab 0 Uhr, kein Folgetag
+    next_query = _schedule(monkeypatch, datetime(2022, 5, 16, 14, 10, 0), _prices_until(datetime(2022, 5, 16, 23, 45)),
+                           config=RabotTariff())
+
+    assert next_query == int(datetime(2022, 5, 17, 0, 0, 0).timestamp())
+
+
+def test_provider_with_a_later_publication_time_uses_its_own_first_try(monkeypatch: pytest.MonkeyPatch):
+    # EKZ: 18 Uhr statt 14 Uhr
+    next_query = _schedule(monkeypatch, datetime(2022, 5, 16, 10, 10, 0), _prices_until(datetime(2022, 5, 16, 23, 45)),
+                           config=EkzTariff())
+
+    assert next_query == int(datetime(2022, 5, 16, 17, 30, 0).timestamp())
+
+
+def test_next_query_is_not_later_than_the_end_of_the_known_prices(monkeypatch: pytest.MonkeyPatch):
+    # die Preise enden morgen um 13:00, noch vor dem ersten Abruf des Tages (13:30)
+    next_query = _schedule(monkeypatch, datetime(2022, 5, 16, 0, 30, 0), _prices_until(datetime(2022, 5, 17, 12, 45)))
+
+    assert next_query == int(datetime(2022, 5, 17, 13, 0, 0).timestamp())
+
+
+def test_known_prices_are_kept_when_the_provider_returns_nothing_newer(monkeypatch: pytest.MonkeyPatch):
+    _patch_now(monkeypatch, datetime(2022, 5, 16, 14, 10, 0))
+    known = _prices_until(datetime(2022, 5, 17, 23, 45))
+    older = _prices_until(datetime(2022, 5, 16, 23, 45))
+    tariff = ConfigurableFlexibleTariff(
+        AwattarTariff(), Mock(return_value=Mock(return_value=TariffState(prices=older))))
+    tariff.get.prices = known
+
+    state = tariff._ConfigurableTariff__call_component_updater()  # pyright: ignore[reportPrivateUsage]
+
+    assert state.prices == known
+
+
+def test_newer_prices_replace_the_known_prices(monkeypatch: pytest.MonkeyPatch):
+    _patch_now(monkeypatch, datetime(2022, 5, 16, 14, 10, 0))
+    newer = _prices_until(datetime(2022, 5, 17, 23, 45))
+    tariff = ConfigurableFlexibleTariff(
+        AwattarTariff(), Mock(return_value=Mock(return_value=TariffState(prices=newer))))
+    tariff.get.prices = _prices_until(datetime(2022, 5, 16, 23, 45))
+
+    state = tariff._ConfigurableTariff__call_component_updater()  # pyright: ignore[reportPrivateUsage]
+
+    assert state.prices == newer
 
 
 def test_no_new_prices_schedules_short_backoff_instead_of_stale_next_query_time(monkeypatch: pytest.MonkeyPatch):
@@ -242,7 +274,7 @@ def test_no_new_prices_schedules_short_backoff_instead_of_stale_next_query_time(
 
     tariff.update()
 
-    assert tariff.get.next_query_time == int(fixed_now.timestamp()) + RETRY_BACKOFF_SECONDS
+    assert tariff.get.next_query_time == int(fixed_now.timestamp()) + RETRY_INTERVAL_SECONDS
 
 
 def test_exception_schedules_short_backoff(monkeypatch: pytest.MonkeyPatch):
@@ -287,9 +319,9 @@ def test_too_few_price_entries_error_is_not_overwritten_by_no_error(monkeypatch:
 
 
 def test_no_tomorrow_prices_before_late_hour_is_not_a_warning(monkeypatch: pytest.MonkeyPatch):
-    # Default tariff_update_hours=[14] + LATE_WARNING_OFFSET_HOURS=2 -> Warnschwelle 16:00.
-    # 15:59 ist noch davor - "noch keine Preise für morgen" ist hier der normale, erwartete Fall.
-    fixed_now = datetime(2022, 5, 16, 15, 59, 0)
+    # Warnschwelle ist 19:00 (TOMORROW_WARNING_HOUR).
+    # 18:59 ist noch davor - "noch keine Preise für morgen" ist hier der normale, erwartete Fall.
+    fixed_now = datetime(2022, 5, 16, 18, 59, 0)
     _patch_now(monkeypatch, fixed_now)
 
     now_ts = int(fixed_now.timestamp())
@@ -305,8 +337,8 @@ def test_no_tomorrow_prices_before_late_hour_is_not_a_warning(monkeypatch: pytes
 
 
 def test_no_tomorrow_prices_after_late_hour_warns(monkeypatch: pytest.MonkeyPatch):
-    # Warnschwelle 16:00 (siehe oben), 16:05 liegt knapp danach.
-    fixed_now = datetime(2022, 5, 16, 16, 5, 0)
+    # Warnschwelle 19:00 (siehe oben), 19:05 liegt knapp danach.
+    fixed_now = datetime(2022, 5, 16, 19, 5, 0)
     _patch_now(monkeypatch, fixed_now)
 
     now_ts = int(fixed_now.timestamp())
@@ -348,7 +380,7 @@ def test_dst_transition_does_not_shift_tomorrow_start(monkeypatch: pytest.Monkey
 def test_tomorrow_prices_present_after_late_hour_does_not_warn(monkeypatch: pytest.MonkeyPatch):
     # Kein Fehlalarm, wenn die Preise für morgen bereits bekannt sind (z.B. aus einem früheren
     # erfolgreichen Abruf am selben Tag).
-    fixed_now = datetime(2022, 5, 16, 16, 5, 0)
+    fixed_now = datetime(2022, 5, 16, 19, 5, 0)
     _patch_now(monkeypatch, fixed_now)
 
     now_ts = int(fixed_now.timestamp())
@@ -362,3 +394,70 @@ def test_tomorrow_prices_present_after_late_hour_does_not_warn(monkeypatch: pyte
     tariff.update()
 
     assert tariff.fault_state.fault_state == FaultStateLevel.NO_ERROR
+
+
+@pytest.mark.parametrize("now, expected", [
+    pytest.param(datetime(2022, 5, 16, 22, 59, 0), FaultStateLevel.NO_ERROR, id="vor der Warnschwelle (23 Uhr)"),
+    pytest.param(datetime(2022, 5, 16, 23, 5, 0), FaultStateLevel.WARNING, id="nach der Warnschwelle (23 Uhr)")])
+def test_tomorrow_warning_follows_the_first_try_hour_of_the_provider(monkeypatch: pytest.MonkeyPatch, now, expected):
+    _patch_now(monkeypatch, now)
+
+    now_ts = int(now.timestamp())
+    known_prices = {str(now_ts + 300): 10.72e-05, str(now_ts + 1200): 5.467e-05}
+    tariff = ConfigurableFlexibleTariff(
+        EkzTariff(), Mock(return_value=Mock(return_value=TariffState(prices=known_prices))))
+    tariff.get.prices = known_prices
+    tariff.get.next_query_time = now_ts - 10
+
+    tariff.update()
+
+    assert tariff.fault_state.fault_state == expected
+
+
+def test_provider_with_prices_of_the_current_day_does_not_warn_about_tomorrow(monkeypatch: pytest.MonkeyPatch):
+    fixed_now = datetime(2022, 5, 16, 19, 5, 0)
+    _patch_now(monkeypatch, fixed_now)
+
+    now_ts = int(fixed_now.timestamp())
+    known_prices = {str(now_ts + 3600): 10.72e-05, str(now_ts + 7200): 5.467e-05}
+    tariff = ConfigurableFlexibleTariff(
+        RabotTariff(), Mock(return_value=Mock(return_value=TariffState(prices=known_prices))))
+    tariff.get.prices = known_prices
+    tariff.get.next_query_time = now_ts - 10
+
+    tariff.update()
+
+    assert tariff.fault_state.fault_state == FaultStateLevel.NO_ERROR
+
+
+def _http_error(status_code: int) -> requests.HTTPError:
+    return requests.HTTPError(response=Mock(status_code=status_code))
+
+
+@pytest.mark.parametrize("exception", [PermanentTariffError("Anmeldung fehlgeschlagen"), _http_error(401),
+                                       _http_error(403)])
+def test_permanent_error_stops_the_queries_until_the_configuration_changes(monkeypatch: pytest.MonkeyPatch, exception):
+    fixed_now = datetime(2022, 5, 16, 13, 40, 0)
+    _patch_now(monkeypatch, fixed_now)
+
+    tariff = ConfigurableFlexibleTariff(AwattarTariff(), Mock(return_value=Mock(side_effect=exception)))
+    tariff.get.next_query_time = int(fixed_now.timestamp()) - 10
+
+    tariff.update()
+
+    assert tariff.get.next_query_time == int(fixed_now.timestamp()) + PERMANENT_ERROR_PARK_SECONDS
+    assert tariff.fault_state.fault_state == FaultStateLevel.ERROR
+    assert "Konfiguration" in tariff.fault_state.fault_str
+
+
+@pytest.mark.parametrize("exception", [_http_error(500), _http_error(404), Exception("boom")])
+def test_other_errors_are_retried_soon(monkeypatch: pytest.MonkeyPatch, exception):
+    fixed_now = datetime(2022, 5, 16, 13, 40, 0)
+    _patch_now(monkeypatch, fixed_now)
+
+    tariff = ConfigurableFlexibleTariff(AwattarTariff(), Mock(return_value=Mock(side_effect=exception)))
+    tariff.get.next_query_time = int(fixed_now.timestamp()) - 10
+
+    tariff.update()
+
+    assert tariff.get.next_query_time == int(fixed_now.timestamp()) + RETRY_BACKOFF_SECONDS

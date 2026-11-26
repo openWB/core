@@ -64,7 +64,7 @@ NO_MODULE = {"type": None, "configuration": {}}
 
 class UpdateConfig:
 
-    DATASTORE_VERSION = 162
+    DATASTORE_VERSION = 163
 
     valid_topic = [
         "^openWB/bat/config/bat_control_activated$",
@@ -4369,3 +4369,19 @@ class UpdateConfig:
                     return {topic: config}
         self._loop_all_received_topics(upgrade)
         self._append_datastore_version(162)
+
+    def upgrade_datastore_163(self) -> None:
+        """Die Abrufzeiten der Strompreisanbieter stehen jetzt im Code (Standard 14 Uhr), update_hours aus den
+        gespeicherten Konfigurationen entfernen."""
+        def upgrade(topic: str, payload) -> Optional[dict]:
+            if ("openWB/optional/ep/flexible_tariff/provider" == topic or
+                    "openWB/optional/ep/grid_fee/provider" == topic):
+                provider = decode_payload(payload)
+                configuration = provider.get("configuration")
+                if isinstance(configuration, dict) and "update_hours" in configuration:
+                    del configuration["update_hours"]
+                    return {topic: provider}
+            return None
+
+        self._loop_all_received_topics(upgrade)
+        self._append_datastore_version(163)

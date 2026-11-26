@@ -41,7 +41,6 @@ class FixedHoursTariffConfiguration:
     '''
     default_price: float = 0
     tariffs: list[FixedHoursTariffEntry] = field(default_factory=list)
-    update_hours: list[int] = field(default_factory=lambda: list(range(24)))
 
 
 @dataclass

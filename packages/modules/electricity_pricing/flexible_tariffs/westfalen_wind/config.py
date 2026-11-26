@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from typing import Optional
+from typing import ClassVar, Optional
 
 
 @dataclass
@@ -17,7 +17,6 @@ class WestfalenWindTariffConfiguration:
     password: Optional[str] = None
     contract_id: Optional[str] = None
     token: WestfalenWindToken = field(default_factory=WestfalenWindToken, compare=False)
-    update_hours: list[int] = field(default_factory=lambda: [0])  # letzter Preis für 23:45
 
 
 @dataclass
@@ -25,4 +24,5 @@ class WestfalenWindTariff:
     name: str = "WestfalenWind"
     type: str = "westfalen_wind"
     official: bool = True
+    publishes_day_ahead: ClassVar[bool] = False  # um 0 Uhr die Preise des laufenden Tages (letzter Preis für 23:45)
     configuration: WestfalenWindTariffConfiguration = field(default_factory=WestfalenWindTariffConfiguration)
