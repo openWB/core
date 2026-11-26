@@ -826,20 +826,23 @@ def test_upgrade_datastore_163_resets_voltego_and_informs_the_user(mock_pub: Moc
         "type": None, "configuration": {}}
     assert uc.all_received_topics["openWB/system/datastore_version"] == list(range(164))
     message.assert_called_once()
-    assert "Voltego" in message.call_args.args[1]
+    text = message.call_args.args[1]
+    assert "Voltego" in text and "einen anderen Anbieter wählen" in text
+    assert message.call_args.args[2] == update_config.MessageType.WARNING
 
 
 def test_upgrade_datastore_163_keeps_other_providers_and_stays_silent(mock_pub: Mock, monkeypatch: pytest.MonkeyPatch):
     message = Mock()
     monkeypatch.setattr(update_config, "pub_system_message", message)
     uc = UpdateConfig()
-    tibber = {"type": "tibber", "configuration": {"token": "x"}}
     uc.all_received_topics = {
-        "openWB/optional/ep/flexible_tariff/provider": tibber,
+        "openWB/optional/ep/flexible_tariff/provider": {"type": "tibber", "configuration": {"token": "x"}},
         "openWB/system/datastore_version": list(range(163)),
     }
 
     uc.upgrade_datastore_163()
 
-    assert uc.all_received_topics["openWB/optional/ep/flexible_tariff/provider"] == tibber
+    # gegen ein unabhängiges Literal, nicht gegen dasselbe Objekt
+    assert uc.all_received_topics["openWB/optional/ep/flexible_tariff/provider"] == {
+        "type": "tibber", "configuration": {"token": "x"}}
     message.assert_not_called()

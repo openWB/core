@@ -4377,7 +4377,8 @@ class UpdateConfig:
 
         def upgrade(topic: str, payload) -> Optional[dict]:
             if "openWB/optional/ep/flexible_tariff/provider" == topic:
-                if decode_payload(payload).get("type") == "voltego":
+                provider = decode_payload(payload)
+                if isinstance(provider, dict) and provider.get("type") == "voltego":
                     removed.append(topic)
                     return {topic: NO_MODULE}
             return None
