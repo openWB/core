@@ -1,13 +1,13 @@
 """HTTP surface for simpleAPI: request parsing, auth, and the read/write/raw
 response contract that third-party integrations (Home Assistant, node-red)
 already rely on."""
-import json
 import logging
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from typing import Any, Dict
 from urllib.parse import parse_qs, urlsplit
 
 from .authenticator import AuthConfig, Authenticator
+from . import php_json
 from .broker_access import BrokerAccess, Principal
 from .parameter_handler import (
     ParameterHandler,
@@ -17,22 +17,11 @@ from .parameter_handler import (
     extract_read_params,
     extract_write_params,
     format_raw_output,
+    php_echo,
     COMPLEX_PARAMETERS,
 )
 
 log = logging.getLogger("simpleAPI")
-
-
-def _php_stringify(value: Any) -> str:
-    """Approximates PHP's echo-time string conversion for raw-mode output
-    (bool True/False -> "1"/"", None -> "", arrays -> "Array")."""
-    if value is None:
-        return ''
-    if isinstance(value, bool):
-        return '1' if value else ''
-    if isinstance(value, (dict, list)):
-        return 'Array'
-    return str(value)
 
 
 def _single_param_value(params: Dict[str, list]) -> Dict[str, str]:
@@ -46,6 +35,10 @@ class SimpleAPIRequestHandler(BaseHTTPRequestHandler):
         log.debug(f"{self.address_string()} - {fmt % args}")
 
     def _is_https(self) -> bool:
+        """The scheme comes from the Apache proxy in front (it replaces whatever the client sent). A request that
+        did not arrive from the local proxy is never treated as HTTPS."""
+        if self.client_address[0] not in ('127.0.0.1', '::1'):
+            return False
         return self.headers.get('X-Forwarded-Proto', '').lower() == 'https'
 
     def _bearer_token(self):
@@ -59,19 +52,24 @@ class SimpleAPIRequestHandler(BaseHTTPRequestHandler):
 
     def _send(self, status: int, payload: Any, raw: bool = False):
         if raw:
-            body = payload if isinstance(payload, (bytes, bytearray)) else _php_stringify(payload).encode('utf-8')
+            body = payload if isinstance(payload, (bytes, bytearray)) else php_echo(payload).encode('utf-8')
         else:
-            body = json.dumps(payload).encode('utf-8')
+            body = php_json.dumps(payload).encode('utf-8')
 
         self.send_response(status)
         self.send_header('Content-Type', 'application/json')
+        # the web root's .htaccess added these to the PHP responses; the proxied backend has to do it itself
+        self.send_header('Cache-Control', 'no-cache, no-store, must-revalidate')
+        self.send_header('Pragma', 'no-cache')
+        self.send_header('Expires', '0')
         if self.server.api_config.get('cors_enabled', False):
             self.send_header('Access-Control-Allow-Origin', '*')
             self.send_header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
             self.send_header('Access-Control-Allow-Headers', 'Content-Type, Authorization')
         self.send_header('Content-Length', str(len(body)))
         self.end_headers()
-        self.wfile.write(body)
+        if self.command != 'HEAD':
+            self.wfile.write(body)
 
     def do_OPTIONS(self):
         self._send(200, '', raw=True)
@@ -79,6 +77,8 @@ class SimpleAPIRequestHandler(BaseHTTPRequestHandler):
     def do_GET(self):
         params = _single_param_value(parse_qs(urlsplit(self.path).query, keep_blank_values=True))
         self._handle(params)
+
+    do_HEAD = do_GET
 
     def do_POST(self):
         length = int(self.headers.get('Content-Length') or 0)
@@ -108,7 +108,7 @@ class SimpleAPIRequestHandler(BaseHTTPRequestHandler):
         except PermissionError as exc:
             return {'success': False, 'message': str(exc)}
         try:
-            with self.server.daemon_ref.publish_as(session):
+            with self.server.daemon_ref.http_write(session):
                 return dispatch_write(self.server.parameter_handler, write_params, params)
         finally:
             session.close()
@@ -137,7 +137,8 @@ class SimpleAPIRequestHandler(BaseHTTPRequestHandler):
                 if enforce_acl:
                     result = self._write_as(principal, write_params, params)
                 else:
-                    result = dispatch_write(self.server.parameter_handler, write_params, params)
+                    with self.server.daemon_ref.http_write():
+                        result = dispatch_write(self.server.parameter_handler, write_params, params)
                 if params.get('raw') == 'true':
                     text = 'OK' if result['success'] else f"ERROR: {result.get('message', 'Unknown error')}"
                     self._send(200, text, raw=True)
@@ -149,6 +150,11 @@ class SimpleAPIRequestHandler(BaseHTTPRequestHandler):
             if read_params:
                 view = ReadView(self.server.daemon_ref)
                 result, debug_info = dispatch_read(ParameterHandler(view), read_params, params, debug)
+                if debug:
+                    credentials = ("username" in params and "password" in params)
+                    debug_info.insert(0, f"Using MQTT credentials from parameters: username={params['username']}"
+                                      if credentials else
+                                      "No credentials provided via parameters, using config or anonymous access")
                 if enforce_acl and self._deny_unreadable(principal, view, debug):
                     return
                 if debug and debug_info:
@@ -173,6 +179,9 @@ class SimpleAPIRequestHandler(BaseHTTPRequestHandler):
                         })
                         return
                     self._send(200, format_raw_output(result, param_name), raw=True)
+                elif list(read_params) == ['get_lastlivevaluesjson']:
+                    # the stored JSON string is sent as it is, even without raw=true
+                    self._send(200, format_raw_output(result, 'get_lastlivevaluesjson'), raw=True)
                 else:
                     if not result:
                         self._send(200, [])

@@ -29,7 +29,11 @@ class FakeDaemon:
             "openWB/bat/2/get/max_charge_power": 5000,
             "openWB/bat/2/get/max_discharge_power": 4000,
             "openWB/counter/15/get/local_power": 321.0,
+            "openWB/consumer/6/module": {"type": "heater"},
+            "openWB/bat/2/get/imported": 10.0,
+            "openWB/counter/15/get/imported": 5.0,
         }
+        self.primary_ids = {}
         self.charge_template_cache = {}
         self.lowest_ids = {'consumer': 6, 'bat': 2, 'counter': 15}
         self.all_ids = {}

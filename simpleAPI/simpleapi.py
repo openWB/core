@@ -8,6 +8,7 @@ with JSON/tuple expansion and ID simplification.
 """
 
 import contextlib
+import copy
 import json
 import logging
 from logging.handlers import RotatingFileHandler
@@ -23,6 +24,8 @@ import re
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from src.http_server import build_http_server  # noqa: E402
+from src.parameter_handler import is_numeric, php_echo  # noqa: E402
+from src import php_json  # noqa: E402
 
 FORMAT_STR_SHORT = '%(asctime)s - %(message)s'
 RAMDISK_PATH = str(Path(__file__).resolve().parents[1]) + '/ramdisk/'
@@ -34,8 +37,12 @@ file_handler.setFormatter(logging.Formatter(FORMAT_STR_SHORT))
 log.addHandler(file_handler)
 
 HIERARCHY_TOPIC = "openWB/counter/get/hierarchy"
+LAST_LIVE_VALUES_TOPIC = "openWB/graph/lastlivevaluesJson"
 USER_MANAGEMENT_TOPIC = "openWB/system/security/user_management_active"
-CONFIG_FILE_PATH = "/var/www/html/openWB/data/config/simpleapi_config.json"
+# The configuration holds the access tokens and local users, so it lives outside of the web root (like
+# /home/openwb/configuration.json). The file in data/config is the default that atreboot.sh copies there.
+CONFIG_FILE_PATH = "/home/openwb/simpleapi_config.json"
+DEFAULT_CONFIG_FILE_PATH = str(Path(__file__).resolve().parents[1] / "data" / "config" / "simpleapi_config.json")
 
 
 class SimpleMQTTDaemon:
@@ -150,6 +157,7 @@ class SimpleMQTTDaemon:
             client.subscribe("openWB/consumer/#", qos=0)
             client.subscribe("openWB/io/#", qos=0)
             client.subscribe(USER_MANAGEMENT_TOPIC, qos=0)
+            client.subscribe(LAST_LIVE_VALUES_TOPIC, qos=0)
 
             # Subscribe to simpleAPI set topics for write operations
             client.subscribe("openWB/simpleAPI/set/#", qos=0)
@@ -200,6 +208,11 @@ class SimpleMQTTDaemon:
 
             if topic == USER_MANAGEMENT_TOPIC:
                 self.user_management_active = self._parse_payload(payload) is True
+                return
+
+            if topic == LAST_LIVE_VALUES_TOPIC:
+                # served unchanged by get_lastlivevaluesjson
+                self.raw_value_cache[topic] = payload
                 return
 
             # Handle write operations (simpleAPI set topics)
@@ -776,8 +789,15 @@ class SimpleMQTTDaemon:
 
     def _get_charge_template(self, chargepoint_id: str) -> Optional[Dict[str, Any]]:
         """Get charge_template for a chargepoint, either from cache or request it."""
+        chargepoint_id = str(chargepoint_id)
+        # templates written earlier in the same HTTP request: openWB reports them back only a moment later
+        written = getattr(self._request_publisher, 'templates', None) or {}
+        if chargepoint_id in written:
+            return copy.deepcopy(written[chargepoint_id])
         if chargepoint_id in self.charge_template_cache:
-            return self.charge_template_cache[chargepoint_id].copy()
+            # nested dicts must not be shared with the cache: a write that is refused or fails
+            # would otherwise leave its change behind for the next one
+            return copy.deepcopy(self.charge_template_cache[chargepoint_id])
 
         log.warning(f"No cached charge_template for chargepoint {chargepoint_id}")
         return None
@@ -1093,32 +1113,39 @@ class SimpleMQTTDaemon:
 
     def _publish(self, topic: str, payload: Any) -> None:
         """Publish a write operation - through the caller's own broker connection if the request runs
-        with one (see publish_as), otherwise through the daemon's connection."""
+        with one (see http_write), otherwise through the daemon's connection."""
         publisher = getattr(self._request_publisher, 'session', None)
+        # commands from HTTP requests were never retained by the PHP API; only the MQTT set topics are
+        retain = not getattr(self._request_publisher, 'http', False)
         if publisher is not None:
-            publisher.publish(topic, payload, retain=True)
+            publisher.publish(topic, payload, retain=retain)
         else:
-            self.client.publish(topic, payload, qos=0, retain=True)
+            info = self.client.publish(topic, payload, qos=0, retain=retain)
+            if info.rc != mqtt.MQTT_ERR_SUCCESS:
+                raise ConnectionError(f"Publish to {topic} failed: {mqtt.error_string(info.rc)}")
 
     @contextlib.contextmanager
-    def publish_as(self, session):
-        """Run the write handlers of the current thread with the caller's broker permissions."""
+    def http_write(self, session=None):
+        """Run the write handlers of the current thread for an HTTP request: not retained and, with a
+        session, through the caller's own broker connection (and with the caller's permissions)."""
+        self._request_publisher.http = True
         self._request_publisher.session = session
+        self._request_publisher.templates = {}
         try:
             yield
         finally:
+            self._request_publisher.http = False
             self._request_publisher.session = None
+            self._request_publisher.templates = None
 
     def _publish_json(self, topic: str, data: Dict[str, Any]):
         """Publish JSON data to a topic."""
-        try:
-            json_payload = json.dumps(data)
-            self._publish(topic, json_payload)
-            log.debug(f"Published JSON to {topic}")
-        except PermissionError:
-            raise
-        except Exception as e:
-            log.error(f"Failed to publish JSON to {topic}: {e}")
+        self._publish(topic, php_json.dumps(data))
+        log.debug(f"Published JSON to {topic}")
+        match = re.fullmatch(r'openWB/set/chargepoint/(\d+)/set/charge_template', topic)
+        written = getattr(self._request_publisher, 'templates', None)
+        if match and written is not None:
+            written[match.group(1)] = copy.deepcopy(data)
 
     def _publish_revision(self):
         """Publish API revision number."""
@@ -1198,10 +1225,10 @@ class SimpleMQTTDaemon:
             return True
         if normalized in ('false', 'off', 'no'):
             return False
-        try:
+        # float() would also take "nan", "inf" and "1_0"
+        if is_numeric(normalized):
             return float(normalized)
-        except ValueError:
-            return value
+        return value
 
     def _set_io_output(
             self, io_id: Optional[str], value: str, output_name: Optional[str],
@@ -1237,8 +1264,12 @@ class SimpleMQTTDaemon:
                 payload = 'true'
             else:
                 return False, "Digital output expects boolean or 0/1"
+        elif isinstance(parsed_value, bool):
+            payload = '1' if parsed_value else '0'
+        elif isinstance(parsed_value, float):
+            payload = php_echo(parsed_value)
         else:
-            payload = '1' if parsed_value is True else '0' if parsed_value is False else str(parsed_value)
+            return False, "Analog output expects a number or boolean"
 
         topic = f"openWB/set/system/io/{io_id}/set/manual/{normalized_type}/{output_name}"
         self._publish(topic, payload)
@@ -1289,8 +1320,15 @@ class SimpleMQTTDaemon:
             self.client.disconnect()
 
 
+def select_config_file(config_file: str = CONFIG_FILE_PATH, default_file: str = DEFAULT_CONFIG_FILE_PATH) -> str:
+    if Path(config_file).exists():
+        return config_file
+    log.warning(f"{config_file} not found, using the default configuration {default_file}")
+    return default_file
+
+
 def main():
-    daemon = SimpleMQTTDaemon(config_file=CONFIG_FILE_PATH)
+    daemon = SimpleMQTTDaemon(config_file=select_config_file())
     daemon.run()
 
 

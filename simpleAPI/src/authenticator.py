@@ -74,6 +74,10 @@ class Authenticator:
                     valid = bcrypt.verify(password, stored)
                 except ValueError:
                     valid = False
+                except Exception as exc:
+                    # e.g. passlib without a bcrypt backend (Python 3.13 removed the crypt module)
+                    log.error(f"Cannot verify the password hash of user '{username}': {exc}")
+                    valid = False
             else:
                 valid = hmac.compare_digest(stored, password)
             return TRUSTED if valid else None

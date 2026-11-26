@@ -4,6 +4,7 @@ Mirrors the parameter whitelist, auto-ID resolution and response-shape rules
 of the HTTP dispatch layer, and reads every value straight out of the running
 daemon's caches - no MQTT round-trip is made per request.
 """
+import math
 import re
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
@@ -88,6 +89,7 @@ READ_PARAMETER_ORDER: List[str] = [
     'get_consumer_rfid', 'get_consumer_rfid_timestamp',
     'get_home_consumption',
     'get_io_output_all', 'get_io_output', 'get_io_input_all',
+    'get_lastlivevaluesjson',
 ]
 
 COMPLEX_PARAMETERS = {
@@ -103,7 +105,7 @@ COMPLEX_PARAMETERS = {
 }
 
 # Not tied to a component ID - the ID in the request is ignored.
-GLOBAL_READ_PARAMETERS = {'get_home_consumption'}
+GLOBAL_READ_PARAMETERS = {'get_home_consumption', 'get_lastlivevaluesjson'}
 
 TYPE_PUBLIC_NAMES = {'bat': 'battery'}
 SCAN_TYPES = ['chargepoint', 'bat', 'pv', 'counter', 'consumer', 'io']
@@ -120,6 +122,8 @@ def is_io_parameter(param: str) -> bool:
 def get_type_from_parameter(param: str) -> str:
     if 'chargepoint' in param:
         return 'chargepoint'
+    if param == 'get_io_input_all':
+        return 'io_input'
     if 'io' in param:
         return 'io'
     if 'battery' in param:
@@ -159,8 +163,33 @@ def get_success_message(param: str, value: Any, chargepoint_id: Any) -> str:
     return f"Parameter {param} set to {value}."
 
 
+def php_echo(value: Any) -> str:
+    """What PHP's echo prints (precision=14 for floats, true -> "1", false/null -> "")."""
+    if value is None:
+        return ''
+    if isinstance(value, bool):
+        return '1' if value else ''
+    if isinstance(value, float):
+        if value != value:
+            return 'NAN'
+        if value in (math.inf, -math.inf):
+            return 'INF' if value > 0 else '-INF'
+        text = f"{value:.14G}"
+        if 'E' in text:
+            mantissa, exponent = text.split('E')
+            if '.' not in mantissa:
+                mantissa += '.0'
+            text = f"{mantissa}E{exponent[0]}{int(exponent[1:])}"
+        return text
+    if isinstance(value, (dict, list)):
+        return 'Array'
+    return str(value)
+
+
 def format_raw_output(data: Any, param_name: Optional[str] = None) -> Any:
-    if isinstance(data, dict) and data:
+    if isinstance(data, dict) and not data:
+        return ''
+    if isinstance(data, dict):
         first_key = next(iter(data))
         first_value = data[first_key]
         if isinstance(first_value, str):
@@ -173,9 +202,11 @@ def format_raw_output(data: Any, param_name: Optional[str] = None) -> Any:
 
 def _as_float(value: Any, default: float = 0.0) -> float:
     try:
-        return float(default) if value is None else float(value)
+        number = float(default) if value is None else float(value)
     except (TypeError, ValueError):
         return float(default)
+    # PHP's floatval() never produced NaN/INF, and they are not valid JSON
+    return number if math.isfinite(number) else float(default)
 
 
 def _as_int(value: Any, default: int = 0) -> int:
@@ -199,9 +230,10 @@ def _as_bool(value: Any, default: Any = None) -> bool:
 def _opt_float(value: Any, default: Any = None) -> Optional[float]:
     # missing/invalid stays null - for values where 0 would be a misleading default
     try:
-        return default if value is None else float(value)
+        number = default if value is None else float(value)
     except (TypeError, ValueError):
         return default
+    return number if number is None or math.isfinite(number) else default
 
 
 def _float_list(value: Any, default: Any = None) -> List[Optional[float]]:
@@ -241,6 +273,11 @@ def _parse_limit(value: Any) -> Dict[str, Any]:
     # counter fuse). Both fields are null when no limit is active.
     limit = value if isinstance(value, dict) else {}
     return {'message': limit.get('message'), 'limiting_value': limit.get('limiting_value')}
+
+
+def _max_price_eco(max_price: Any) -> float:
+    # PHP rounded the stored EUR/Wh price to 6 decimals before converting it to ct/kWh
+    return float(f"{_as_float(max_price):.6f}") * 100000
 
 
 def _get_chargepoint_all(daemon: Any, id_: Any) -> Dict[str, Any]:
@@ -310,7 +347,7 @@ def _get_chargepoint_all(daemon: Any, id_: Any) -> Dict[str, Any]:
             'pv_charging_amount': _as_int(pv_limit.get('amount', 0)),
             'pv_charging_soc': _as_int(pv_limit.get('soc', 0)),
             'minimal_pv_soc': _as_int(pv_charging.get('min_soc', 0)),
-            'max_price_eco': _as_float(eco_charging.get('max_price', 0)) * 100000,
+            'max_price_eco': _max_price_eco(eco_charging.get('max_price')),
             'soc': _as_float(connected_vehicle_soc.get('soc', 0)),
             'range_charged': _as_float(connected_vehicle_soc.get('range_charged', 0)),
             'chargemode': chargemode,
@@ -332,6 +369,9 @@ def _make_scalar_handler(
             if record:
                 record(mqtt_component, field)
             return {f"{component}_total": {field: daemon.total_sums[mqtt_component][field]}}
+        if (component, suffix) in _NOTHING_WITHOUT_TOPIC and not _has_topic(
+                daemon, f"openWB/{mqtt_component}/{id_}/get/{suffix}"):
+            return {}
         raw = _raw(daemon, f"openWB/{mqtt_component}/{id_}/get/{suffix}")
         return _comp_scalar(component, id_, field, coercer(raw, default))
     return handler
@@ -423,6 +463,16 @@ SCALAR_READ_TABLE: List[Tuple[str, str, str, str, Callable[[Any, Any], Any], Any
 ]
 
 
+# PHP answered the array reads of chargepoints (voltages, currents, powers) with nothing when the topic does not exist,
+# every other read with zeros
+_NOTHING_WITHOUT_TOPIC = {('chargepoint', 'voltages'), ('chargepoint', 'currents'), ('chargepoint', 'powers')}
+_MISSING = object()
+
+
+def _has_topic(daemon: Any, topic: str) -> bool:
+    return daemon.raw_value_cache.get(topic, _MISSING) is not _MISSING
+
+
 def _make_phase_handlers(component: str, mqtt_component: str, suffix: str) -> Dict[str, Callable[..., Any]]:
     """Build the 4 read handlers (plural array + 3 per-phase scalars) that share
     one underlying openWB/<mqtt_component>/<id>/get/<suffix> topic, e.g. suffix
@@ -432,11 +482,17 @@ def _make_phase_handlers(component: str, mqtt_component: str, suffix: str) -> Di
     def topic(id_: Any) -> str:
         return f"openWB/{mqtt_component}/{id_}/get/{suffix}"
 
-    def plural_handler(daemon: Any, id_: Any) -> Dict[str, Any]:
+    nothing = (component, suffix) in _NOTHING_WITHOUT_TOPIC
+
+    def plural_handler(daemon: Any, id_: Any) -> Optional[Dict[str, Any]]:
+        if nothing and not _has_topic(daemon, topic(id_)):
+            return None
         return _comp_scalar(component, id_, suffix, _phases(_raw(daemon, topic(id_))))
 
-    def make_phase_handler(phase: int) -> Callable[[Any, Any], Dict[str, Any]]:
-        def handler(daemon: Any, id_: Any) -> Dict[str, Any]:
+    def make_phase_handler(phase: int) -> Callable[[Any, Any], Optional[Dict[str, Any]]]:
+        def handler(daemon: Any, id_: Any) -> Optional[Dict[str, Any]]:
+            if nothing and not _has_topic(daemon, topic(id_)):
+                return None
             values = _phases(_raw(daemon, topic(id_)))
             return _comp_scalar(component, id_, f"{singular}_p{phase}", values[phase - 1])
         return handler
@@ -608,6 +664,11 @@ def _get_home_consumption(daemon, id_):
     }
 
 
+def _get_lastlivevaluesjson(daemon, id_):
+    value = _raw(daemon, 'openWB/graph/lastlivevaluesJson')
+    return {'get_lastlivevaluesjson': value}
+
+
 def _get_io_input_all(daemon, id_):
     return {
         f"io_{id_}": {
@@ -674,29 +735,201 @@ READ_DISPATCH: Dict[str, Callable[..., Dict[str, Any]]] = {
     'get_io_output': _get_io_output,
     'get_io_input_all': _get_io_input_all,
     'get_home_consumption': _get_home_consumption,
+    'get_lastlivevaluesjson': _get_lastlivevaluesjson,
 }
 
 # Read handlers that need the request's io_output/io_output_type options in
 # addition to (daemon, id) - every other read handler ignores options entirely.
 READ_PARAMS_WITH_OPTIONS = {'get_io_output'}
 
+# The HTTP write parameters keep the value contract of the PHP API: PHP's floatval()/intval() parsing and the
+# PHP error texts. The MQTT set topics keep their own, stricter handlers in the daemon.
+_NUMBER_PREFIX = re.compile(r'\s*[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?')
+_INT_MAX = 2 ** 63 - 1
+
+
+_NUMBER = re.compile(r'\s*[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?\s*')
+
+
+def is_numeric(value: Any) -> bool:
+    """Whole value is a number. PHP's floatval()/intval() turned anything else into 0 or a prefix; that is
+    rejected here (documented in COMPATIBILITY.md)."""
+    return _NUMBER.fullmatch(str(value)) is not None
+
+
+def php_floatval(value: Any) -> float:
+    match = _NUMBER_PREFIX.match(str(value))
+    return float(match.group()) if match else 0.0
+
+
+def php_intval(value: Any) -> int:
+    number = php_floatval(value)
+    if number != number:
+        return 0
+    return max(-_INT_MAX - 1, min(_INT_MAX, int(number)))
+
+
+def _template_topic(chargepoint_id: Any) -> str:
+    return f"openWB/set/chargepoint/{chargepoint_id}/set/charge_template"
+
+
+def _write_template(daemon, chargepoint_id, mode_key: Optional[str], keypath: Tuple[str, ...], value: Any,
+                    error_prefix: str) -> Tuple[bool, str]:
+    """Set keypath in the charge_template of a chargepoint, like the PHP read-modify-write on the template.
+    mode_key is the chargemode section the template must contain (None: it is created)."""
+    template = daemon._get_charge_template(chargepoint_id)
+    if template is None:
+        return False, (f"{error_prefix}No data received for topic: "
+                       f"openWB/chargepoint/{chargepoint_id}/set/charge_template")
+    chargemode = template.get('chargemode')
+    if mode_key is None:
+        if chargemode is None:
+            template['chargemode'] = {}
+    elif not template or not isinstance(chargemode, dict) or chargemode.get(mode_key) is None:
+        return False, f"Invalid charge template format or missing {mode_key}"
+    container = template
+    for step in keypath[:-1]:
+        if not isinstance(container.get(step), dict):
+            container[step] = {}
+        container = container[step]
+    container[keypath[-1]] = value
+    daemon._publish_json(_template_topic(chargepoint_id), template)
+    return True, ''
+
+
+_CHARGEMODES = {
+    'instant': 'instant_charging', 'pv': 'pv_charging', 'eco': 'eco_charging', 'stop': 'stop',
+    'target': 'scheduled_charging', 'instant_charging': 'instant_charging', 'pv_charging': 'pv_charging',
+    'eco_charging': 'eco_charging', 'scheduled_charging': 'scheduled_charging',
+}
+
+
+def _http_set_chargemode(d, value, chargepoint_id, options):
+    if value not in _CHARGEMODES:
+        return False, 'Invalid chargemode. Valid modes: ' + ', '.join(_CHARGEMODES)
+    return _write_template(d, chargepoint_id, None, ('chargemode', 'selected'), _CHARGEMODES[value],
+                           'Error setting chargemode: ')
+
+
+def _http_template_number(mode_key: str, keypath: Tuple[str, ...], parse: Callable[[Any], Any], label: str,
+                          error_prefix: str):
+    def handler(d, value, chargepoint_id, options):
+        if not is_numeric(value):
+            return False, f"Invalid {label} value: {value}"
+        return _write_template(d, chargepoint_id, mode_key, keypath, parse(value), error_prefix)
+    return handler
+
+
+def _http_max_price_eco(d, value, chargepoint_id, options):
+    if not is_numeric(value):
+        return False, f"Invalid price value: {value}"
+    return _write_template(d, chargepoint_id, 'eco_charging', ('chargemode', 'eco_charging', 'max_price'),
+                           php_floatval(value) / 100000, 'Error setting max price eco: ')
+
+
+LIMIT_LABELS = {'instant_charging': 'instant charging', 'pv_charging': 'PV charging'}
+
+
+def _http_limit(mode_key: str):
+    def handler(d, value, chargepoint_id, options):
+        if value not in ('none', 'amount', 'soc'):
+            return False, f"Invalid {mode_key}_limit. Valid values: none, amount, soc"
+        return _write_template(d, chargepoint_id, mode_key, ('chargemode', mode_key, 'limit', 'selected'), value,
+                               f"Error setting {LIMIT_LABELS[mode_key]} limit: ")
+    return handler
+
+
+def _http_amount(mode_key: str):
+    def handler(d, value, chargepoint_id, options):
+        if not is_numeric(value):
+            return False, f"Invalid amount value: {value}"
+        amount = php_floatval(value)
+        if amount < 0:
+            return False, 'Amount must be >= 0'
+        return _write_template(d, chargepoint_id, mode_key, ('chargemode', mode_key, 'limit', 'amount'),
+                               int(amount * 1000), f"Error setting {LIMIT_LABELS[mode_key]} amount: ")
+    return handler
+
+
+def _http_soc(mode_key: str):
+    def handler(d, value, chargepoint_id, options):
+        if not is_numeric(value):
+            return False, f"Invalid SoC value: {value}"
+        soc = php_intval(value)
+        if soc < 0 or soc > 100:
+            return False, 'SoC must be between 0 and 100'
+        return _write_template(d, chargepoint_id, mode_key, ('chargemode', mode_key, 'limit', 'soc'), soc,
+                               f"Error setting {LIMIT_LABELS[mode_key]} SoC: ")
+    return handler
+
+
+def _http_bat_mode(d, value, chargepoint_id, options):
+    valid_modes = ['min_soc_bat_mode', 'ev_mode', 'bat_mode']
+    if value not in valid_modes:
+        return False, 'Invalid bat_mode. Valid modes: ' + ', '.join(valid_modes)
+    d._publish("openWB/set/general/chargemode_config/bat/mode", value)
+    return True, f"Bat mode set to {value}"
+
+
+def _http_bat_power_reserve(d, value, chargepoint_id, options):
+    if not is_numeric(value):
+        return False, f"Invalid bat_power_reserve value: {value}"
+    watts = php_intval(value)
+    if watts < 0:
+        return False, 'bat_power_reserve must be >= 0'
+    d._publish("openWB/set/general/chargemode_config/bat/power_reserve", watts)
+    return True, f"bat_power_reserve set to {watts}W"
+
+
+def _http_vehicle(d, value, chargepoint_id, options):
+    if not is_numeric(value):
+        return False, f"Invalid vehicle ID: {value}"
+    vehicle_id = php_intval(value)
+    if vehicle_id < 0:
+        return False, 'Vehicle ID must be >= 0'
+    d._publish(f"openWB/set/chargepoint/{chargepoint_id}/config/ev", str(vehicle_id))
+    return True, f"Vehicle {vehicle_id} assigned to chargepoint {chargepoint_id}"
+
+
+def _http_manual_soc(d, value, chargepoint_id, options):
+    if not is_numeric(value):
+        return False, f"Invalid SoC value: {value}"
+    soc = php_intval(value)
+    if soc < 0 or soc > 100:
+        return False, 'Manual SoC must be between 0 and 100'
+    config = d.raw_value_cache.get(f"openWB/chargepoint/{chargepoint_id}/config")
+    if not config:
+        return False, ('Error setting manual SoC: No data received for topic: '
+                       f"openWB/chargepoint/{chargepoint_id}/config")
+    vehicle_id = config.get('ev') if isinstance(config, dict) else None
+    if vehicle_id is None:
+        return False, 'No vehicle assigned to chargepoint'
+    d._publish(f"openWB/set/vehicle/{vehicle_id}/soc_module/calculated_soc_state/manual_soc", str(soc))
+    return True, f"Manual SoC set to {soc}% for vehicle {vehicle_id} (chargepoint {chargepoint_id})"
+
+
 WRITE_DISPATCH: Dict[str, Callable[..., Tuple[bool, str]]] = {
-    'set_chargemode': lambda d, v, i, o: d._set_chargemode(i, v),
-    'chargecurrent': lambda d, v, i, o: d._set_chargecurrent(i, v),
-    'minimal_pv_soc': lambda d, v, i, o: d._set_minimal_pv_soc(i, v),
-    'minimal_permanent_current': lambda d, v, i, o: d._set_minimal_permanent_current(i, v),
-    'max_price_eco': lambda d, v, i, o: d._set_max_price_eco(i, v),
+    'set_chargemode': _http_set_chargemode,
+    'chargecurrent': _http_template_number(
+        'instant_charging', ('chargemode', 'instant_charging', 'current'), php_floatval, 'current',
+        'Error setting chargecurrent: '),
+    'minimal_pv_soc': _http_template_number(
+        'pv_charging', ('chargemode', 'pv_charging', 'min_soc'), php_intval, 'SoC', 'Error setting minimal PV SoC: '),
+    'minimal_permanent_current': _http_template_number(
+        'pv_charging', ('chargemode', 'pv_charging', 'min_current'), php_floatval, 'current',
+        'Error setting minimal permanent current: '),
+    'max_price_eco': _http_max_price_eco,
     'chargepoint_lock': lambda d, v, i, o: d._set_chargepoint_lock(i, v),
-    'bat_mode': lambda d, v, i, o: d._handle_bat_mode_operation(v),
-    'bat_power_reserve': lambda d, v, i, o: d._handle_bat_power_reserve_operation(v),
-    'instant_charging_limit': lambda d, v, i, o: d._handle_instant_charging_limit_operation(v, i),
-    'instant_charging_amount': lambda d, v, i, o: d._handle_instant_charging_limit_amount_operation(v, i),
-    'instant_charging_soc': lambda d, v, i, o: d._handle_instant_charging_limit_soc_operation(v, i),
-    'pv_charging_limit': lambda d, v, i, o: d._handle_pv_charging_limit_operation(v, i),
-    'pv_charging_amount': lambda d, v, i, o: d._handle_pv_charging_limit_amount_operation(v, i),
-    'pv_charging_soc': lambda d, v, i, o: d._handle_pv_charging_limit_soc_operation(v, i),
-    'vehicle': lambda d, v, i, o: d._set_vehicle(i, v),
-    'manual_soc': lambda d, v, i, o: d._set_manual_soc(i, v),
+    'bat_mode': _http_bat_mode,
+    'bat_power_reserve': _http_bat_power_reserve,
+    'instant_charging_limit': _http_limit('instant_charging'),
+    'instant_charging_amount': _http_amount('instant_charging'),
+    'instant_charging_soc': _http_soc('instant_charging'),
+    'pv_charging_limit': _http_limit('pv_charging'),
+    'pv_charging_amount': _http_amount('pv_charging'),
+    'pv_charging_soc': _http_soc('pv_charging'),
+    'vehicle': _http_vehicle,
+    'manual_soc': _http_manual_soc,
     'set_io_output': lambda d, v, i, o: d._set_io_output(i, v, o.get('io_output'), o.get('io_output_type')),
 }
 
@@ -772,17 +1005,58 @@ class ReadView:
 
     def record_components(self) -> None:
         # an ID is visible if one of its get topics is; one per ID is enough
-        for type_, ids in self.all_ids.items():
-            for id_ in ids:
+        for type_ in SCAN_TYPES:
+            for id_ in discover_ids(self, type_):
                 prefix = f"openWB/io/states/{id_}/get/" if type_ == 'io' else f"openWB/{type_}/{id_}/get/"
                 topics = sorted(t for t in list(self._source.raw_value_cache) if t.startswith(prefix))
                 if topics:
                     self.topics.add(topics[0])
 
 
+# A component counts as known when its marker topic carries a value (the PHP API scanned these topics):
+# (marker topic, value must be numeric)
+_ID_MARKERS: Dict[str, Tuple[Any, bool]] = {
+    'chargepoint': (re.compile(r'^openWB/chargepoint/(\d+)/get/imported$'), True),
+    'bat': (re.compile(r'^openWB/bat/(\d+)/get/imported$'), True),
+    'pv': (re.compile(r'^openWB/pv/(\d+)/get/exported$'), True),
+    'counter': (re.compile(r'^openWB/counter/(\d+)/get/imported$'), True),
+    'consumer': (re.compile(r'^openWB/consumer/(\d+)/module$'), False),
+    'io': (re.compile(r'^openWB/io/states/(\d+)/get/digital_output$'), False),
+    'io_input': (re.compile(r'^openWB/io/states/(\d+)/get/(?:digital|analog)_input$'), False),
+}
+
+
+def _marker_has_value(value: Any, numeric: bool) -> bool:
+    if value is None or (isinstance(value, str) and value == ''):
+        return False
+    if numeric:
+        return isinstance(value, (int, float)) and not isinstance(value, bool) and math.isfinite(value)
+    return True
+
+
+def discover_ids(daemon: Any, type_: str) -> List[int]:
+    source = getattr(daemon, '_source', daemon)
+    pattern, numeric = _ID_MARKERS[type_]
+    ids = set()
+    for topic, value in list(source.raw_value_cache.items()):
+        match = pattern.match(topic)
+        if match and _marker_has_value(value, numeric):
+            ids.add(int(match.group(1)))
+    return sorted(ids)
+
+
+def auto_id(daemon: Any, type_: str) -> Optional[int]:
+    """The ID "auto" stands for: the lowest known one - for counters the grid counter of the hierarchy."""
+    source = getattr(daemon, '_source', daemon)
+    if type_ == 'counter' and source.primary_ids.get('counter') is not None:
+        return source.primary_ids['counter']
+    ids = discover_ids(daemon, type_)
+    return ids[0] if ids else None
+
+
 def list_components(daemon: Any) -> Dict[str, List[int]]:
     return {
-        TYPE_PUBLIC_NAMES.get(type_, type_): sorted(daemon.all_ids.get(type_, set()))
+        TYPE_PUBLIC_NAMES.get(type_, type_): discover_ids(daemon, type_)
         for type_ in SCAN_TYPES
     }
 
@@ -806,6 +1080,9 @@ class ParameterHandler:
         handler = WRITE_DISPATCH.get(param)
         if handler is None:
             return {'success': False, 'message': 'Unknown write parameter'}
+        if target_id is not None:
+            # lowest_ids holds ints, the charge_template cache is keyed by strings
+            target_id = str(target_id)
         try:
             success, message = handler(self.daemon, value, target_id, options or {})
             return {'success': success, 'message': message}
@@ -843,7 +1120,7 @@ def dispatch_write(ph: ParameterHandler, write_params: Dict[str, Any], all_param
             id_type = 'io'
 
         if id_type is not None and target_id in (None, '', 'auto'):
-            resolved = daemon.lowest_ids.get(id_type)
+            resolved = auto_id(daemon, id_type)
             if resolved is None:
                 return {'success': False, 'message': f"No {id_type} devices available for auto-ID"}
             target_id = resolved
@@ -881,10 +1158,10 @@ def dispatch_read(
             pass
         elif id_ in ('auto', ''):
             type_ = get_type_from_parameter(param)
-            resolved_id = ph.daemon.lowest_ids.get(type_)
+            resolved_id = auto_id(ph.daemon, type_)
             if resolved_id is None:
                 if debug:
-                    debug_info.append(f"Auto-ID failed for {param}: no {type_} devices known")
+                    debug_info.append(f"Auto-ID failed for {param}: No {type_} devices found via MQTT wildcard scan")
                 if type_ == 'chargepoint':
                     resolved_id = 0
                 else:
