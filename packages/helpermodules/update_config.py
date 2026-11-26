@@ -4372,20 +4372,14 @@ class UpdateConfig:
 
     def upgrade_datastore_163(self) -> None:
         """Die Abrufzeiten der Strompreisanbieter stehen jetzt im Code (Standard 14 Uhr), update_hours aus den
-        gespeicherten Konfigurationen entfernen. EKZ und Groupe E haben außerdem die nie ausgewerteten Felder
-        country und unit verloren."""
+        gespeicherten Konfigurationen entfernen."""
         def upgrade(topic: str, payload) -> Optional[dict]:
             if ("openWB/optional/ep/flexible_tariff/provider" == topic or
                     "openWB/optional/ep/grid_fee/provider" == topic):
                 provider = decode_payload(payload)
                 configuration = provider.get("configuration")
-                if not isinstance(configuration, dict):
-                    return None
-                unused = ["update_hours"]
-                if provider.get("type") in ("ekz", "groupe_e"):
-                    unused += ["country", "unit"]
-                removed = [key for key in unused if configuration.pop(key, None) is not None]
-                if removed:
+                if isinstance(configuration, dict) and "update_hours" in configuration:
+                    del configuration["update_hours"]
                     return {topic: provider}
             return None
 
