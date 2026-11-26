@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import logging
 import pytz
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, time, timedelta, timezone
 from typing import Dict, Optional
 
 from modules.electricity_pricing.flexible_tariffs.octopusenergy.config import (OctopusEnergyTariffConfiguration,
@@ -220,13 +220,21 @@ def agreement_active_at(agreement: dict, time_utc: datetime) -> bool:
     return valid_from <= time_utc <= valid_to
 
 
-def process_agreement(agreement: dict, current_utc: datetime, horizon_utc: datetime, prices: Dict[str, float]):
+def end_of_tomorrow(current_utc: datetime) -> datetime:
+    day_after_tomorrow = datetime.combine(current_utc.astimezone(GERMAN_TZ).date() + timedelta(days=2), time())
+    return GERMAN_TZ.localize(day_after_tomorrow).astimezone(timezone.utc)
+
+
+def process_agreement(agreement: dict, current_utc: datetime, horizon_utc: datetime, prices: Dict[str, float],
+                      forecast_horizon_utc: Optional[datetime] = None):
+    # Der Forecast reicht bis Ende morgen (Octopus liefert heute und morgen), sonst fehlt morgen Abend
+    forecast_horizon_utc = forecast_horizon_utc or horizon_utc
     forecast = agreement.get('unitRateForecast') or []
     forecast_intervals = []
     for entry in forecast:
         valid_from = parse_datetime(entry['validFrom'])
-        valid_to = parse_datetime(entry['validTo']) if entry.get('validTo') else horizon_utc
-        if valid_to <= current_utc or valid_from >= horizon_utc:
+        valid_to = parse_datetime(entry['validTo']) if entry.get('validTo') else forecast_horizon_utc
+        if valid_to <= current_utc or valid_from >= forecast_horizon_utc:
             continue
         forecast_intervals.append((valid_from, valid_to))
         if agreement_active_at(agreement, valid_from):
@@ -241,7 +249,7 @@ def process_agreement(agreement: dict, current_utc: datetime, horizon_utc: datet
     if forecast_intervals:
         step = forecast_intervals[0][1] - forecast_intervals[0][0]
         round_to_hour = False
-        fill_until = min(max(end for _, end in forecast_intervals), horizon_utc)
+        fill_until = min(max(end for _, end in forecast_intervals), forecast_horizon_utc)
     elif forecast:
         return  # Forecast ohne aktuelle Einträge: keine Platzhalter
     else:
@@ -279,7 +287,7 @@ def build_tariff_state(data: dict) -> Dict[str, float]:
         raise OctopusEnergyApiError(error_message)
 
     for agreement in malos[0]['agreements']:
-        process_agreement(agreement, current_utc, horizon_utc, prices)
+        process_agreement(agreement, current_utc, horizon_utc, prices, end_of_tomorrow(current_utc))
 
     sorted_prices = dict(sorted(prices.items()))
     return sorted_prices

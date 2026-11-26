@@ -22,7 +22,7 @@ def fetch_prices(config: OstromTariffConfiguration) -> Dict[int, float]:
     ).json()["access_token"]
     utcnow = datetime.now(timezone.utc)
     startDate = quote(utcnow.strftime("%Y-%m-%dT%H:00:00.000Z"))
-    endDate = quote((utcnow + timedelta(days=1)).strftime("%Y-%m-%dT%H:00:00.000Z"))
+    endDate = quote((utcnow + timedelta(days=2)).strftime("%Y-%m-%dT%H:00:00.000Z"))  # sonst fehlt morgen Abend
     if config.zip:
         zip = f"&zip={config.zip}"
     else:
