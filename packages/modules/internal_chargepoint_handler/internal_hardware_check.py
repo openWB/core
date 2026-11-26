@@ -3,6 +3,7 @@ import time
 import pymodbus
 from typing import Any, Optional, Protocol, Tuple, Union
 
+from helpermodules.utils.error_handling import RetryableError
 from modules.common.component_state import CounterState, EvseState
 from modules.common.evse import Evse
 from modules.common.fault_state import FaultState
@@ -21,6 +22,7 @@ READ_RS485_ADAPTER_AGAIN = "Erneutes Auslesen des {}"
 READ_USB_ADAPTER_AGAIN = READ_RS485_ADAPTER_AGAIN.format('USB-Adapters')
 READ_LAN_ADAPTER_AGAIN = READ_RS485_ADAPTER_AGAIN.format('LAN-Konverters')
 METER_PROBLEM = "Erneutes Auslesen des Ladeleistungs-Zählers"
+METER_UNREACHABLE = "Ladeleistungs-Zähler dauerhaft nicht erreichbar. Verbindung oder Zähler prüfen lassen."
 METER_NO_SERIAL_NUMBER = ("Die Seriennummer des Zählers für das Ladelog kann nicht ausgelesen werden. Wenn Du die "
                           "Seriennummer für Abrechnungszwecke benötigst, wende Dich bitte an unseren Support. Die "
                           "Funktionalität wird dadurch nicht beeinträchtigt!")
@@ -92,7 +94,7 @@ class SeriesHardwareCheckMixin:
                 else:
                     raise Exception(READ_USB_ADAPTER_AGAIN)
             else:
-                raise Exception(meter_error_msg)
+                raise RetryableError(meter_error_msg, METER_UNREACHABLE)
         elif evse_check_passed and meter_check_passed and meter_error_msg is not None:
             fault_state.warning(meter_error_msg)
         if evse_check_passed is False:

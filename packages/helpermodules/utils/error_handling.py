@@ -12,6 +12,12 @@ log = logging.getLogger(__name__)
 CP_ERROR = "Soll-Stromstärke, Lade- und Stecker-Status wird zurückgesetzt."
 
 
+class RetryableError(Exception):
+    def __init__(self, retry_message: str, sustained_message: str):
+        super().__init__(retry_message)
+        self.sustained_message = sustained_message
+
+
 class ErrorTimerContext:
     def __init__(self, topic: str, exceeded_msg: str, timeout: int = COMPONENT_ERROR_DURATION,
                  hide_exception: bool = False):
@@ -29,6 +35,9 @@ class ErrorTimerContext:
             if self.error_timestamp is None:
                 self.error_timestamp = timecheck.create_timestamp()
                 Pub().pub(self.topic, self.error_timestamp)
+            if (isinstance(exception, RetryableError) and
+                    timecheck.check_timestamp(self.error_timestamp, self.timeout) is False):
+                exception.args = (exception.sustained_message,)
             if (self.hide_exception is False or
                     timecheck.check_timestamp(self.error_timestamp, self.timeout + 10) is False):
                 # Fehlermeldung als abgelaufen markieren, bevor die Exception gesetzt wird, mit der Exception werden
