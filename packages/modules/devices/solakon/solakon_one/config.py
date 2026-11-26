@@ -58,3 +58,20 @@ class SolakonOneInverterSetup(ComponentSetup[SolakonOneInverterConfiguration]):
                  configuration: SolakonOneInverterConfiguration = None,
                  **kwargs) -> None:
         super().__init__(name, type, id, configuration or SolakonOneInverterConfiguration(), **kwargs)
+
+
+@auto_str
+class SolakonOneCounterConfiguration:
+    def __init__(self, modbus_id: int = 1):
+        self.modbus_id = modbus_id
+
+
+@auto_str
+class SolakonOneCounterSetup(ComponentSetup[SolakonOneCounterConfiguration]):
+    def __init__(self,
+                 name: str = "Solakon One Zähler",
+                 type: str = "counter",
+                 id: int = 0,
+                 configuration: SolakonOneCounterConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or SolakonOneCounterConfiguration(), **kwargs)

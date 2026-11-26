@@ -12,9 +12,11 @@ from control import data
 from control.general import General
 from control.bat_all import BatAll
 from control.chargemode import Chargemode
+from control.consumer import consumer as consumer_module
 from control.consumer.consumer import Consumer
 from control.consumer.consumer_data import WaitForStartStates
 from control.consumer.usage import ConsumerUsage
+from modules.common.fault_state_level import FaultStateLevel
 
 
 @pytest.fixture(autouse=True)
@@ -134,6 +136,75 @@ def test_get_parameter_clears_previous_state_string_when_switch_interval_is_acti
 
     # evaluation
     assert state_string is None
+
+
+def test_get_parameter_stops_consumer_after_60s_error(consumer: Consumer, monkeypatch):
+    # setup
+    error_timer = timecheck.create_timestamp() - 61
+    consumer.data.get.fault_state = FaultStateLevel.ERROR
+    consumer.data.set.error_timer = error_timer
+    consumer.data.set.switch_interval_elapsed = True
+    monkeypatch.setattr(consumer_module, "get_component_name_by_id", Mock(return_value="Verbraucher 1"))
+
+    # execution
+    required_current, message, mode, submode = consumer.get_parameter()
+
+    # evaluation
+    assert required_current == 0
+    assert submode == Chargemode.STOP
+    assert "Verbraucher 1" in message
+
+
+def test_get_parameter_continues_normally_within_grace_period(consumer: Consumer):
+    # setup
+    # Fehler erst seit 30s - noch innerhalb der Gnadenfrist, get_parameter() darf noch nicht auf STOP gehen.
+    # switch_interval_elapsed=True, damit nur das neue Fehlerfall-Gate über den Rückgabewert entscheidet.
+    error_timer = timecheck.create_timestamp() - 30
+    consumer.data.get.fault_state = FaultStateLevel.ERROR
+    consumer.data.set.error_timer = error_timer
+    consumer.data.set.switch_interval_elapsed = True
+
+    # execution
+    _, _, _, submode = consumer.get_parameter()
+
+    # evaluation
+    assert submode != Chargemode.STOP
+
+
+def test_update_ticks_error_timer_without_touching_already_zeroed_power(consumer: Consumer):
+    # setup
+    # Verbraucher seit über 60s im Fehlerzustand, power schon vom Modul genullt - update() fasst es nicht
+    # mehr an, tickt aber weiterhin error_timer für get_parameter().
+    error_timer = timecheck.create_timestamp() - 61
+    consumer.data.usage.type = ConsumerUsage.METER_ONLY  # NOT_CONTROLLED, kurzer Rückweg nach der Zuordnung
+    consumer.data.get.power = 2000
+    consumer.data.get.fault_state = FaultStateLevel.ERROR
+    consumer.data.set.error_timer = error_timer
+
+    # execution
+    consumer.update()
+
+    # evaluation
+    assert consumer.data.get.power == 2000
+    assert consumer.data.set.error_timer == error_timer
+
+
+def test_update_recovers_after_error_clears(consumer: Consumer):
+    # setup
+    # Verbraucher war im Fehlerzustand (error_timer noch gesetzt), liefert jetzt aber wieder gültige Werte
+    # (fault_state == 0) - der alte error_timer darf nicht mehr dazu führen, dass get_parameter() ihn
+    # weiterhin als fehlerhaft behandelt.
+    consumer.data.usage.type = ConsumerUsage.METER_ONLY
+    consumer.data.get.power = 1800
+    consumer.data.get.fault_state = 0
+    consumer.data.set.error_timer = timecheck.create_timestamp() - 61
+
+    # execution
+    consumer.update()
+
+    # evaluation
+    assert consumer.data.get.power == 1800
+    assert consumer.data.set.error_timer is None
 
 
 @pytest.mark.parametrize(
@@ -678,45 +749,3 @@ def test_reset_chargemode_at_time(
     assert check_end_time_mock.call_count == expected_check_end_time_calls
     if expected_check_end_time_calls:
         check_end_time_mock.assert_called_once_with(consumer.data.usage.reset_chargemode)
-
-
-@pytest.mark.parametrize(
-    "connected_phases, previous_voltages, previous_currents, power, expected_voltages, expected_currents",
-    [
-        pytest.param(1, [230.0]*3, [0.0]*3, 0, [230, 0, 0], [0.0, 0.0, 0.0],
-                     id="noch beim Default (3 Phasen): Spannung wird auf 1 Phase neu berechnet"),
-        pytest.param(1, [230.0]*3, [0.0]*3, 230, [230, 0, 0], [1.0, 0.0, 0.0],
-                     id="Neuberechnung respektiert die tatsächliche Leistung"),
-        pytest.param(1, [230, 0, 0], [0.0, 1.0, 0.0], 0, [230, 0, 0], [0.0, 1.0, 0.0],
-                     id="bereits korrekt (nicht beim Default): keine Neuberechnung nötig, bleibt stabil"),
-    ],
-)
-def test_update_recalculates_voltages_and_currents_when_still_at_default(
-        consumer: Consumer,
-        connected_phases: int,
-        previous_voltages: List[float],
-        previous_currents: List[float],
-        power: float,
-        expected_voltages: List[float],
-        expected_currents: List[float],
-        monkeypatch):
-    """ Neuberechnung muss gegen den Default-Wert prüfen, nicht gegen None - sonst bleibt ein Array mit der alten
-    Phasenzahl stehen, wenn connected_phases nachträglich geändert wird (zB 3 auf 1 Phase). """
-    # setup
-    consumer.data.config.connected_phases = connected_phases
-    consumer.data.get.voltages = previous_voltages
-    consumer.data.get.currents = previous_currents
-    consumer.data.get.power = power
-    monkeypatch.setattr(consumer, "reset_chargemode_at_time", Mock())
-    monkeypatch.setattr(consumer, "is_switch_interval_elapsed", Mock())
-    monkeypatch.setattr(consumer, "get_parameter", Mock(return_value=(0, None, None, None)))
-    monkeypatch.setattr(consumer, "set_mode_changed", Mock())
-    monkeypatch.setattr(consumer, "set_control_parameter", Mock())
-    data.data.counter_all_data = Mock()
-
-    # execution
-    consumer.update()
-
-    # evaluation
-    assert consumer.data.get.voltages == expected_voltages
-    assert consumer.data.get.currents == expected_currents

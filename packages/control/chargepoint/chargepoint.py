@@ -4,6 +4,7 @@ import traceback
 from typing import Dict, Optional, Tuple
 from fnmatch import fnmatch
 
+
 from control.chargelog import chargelog
 from control import data
 from control.chargemode import Chargemode
@@ -12,6 +13,9 @@ from control.chargepoint.chargepoint_template import CpTemplate
 from control.chargepoint.control_parameter import control_parameter_factory
 from control.chargepoint.charging_type import ChargingType
 from control.chargepoint.rfid import ChargepointRfidMixin
+from control.chargepoint.ocpp import ChargepointOcppMixin
+from control.chargepoint.ocpp_rfid import ChargepointOcppRfidMixin
+from control.ocpp.helper import get_chargebox_id, is_ocpp_stop_active
 from control.ev.charge_template import ChargeTemplate
 from control.ev.ev import Ev
 from control import phase_switch
@@ -27,6 +31,7 @@ from helpermodules import timecheck
 from helpermodules.utils import thread_handler
 from modules.chargepoints.openwb_pro.chargepoint_module import EvseSignaling
 from modules.common.abstract_chargepoint import AbstractChargepoint
+
 from helpermodules.timecheck import check_timestamp, create_timestamp
 
 
@@ -51,7 +56,7 @@ def get_chargepoint_get_default() -> Dict:
 log = logging.getLogger(__name__)
 
 
-class Chargepoint(ChargepointRfidMixin, Load):
+class Chargepoint(ChargepointRfidMixin, ChargepointOcppRfidMixin, ChargepointOcppMixin, Load):
     """ geht alle Ladepunkte durch, prüft, ob geladen werden darf und ruft die Funktion des angesteckten Autos auf.
     """
     MAX_FAILED_PHASE_SWITCHES = 2
@@ -63,9 +68,11 @@ class Chargepoint(ChargepointRfidMixin, Load):
             self.num = index
             self.chargemode_changed = False
             self.submode_changed = False
+            self._rfid_stop_result: Optional[bool] = None
             # bestehende Daten auf dem Broker nicht zurücksetzen, daher nicht veröffentlichen
             self.data: ChargepointData = ChargepointData()
             self.data.set_event(event)
+
         except Exception:
             log.exception("Fehler in der Ladepunkt-Klasse von "+str(self.num))
 
@@ -173,6 +180,11 @@ class Chargepoint(ChargepointRfidMixin, Load):
                     charging_possible, message = self._is_ev_plugged()
                     if charging_possible:
                         charging_possible, message = self._is_autolock_inactive()
+            # OCPP-Hinweise auch bei einer bereits bestehenden lokalen Sperre anzeigen.
+            ocpp_possible, ocpp_message = self._is_ocpp()
+            charging_possible = charging_possible and ocpp_possible
+            message = " ".join(text for text in (message, ocpp_message) if text) or None
+
         except Exception:
             log.exception("Fehler in der Ladepunkt-Klasse von "+str(self.num))
             return False, "Keine Ladung, da ein interner Fehler aufgetreten ist: "+traceback.format_exc()
@@ -181,21 +193,21 @@ class Chargepoint(ChargepointRfidMixin, Load):
     def _process_charge_stop(self) -> None:
         # Charging Ev ist noch das EV des vorherigen Zyklus, wenn das nicht -1 war und jetzt nicht mehr geladen
         # werden soll (-1), Daten zurücksetzen.
-        # Ocpp Stop Funktion aufrufen
-        if not self.data.get.plug_state and self.data.set.ocpp_transaction_id is not None:
-            data.data.optional_data.stop_transaction(
-                self.data.config.ocpp_chargebox_id,
-                self.chargepoint_module.fault_state,
-                self.data.get.imported,
-                self.data.set.ocpp_transaction_id,
-                self.data.set.rfid)
-            self.data.set.ocpp_transaction_id = None
+
+        # Stop weiterleiten an OCPP
+        self._chargepoint_stop_ocpp()
+
         # muss vor dem Zurücksetzen der control parameter aufgerufen werden
         self.data.set.charging_ev_data.reset_phase_switch(self.data.control_parameter)
         self.data.set.charging_ev_data.reset_phase_switch_delay(self.data.control_parameter)
         self.reset_control_parameter_at_charge_stop()
         data.data.counter_all_data.get_evu_counter().reset_switch_on_off(self)
-        if self.data.get.plug_state is False and self.data.set.plug_state_prev is True:
+        if ((self.data.get.plug_state is False and self.data.set.plug_state_prev is True)
+            or (
+            data.data.optional_data.data.ocpp.config.active
+            and get_chargebox_id(self)
+            and is_ocpp_stop_active(self.data.get.ocpp)
+        )):
             charging_ev = data.data.ev_data[f"ev{self.data.config.ev}"]
             chargelog.save_and_reset_data(self, charging_ev)
             self.data.control_parameter = control_parameter_factory()
@@ -395,6 +407,9 @@ class Chargepoint(ChargepointRfidMixin, Load):
                     self.set_state_and_log(message)
                 return
             if self.data.control_parameter.state == ChargepointState.WAIT_FOR_USING_PHASES:
+                # Die Wartezeit beginnt erst mit der erneuten Stromfreigabe nach der Umschaltung.
+                if self.data.control_parameter.timestamp_charge_start is None:
+                    return
                 if check_timestamp(self.data.control_parameter.timestamp_charge_start,
                                    charging_ev.ev_template.data.keep_charge_active_duration) is False:
                     if self.hw_supports_phase_switch():
@@ -475,9 +490,11 @@ class Chargepoint(ChargepointRfidMixin, Load):
             # Wenn keine Umschaltung verbaut ist, die Phasenzahl nehmen, mit der geladen wird. Damit werden zB auch
             # einphasige EV an dreiphasigen openWBs korrekt berücksichtigt.
             phases = self.data.get.phases_in_use or self.data.set.phases_to_use
-        elif self.data.control_parameter.state == ChargepointState.PERFORMING_PHASE_SWITCH:
+        elif (self.data.control_parameter.state == ChargepointState.PERFORMING_PHASE_SWITCH or
+              (self.data.control_parameter.state == ChargepointState.WAIT_FOR_USING_PHASES and
+               phases_chargemode == 0 and self.data.set.phases_to_use != 0)):
             phases = self.data.set.phases_to_use
-            log.debug(f"Umschaltung wird durchgeführt, Phasenzahl nicht ändern {phases}")
+            log.debug(f"Umschaltung oder Wiederanlauf im Gange, Phasenzahl nicht ändern {phases}")
         elif phases_chargemode == 0:
             # Wenn die Lademodus-Phasen 0 sind, wird die bisher genutzte Phasenzahl weiter genutzt,
             # bis der Algorithmus eine Umschaltung vorgibt, zB weil der gewählte Lademodus eine
@@ -642,8 +659,18 @@ class Chargepoint(ChargepointRfidMixin, Load):
 
     def update(self, ev_list: Dict[str, Ev]) -> None:
         try:
+            self._sync_ocpp_lifecycle()
+
+            self._reset_ocpp_stop_flags_after_unplug()
+
+            ocpp_active = (data.data.optional_data.data.ocpp.config.active and
+                           get_chargebox_id(self))
+            self._process_ocpp_rfid()
             self._validate_rfid()
-            if self.data.get.rfid is not None and self.data.get.plug_state:
+            if (self.data.get.rfid is not None and self.data.get.plug_state and
+                    (not ocpp_active or
+                     (self.data.get.ocpp.authorization_flow_status != "init" and
+                      self.data.get.ocpp.transaction_id is None))):
                 self._link_rfid_to_cp()
             charging_possible, message = self.is_charging_possible()
             # Ein vorläufiger gemeinsamer Scan gehört keinem eingesteckten Duo-LP.
@@ -655,7 +682,7 @@ class Chargepoint(ChargepointRfidMixin, Load):
                                                        self.data.get.vehicle_id,
                                                        self.data.config.ev)
             if message_ev:
-                message += message_ev
+                message = (message or "") + message_ev
 
             if charging_possible:
                 try:
@@ -736,22 +763,10 @@ class Chargepoint(ChargepointRfidMixin, Load):
             except Exception:
                 log.exception(f"Fehler bei Ladestop,cp{self.num}")
 
-            # OCPP Start Transaction nach Anstecken
-            if ((self.data.get.plug_state and self.data.set.plug_state_prev is False) or
-                    (self.data.set.ocpp_transaction_id is None and self.data.get.charge_state)):
-                # Starte nur Transaction wenn auch die chargepoint ID im Backend gesetzt wurde
-                if self.data.config.ocpp_chargebox_id:
-                    # Starte nur Transaction wenn bereits ein RFID Tag oder die Fahrzeug ID erkannt wurde
-                    rfid = self.data.set.rfid
-                    if self.find_duo_partner() is None or not self.data.get.plug_state:
-                        rfid = rfid or self.data.get.rfid
-                    if (rfid or self.data.get.vehicle_id):
-                        self.data.set.ocpp_transaction_id = data.data.optional_data.start_transaction(
-                            self.data.config.ocpp_chargebox_id,
-                            self.chargepoint_module.fault_state,
-                            self.num,
-                            rfid or self.data.get.vehicle_id,
-                            self.data.get.imported)
+            self._publish_ocpp_state()
+
+            self._process_ocpp_start()
+
             if self.data.get.plug_state and self.data.set.plug_state_prev is False:
                 self.data.control_parameter.timestamp_chargemode_changed = create_timestamp()
             # SoC nach Anstecken aktualisieren
@@ -769,6 +784,7 @@ class Chargepoint(ChargepointRfidMixin, Load):
                 self.data.set.soc_timestamp_force_update_prev_ev = soc_update_target_ev
                 log.debug("SoC nach Anstecken")
             self.set_state_and_log(message)
+            self._process_ocpp_backend_message()
         except Exception:
             log.exception(f"Fehler bei Ladepunkt {self.num}")
 

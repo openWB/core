@@ -17,6 +17,28 @@ class ValueStore(Generic[T]):
     def update(self) -> None:
         pass
 
+    def zero_power_on_sustained_error(self) -> None:
+        pass
+
+
+class MultiValueStore(Generic[T], ValueStore[T]):
+    """Leitet Messwerte an die vorgegebenen Stores weiter."""
+
+    def __init__(self, *stores: ValueStore[T]):
+        self.stores = stores
+
+    def set(self, state: T) -> None:
+        for store in self.stores:
+            store.set(state)
+
+    def update(self) -> None:
+        for store in self.stores:
+            store.update()
+
+    def zero_power_on_sustained_error(self) -> None:
+        for store in self.stores:
+            store.zero_power_on_sustained_error()
+
 
 class LoggingValueStore(Generic[T], ValueStore[T]):
     def __init__(self, delegate: ValueStore[T]):
@@ -36,10 +58,22 @@ class LoggingValueStore(Generic[T], ValueStore[T]):
         except Exception:
             log.exception("Error while publishing module data")
 
+    def zero_power_on_sustained_error(self) -> None:
+        try:
+            self.delegate.zero_power_on_sustained_error()
+        except AttributeError:
+            pass
+
 
 def update_values(component):
     with SingleComponentUpdateContext(component.fault_state, update_always=False):
         if hasattr(component, "store"):
+            if component.fault_state.error_duration_exceeded():
+                try:
+                    component.store.zero_power_on_sustained_error()
+                except AttributeError:
+                    # darf update() nicht blockieren
+                    pass
             try:
                 component.store.update()
             except AttributeError:

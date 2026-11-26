@@ -10,6 +10,8 @@ from control.chargepoint.charging_type import ChargingType
 from control.chargepoint.chargepoint import Chargepoint
 from control.chargepoint.chargepoint_state import ChargepointState
 from control.chargepoint.chargepoint_template import CpTemplate
+from control import phase_switch
+from helpermodules import timecheck
 from control.counter import Counter
 from control.ev.ev import Ev
 from modules.common.configurable_vehicle import ConfigurableVehicle
@@ -17,11 +19,199 @@ from modules.vehicles.manual.config import ManualSoc
 from modules.vehicles.manual.soc import create_vehicle as create_manual_vehicle
 from modules.vehicles.tesla.config import TeslaSoc
 from modules.vehicles.tesla.soc import create_vehicle as create_tesla_vehicle
+from ocpp.v16.enums import ChargePointStatus
 
 
 @pytest.fixture()
 def mock_data() -> None:
     data.data_init(Mock())
+
+
+@pytest.mark.parametrize("availability,controller_status,connector_status", [
+    ([True, True], ChargePointStatus.available, ChargePointStatus.preparing),
+    ([True, False], ChargePointStatus.available, ChargePointStatus.unavailable),
+    ([False, True], ChargePointStatus.unavailable, ChargePointStatus.unavailable),
+    ([False, False], ChargePointStatus.unavailable, ChargePointStatus.unavailable),
+])
+def test_ocpp_availability_status_and_permission(
+    mock_data, monkeypatch, availability, controller_status, connector_status
+):
+    cp = Chargepoint(1, None)
+    cp.data.config.ocpp_chargebox_id = "box-1"
+    data.data.optional_data.data.ocpp.config.active = True
+    cp.data.get.ocpp.connected = True
+    cp.data.get.ocpp.tag_accepted = True
+    cp.data.get.ocpp.availability = availability
+    cp.data.get.plug_state = True
+    assert cp.get_ocpp_status_connector_0() == controller_status
+    assert cp.get_ocpp_status() == connector_status
+    assert cp._is_ocpp()[0] is all(availability)
+    notification = Mock()
+    monkeypatch.setattr(data.data.ocpp_client, "status_notification", notification)
+    cp.ocpp_send_status_notification()
+    assert [request.kwargs["connector_id"] for request in notification.call_args_list] == [0, 1]
+    assert [request.kwargs["status"] for request in notification.call_args_list] == [
+        controller_status, connector_status]
+
+
+@pytest.mark.parametrize("local_block,local_message", [
+    (None, None),
+    ("manual", "Keine Ladung, da der Ladepunkt gesperrt ist."),
+    ("grid", "Ladepunkt gesperrt, da der Netzschutz aktiv ist."),
+    ("unplugged", "Keine Ladung, da kein Auto angesteckt ist."),
+    ("autolock", "Keine Ladung, da Sperren nach Uhrzeit aktiv ist."),
+])
+@pytest.mark.parametrize("ocpp_state,ocpp_message", [
+    ("ready", None),
+    ("disabled", None),
+    ("disconnected", "Keine Ladung: Verbindung zum OCPP-Server fehlt."),
+    ("unconfirmed", "Keine Ladung: Startbestätigung vom OCPP-Server fehlt. "
+                    "Stecker abziehen und erneut verbinden."),
+])
+def test_charging_permission_combines_local_and_ocpp_messages(
+    mock_data, monkeypatch, local_block, local_message, ocpp_state, ocpp_message
+):
+    cp = Chargepoint(1, None)
+    cp.template = CpTemplate()
+    cp.data.config.ocpp_chargebox_id = "box-1"
+    cp.data.get.plug_state = local_block != "unplugged"
+    cp.data.set.manual_lock = local_block == "manual"
+    general = data.data.general_data.data
+    general.grid_protection_configured = local_block == "grid"
+    general.grid_protection_active = local_block == "grid"
+    general.grid_protection_timestamp = None
+    data.data.optional_data.data.rfid.active = False
+    monkeypatch.setattr(cp.template, "is_locked_by_autolock", lambda _: local_block == "autolock")
+    data.data.optional_data.data.ocpp.config.active = ocpp_state != "disabled"
+    cp.data.get.ocpp.connected = ocpp_state != "disconnected"
+    cp.data.get.ocpp.tag_accepted = True
+    if ocpp_state == "unconfirmed":
+        cp.data.get.ocpp.authorization_flow_status = "start_unconfirmed"
+
+    possible, message = cp.is_charging_possible()
+
+    assert possible is (local_block is None and ocpp_message is None)
+    assert message == (" ".join(text for text in (local_message, ocpp_message) if text) or None)
+
+
+@pytest.mark.parametrize("plugged,tag_source,expected", [
+    (False, None, None),
+    (False, "scan", None),
+    (True, None, "Keine Ladung: RFID zur OCPP-Freigabe erforderlich."),
+    (True, "scan", "Warte auf OCPP-Transaktionsfreigabe."),
+    (True, "assigned", "Warte auf OCPP-Transaktionsfreigabe."),
+    (True, "vehicle", "Warte auf OCPP-Transaktionsfreigabe."),
+])
+@pytest.mark.parametrize("flow_status", [None, "accepted"])
+def test_ocpp_wait_message_preserves_charging_block(mock_data, plugged, tag_source, expected, flow_status):
+    cp = Chargepoint(1, None)
+    cp.template = CpTemplate()
+    cp.data.config.ocpp_chargebox_id = "box-1"
+    data.data.optional_data.data.ocpp.config.active = True
+    cp.data.get.ocpp.connected = True
+    cp.data.get.ocpp.authorization_flow_status = flow_status
+    cp.data.get.plug_state = plugged
+    if tag_source == "scan":
+        cp.data.get.rfid = "TAG"
+    elif tag_source == "assigned":
+        cp.data.set.rfid = "TAG"
+    elif tag_source == "vehicle":
+        cp.data.get.vehicle_id = "TAG"
+
+    assert cp._is_ocpp() == (False, expected)
+    possible, message = cp.is_charging_possible()
+    assert possible is False
+    assert message == (expected if plugged else "Keine Ladung, da kein Auto angesteckt ist.")
+
+
+@pytest.mark.parametrize("plugged", [False, True])
+@pytest.mark.parametrize("flow_status,expected", [
+    ("init", "RFID-Autorisierung am OCPP-Server läuft."),
+    ("start_pending", "OCPP-Transaktionstart wird vorbereitet."),
+    ("start_authorizing", "RFID-Autorisierung am OCPP-Server läuft."),
+    ("start_starting", "RFID akzeptiert. OCPP-Transaktion wird gestartet."),
+    ("start_rejected", "Keine Ladung: OCPP Authorisierung abgelehnt."),
+    ("start_error", "Keine Ladung: Fehler beim OCPP-Transaktionstart."),
+])
+def test_ocpp_specific_message_takes_priority_over_wait_message(mock_data, plugged, flow_status, expected):
+    cp = Chargepoint(1, None)
+    cp.data.config.ocpp_chargebox_id = "box-1"
+    data.data.optional_data.data.ocpp.config.active = True
+    cp.data.get.ocpp.connected = True
+    cp.data.get.ocpp.authorization_flow_status = flow_status
+    cp.data.get.plug_state = plugged
+    cp.data.get.rfid = "TAG"
+
+    assert cp._is_ocpp() == (False, expected)
+
+
+@pytest.mark.parametrize("stop_flag", ["remote_stop", "reset", "unlock_stop", "rfid_stop"])
+@pytest.mark.parametrize("plugged,transaction_id,charging,current,expected", [
+    (True, None, False, 0, ChargePointStatus.finishing),
+    (False, None, False, 0, ChargePointStatus.available),
+    (True, 42, True, 6, ChargePointStatus.charging),
+    (True, 42, False, 0, ChargePointStatus.suspended_evse),
+    (True, 42, False, 6, ChargePointStatus.suspended_ev),
+    (True, None, True, 6, ChargePointStatus.preparing),
+])
+def test_ocpp_stop_status_requires_local_transaction_and_charging_to_end(
+    stop_flag, plugged, transaction_id, charging, current, expected
+):
+    cp = Chargepoint(1, None)
+    setattr(cp.data.get.ocpp, stop_flag, True)
+    cp.data.get.ocpp.transaction_id = transaction_id
+    cp.data.get.plug_state = plugged
+    cp.data.get.charge_state = charging
+    cp.data.set.current = current
+
+    assert cp.get_ocpp_status() == expected
+
+
+@pytest.mark.parametrize("availability", [[True, True], [True, False], [False, True], [False, False]])
+@pytest.mark.parametrize("stop_flag", ["remote_stop", "reset", "unlock_stop", "rfid_stop"])
+def test_ocpp_fault_has_priority_over_availability_and_stop_flags(availability, stop_flag):
+    cp = Chargepoint(1, None)
+    cp.data.get.fault_state = 2
+    cp.data.get.ocpp.availability = availability
+    setattr(cp.data.get.ocpp, stop_flag, True)
+
+    assert cp.get_ocpp_status_connector_0() == ChargePointStatus.faulted
+    assert cp.get_ocpp_status() == ChargePointStatus.faulted
+
+
+@pytest.mark.parametrize("availability,plugged,transaction_id,charging,current,stop,expected", [
+    ([True, True], False, None, False, 0, False, ChargePointStatus.available),
+    ([True, True], True, None, False, 0, False, ChargePointStatus.preparing),
+    ([True, True], True, 42, True, 6, False, ChargePointStatus.charging),
+    ([True, True], True, 42, False, 0, False, ChargePointStatus.suspended_evse),
+    ([True, True], True, 42, False, 6, False, ChargePointStatus.suspended_ev),
+    ([True, True], True, None, False, 0, True, ChargePointStatus.finishing),
+    ([True, False], True, None, False, 0, False, ChargePointStatus.unavailable),
+    ([False, True], True, None, False, 0, False, ChargePointStatus.unavailable),
+])
+def test_ocpp_warning_preserves_operating_status(
+    availability, plugged, transaction_id, charging, current, stop, expected
+):
+    cp = Chargepoint(1, None)
+    cp.data.get.fault_state = 1
+    cp.data.get.ocpp.availability = availability
+    cp.data.get.plug_state = plugged
+    cp.data.get.ocpp.transaction_id = transaction_id
+    cp.data.get.charge_state = charging
+    cp.data.set.current = current
+    cp.data.get.ocpp.remote_stop = stop
+
+    assert cp.get_ocpp_status() == expected
+    assert cp.get_ocpp_status_connector_0() == (
+        ChargePointStatus.available if availability[0] else ChargePointStatus.unavailable
+    )
+
+
+def test_ocpp_freshly_plugged_vehicle_without_transaction_is_preparing():
+    cp = Chargepoint(1, None)
+    cp.data.get.plug_state = True
+
+    assert cp.get_ocpp_status() == ChargePointStatus.preparing
 
 
 @pytest.mark.parametrize("phase_1, phases, expected_required_currents",
@@ -284,6 +474,61 @@ def test_is_phase_switch_required(params: Params):
 
     # assertion
     assert ret == params.phase_switch_required
+
+
+@pytest.mark.parametrize("actual_phases, expected_state, failed_switches", [
+    (3, ChargepointState.CHARGING_ALLOWED, 0),
+    (1, ChargepointState.PHASE_SWITCH_AWAITED, 1),
+])
+def test_phase_switch_waits_for_restart_before_checking_phases(
+        mock_data, monkeypatch, caplog, actual_phases, expected_state, failed_switches):
+    data.data.general_data.data.chargemode_config.surplus.vehicle.retry_failed_phase_switches = True
+    cp = Chargepoint(0, None)
+    cp.data.set.charging_ev_data = Ev(0)
+    cp.data.set.charging_ev_data.ev_template.data.keep_charge_active_duration = 40
+    cp.data.config.auto_phase_switch_hw = True
+    cp.data.set.phases_to_use = 3
+    cp.data.control_parameter.phases = 3
+    cp.data.control_parameter.state = ChargepointState.WAIT_FOR_USING_PHASES
+    cp.data.get.phases_in_use = 1
+    cp.data.get.charge_state = False
+    cp.data.set.current = 0
+    cp.data.set.current_prev = 0
+    cp.data.control_parameter.timestamp_charge_start = None
+    monkeypatch.setattr(data.data.counter_all_data, "get_evu_counter", Mock(return_value=Counter(0)))
+    monkeypatch.setattr(cp, "hw_supports_phase_switch", Mock(return_value=True))
+    switch = Mock()
+    monkeypatch.setattr(phase_switch, "thread_phase_switch", switch)
+    now = 1000
+    monkeypatch.setattr(timecheck, "create_timestamp", lambda: now)
+    monkeypatch.setattr("control.load_protocol.create_timestamp", lambda: now)
+
+    # Nach der Umschaltung ist noch kein Strom freigegeben. Automatisches PV-Laden
+    # muss die drei Phasen beibehalten, statt wegen des Ladestopps auf eine zurückzufallen.
+    cp.check_phase_switch_completed()
+    cp.data.control_parameter.phases = cp.get_phases_by_selected_chargemode(0)
+    cp.initiate_phase_switch()
+    assert cp.data.control_parameter.phases == 3
+    assert cp.data.control_parameter.state == ChargepointState.WAIT_FOR_USING_PHASES
+    assert cp.data.control_parameter.failed_phase_switches == 0
+    switch.assert_not_called()
+
+    # Erst ab Stromfreigabe läuft die Wiederanlaufzeit, auch wenn das Auto noch nicht lädt.
+    cp.data.set.current = 6
+    cp.set_timestamp_charge_start()
+    assert cp.data.control_parameter.timestamp_charge_start == now
+    cp.remember_previous_values()
+    now += 39
+    cp.check_phase_switch_completed()
+    assert cp.data.control_parameter.state == ChargepointState.WAIT_FOR_USING_PHASES
+
+    now += 2
+    cp.data.get.phases_in_use = actual_phases
+    cp.data.get.charge_state = True
+    cp.check_phase_switch_completed()
+    assert cp.data.control_parameter.state == expected_state
+    assert cp.data.control_parameter.failed_phase_switches == failed_switches
+    assert not any(record.levelname == "ERROR" for record in caplog.records)
 
 
 @pytest.mark.parametrize(

@@ -246,6 +246,21 @@ class MqttClient
     }
 
     /**
+     * Zusaetzliche Scan-Konfigurationen, die nur fuer die Auto-ID genutzt werden
+     * und nicht in list_components erscheinen.
+     *
+     * io_input: IO-Geraete mit Eingaengen. openWB publiziert get/digital_output nur
+     * fuer Geraete mit Ausgaengen; reine Eingabe-Geraete werden ueber 'io' daher
+     * nicht gefunden. Die *_prev-Topics werden durch den Regex ausgeschlossen.
+     */
+    private function getAuxiliaryScanConfig()
+    {
+        return [
+            'io_input' => ['pattern' => 'openWB/io/states/+/get/+', 'regex' => '/openWB\/io\/states\/(\d+)\/get\/(?:digital|analog)_input\s+(.+)/']
+        ];
+    }
+
+    /**
      * Alle verfügbaren IDs für einen bestimmten Typ finden (MQTT Wildcard Scan).
      * Wirft eine Exception, wenn keine Geräte gefunden wurden (genutzt von getLowestId, wo ein
      * leeres Ergebnis ein echter Fehlerfall ist).
@@ -267,7 +282,7 @@ class MqttClient
      */
     private function scanAvailableIds($type)
     {
-        $config = $this->getScanConfig()[$type] ?? null;
+        $config = $this->getScanConfig()[$type] ?? $this->getAuxiliaryScanConfig()[$type] ?? null;
         if ($config === null) {
             throw new \Exception("Unsupported type for ID scan: {$type}");
         }
@@ -290,7 +305,7 @@ class MqttClient
 
                     // Nur IDs mit gültigen Werten (bei IO/Consumer auch JSON erlaubt)
                     if ($value !== '' && $value !== 'null' &&
-                        ($type === 'io' || $type === 'consumer' || is_numeric($value))) {
+                        ($type === 'io' || $type === 'io_input' || $type === 'consumer' || is_numeric($value))) {
                         $ids[] = $id;
                     }
                 }

@@ -190,8 +190,8 @@ class HandlerAlgorithm:
                 for cp in data.data.cp_data.values():
                     calc_energy_costs(cp)
                 data.data.general_data.grid_protection()
-                data.data.optional_data.ocpp_transfer_meter_values()
                 data.data.counter_all_data.validate_hierarchy()
+                data.data.counter_all_data.validate_loadmanagement_prios()
                 data.data.optional_data.remove_outdated_prices()
             loadvars_.ep_get_prices()
         except Exception:
@@ -367,6 +367,7 @@ try:
     event_update_config_completed.wait(300)
     event_subdata_initialized.wait(300)
     Thread(target=check_roles_at_start, args=(), name="check acl roles at start").start()
+    Pub().pub("openWB/system/python_runtime_version", f"{sys.version.split()[0]}")
     Pub().pub("openWB/set/system/boot_done", True)
     Path(Path(__file__).resolve().parents[1]/"ramdisk"/"bootdone").touch()
     schedule_jobs()

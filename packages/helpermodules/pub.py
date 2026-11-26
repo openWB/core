@@ -1,6 +1,7 @@
 import json
 import logging
 import paho.mqtt.publish as publish
+from typing import Any, Dict, List, NamedTuple
 
 from helpermodules.broker import InternalBrokerPublisher
 
@@ -18,6 +19,13 @@ class PubSingleton:
             self.publisher.client.publish(topic, payload, qos=qos, retain=retain)
         else:
             self.publisher.client.publish(topic, payload=json.dumps(payload), qos=qos, retain=retain)
+
+
+class PubMessage(NamedTuple):
+    topic: str
+    payload: Any
+    no_json: bool = False
+    retain: bool = True
 
 
 class Pub:
@@ -51,3 +59,30 @@ def pub_single(topic: str, payload, hostname: str = "localhost", port: int = 188
         return
 
     publish.single(topic, payload if no_json else json.dumps(payload), hostname=hostname, port=port, retain=retain)
+
+
+def to_mqtt_message(message: PubMessage) -> Dict[str, Any]:
+    """ Wandelt eine PubMessage in das von paho verwendete Nachrichten-Dict um.
+    """
+    return {"topic": message.topic,
+            "payload": message.payload if message.no_json else json.dumps(message.payload),
+            "qos": 0,
+            "retain": message.retain}
+
+
+def pub_multiple(messages: List[PubMessage], hostname: str = "localhost", port: int = 1883) -> None:
+    """ Sendet mehrere Nachrichten über eine einzige Verbindung an einen Host.
+
+        Parameter
+    ---------
+    messages : List[PubMessage]
+        Nachrichten, die gesendet werden sollen
+    hostname: str
+        IP des Hosts
+    """
+    if hostname == "localhost":
+        for message in messages:
+            Pub().pub(message.topic, message.payload, qos=0, no_json=message.no_json, retain=message.retain)
+        return
+
+    publish.multiple([to_mqtt_message(message) for message in messages], hostname=hostname, port=port)
