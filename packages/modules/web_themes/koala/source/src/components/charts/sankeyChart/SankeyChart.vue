@@ -214,7 +214,7 @@ const chartData = computed<ChartData<'sankey'>>(() => {
             (ctx.raw as SankeyDataPoint | undefined)?.to ?? '',
             ctx.dataIndex,
           ),
-        colorMode: 'from',
+        colorMode: 'gradient',
         borderWidth: 0,
         color: textColor,
         // Names and values share the custom collision pass below.
