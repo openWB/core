@@ -25,6 +25,14 @@ class OctopusEnergyApiError(Exception):
 class OctopusEnergyGraphQlError(OctopusEnergyApiError):
     """Die API hat mit HTTP 200 ein 'errors'-Array geliefert."""
 
+    def __init__(self, message: str, error_codes=()):
+        super().__init__(message)
+        self.error_codes = list(error_codes)
+
+
+# errorCode der Anmeldung mit falschen Zugangsdaten (gegen die API geprüft), alle anderen Fehler werden wiederholt
+INVALID_CREDENTIALS_CODE = "KT-CT-1138"
+
 
 class OctopusEnergyClient:
     def __init__(self, email: str, password: str, base_url="https://api.oeg-kraken.energy/v1/graphql/"):
@@ -59,7 +67,8 @@ class OctopusEnergyClient:
             error_messages = "; ".join(
                 err.get("message", str(err)) for err in body["errors"]
             )
-            raise OctopusEnergyGraphQlError(f"GraphQL-Fehler: {error_messages}")
+            error_codes = [(err.get("extensions") or {}).get("errorCode") for err in body["errors"]]
+            raise OctopusEnergyGraphQlError(f"GraphQL-Fehler: {error_messages}", error_codes)
 
         data = body.get("data")
         if data is None:
@@ -80,7 +89,10 @@ class OctopusEnergyClient:
         try:
             data = self._graphql_request(mutation, variables)
         except OctopusEnergyGraphQlError as e:
-            raise PermanentTariffError(f"Anmeldung bei Octopus fehlgeschlagen, bitte E-Mail und Passwort prüfen: {e}")
+            if INVALID_CREDENTIALS_CODE in e.error_codes:
+                raise PermanentTariffError(
+                    f"Anmeldung bei Octopus fehlgeschlagen, bitte E-Mail und Passwort prüfen: {e}") from e
+            raise
 
         if "obtainKrakenToken" not in data or data["obtainKrakenToken"] is None:
             raise PermanentTariffError("Anmeldung bei Octopus fehlgeschlagen: Kein Token in der Antwort enthalten.")

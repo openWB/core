@@ -255,6 +255,48 @@ def test_missing_tomorrow_warns_from_19_for_every_provider(monkeypatch: pytest.M
     assert tariff.fault_state.fault_state == expected
 
 
+def test_empty_response_is_retried_hourly(monkeypatch: pytest.MonkeyPatch):
+    now = datetime(2022, 5, 16, 14, 10, 0)
+
+    next_query = _schedule(monkeypatch, now, {})
+
+    assert next_query == int(now.timestamp()) + RETRY_INTERVAL_SECONDS
+
+
+def test_schedule_is_published_after_the_prices_are_stored(monkeypatch: pytest.MonkeyPatch):
+    # bricht das Speichern ab, darf der Zeitplan der neuen Antwort nicht schon gelten
+    fixed_now = datetime(2022, 5, 16, 14, 10, 0)
+    _patch_now(monkeypatch, fixed_now)
+    newer = _prices_until(datetime(2022, 5, 17, 23, 45))
+    tariff = ConfigurableFlexibleTariff(
+        AwattarTariff(), Mock(return_value=Mock(return_value=TariffState(prices=newer))))
+    tariff.get.prices = {}
+    tariff.get.next_query_time = int(fixed_now.timestamp()) - 10
+    tariff.store.set = Mock()
+    tariff.store.update = Mock(side_effect=Exception("Speichern fehlgeschlagen"))
+
+    tariff.update()
+
+    assert tariff.get.next_query_time == int(fixed_now.timestamp()) + RETRY_BACKOFF_SECONDS
+
+
+def test_prices_stored_by_another_update_while_fetching_are_not_overwritten(monkeypatch: pytest.MonkeyPatch):
+    _patch_now(monkeypatch, datetime(2022, 5, 16, 14, 10, 0))
+    newer = _prices_until(datetime(2022, 5, 17, 23, 45))
+    older = _prices_until(datetime(2022, 5, 16, 23, 45))
+
+    def slow_fetch() -> TariffState:
+        tariff.get.prices = newer  # ein anderer Abruf hat währenddessen neuere Preise gespeichert
+        return TariffState(prices=older)
+
+    tariff = ConfigurableFlexibleTariff(AwattarTariff(), Mock(return_value=slow_fetch))
+    tariff.get.prices = {}
+
+    state = tariff._ConfigurableTariff__call_component_updater()  # pyright: ignore[reportPrivateUsage]
+
+    assert state.prices == newer
+
+
 def test_known_prices_are_kept_when_the_provider_returns_nothing_newer(monkeypatch: pytest.MonkeyPatch):
     _patch_now(monkeypatch, datetime(2022, 5, 16, 14, 10, 0))
     known = _prices_until(datetime(2022, 5, 17, 23, 45))

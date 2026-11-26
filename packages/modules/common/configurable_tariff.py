@@ -66,6 +66,9 @@ class ConfigurableTariff(Generic[T_TARIFF_CONFIG]):
                     with SingleComponentUpdateContext(self.fault_state, reraise=True):
                         tariff_state, timeslot_length_seconds = self.__update_et_provider_data()
                         self.__store_and_publish_updated_data(tariff_state)
+                        # erst nach dem Speichern der Preise, sonst passt der Zeitplan nach einem Abbruch nicht zu den
+                        # gespeicherten Preisen
+                        self._schedule_next_query(tariff_state.prices, timeslot_length_seconds)
                         self.__finalize_update_status(timeslot_length_seconds, tariff_state)
                 except Exception as e:
                     log.exception(f"Fehler beim Aktualisieren der Tarifdaten {e}")
@@ -101,7 +104,7 @@ class ConfigurableTariff(Generic[T_TARIFF_CONFIG]):
     def _schedule_next_query(self, prices: Dict[str, float], timeslot_length_seconds: int) -> None:
         now = datetime.now()
         if not prices:
-            self._delay_next_query()
+            self._delay_next_query(RETRY_INTERVAL_SECONDS)
             return
         latest_start = datetime.fromtimestamp(max(int(ts) for ts in prices))
         prices_end = latest_start + timedelta(seconds=timeslot_length_seconds)
@@ -128,14 +131,14 @@ class ConfigurableTariff(Generic[T_TARIFF_CONFIG]):
         log.debug(f"Nächster Abruf der {self.tariff_type} Strompreise geplant für: {next_query}")
 
     def __call_component_updater(self) -> TariffState:
-        last_known_timestamp = max((int(ts) for ts in self.get.prices.keys()), default=0)
         tariff_state = self._component_updater()
+        # nach dem Abruf lesen: dauert er lange, kann ein anderer Abruf inzwischen neuere Preise gespeichert haben
+        last_known_timestamp = max((int(ts) for ts in self.get.prices.keys()), default=0)
         latest_price_timestamp = max((int(ts) for ts in tariff_state.prices.keys()), default=0)
         if latest_price_timestamp <= last_known_timestamp:
             # Keine neueren Preise, z.B. weil die Preise für den Folgetag noch nicht veröffentlicht sind: die
             # bekannten Preise behalten (siehe #3703)
             tariff_state = TariffState(prices=dict(self.get.prices))
-        self._schedule_next_query(tariff_state.prices, self.__calculate_price_timeslot_length(tariff_state))
         return tariff_state
 
     def _delay_next_query(self, seconds: int = RETRY_BACKOFF_SECONDS) -> None:

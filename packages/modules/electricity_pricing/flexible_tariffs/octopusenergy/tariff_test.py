@@ -284,15 +284,31 @@ def test_graphql_request_raises_on_graphql_errors(monkeypatch):
     mock_response = MagicMock()
     mock_response.status_code = 200
     mock_response.json.return_value = {
-        "errors": [{"message": "Token invalid or expired"}]
+        "errors": [{"message": "Invalid data.", "extensions": {"errorCode": "KT-CT-1138"}}]
     }
     mock_session = MagicMock()
     mock_session.post.return_value = mock_response
     monkeypatch.setattr(tariff.req, "get_http_session", lambda: mock_session)
 
-    # execution & assert: Authentifizierung im Konstruktor schlägt fehl, das ist ein dauerhafter Fehler
-    with pytest.raises(PermanentTariffError, match="Token invalid or expired"):
+    # execution & assert: falsche Zugangsdaten bei der Anmeldung sind ein dauerhafter Fehler
+    with pytest.raises(PermanentTariffError, match="Invalid data"):
         tariff.OctopusEnergyClient(email="test@example.com", password="secret")
+
+
+def test_temporary_error_during_the_login_is_not_permanent(monkeypatch):
+    mock_response = MagicMock()
+    mock_response.status_code = 200
+    mock_response.json.return_value = {
+        "errors": [{"message": "Temporary error occurred.", "extensions": {"errorCode": "KT-CT-3956"}}]
+    }
+    mock_session = MagicMock()
+    mock_session.post.return_value = mock_response
+    monkeypatch.setattr(tariff.req, "get_http_session", lambda: mock_session)
+
+    with pytest.raises(OctopusEnergyApiError, match="Temporary error") as error:
+        tariff.OctopusEnergyClient(email="test@example.com", password="secret")
+
+    assert not isinstance(error.value, PermanentTariffError)
 
 
 def test_graphql_request_raises_on_missing_data_field(monkeypatch):
