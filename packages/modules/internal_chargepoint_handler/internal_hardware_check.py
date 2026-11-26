@@ -22,7 +22,7 @@ READ_RS485_ADAPTER_AGAIN = "Erneutes Auslesen des {}"
 READ_USB_ADAPTER_AGAIN = READ_RS485_ADAPTER_AGAIN.format('USB-Adapters')
 READ_LAN_ADAPTER_AGAIN = READ_RS485_ADAPTER_AGAIN.format('LAN-Konverters')
 METER_PROBLEM = "Erneutes Auslesen des Ladeleistungs-Zählers"
-METER_UNREACHABLE = "Ladeleistungs-Zähler dauerhaft nicht erreichbar. Verbindung oder Zähler prüfen lassen."
+METER_UNREACHABLE = "Interner Ladeleistungs-Zähler antwortet nicht."
 METER_NO_SERIAL_NUMBER = ("Die Seriennummer des Zählers für das Ladelog kann nicht ausgelesen werden. Wenn Du die "
                           "Seriennummer für Abrechnungszwecke benötigst, wende Dich bitte an unseren Support. Die "
                           "Funktionalität wird dadurch nicht beeinträchtigt!")
