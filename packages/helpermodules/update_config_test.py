@@ -41,6 +41,26 @@ def test_remove_invalid_topics(mock_pub):
     assert mock_pub.method_calls[1][1][0] == 'openWB/optional/int_display/theme'
 
 
+@pytest.mark.parametrize("payload", [None, b"null", b"true", b"false"])
+def test_startup_initializes_update_feedback_only_if_missing(payload, mock_pub):
+    updater = UpdateConfig()
+    topic = "openWB/system/update_feedback"
+    if payload is not None:
+        updater.all_received_topics[topic] = payload
+
+    updater._UpdateConfig__remove_outdated_topics()
+    updater._remove_invalid_topics()
+    updater._UpdateConfig__pub_missing_defaults()
+
+    assert updater.all_received_topics[topic] == payload
+    feedback_calls = [call.args for call in mock_pub.pub.call_args_list if call.args[0] == topic]
+    assert feedback_calls == ([(topic, None)] if payload is None else [])
+
+    mock_pub.reset_mock()
+    updater._UpdateConfig__pub_missing_defaults()
+    mock_pub.pub.assert_not_called()
+
+
 def test_startup_cleanup_keeps_ocpp_server_binding(mock_pub):
     updater = UpdateConfig()
     settings = {"url": "wss://old.example/ocpp", "subprotocol": "ocpp1.6"}

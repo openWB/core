@@ -2217,6 +2217,18 @@
 			"acls": [
 				{
 					"acltype": "publishClientSend",
+					"topic": "openWB/set/system/update_feedback",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/system/update_feedback",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
 					"topic": "openWB/set/command/+/todo/systemShutdown",
 					"priority": 0,
 					"allow": true
