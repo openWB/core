@@ -4,6 +4,7 @@ from helpermodules import timecheck
 from modules.electricity_pricing.flexible_tariffs.tibber.config import TibberTariffConfiguration
 from modules.electricity_pricing.flexible_tariffs.tibber.tariff import fetch_prices
 import pytest
+from modules.common.tariff_errors import PermanentTariffError
 
 
 SAMPLE_DATA_TODAY = {
@@ -98,3 +99,23 @@ def test_fetch_prices(now, tibber_response, expected, monkeypatch, requests_mock
 
     # evaluation
     assert prices == expected
+
+
+def test_invalid_token_is_a_permanent_error(requests_mock):
+    # Antwort der Tibber-API auf einen ungültigen Token: HTTP 200 mit UNAUTHENTICATED
+    requests_mock.post('https://api.tibber.com/v1-beta/gql', json={
+        "errors": [{"message": "invalid token", "path": ["viewer"], "extensions": {"code": "UNAUTHENTICATED"}}],
+        "data": None})
+
+    with pytest.raises(PermanentTariffError, match="invalid token"):
+        fetch_prices(TibberTariffConfiguration(token="invalid", home_id="x"))
+
+
+def test_other_api_errors_are_not_permanent(requests_mock):
+    requests_mock.post('https://api.tibber.com/v1-beta/gql', json={
+        "errors": [{"message": "temporarily unavailable", "extensions": {"code": "INTERNAL_SERVER_ERROR"}}]})
+
+    with pytest.raises(Exception, match="temporarily unavailable") as error:
+        fetch_prices(TibberTariffConfiguration(token="token", home_id="x"))
+
+    assert not isinstance(error.value, PermanentTariffError)

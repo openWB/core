@@ -15,6 +15,8 @@ from modules.common.fault_state_level import FaultStateLevel
 from modules.electricity_pricing.flexible_tariffs.awattar.config import AwattarTariff
 from modules.electricity_pricing.flexible_tariffs.ekz.config import EkzTariff
 from modules.electricity_pricing.flexible_tariffs.rabot.config import RabotTariff
+from modules.electricity_pricing.flexible_tariffs.smart_energy.config import SmartEnergyTariff
+from modules.electricity_pricing.flexible_tariffs.westfalen_wind.config import WestfalenWindTariff
 
 
 def _patch_now(monkeypatch: pytest.MonkeyPatch, fixed_now: datetime) -> None:
@@ -207,25 +209,17 @@ def test_no_price_for_the_current_time_retries_hourly(monkeypatch: pytest.Monkey
 def test_provider_with_prices_of_the_current_day_retries_quickly_after_midnight(monkeypatch: pytest.MonkeyPatch):
     now = datetime(2022, 5, 16, 0, 3, 0)
 
-    next_query = _schedule(monkeypatch, now, _last_slot_of_the_previous_day(), config=RabotTariff())
+    next_query = _schedule(monkeypatch, now, _last_slot_of_the_previous_day(), config=WestfalenWindTariff())
 
     assert next_query == int(now.timestamp()) + RETRY_BACKOFF_SECONDS
 
 
 def test_provider_with_prices_of_the_current_day_is_queried_when_the_prices_end(monkeypatch: pytest.MonkeyPatch):
-    # z.B. Rabot: Preise des Tages ab 0 Uhr, kein Folgetag
+    # z.B. Westfalen Wind: Preise des Tages ab 0 Uhr, kein Folgetag
     next_query = _schedule(monkeypatch, datetime(2022, 5, 16, 14, 10, 0), _prices_until(datetime(2022, 5, 16, 23, 45)),
-                           config=RabotTariff())
+                           config=WestfalenWindTariff())
 
     assert next_query == int(datetime(2022, 5, 17, 0, 0, 0).timestamp())
-
-
-def test_provider_with_a_later_publication_time_uses_its_own_first_try(monkeypatch: pytest.MonkeyPatch):
-    # EKZ: 18 Uhr statt 14 Uhr
-    next_query = _schedule(monkeypatch, datetime(2022, 5, 16, 10, 10, 0), _prices_until(datetime(2022, 5, 16, 23, 45)),
-                           config=EkzTariff())
-
-    assert next_query == int(datetime(2022, 5, 16, 17, 30, 0).timestamp())
 
 
 def test_next_query_is_not_later_than_the_end_of_the_known_prices(monkeypatch: pytest.MonkeyPatch):
@@ -233,6 +227,32 @@ def test_next_query_is_not_later_than_the_end_of_the_known_prices(monkeypatch: p
     next_query = _schedule(monkeypatch, datetime(2022, 5, 16, 0, 30, 0), _prices_until(datetime(2022, 5, 17, 12, 45)))
 
     assert next_query == int(datetime(2022, 5, 17, 13, 0, 0).timestamp())
+
+
+@pytest.mark.parametrize("config", [AwattarTariff(), EkzTariff(), RabotTariff(), SmartEnergyTariff()],
+                         ids=lambda config: config.type)
+def test_all_day_ahead_providers_share_the_same_schedule(monkeypatch: pytest.MonkeyPatch, config):
+    next_query = _schedule(monkeypatch, datetime(2022, 5, 16, 10, 10, 0), _prices_until(datetime(2022, 5, 16, 23, 45)),
+                           config=config)
+
+    assert next_query == int(datetime(2022, 5, 16, 13, 30, 0).timestamp())
+
+
+@pytest.mark.parametrize("now, expected", [
+    pytest.param(datetime(2022, 5, 16, 18, 59, 0), FaultStateLevel.NO_ERROR, id="vor 19 Uhr"),
+    pytest.param(datetime(2022, 5, 16, 19, 5, 0), FaultStateLevel.WARNING, id="nach 19 Uhr")])
+def test_missing_tomorrow_warns_from_19_for_every_provider(monkeypatch: pytest.MonkeyPatch, now, expected):
+    _patch_now(monkeypatch, now)
+    now_ts = int(now.timestamp())
+    known_prices = {str(now_ts + 300): 10.72e-05, str(now_ts + 1200): 5.467e-05}
+    tariff = ConfigurableFlexibleTariff(
+        EkzTariff(), Mock(return_value=Mock(return_value=TariffState(prices=known_prices))))
+    tariff.get.prices = known_prices
+    tariff.get.next_query_time = now_ts - 10
+
+    tariff.update()
+
+    assert tariff.fault_state.fault_state == expected
 
 
 def test_known_prices_are_kept_when_the_provider_returns_nothing_newer(monkeypatch: pytest.MonkeyPatch):
@@ -396,24 +416,6 @@ def test_tomorrow_prices_present_after_late_hour_does_not_warn(monkeypatch: pyte
     assert tariff.fault_state.fault_state == FaultStateLevel.NO_ERROR
 
 
-@pytest.mark.parametrize("now, expected", [
-    pytest.param(datetime(2022, 5, 16, 22, 59, 0), FaultStateLevel.NO_ERROR, id="vor der Warnschwelle (23 Uhr)"),
-    pytest.param(datetime(2022, 5, 16, 23, 5, 0), FaultStateLevel.WARNING, id="nach der Warnschwelle (23 Uhr)")])
-def test_tomorrow_warning_follows_the_first_try_hour_of_the_provider(monkeypatch: pytest.MonkeyPatch, now, expected):
-    _patch_now(monkeypatch, now)
-
-    now_ts = int(now.timestamp())
-    known_prices = {str(now_ts + 300): 10.72e-05, str(now_ts + 1200): 5.467e-05}
-    tariff = ConfigurableFlexibleTariff(
-        EkzTariff(), Mock(return_value=Mock(return_value=TariffState(prices=known_prices))))
-    tariff.get.prices = known_prices
-    tariff.get.next_query_time = now_ts - 10
-
-    tariff.update()
-
-    assert tariff.fault_state.fault_state == expected
-
-
 def test_provider_with_prices_of_the_current_day_does_not_warn_about_tomorrow(monkeypatch: pytest.MonkeyPatch):
     fixed_now = datetime(2022, 5, 16, 19, 5, 0)
     _patch_now(monkeypatch, fixed_now)
@@ -421,7 +423,7 @@ def test_provider_with_prices_of_the_current_day_does_not_warn_about_tomorrow(mo
     now_ts = int(fixed_now.timestamp())
     known_prices = {str(now_ts + 3600): 10.72e-05, str(now_ts + 7200): 5.467e-05}
     tariff = ConfigurableFlexibleTariff(
-        RabotTariff(), Mock(return_value=Mock(return_value=TariffState(prices=known_prices))))
+        WestfalenWindTariff(), Mock(return_value=Mock(return_value=TariffState(prices=known_prices))))
     tariff.get.prices = known_prices
     tariff.get.next_query_time = now_ts - 10
 

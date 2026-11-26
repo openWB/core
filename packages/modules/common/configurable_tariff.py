@@ -17,13 +17,13 @@ from control.optional_data import OptionalData, PricingGet
 # Stunden für tägliche Tarifaktualisierung, manche Anbieter aktualisieren mehrfach täglich
 T_TARIFF_CONFIG = TypeVar("T_TARIFF_CONFIG")
 ONE_HOUR_SECONDS: int = 3600
-# Die Preise für den Folgetag werden meist ab ca. 14 Uhr veröffentlicht (Anbieter mit anderer Zeit setzen
-# first_try_hour in ihrer Tarifklasse). Erster Abruf 5-30 Minuten vorher (zufällig, um die Last der Anbieter zu
-# verteilen), danach stündlich, bis sie da sind.
+# Die Preise für den Folgetag werden je nach Anbieter ab ca. 14 bis 18 Uhr veröffentlicht. Für alle Anbieter gleich:
+# erster Abruf 5-30 Minuten vor 14 Uhr (zufällig, um die Last der Anbieter zu verteilen), danach stündlich,
+# bis sie da sind.
 FIRST_TRY_HOUR: int = 14
 RETRY_INTERVAL_SECONDS: int = ONE_HOUR_SECONDS
-# So viele Stunden nach dem ersten Abruf wird ein fehlender Folgetag gewarnt, der Abruf läuft stündlich weiter
-TOMORROW_WARNING_DELAY_HOURS: int = 5
+# Ab dieser Uhrzeit wird ein fehlender Folgetag gewarnt, der Abruf läuft stündlich weiter
+TOMORROW_WARNING_HOUR: int = 19
 # Wartezeit nach einer Exception oder wenn kein Preis den aktuellen Zeitpunkt abdeckt (siehe #3703)
 RETRY_BACKOFF_SECONDS: int = 5 * 60
 # Nach einem dauerhaften Fehler (z.B. falsche Zugangsdaten) wird erst nach einer Änderung der Konfiguration
@@ -45,7 +45,6 @@ class ConfigurableTariff(Generic[T_TARIFF_CONFIG]):
 
         # Anbieter, die erst um 0 Uhr die Preise des laufenden Tages liefern, haben keine Folgetagspreise
         self.publishes_day_ahead = getattr(config, "publishes_day_ahead", True)
-        self.first_try_hour = getattr(config, "first_try_hour", FIRST_TRY_HOUR)
 
         # nach Init auf NO_ERROR setzen, damit der Fehlerstatus beim Modulwechsel gelöscht wird
         self.fault_state.no_error()
@@ -94,8 +93,9 @@ class ConfigurableTariff(Generic[T_TARIFF_CONFIG]):
         return (isinstance(exception, requests.HTTPError) and exception.response is not None and
                 exception.response.status_code in (401, 403))
 
-    def _first_try(self, day: datetime) -> datetime:
-        return day.replace(hour=self.first_try_hour, minute=0, second=0, microsecond=0) - timedelta(
+    @staticmethod
+    def _first_try(day: datetime) -> datetime:
+        return day.replace(hour=FIRST_TRY_HOUR, minute=0, second=0, microsecond=0) - timedelta(
             minutes=random.randint(1, 6) * 5)
 
     def _schedule_next_query(self, prices: Dict[str, float], timeslot_length_seconds: int) -> None:
@@ -165,7 +165,7 @@ class ConfigurableTariff(Generic[T_TARIFF_CONFIG]):
 
     def __is_tomorrow_price_missing_after_late_hour(self, tariff_state: TariffState) -> bool:
         now = datetime.now()
-        if not self.publishes_day_ahead or now.hour < self.first_try_hour + TOMORROW_WARNING_DELAY_HOURS:
+        if not self.publishes_day_ahead or now.hour < TOMORROW_WARNING_HOUR:
             return False
         # Datum vor dem Nullsetzen der Uhrzeit erhöhen - +24h in Sekunden träfe an Tagen mit Zeitumstellung
         # nicht auf Mitternacht
