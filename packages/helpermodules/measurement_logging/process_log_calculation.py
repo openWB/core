@@ -182,7 +182,12 @@ def _calculate_average_power(time_diff: float, current_imported: float = 0, next
     return decimal_multiply(energy_diff, 3600 / time_diff)  # Ws -> W
 
 
-def analyse_percentage(entry) -> Tuple[Dict, str]:
+def _mark_fallback(calculation_status: Optional[Dict]) -> None:
+    if calculation_status is not None:
+        calculation_status["used_fallback"] = True
+
+
+def analyse_percentage(entry, calculation_status: Optional[Dict] = None) -> Tuple[Dict, str]:
     EOOR_STATE_MSG = ("Der Strom-Mix um " + entry["date"] +
                       " konnte nicht berechnet werden, da sich {} im Fehlerzustand befindet. Alle Verbräuche werden" +
                       " dem Netz zugerechnet.\n")
@@ -208,6 +213,7 @@ def analyse_percentage(entry) -> Tuple[Dict, str]:
                 grid_counter.get("fault_state", None) == 2):
 
             entry["energy_source"] = {"grid": 1, "pv": 0, "bat": 0, "cp": 0}
+            _mark_fallback(calculation_status)
             if safe_get_nested(entry, "bat", "all", "fault_state") == 2 and len(entry.get("bat", {})) > 1:
                 message += EOOR_STATE_MSG.format("mind. einer der Speicher")
             if safe_get_nested(entry, "cp", "all", "fault_state") == 2 and len(entry.get("cp", {})) > 1:
@@ -299,6 +305,7 @@ def analyse_percentage(entry) -> Tuple[Dict, str]:
                             "cp": format(direct["cp"] / direct_total)}
             except ZeroDivisionError:
                 entry["energy_source"] = {"grid": 0, "pv": 0, "bat": 0, "cp": 0}
+                _mark_fallback(calculation_status)
     except Exception:
         log.exception(f"Fehler beim Berechnen des Strom-Mix von {entry['timestamp']}")
         message += f"Fehler beim Berechnen des Strom-Mix von {entry['timestamp']}.\n"
@@ -310,7 +317,8 @@ ERROR_STATE_MESSAGE = ("Die Anteile der Energiequellen für {} konnten nicht ber
                        "Fehlerzustand befindet. Die Verbräuche werden mit 0 kWh angesetzt.\n")
 
 
-def calc_energy_imported_by_source(entry, names, message_key_filter: Optional[str] = None) -> Tuple[Dict, str]:
+def calc_energy_imported_by_source(entry, names, message_key_filter: Optional[str] = None,
+                                   calculation_status: Optional[Dict] = None) -> Tuple[Dict, str]:
     try:
         message = ""
 
@@ -328,6 +336,7 @@ def calc_energy_imported_by_source(entry, names, message_key_filter: Optional[st
                         for source in ("grid", "pv", "bat", "cp"):
                             hc_all[f"energy_imported_{source}"] = 0
                         if message_key_filter is None or message_key_filter == "hc":
+                            _mark_fallback(calculation_status)
                             message += ERROR_STATE_MESSAGE.format("den Hausverbrauch")
 
             cp_section = entry.get("cp")
@@ -342,6 +351,7 @@ def calc_energy_imported_by_source(entry, names, message_key_filter: Optional[st
                             for source in ("grid", "pv", "bat", "cp"):
                                 cp_data[f"energy_imported_{source}"] = 0
                             if message_key_filter is None or message_key_filter == cp_key:
+                                _mark_fallback(calculation_status)
                                 message += ERROR_STATE_MESSAGE.format(f"Ladepunkt {names.get(cp_key, cp_key)}")
 
             consumer_section = entry.get("consumer")
@@ -356,6 +366,7 @@ def calc_energy_imported_by_source(entry, names, message_key_filter: Optional[st
                             for source in ("grid", "pv", "bat", "cp"):
                                 consumer_data[f"energy_imported_{source}"] = 0
                             if message_key_filter is None or message_key_filter == consumer_key:
+                                _mark_fallback(calculation_status)
                                 message += ERROR_STATE_MESSAGE.format(
                                     f"Verbraucher {names.get(consumer_key, consumer_key)}")
 
@@ -371,6 +382,7 @@ def calc_energy_imported_by_source(entry, names, message_key_filter: Optional[st
                             for source in ("grid", "pv", "bat", "cp"):
                                 counter_data[f"energy_imported_{source}"] = 0
                             if message_key_filter is None or message_key_filter == counter_key:
+                                _mark_fallback(calculation_status)
                                 message += ERROR_STATE_MESSAGE.format(f"Zähler {names.get(counter_key, counter_key)}")
     except Exception:
         log.exception(f"Fehler beim Berechnen der Energie-Anteile aus dem Strom-Mix von {entry['timestamp']}")
@@ -379,7 +391,7 @@ def calc_energy_imported_by_source(entry, names, message_key_filter: Optional[st
         return entry, message
 
 
-def analyse_percentage_totals(entries, totals):
+def analyse_percentage_totals(entries, totals, calculation_status: Optional[Dict] = None):
     sources = ("grid", "pv", "bat", "cp")
 
     def ensure_zero_source_keys(module_totals: Dict):
@@ -424,6 +436,7 @@ def analyse_percentage_totals(entries, totals):
                             current_value, add_value)
     except Exception:
         log.exception("Fehler beim Berechnen der Summen der Energiequellen")
+        _mark_fallback(calculation_status)
         # Im Fehlerfall werden die Totals auf 0 gesetzt
         # -> dann wird nur die Ladung/Entladung-Leistung angezeigt.
         # -> sprich keine Aufteilung der Energiequellen, sondern nur die Gesamtwerte.
@@ -448,18 +461,24 @@ def analyse_percentage_totals(entries, totals):
 
 
 def _analyse_energy_source(data, calc_cp: Optional[str] = None) -> Dict:
+    # Charge-log calculations need machine-readable provenance for the selected
+    # charge point. Keep the daily-log payload unchanged when no charge point is requested.
+    calculation_status = {"used_fallback": False} if calc_cp is not None else None
     if data and len(data["entries"]) > 0:
         try:
             if data.get("message") is None:
                 data["message"] = ""
             for i in range(0, len(data["entries"])):
-                data["entries"][i], message_analyse = analyse_percentage(data["entries"][i])
+                data["entries"][i], message_analyse = analyse_percentage(data["entries"][i], calculation_status)
                 data["entries"][i], message_calc = calc_energy_imported_by_source(
-                    data["entries"][i], data["names"], message_key_filter=calc_cp)
+                    data["entries"][i], data["names"], message_key_filter=calc_cp,
+                    calculation_status=calculation_status)
                 data["message"] += message_analyse + message_calc
-            data["totals"] = analyse_percentage_totals(data["entries"], data["totals"])
+            data["totals"] = analyse_percentage_totals(data["entries"], data["totals"], calculation_status)
         except Exception:
             log.exception("Fehler beim Analysieren der Energiequellen")
             pub_system_message({}, "Fehler beim Berechnen des Strom-Mix", MessageType.ERROR)
             data["message"] = "Fehler beim Berechnen des Strom-Mix."
+    if calculation_status is not None:
+        data["used_fallback"] = calculation_status["used_fallback"]
     return data

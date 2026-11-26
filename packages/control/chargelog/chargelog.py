@@ -297,6 +297,7 @@ def _create_entry(chargepoint, charging_ev):
             "imported_since_plugged": log_data.imported_since_plugged,
             "power": power,
             "costs": costs,
+            "used_fallback": log_data.used_fallback,
             "power_source": energy_source
         }
     }
@@ -377,8 +378,13 @@ def calculate_charged_energy_by_source(cp, processed_entries, reference_entries,
         if charged_energy <= 0:
             # wenn nur entladen wurde, keine Anteile berechnen
             return {source: 0 for source in ENERGY_SOURCES}
-        return _get_charged_energy_by_source(
+        charged_energy_by_source = _get_charged_energy_by_source(
             relative_energy_source, charged_energy)
+        if processed_entries.get("used_fallback") is True:
+            # Sticky for this log entry: a later healthy interval must not erase
+            # fallback use in an earlier interval. The existing Log() reset starts anew.
+            cp.data.set.log.used_fallback = True
+        return charged_energy_by_source
 
     except Exception:
         log.exception(f"Fehler beim Berechnen der Ladekosten für Ladepunkt {cp.num}")
