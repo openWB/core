@@ -848,3 +848,25 @@ def test_upgrade_datastore_163_keeps_providers_without_update_hours(mock_pub: Mo
 
     assert uc.all_received_topics["openWB/optional/ep/flexible_tariff/provider"] == provider
     assert mock_pub.pub.call_count == 1  # nur Datastore-Version
+
+
+def test_upgrade_datastore_163_removes_unused_ekz_and_groupe_e_fields_but_keeps_country_of_awattar(mock_pub: Mock):
+    uc = UpdateConfig()
+    uc.all_received_topics = {
+        "openWB/optional/ep/flexible_tariff/provider": {
+            "type": "ekz", "configuration": {"country": "ch", "unit": "Rp", "update_hours": [18, 19]}},
+        "openWB/optional/ep/grid_fee/provider": {
+            "type": "groupe_e", "configuration": {"country": "ch", "unit": "Rp"}},
+        "openWB/system/datastore_version": list(range(163)),
+    }
+
+    uc.upgrade_datastore_163()
+
+    assert uc.all_received_topics["openWB/optional/ep/flexible_tariff/provider"]["configuration"] == {}
+    assert uc.all_received_topics["openWB/optional/ep/grid_fee/provider"]["configuration"] == {}
+
+    awattar = {"type": "awattar", "configuration": {"country": "de", "net": True}}
+    uc.all_received_topics = {"openWB/optional/ep/flexible_tariff/provider": awattar,
+                              "openWB/system/datastore_version": list(range(163))}
+    uc.upgrade_datastore_163()
+    assert uc.all_received_topics["openWB/optional/ep/flexible_tariff/provider"] == awattar

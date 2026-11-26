@@ -3,8 +3,7 @@ from dataclasses import dataclass, field
 
 @dataclass
 class GroupeETariffConfiguration:
-    country: str = "ch"
-    unit: str = "Rp"
+    pass
 
 
 @dataclass

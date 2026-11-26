@@ -1,3 +1,6 @@
+from datetime import datetime
+
+from modules.electricity_pricing.flexible_tariffs.awattar import tariff
 from modules.electricity_pricing.flexible_tariffs.awattar.config import AwattarTariffConfiguration
 from modules.electricity_pricing.flexible_tariffs.awattar.tariff import fetch_prices
 
@@ -12,6 +15,24 @@ def test_fetch_prices(requests_mock):
 
     # evaluation
     assert prices == EXPECTED_PRICES
+
+
+def test_request_covers_the_current_hour_until_two_days_ahead(monkeypatch, requests_mock):
+    # ohne Zeitraum liefert die API nur die nächsten 24 Stunden, tomorrow wäre am Abend nicht vollständig
+    class FixedDateTime(datetime):
+        @classmethod
+        def now(cls, tz=None):
+            return datetime(2026, 11, 26, 16, 30, 0)
+
+    monkeypatch.setattr(tariff, "datetime", FixedDateTime)
+    requests_mock.get('https://api.awattar.de/v1/marketdata', json=SAMPLE_DATA)
+
+    fetch_prices(AwattarTariffConfiguration(country="de"))
+
+    query = requests_mock.last_request.qs
+    start = int(datetime(2026, 11, 26, 16, 0, 0).timestamp() * 1000)
+    assert query["start"] == [str(start)]
+    assert query["end"] == [str(start + 48 * 3600 * 1000)]
 
 
 SAMPLE_DATA = {

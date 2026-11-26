@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 from dataclasses import dataclass
+from datetime import datetime
 from typing import Dict
 
 from modules.common.abstract_device import DeviceDescriptor
@@ -32,8 +33,12 @@ de = CountryData(url='https://api.awattar.de/v1/marketdata')
 
 def fetch_prices(config: AwattarTariffConfiguration) -> Dict[int, float]:
     country_data: CountryData = globals()[config.country]
+    # Ohne Zeitraum liefert die API nur die nächsten 24 Stunden, mit Zeitraum alle veröffentlichten Preise des Folgetags
+    start = int(datetime.now().replace(minute=0, second=0, microsecond=0).timestamp() * 1000)
+    end = start + 48 * 3600 * 1000
     raw_prices = req.get_http_session().get(
-        country_data.url, headers={'Content-Type': 'application/json'}, timeout=(2, 6)).json()['data']
+        country_data.url, params={'start': start, 'end': end}, headers={'Content-Type': 'application/json'},
+        timeout=(2, 6)).json()['data']
     prices: Dict[int, float] = {}
     for data in raw_prices:
         formatted_price = data["marketprice"]/1000000  # €/MWh -> €/Wh
