@@ -1,13 +1,13 @@
 """HTTP surface for simpleAPI: request parsing, auth, and the read/write/raw
 response contract that third-party integrations (Home Assistant, node-red)
 already rely on."""
+import json
 import logging
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from typing import Any, Dict
 from urllib.parse import parse_qs, urlsplit
 
 from .authenticator import AuthConfig, Authenticator
-from . import php_json
 from .broker_access import BrokerAccess, Principal
 from .parameter_handler import (
     ParameterHandler,
@@ -54,7 +54,7 @@ class SimpleAPIRequestHandler(BaseHTTPRequestHandler):
         if raw:
             body = payload if isinstance(payload, (bytes, bytearray)) else php_echo(payload).encode('utf-8')
         else:
-            body = php_json.dumps(payload).encode('utf-8')
+            body = json.dumps(payload).encode('utf-8')
 
         self.send_response(status)
         self.send_header('Content-Type', 'application/json')

@@ -769,6 +769,11 @@ def php_intval(value: Any) -> int:
     return max(-_INT_MAX - 1, min(_INT_MAX, int(number)))
 
 
+def _whole_as_int(number: float) -> Any:
+    """A whole number is published as an integer (`10`, not `10.0`), like the PHP API did."""
+    return int(number) if number == int(number) and abs(number) < 1e15 else number
+
+
 def _template_topic(chargepoint_id: Any) -> str:
     return f"openWB/set/chargepoint/{chargepoint_id}/set/charge_template"
 
@@ -816,7 +821,7 @@ def _http_template_number(mode_key: str, keypath: Tuple[str, ...], parse: Callab
     def handler(d, value, chargepoint_id, options):
         if not is_numeric(value):
             return False, f"Invalid {label} value: {value}"
-        return _write_template(d, chargepoint_id, mode_key, keypath, parse(value), error_prefix)
+        return _write_template(d, chargepoint_id, mode_key, keypath, _whole_as_int(parse(value)), error_prefix)
     return handler
 
 

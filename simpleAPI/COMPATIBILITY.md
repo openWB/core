@@ -20,6 +20,7 @@ places where it is different on purpose. A difference that is not listed here is
 | Values that were passed on as the raw MQTT text (`soc_timestamp`, `vehicle_id`, `rfid_timestamp` in `get_chargepoint_all`, `rfid` and other texts that are JSON `null`) | strings (`"1700000000"`, `"null"`) | JSON types (number, `null`) |
 | Empty objects (`get_io_output_all` of a device without outputs) | `[]` | `{}` |
 | Array reads of chargepoints (`..._voltages`, `..._currents`, `..._powers`) for an unknown ID | tried the data of chargepoint 0 when the topic was missing | answer with nothing (`[]`), no fallback |
+| JSON text of the answers | compact (`{"power":230}`), whole floats without fraction, `/` written as `\/` | standard Python JSON (`{"power": 230.0}`): a space after `,` and `:`, whole floats with `.0`, `/` not escaped |
 | Password hashes of local users in `simpleapi_config.json` | everything PHP's `password_verify()` knows | bcrypt |
 | POST body | any form data (`multipart/form-data`, too) | `application/x-www-form-urlencoded` |
 
@@ -55,9 +56,15 @@ and the backup did not contain them. Whoever had entered tokens or users has to 
 
 ## Response format
 
-Status codes, CORS headers and the JSON structure are the same. The JSON text is written like PHP's `json_encode()`
-did (no spaces after `,` and `:`, `/` as `\/`, whole floats without fraction: `230`, not `230.0`), and the
-`Cache-Control`, `Pragma` and `Expires` headers that the `.htaccess` added to the PHP answers are sent by the backend.
+Status codes, CORS headers and the JSON structure are the same. The JSON text is the standard Python one, see the
+table above: a client that parses JSON is not affected, unless it declares integer fields for values that are now
+written as `230.0` (strongly typed languages). A script that reads the text with `grep`, `cut` or a regular
+expression has to be adjusted. The charge template that is published to openWB keeps whole numbers as integers
+(`"current": 10`), as before. The `Cache-Control`, `Pragma` and `Expires` headers that the `.htaccess` added to the PHP
+answers are sent by the backend.
+
+Open question: should the text be made identical to PHP's (compact, whole floats as integers)? It would cost a small
+JSON writer of about 40 lines.
 
 ## Python 3.13 (Trixie)
 

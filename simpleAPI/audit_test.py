@@ -184,7 +184,7 @@ def test_list_components_lists_every_type(server):
     status, body, _ = request(server, "list_components=1")
 
     assert status == 200
-    assert body == '{"chargepoint":[],"battery":[],"pv":[],"counter":[0],"consumer":[],"io":[]}'
+    assert body == '{"chargepoint": [], "battery": [], "pv": [], "counter": [0], "consumer": [], "io": []}'
 
 
 def test_head_request_answers_like_get_without_a_body(server):
@@ -231,25 +231,22 @@ def test_responses_are_not_cacheable_like_the_php_ones_were(server):
     assert (headers['Pragma'], headers['Expires']) == ('no-cache', '0')
 
 
-# ---- JSON text like PHP's json_encode() ----
+# ---- numbers in the published template ----
 
-@pytest.mark.parametrize("value, expected", [
-    ({"a": 230.0, "b": [1.5, 0.0]}, '{"a":230,"b":[1.5,0]}'),
-    ({"path": "a/b", "name": "Müller"}, '{"path":"a\\/b","name":"M\\u00fcller"}'),
-    ([0.00001, 1e25, -0.0], '[1.0e-5,1.0e+25,-0.0]'),
-    ({"x": None, "y": True, "z": False, "n": 10 ** 20}, '{"x":null,"y":true,"z":false,"n":100000000000000000000}'),
-    ([], '[]'), ({}, '{}'), (float('nan'), '0')])
-def test_json_is_written_like_php(value, expected):
-    from src import php_json
-    assert php_json.dumps(value) == expected
+@pytest.mark.parametrize("number, expected", [(10.0, 10), (6.5, 6.5), (0.0, 0), (1e20, 1e20), (-3.0, -3)])
+def test_whole_numbers_are_published_as_integers(number, expected):
+    from src.parameter_handler import _whole_as_int
+    result = _whole_as_int(number)
+
+    assert result == expected and type(result) is type(expected)
 
 
 def test_debug_info_names_the_credentials_and_the_failed_auto_id(server):
     plain = request(server, "get_pv_power=auto&debug=true")[1]
     with_login = request(server, "get_counter_power=auto&debug=true&username=u&password=p")[1]
 
-    assert plain.startswith('{"debug_info":["No credentials provided via parameters, using config or anonymous '
-                            'access","Auto-ID failed for get_pv_power: No pv devices found via MQTT wildcard scan"]')
+    assert plain.startswith('{"debug_info": ["No credentials provided via parameters, using config or anonymous '
+                            'access", "Auto-ID failed for get_pv_power: No pv devices found via MQTT wildcard scan"]')
     assert '"Using MQTT credentials from parameters: username=u"' in with_login
 
 

@@ -25,7 +25,6 @@ import re
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from src.http_server import build_http_server  # noqa: E402
 from src.parameter_handler import is_numeric, php_echo  # noqa: E402
-from src import php_json  # noqa: E402
 
 FORMAT_STR_SHORT = '%(asctime)s - %(message)s'
 RAMDISK_PATH = str(Path(__file__).resolve().parents[1]) + '/ramdisk/'
@@ -1140,7 +1139,7 @@ class SimpleMQTTDaemon:
 
     def _publish_json(self, topic: str, data: Dict[str, Any]):
         """Publish JSON data to a topic."""
-        self._publish(topic, php_json.dumps(data))
+        self._publish(topic, json.dumps(data))
         log.debug(f"Published JSON to {topic}")
         match = re.fullmatch(r'openWB/set/chargepoint/(\d+)/set/charge_template', topic)
         written = getattr(self._request_publisher, 'templates', None)

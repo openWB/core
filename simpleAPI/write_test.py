@@ -286,3 +286,12 @@ def test_the_next_request_starts_from_the_template_openwb_reported(daemon):
     template = published_template(daemon)['chargemode']
     assert template['instant_charging']['current'] == 16
     assert template['pv_charging']['min_soc'] == 40
+
+
+def test_whole_currents_reach_the_template_as_integers(daemon):
+    with daemon.http_write():
+        write(daemon, {'chargecurrent': '10', 'minimal_permanent_current': '6.5'}, {'chargepoint_nr': '3'})
+
+    template = published_template(daemon)['chargemode']
+    assert template['instant_charging']['current'] == 10 and isinstance(template['instant_charging']['current'], int)
+    assert template['pv_charging']['min_current'] == 6.5
