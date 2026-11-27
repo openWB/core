@@ -1,10 +1,14 @@
 import logging
+from typing import Any, Dict, Tuple
+
+from paho.mqtt.client import Client, MQTTMessage
 
 from control import data
 from helpermodules.broker import BrokerClient
 from helpermodules.pub import pub_single
 from helpermodules.utils._get_default import get_default
 from helpermodules.utils.topic_parser import decode_payload
+from modules.common import req
 from modules.common.abstract_device import DeviceDescriptor
 from modules.common.component_state import ConsumerState
 from modules.common.configurable_consumer import ConfigurableConsumer
@@ -13,33 +17,57 @@ from modules.consumers.openwb.wallbox_socket.config import WallboxSocket
 log = logging.getLogger(__name__)
 
 
-def create_consumer(config: WallboxSocket):
-    def clear_rfid():
-        pub_single("openWB/set/internal_socket/data/last_tag", None, hostname=get_host())
+def create_consumer(config: WallboxSocket) -> ConfigurableConsumer[WallboxSocket]:
+    session = req.get_http_session()
 
-    def get_host():
+    def clear_rfid() -> None:
+        cp_type, host = get_connection()
+        if cp_type != "openwb_pro":
+            pub_single("openWB/set/internal_socket/data/last_tag", None, hostname=host)
+
+    def get_connection() -> Tuple[str, str]:
         if config.configuration.chargepoint_id is None:
-            return "localhost"
+            return "internal_openwb", "localhost"
         try:
             cp_module = data.data.cp_data[f"cp{config.configuration.chargepoint_id}"].chargepoint_module
         except KeyError:
             raise KeyError(("Bitte einen vorhandenen openWB-Ladepunkt auswählen."))
-        return cp_module.config.configuration.ip_address
+        return cp_module.config.type, cp_module.config.configuration.ip_address
 
-    def update():
-        received_topics = {}
+    def update() -> ConsumerState:
+        cp_type, host = get_connection()
+        if cp_type == "openwb_pro":
+            return update_pro(host)
+        return update_mqtt(host)
 
-        def parse_received_topics(value: str):
+    def update_pro(host: str) -> ConsumerState:
+        status = session.get(f"http://{host}/socket.php").json()
+        if not status["socket_available"]:
+            raise ValueError("In der ausgewählten openWB Pro ist keine Steckdose verbaut.")
+        return ConsumerState(
+            power=status["power"],
+            powers=[status["power"], 0, 0],
+            currents=[status["current"], 0, 0],
+            voltages=[status["voltage"], 0, 0],
+            imported=status["energy"],
+            exported=0,
+            state=status["socket_is_on"],
+        )
+
+    def update_mqtt(host: str) -> ConsumerState:
+        received_topics: Dict[str, Any] = {}
+
+        def parse_received_topics(value: str) -> Any:
             return received_topics.get(f"{prefix}{value}", get_default(ConsumerState, value))
 
-        def on_connect(client, userdata, flags, rc):
+        def on_connect(client: Client, userdata: Any, flags: Dict[str, int], rc: int) -> None:
             client.subscribe("openWB/internal_socket/get/#")
 
-        def on_message(client, userdata, message):
+        def on_message(client: Client, userdata: Any, message: MQTTMessage) -> None:
             received_topics[message.topic] = decode_payload(message.payload)
 
         BrokerClient(f"subscribeWallboxSocketConsumer{config.id}", on_connect, on_message,
-                     host=get_host(), port=1886 if get_host() == "localhost" else 1883).start_finite_loop(timeout=2)
+                     host=host, port=1886 if host == "localhost" else 1883).start_finite_loop(timeout=2)
         prefix = "openWB/internal_socket/get/"
         log.debug(f"Empfange MQTT Daten für Verbraucher {config.id}: {received_topics}")
         fault_state = received_topics.get(f"{prefix}fault_state")
@@ -61,8 +89,12 @@ def create_consumer(config: WallboxSocket):
             rfid=parse_received_topics("rfid"),
         )
 
-    def switch(state):
-        pub_single("openWB/set/internal_socket/data/set_state", state, hostname=get_host())
+    def switch(state: bool) -> None:
+        cp_type, host = get_connection()
+        if cp_type == "openwb_pro":
+            session.post(f"http://{host}/socket.php", data={"socket_switch_on": int(state)})
+        else:
+            pub_single("openWB/set/internal_socket/data/set_state", state, hostname=host)
 
     consumer = ConfigurableConsumer(consumer_config=config,
                                     update=update,
