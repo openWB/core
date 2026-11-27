@@ -28,8 +28,7 @@ places where it is different on purpose. A difference that is not listed here is
 
 `get_home_consumption`, `get_counter_local_power`, `get_battery_state_str`, `get_battery_max_charge_power`,
 `get_battery_max_discharge_power`, `get_consumer_temperatures`, `get_consumer_set_power`, `get_consumer_state`,
-`get_consumer_plug_state`, `get_consumer_rfid`, `get_consumer_rfid_timestamp`, the matching fields in the `all` reads and
-`minimal_pv_soc` in `get_chargepoint_all`. `HEAD` requests are answered like `GET`.
+`get_consumer_plug_state`, `get_consumer_rfid`, `get_consumer_rfid_timestamp`, the matching fields in the `all` reads. `HEAD` requests are answered like `GET`.
 
 ## Permissions with user management
 

@@ -64,7 +64,7 @@ NO_MODULE = {"type": None, "configuration": {}}
 
 class UpdateConfig:
 
-    DATASTORE_VERSION = 162
+    DATASTORE_VERSION = 163
 
     valid_topic = [
         "^openWB/bat/config/bat_control_activated$",
@@ -653,6 +653,7 @@ class UpdateConfig:
         "^openWB/system/current_commit",
         "^openWB/system/current_missing_commits",
         "^openWB/system/dataprotection_acknowledged$",
+        "^openWB/system/update_feedback$",
         "^openWB/system/installAssistantDone$",
         "^openWB/system/datastore_version",
         "^openWB/system/debug_level$",
@@ -830,6 +831,8 @@ class UpdateConfig:
         ("openWB/system/current_commit", None),
         ("openWB/system/installAssistantDone", False),
         ("openWB/system/dataprotection_acknowledged", False),
+        # None requests the initial choice; an existing acceptance or rejection is preserved.
+        ("openWB/system/update_feedback", None),
         ("openWB/system/datastore_version", list(range(DATASTORE_VERSION))),
         ("openWB/system/usage_terms_acknowledged", False),
         ("openWB/system/debug_level", 30),
@@ -4366,3 +4369,23 @@ class UpdateConfig:
                     return {topic: config}
         self._loop_all_received_topics(upgrade)
         self._append_datastore_version(162)
+
+    def upgrade_datastore_163(self) -> None:
+        """Voltego hat den Betrieb eingestellt, das Modul wurde entfernt. Ein konfigurierter Voltego-Tarif wird
+        zurückgesetzt, der Benutzer wird informiert."""
+        removed = []
+
+        def upgrade(topic: str, payload) -> Optional[dict]:
+            if "openWB/optional/ep/flexible_tariff/provider" == topic:
+                provider = decode_payload(payload)
+                if isinstance(provider, dict) and provider.get("type") == "voltego":
+                    removed.append(topic)
+                    return {topic: NO_MODULE}
+            return None
+
+        self._loop_all_received_topics(upgrade)
+        if removed:
+            pub_system_message(
+                {}, "Der Strompreis-Anbieter Voltego hat den Betrieb eingestellt und wurde entfernt. Bitte unter "
+                "Einstellungen -> Konfiguration -> Strompreise einen anderen Anbieter wählen.", MessageType.WARNING)
+        self._append_datastore_version(163)

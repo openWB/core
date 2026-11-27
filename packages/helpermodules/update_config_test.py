@@ -41,6 +41,26 @@ def test_remove_invalid_topics(mock_pub):
     assert mock_pub.method_calls[1][1][0] == 'openWB/optional/int_display/theme'
 
 
+@pytest.mark.parametrize("payload", [None, b"null", b"true", b"false"])
+def test_startup_initializes_update_feedback_only_if_missing(payload, mock_pub):
+    updater = UpdateConfig()
+    topic = "openWB/system/update_feedback"
+    if payload is not None:
+        updater.all_received_topics[topic] = payload
+
+    updater._UpdateConfig__remove_outdated_topics()
+    updater._remove_invalid_topics()
+    updater._UpdateConfig__pub_missing_defaults()
+
+    assert updater.all_received_topics[topic] == payload
+    feedback_calls = [call.args for call in mock_pub.pub.call_args_list if call.args[0] == topic]
+    assert feedback_calls == ([(topic, None)] if payload is None else [])
+
+    mock_pub.reset_mock()
+    updater._UpdateConfig__pub_missing_defaults()
+    mock_pub.pub.assert_not_called()
+
+
 def test_startup_cleanup_keeps_ocpp_server_binding(mock_pub):
     updater = UpdateConfig()
     settings = {"url": "wss://old.example/ocpp", "subprotocol": "ocpp1.6"}
@@ -789,3 +809,40 @@ def test_start_filesystem_migrations_launches_one_worker(monkeypatch):
         stderr=update_config.subprocess.DEVNULL,
         close_fds=True,
     )
+
+
+def test_upgrade_datastore_163_resets_voltego_and_informs_the_user(mock_pub: Mock, monkeypatch: pytest.MonkeyPatch):
+    message = Mock()
+    monkeypatch.setattr(update_config, "pub_system_message", message)
+    uc = UpdateConfig()
+    uc.all_received_topics = {
+        "openWB/optional/ep/flexible_tariff/provider": {"type": "voltego", "configuration": {"client_id": "x"}},
+        "openWB/system/datastore_version": list(range(163)),
+    }
+
+    uc.upgrade_datastore_163()
+
+    assert uc.all_received_topics["openWB/optional/ep/flexible_tariff/provider"] == {
+        "type": None, "configuration": {}}
+    assert uc.all_received_topics["openWB/system/datastore_version"] == list(range(164))
+    message.assert_called_once()
+    text = message.call_args.args[1]
+    assert "Voltego" in text and "einen anderen Anbieter wählen" in text
+    assert message.call_args.args[2] == update_config.MessageType.WARNING
+
+
+def test_upgrade_datastore_163_keeps_other_providers_and_stays_silent(mock_pub: Mock, monkeypatch: pytest.MonkeyPatch):
+    message = Mock()
+    monkeypatch.setattr(update_config, "pub_system_message", message)
+    uc = UpdateConfig()
+    uc.all_received_topics = {
+        "openWB/optional/ep/flexible_tariff/provider": {"type": "tibber", "configuration": {"token": "x"}},
+        "openWB/system/datastore_version": list(range(163)),
+    }
+
+    uc.upgrade_datastore_163()
+
+    # gegen ein unabhängiges Literal, nicht gegen dasselbe Objekt
+    assert uc.all_received_topics["openWB/optional/ep/flexible_tariff/provider"] == {
+        "type": "tibber", "configuration": {"token": "x"}}
+    message.assert_not_called()
