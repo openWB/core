@@ -11,7 +11,7 @@ from modules.common.component_context import SingleComponentUpdateContext
 from modules.common.component_state import ChargepointState
 from modules.common.evse import EvseStatusCode
 from modules.common.fault_state import ComponentInfo, FaultState
-from modules.common.store import get_internal_chargepoint_value_store, get_chargepoint_value_store
+from modules.common.store import get_internal_chargepoint_value_store
 from modules.internal_chargepoint_handler.clients import ClientHandler
 from helpermodules.subdata import SubData
 from modules.internal_chargepoint_handler.internal_chargepoint_handler_config import InternalChargepoint
@@ -38,7 +38,6 @@ class ChargepointModule(AbstractChargepoint):
             "internal_chargepoint",
             hierarchy_id=hierarchy_id))
         self.store_internal = get_internal_chargepoint_value_store(local_charge_point_num)
-        self.store = get_chargepoint_value_store(hierarchy_id)
         self.client_error_context = ErrorTimerContext(
             f"openWB/set/internal_chargepoint/{local_charge_point_num}/get/error_timestamp",
             CP_ERROR,
@@ -79,8 +78,6 @@ class ChargepointModule(AbstractChargepoint):
     def get_values(self, phase_switch_cp_active: bool, last_tag: str,
                    last_tag_timestamp: Optional[float] = None) -> ChargepointState:
         def store_state(chargepoint_state: ChargepointState) -> None:
-            self.store.set(chargepoint_state)
-            self.store.update()
             self.store_internal.set(chargepoint_state)
             self.store_internal.update()
         with self.client_error_context:

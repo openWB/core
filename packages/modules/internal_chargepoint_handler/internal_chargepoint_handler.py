@@ -17,6 +17,8 @@ from modules.common.connector_unlock import UnlockRequest, take_unlock_request
 from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.modbus import ModbusSerialClient_
 from modules.common.serial_modbus_devices import BUS_SOURCES, get_serial_modbus_devices
+from modules.common.store._api import MultiValueStore
+from modules.common.store._chargepoint import get_chargepoint_value_store
 from modules.internal_chargepoint_handler import chargepoint_module
 from modules.internal_chargepoint_handler.clients import ClientHandler, client_factory, get_modbus_client
 from modules.internal_chargepoint_handler.hardware_definition import WALLBOX_SOCKET_METERS
@@ -326,11 +328,19 @@ class HandlerChargepoint:
             self.module = chargepoint_module.ChargepointModule(
                 local_charge_point_num, client_handler, internal_cp, hierarchy_id)
         with SingleComponentUpdateContext(self.module.fault_state):
+            # Auf Secondaries zusätzlich die lokale Statusanzeige versorgen. Auf der Primary
+            # übernimmt der reguläre Adapter die Messwerte konsistent mit virtuellen Zählern.
+            self.primary_store = self.module.store_internal
+            self.secondary_store = MultiValueStore(self.primary_store, get_chargepoint_value_store(hierarchy_id))
+            self._select_value_store()
             self.update_state = UpdateState(self.module, hierarchy_id)
             self.old_plug_state = False
             if global_data.parent_ip != "localhost":
                 Pub().pub(f"openWB/set/chargepoint/{hierarchy_id}/get/state_str",
                           payload="Statusmeldungen bitte auf der Primary-openWB einsehen.")
+
+    def _select_value_store(self) -> None:
+        self.module.store_internal = self.secondary_store if SubData.general_data.data.extern else self.primary_store
 
     def update(self, global_data: GlobalHandlerData, data: InternalChargepointData, rfid_data: RfidData) -> bool:
         def __thread_active(thread: Optional[Thread]) -> bool:
@@ -347,6 +357,7 @@ class HandlerChargepoint:
                 time.sleep(0.1)
             phase_switch_cp_active = __thread_active(self.update_state.cp_interruption_thread) or __thread_active(
                 self.update_state.phase_switch_thread)
+            self._select_value_store()
             state = self.module.get_values(phase_switch_cp_active, rfid_data.last_tag,
                                            rfid_data.last_tag_timestamp)
             log.debug("Published plug state "+str(state.plug_state))

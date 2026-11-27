@@ -41,6 +41,26 @@ def test_remove_invalid_topics(mock_pub):
     assert mock_pub.method_calls[1][1][0] == 'openWB/optional/int_display/theme'
 
 
+@pytest.mark.parametrize("payload", [None, b"null", b"true", b"false"])
+def test_startup_initializes_update_feedback_only_if_missing(payload, mock_pub):
+    updater = UpdateConfig()
+    topic = "openWB/system/update_feedback"
+    if payload is not None:
+        updater.all_received_topics[topic] = payload
+
+    updater._UpdateConfig__remove_outdated_topics()
+    updater._remove_invalid_topics()
+    updater._UpdateConfig__pub_missing_defaults()
+
+    assert updater.all_received_topics[topic] == payload
+    feedback_calls = [call.args for call in mock_pub.pub.call_args_list if call.args[0] == topic]
+    assert feedback_calls == ([(topic, None)] if payload is None else [])
+
+    mock_pub.reset_mock()
+    updater._UpdateConfig__pub_missing_defaults()
+    mock_pub.pub.assert_not_called()
+
+
 def test_startup_cleanup_keeps_ocpp_server_binding(mock_pub):
     updater = UpdateConfig()
     settings = {"url": "wss://old.example/ocpp", "subprotocol": "ocpp1.6"}
@@ -791,13 +811,50 @@ def test_start_filesystem_migrations_launches_one_worker(monkeypatch):
     )
 
 
-def _topics_163(grid, pv, bat, tariff, grid_fee=None):
+def test_upgrade_datastore_163_resets_voltego_and_informs_the_user(mock_pub: Mock, monkeypatch: pytest.MonkeyPatch):
+    message = Mock()
+    monkeypatch.setattr(update_config, "pub_system_message", message)
+    uc = UpdateConfig()
+    uc.all_received_topics = {
+        "openWB/optional/ep/flexible_tariff/provider": {"type": "voltego", "configuration": {"client_id": "x"}},
+        "openWB/system/datastore_version": list(range(163)),
+    }
+
+    uc.upgrade_datastore_163()
+
+    assert uc.all_received_topics["openWB/optional/ep/flexible_tariff/provider"] == {
+        "type": None, "configuration": {}}
+    assert uc.all_received_topics["openWB/system/datastore_version"] == list(range(164))
+    message.assert_called_once()
+    text = message.call_args.args[1]
+    assert "Voltego" in text and "einen anderen Anbieter wählen" in text
+    assert message.call_args.args[2] == update_config.MessageType.WARNING
+
+
+def test_upgrade_datastore_163_keeps_other_providers_and_stays_silent(mock_pub: Mock, monkeypatch: pytest.MonkeyPatch):
+    message = Mock()
+    monkeypatch.setattr(update_config, "pub_system_message", message)
+    uc = UpdateConfig()
+    uc.all_received_topics = {
+        "openWB/optional/ep/flexible_tariff/provider": {"type": "tibber", "configuration": {"token": "x"}},
+        "openWB/system/datastore_version": list(range(163)),
+    }
+
+    uc.upgrade_datastore_163()
+
+    # gegen ein unabhängiges Literal, nicht gegen dasselbe Objekt
+    assert uc.all_received_topics["openWB/optional/ep/flexible_tariff/provider"] == {
+        "type": "tibber", "configuration": {"token": "x"}}
+    message.assert_not_called()
+
+
+def _topics_164(grid, pv, bat, tariff, grid_fee=None):
     topics = {
         "openWB/general/prices/grid": grid,
         "openWB/general/prices/pv": pv,
         "openWB/general/prices/bat": bat,
         "openWB/optional/ep/flexible_tariff/provider": tariff,
-        "openWB/system/datastore_version": [162],
+        "openWB/system/datastore_version": [163],
     }
     if grid_fee is not None:
         topics["openWB/optional/ep/grid_fee/provider"] = grid_fee
@@ -815,11 +872,11 @@ NO_TARIFF = {"type": None, "configuration": {}}
         pytest.param(0.0002, 0.0002, 0.0002, {"type": "awattar", "configuration": {}}, "mix", "awattar",
                      id="tariff_all_equal_stays_mix"),
     ])
-def test_upgrade_datastore_163_prices(mock_pub, grid, pv, bat, tariff, expected_mode, expected_tariff_type):
+def test_upgrade_datastore_164_prices(mock_pub, grid, pv, bat, tariff, expected_mode, expected_tariff_type):
     uc = UpdateConfig()
-    uc.all_received_topics = _topics_163(grid, pv, bat, tariff)
+    uc.all_received_topics = _topics_164(grid, pv, bat, tariff)
 
-    uc.upgrade_datastore_163()
+    uc.upgrade_datastore_164()
 
     topics = uc.all_received_topics
     assert topics["openWB/general/prices/cost_mode"] == expected_mode
@@ -827,14 +884,14 @@ def test_upgrade_datastore_163_prices(mock_pub, grid, pv, bat, tariff, expected_
     assert topics["openWB/optional/ep/flexible_tariff/provider"]["type"] == expected_tariff_type
     assert topics["openWB/optional/ep/pv_price/provider"]["configuration"]["default_price"] == pv
     assert topics["openWB/optional/ep/bat_price/provider"]["configuration"]["default_price"] == bat
-    assert topics["openWB/system/datastore_version"] == [162, 163]
+    assert topics["openWB/system/datastore_version"] == [163, 164]
 
 
-def test_upgrade_datastore_163_tariff_without_provider_gets_old_grid_price_as_fixed_price(mock_pub):
+def test_upgrade_datastore_164_tariff_without_provider_gets_old_grid_price_as_fixed_price(mock_pub):
     uc = UpdateConfig()
-    uc.all_received_topics = _topics_163(0.00031, 0.00015, 0.0002, NO_TARIFF)
+    uc.all_received_topics = _topics_164(0.00031, 0.00015, 0.0002, NO_TARIFF)
 
-    uc.upgrade_datastore_163()
+    uc.upgrade_datastore_164()
 
     tariff = uc.all_received_topics["openWB/optional/ep/flexible_tariff/provider"]
     assert tariff["type"] == "fixed_price"
@@ -842,37 +899,37 @@ def test_upgrade_datastore_163_tariff_without_provider_gets_old_grid_price_as_fi
     assert tariff["configuration"]["default_price"] == 0.00031
 
 
-def test_upgrade_datastore_163_missing_tariff_topic_gets_fixed_price(mock_pub):
+def test_upgrade_datastore_164_missing_tariff_topic_gets_fixed_price(mock_pub):
     uc = UpdateConfig()
     uc.all_received_topics = {"openWB/system/datastore_version": [158]}
 
-    uc.upgrade_datastore_163()
+    uc.upgrade_datastore_164()
 
     tariff = uc.all_received_topics["openWB/optional/ep/flexible_tariff/provider"]
     assert tariff["type"] == "fixed_price"
     assert tariff["configuration"]["default_price"] == 0.0003
 
 
-def test_upgrade_datastore_163_keeps_dynamic_tariff_unchanged(mock_pub):
+def test_upgrade_datastore_164_keeps_dynamic_tariff_unchanged(mock_pub):
     uc = UpdateConfig()
     energycharts = {"name": "Energy-Charts", "type": "energycharts", "official": True,
                     "configuration": {"country": "DE-LU", "surcharge": 0, "net": True, "tax": 19, "price_cap": None}}
-    uc.all_received_topics = _topics_163(0.0003, 0.00015, 0.0002, dict(energycharts))
+    uc.all_received_topics = _topics_164(0.0003, 0.00015, 0.0002, dict(energycharts))
 
-    uc.upgrade_datastore_163()
+    uc.upgrade_datastore_164()
 
     assert uc.all_received_topics["openWB/optional/ep/flexible_tariff/provider"] == energycharts
 
 
-def test_upgrade_datastore_163_renames_fixed_hours_and_keeps_configuration(mock_pub):
+def test_upgrade_datastore_164_renames_fixed_hours_and_keeps_configuration(mock_pub):
     uc = UpdateConfig()
     fixed = {"type": "fixed_hours", "name": "Feste Tarifstunden (z.b. §14a EnWG Modul3)",
              "configuration": {"default_price": 0.0001, "tariffs": [{"price": 0.0002}]}}
     grid_fee = {"type": "fixed_hours", "name": "Feste Tarifstunden (z.b. §14a EnWG Modul3)",
                 "configuration": {"default_price": 0.00005, "tariffs": []}}
-    uc.all_received_topics = _topics_163(0.0003, 0.00015, 0.0002, fixed, grid_fee)
+    uc.all_received_topics = _topics_164(0.0003, 0.00015, 0.0002, fixed, grid_fee)
 
-    uc.upgrade_datastore_163()
+    uc.upgrade_datastore_164()
 
     tariff = uc.all_received_topics["openWB/optional/ep/flexible_tariff/provider"]
     assert tariff["type"] == "fixed_hours"
@@ -883,11 +940,11 @@ def test_upgrade_datastore_163_renames_fixed_hours_and_keeps_configuration(mock_
     assert fee["configuration"] == grid_fee["configuration"]
 
 
-def test_upgrade_datastore_163_uses_defaults_if_prices_missing(mock_pub):
+def test_upgrade_datastore_164_uses_defaults_if_prices_missing(mock_pub):
     uc = UpdateConfig()
     uc.all_received_topics = {"openWB/system/datastore_version": [158]}
 
-    uc.upgrade_datastore_163()
+    uc.upgrade_datastore_164()
 
     topics = uc.all_received_topics
     assert topics["openWB/general/prices/cost_mode"] == "mix"

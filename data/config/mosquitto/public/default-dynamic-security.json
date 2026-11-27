@@ -81,7 +81,7 @@
 	"anonymousGroup": "anonymous",
 	"roles": [
 		{
-			"rolename": "openwb-version:14",
+			"rolename": "openwb-version:16",
 			"textname": "openWB Versionsnummer",
 			"textdescription": "Diese Rolle ist ein Platzhalter für die openWB Versionsnummer und wird automatisch aktualisiert. Sie hat keine direkten Berechtigungen.",
 			"acls": []
@@ -2380,6 +2380,18 @@
 			"acls": [
 				{
 					"acltype": "publishClientSend",
+					"topic": "openWB/set/system/update_feedback",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/system/update_feedback",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
 					"topic": "openWB/set/command/+/todo/systemShutdown",
 					"priority": 0,
 					"allow": true
@@ -3223,7 +3235,19 @@
 				},
 				{
 					"acltype": "publishClientReceive",
+					"topic": "openWB/system/os_version",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
 					"topic": "openWB/system/pnp_ip",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/system/python_runtime_version",
 					"priority": 0,
 					"allow": true
 				},

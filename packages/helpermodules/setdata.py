@@ -1154,6 +1154,7 @@ class SetData:
                     "openWB/set/system/backup_cloud/backup_before_update" in msg.topic or
                     "openWB/set/system/installAssistantDone" in msg.topic or
                     "openWB/set/system/dataprotection_acknowledged" in msg.topic or
+                    "openWB/set/system/update_feedback" == msg.topic or
                     "openWB/set/system/usage_terms_acknowledged" in msg.topic or
                     "openWB/set/system/update_config_completed" in msg.topic or
                     "openWB/set/system/security/user_management_active" in msg.topic):

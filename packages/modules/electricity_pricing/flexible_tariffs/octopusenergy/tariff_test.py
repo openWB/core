@@ -209,6 +209,46 @@ def test_build_tariff_state_fills_gap_between_forecast_entries(monkeypatch):
     assert prices['1793628000'] == pytest.approx(0.0002)  # 14:00 UTC, gap filled from unitRateInformation
 
 
+def test_build_tariff_state_does_not_fill_placeholder_after_the_end_of_the_forecast(monkeypatch):
+    data = {'account': {'property': {'electricityMalos': [{'agreements': [
+        {'id': 1,
+         'unitRateInformation': ALL_DAY_RATE,
+         'unitRateForecast': [
+             {'validFrom': '2026-11-02T12:00:00+00:00', 'validTo': '2026-11-02T13:00:00+00:00',
+              'unitRateInformation': {'__typename': 'SimpleProductUnitRateInformation',
+                                      'latestGrossUnitRateCentsPerKwh': '40'}},
+             {'validFrom': '2026-11-02T13:00:00+00:00', 'validTo': '2026-11-02T14:00:00+00:00',
+              'unitRateInformation': {'__typename': 'SimpleProductUnitRateInformation',
+                                      'latestGrossUnitRateCentsPerKwh': '80'}},
+         ],
+         'validFrom': '2026-01-01T00:00:00+00:00',
+         'validTo': None}]}]}}}
+    datetime_mock = MagicMock(wraps=datetime)
+    datetime_mock.now.return_value = datetime(2026, 11, 2, 12, 3, 0, tzinfo=timezone.utc)
+    monkeypatch.setattr(tariff, "datetime", datetime_mock)
+
+    prices = build_tariff_state(data)
+
+    assert list(prices) == ['1793620800', '1793624400']
+
+
+def test_build_tariff_state_does_not_fill_placeholder_when_the_forecast_is_expired(monkeypatch):
+    data = {'account': {'property': {'electricityMalos': [{'agreements': [
+        {'id': 1,
+         'unitRateInformation': ALL_DAY_RATE,
+         'unitRateForecast': [
+             {'validFrom': '2026-11-02T10:00:00+00:00', 'validTo': '2026-11-02T11:00:00+00:00',
+              'unitRateInformation': {'__typename': 'SimpleProductUnitRateInformation',
+                                      'latestGrossUnitRateCentsPerKwh': '40'}}],
+         'validFrom': '2026-01-01T00:00:00+00:00',
+         'validTo': None}]}]}}}
+    datetime_mock = MagicMock(wraps=datetime)
+    datetime_mock.now.return_value = datetime(2026, 11, 2, 12, 3, 0, tzinfo=timezone.utc)
+    monkeypatch.setattr(tariff, "datetime", datetime_mock)
+
+    assert build_tariff_state(data) == {}
+
+
 # --- Zusätzliche Tests für die Fehlerbehandlung bei fehlenden/kaputten API-Daten ---
 
 def test_build_tariff_state_raises_on_missing_property():

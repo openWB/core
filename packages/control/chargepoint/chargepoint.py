@@ -407,6 +407,9 @@ class Chargepoint(ChargepointRfidMixin, ChargepointOcppRfidMixin, ChargepointOcp
                     self.set_state_and_log(message)
                 return
             if self.data.control_parameter.state == ChargepointState.WAIT_FOR_USING_PHASES:
+                # Die Wartezeit beginnt erst mit der erneuten Stromfreigabe nach der Umschaltung.
+                if self.data.control_parameter.timestamp_charge_start is None:
+                    return
                 if check_timestamp(self.data.control_parameter.timestamp_charge_start,
                                    charging_ev.ev_template.data.keep_charge_active_duration) is False:
                     if self.hw_supports_phase_switch():
@@ -487,9 +490,11 @@ class Chargepoint(ChargepointRfidMixin, ChargepointOcppRfidMixin, ChargepointOcp
             # Wenn keine Umschaltung verbaut ist, die Phasenzahl nehmen, mit der geladen wird. Damit werden zB auch
             # einphasige EV an dreiphasigen openWBs korrekt berücksichtigt.
             phases = self.data.get.phases_in_use or self.data.set.phases_to_use
-        elif self.data.control_parameter.state == ChargepointState.PERFORMING_PHASE_SWITCH:
+        elif (self.data.control_parameter.state == ChargepointState.PERFORMING_PHASE_SWITCH or
+              (self.data.control_parameter.state == ChargepointState.WAIT_FOR_USING_PHASES and
+               phases_chargemode == 0 and self.data.set.phases_to_use != 0)):
             phases = self.data.set.phases_to_use
-            log.debug(f"Umschaltung wird durchgeführt, Phasenzahl nicht ändern {phases}")
+            log.debug(f"Umschaltung oder Wiederanlauf im Gange, Phasenzahl nicht ändern {phases}")
         elif phases_chargemode == 0:
             # Wenn die Lademodus-Phasen 0 sind, wird die bisher genutzte Phasenzahl weiter genutzt,
             # bis der Algorithmus eine Umschaltung vorgibt, zB weil der gewählte Lademodus eine
