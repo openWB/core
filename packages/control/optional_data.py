@@ -46,6 +46,8 @@ class PricingGet:
     fault_state: int = field(default=0)
     next_query_time: int = field(default=0)
     fault_str: str = field(default=NO_ERROR)
+    force_update: bool = field(default=False)
+    last_update_time: int = field(default=0)
     prices: Dict = field(default_factory=empty_dict_factory)
 
 
@@ -54,6 +56,8 @@ def create_pricing_get_with_topics(topic_prefix: str) -> PricingGet:
     pricing_get = PricingGet()
     pricing_get.__dataclass_fields__['fault_state'].metadata = {"topic": f"{topic_prefix}/get/fault_state"}
     pricing_get.__dataclass_fields__['fault_str'].metadata = {"topic": f"{topic_prefix}/get/fault_str"}
+    pricing_get.__dataclass_fields__['force_update'].metadata = {"topic": f"{topic_prefix}/get/force_update"}
+    pricing_get.__dataclass_fields__['last_update_time'].metadata = {"topic": f"{topic_prefix}/get/last_update_time"}
     pricing_get.__dataclass_fields__['prices'].metadata = {"topic": f"{topic_prefix}/get/prices"}
     pricing_get.__dataclass_fields__['next_query_time'].metadata = {"topic": f"{topic_prefix}/get/next_query_time"}
     return pricing_get
@@ -87,6 +91,48 @@ def get_grid_fee_factory() -> GridFee:
     return GridFee()
 
 
+def pv_price_get_factory() -> PricingGet:
+    return create_pricing_get_with_topics("ep/pv_price")
+
+
+def bat_price_get_factory() -> PricingGet:
+    return create_pricing_get_with_topics("ep/bat_price")
+
+
+def feed_in_price_get_factory() -> PricingGet:
+    return create_pricing_get_with_topics("ep/feed_in_price")
+
+
+@dataclass
+class PvPrice:
+    get: PricingGet = field(default_factory=pv_price_get_factory)
+    name: str = field(default="pv_price")
+
+
+def get_pv_price_factory() -> PvPrice:
+    return PvPrice()
+
+
+@dataclass
+class BatPrice:
+    get: PricingGet = field(default_factory=bat_price_get_factory)
+    name: str = field(default="bat_price")
+
+
+def get_bat_price_factory() -> BatPrice:
+    return BatPrice()
+
+
+@dataclass
+class FeedInPrice:
+    get: PricingGet = field(default_factory=feed_in_price_get_factory)
+    name: str = field(default="feed_in_price")
+
+
+def get_feed_in_price_factory() -> FeedInPrice:
+    return FeedInPrice()
+
+
 @dataclass
 class ElectricityPricingGet:
     _prices: Dict = field(default_factory=empty_dict_factory, metadata={"topic": "ep/prices"})
@@ -107,8 +153,12 @@ def electricity_pricing_get_factory() -> ElectricityPricingGet:
 @dataclass
 class ElectricityPricing:
     configured: bool = field(default=False, metadata={"topic": "ep/configured"})
+    controllable: bool = field(default=False, metadata={"topic": "ep/controllable"})
     flexible_tariff: FlexibleTariff = field(default_factory=get_flexible_tariff_factory)
     grid_fee: GridFee = field(default_factory=get_grid_fee_factory)
+    pv_price: PvPrice = field(default_factory=get_pv_price_factory)
+    bat_price: BatPrice = field(default_factory=get_bat_price_factory)
+    feed_in_price: FeedInPrice = field(default_factory=get_feed_in_price_factory)
     get: ElectricityPricingGet = field(default_factory=electricity_pricing_get_factory)
 
 

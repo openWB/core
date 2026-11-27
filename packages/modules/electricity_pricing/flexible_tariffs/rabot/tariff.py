@@ -8,7 +8,7 @@ from modules.common.abstract_device import DeviceDescriptor
 from modules.common.component_state import TariffState
 from modules.electricity_pricing.flexible_tariffs.rabot.config import RabotTariff
 
-log = logging.getLogger(__name__)
+log = logging.getLogger("tariff")
 
 
 def fetch(config: RabotTariff) -> None:

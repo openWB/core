@@ -5,8 +5,8 @@ import time
 from typing import List, Tuple, Dict
 from dataclasses import dataclass
 
-from modules.electricity_pricing.flexible_tariffs.fixed_hours.config import (FixedHoursTariff,
-                                                                             FixedHoursTariffConfiguration)
+from modules.electricity_pricing.timebased_tariffs.fixed_hours.config import (FixedHoursTariff,
+                                                                              FixedHoursTariffConfiguration)
 from modules.common.abstract_device import DeviceDescriptor
 from modules.common.component_state import TariffState
 

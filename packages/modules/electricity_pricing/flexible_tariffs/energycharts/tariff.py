@@ -8,7 +8,7 @@ from modules.common.component_state import TariffState
 from modules.electricity_pricing.flexible_tariffs.energycharts.config import EnergyChartsTariffConfiguration
 from modules.electricity_pricing.flexible_tariffs.energycharts.config import EnergyChartsTariff
 
-log = logging.getLogger(__name__)
+log = logging.getLogger("tariff")
 
 
 def get_tomorrow_last_hour_timestamp() -> int:

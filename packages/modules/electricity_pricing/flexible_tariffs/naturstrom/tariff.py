@@ -14,7 +14,7 @@ from modules.electricity_pricing.flexible_tariffs.naturstrom.config import Natur
 from helpermodules import timecheck
 from helpermodules.pub import Pub
 
-log = logging.getLogger(__name__)
+log = logging.getLogger("tariff")
 
 BASE_URL = "https://smart.naturstrom.de"
 

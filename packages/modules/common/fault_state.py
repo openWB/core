@@ -55,9 +55,12 @@ class FaultState(Exception):
                           self.fault_str + ", Traceback: \n" +
                           traceback.format_exc())
             topic = component_type.type_to_topic_mapping(self.component_info.type)
-            if (self.component_info.type == component_type.ComponentType.FLEXIBLE_TARIFF.value or
-                    self.component_info.type == component_type.ComponentType.GRID_FEE.value or
-                    self.component_info.type == component_type.ComponentType.WALLBOX_SOCKET.value):
+            if self.component_info.type in (component_type.ComponentType.TARIFF.value,
+                                            component_type.ComponentType.GRID_FEE.value,
+                                            component_type.ComponentType.PV_PRICE.value,
+                                            component_type.ComponentType.BAT_PRICE.value,
+                                            component_type.ComponentType.FEED_IN_PRICE.value,
+                                            component_type.ComponentType.WALLBOX_SOCKET.value):
                 topic_prefix = f"openWB/set/{topic}"
             else:
                 topic_prefix = f"openWB/set/{topic}/{self.component_info.id}"

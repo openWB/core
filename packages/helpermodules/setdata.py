@@ -856,10 +856,10 @@ class SetData:
                 self._validate_value(msg, float, [(0, TIMESTAMP_2100)])
             elif "openWB/set/general/grid_protection_random_stop" in msg.topic:
                 self._validate_value(msg, int, [(0, 90)])
-            elif ("openWB/set/general/prices/bat" in msg.topic or
-                  "openWB/set/general/prices/grid" in msg.topic or
-                  "openWB/set/general/prices/pv" in msg.topic):
+            elif "openWB/set/general/prices/fixed_price" in msg.topic:
                 self._validate_value(msg, float, [(0, 99.99)])
+            elif "openWB/set/general/prices/cost_mode" in msg.topic:
+                self._validate_value(msg, str)
             elif "openWB/set/general/range_unit" in msg.topic:
                 self._validate_value(msg, str)
             elif "openWB/set/general/temporary_charge_templates_active" in msg.topic:
@@ -936,7 +936,7 @@ class SetData:
             enthält Topic und Payload
         """
         try:
-            pricing_regex = "openWB/set/optional/ep/(flexible_tariff|grid_fee)/"
+            pricing_regex = "openWB/set/optional/ep/(flexible_tariff|grid_fee|pv_price|bat_price|feed_in_price)/"
             if re.search(pricing_regex, msg.topic) is not None:
                 if re.search(f"{pricing_regex}provider$", msg.topic) is not None:
                     self._validate_value(msg, "json")
@@ -948,11 +948,16 @@ class SetData:
                     self._validate_value(msg, int, [(0, 2)])
                 elif re.search(f"{pricing_regex}get/next_query_time$", msg.topic) is not None:
                     self._validate_value(msg, int)
+                elif re.search(f"{pricing_regex}get/last_update_time$", msg.topic) is not None:
+                    self._validate_value(msg, int)
+                elif re.search(f"{pricing_regex}get/force_update$", msg.topic) is not None:
+                    self._validate_value(msg, bool)
                 elif re.search(f"{pricing_regex}get/fault_str$", msg.topic) is not None:
                     self._validate_value(msg, str)
             elif "openWB/set/optional/ep/get/prices" in msg.topic:
                 self._validate_value(msg, "json")
-            elif "openWB/set/optional/ep/configured" in msg.topic:
+            elif ("openWB/set/optional/ep/configured" in msg.topic or
+                  "openWB/set/optional/ep/controllable" in msg.topic):
                 self._validate_value(msg, bool)
             elif "openWB/set/optional/forecast/configured" in msg.topic:
                 self._validate_value(msg, bool)

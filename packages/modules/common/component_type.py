@@ -5,14 +5,17 @@ from typing import Type
 class ComponentType(Enum):
     BACKUP_CLOUD = "backup_cloud"
     BAT = "bat"
+    BAT_PRICE = "bat_price"
     CHARGEPOINT = "cp"
     CONSUMER = "consumer"
     COUNTER = "counter"
-    FLEXIBLE_TARIFF = "dynamic_tariff"
+    FEED_IN_PRICE = "feed_in_price"
+    TARIFF = "electricity_tariff"
     GRID_FEE = "grid_tariff"
     WALLBOX_SOCKET = "wallbox_socket"
     INVERTER = "inverter"
     IO = "io"
+    PV_PRICE = "pv_price"
     VEHICLE = "vehicle"
 
 
@@ -32,7 +35,14 @@ def special_to_general_type_mapping(component_type: str) -> ComponentType:
 
 
 def type_to_topic_mapping(component_type: str) -> str:
-    if "bat" in component_type:
+    # vor "bat", da "bat_price" den Teilstring "bat" enthält
+    if ComponentType.FEED_IN_PRICE.value in component_type:
+        return "optional/ep/feed_in_price"
+    elif ComponentType.BAT_PRICE.value in component_type:
+        return "optional/ep/bat_price"
+    elif ComponentType.PV_PRICE.value in component_type:
+        return "optional/ep/pv_price"
+    elif "bat" in component_type:
         return "bat"
     elif "consumer" in component_type:
         return "consumer"
@@ -42,7 +52,7 @@ def type_to_topic_mapping(component_type: str) -> str:
         return "internal_socket"
     elif "inverter" in component_type:
         return "pv"
-    elif ComponentType.FLEXIBLE_TARIFF.value in component_type:
+    elif ComponentType.TARIFF.value in component_type:
         return "optional/ep/flexible_tariff"
     elif ComponentType.GRID_FEE.value in component_type:
         return "optional/ep/grid_fee"
@@ -76,14 +86,20 @@ def component_type_to_readable_text(component_type: ComponentType):
         return "Verbraucher"
     elif component_type == ComponentType.COUNTER:
         return "Zähler"
-    elif component_type == ComponentType.FLEXIBLE_TARIFF:
-        return "Dynamischer Tarif"
+    elif component_type == ComponentType.TARIFF:
+        return "Stromtarif"
     elif component_type == ComponentType.GRID_FEE:
         return "Netzentgelt"
     elif component_type == ComponentType.INVERTER:
         return "Wechselrichter"
     elif component_type == ComponentType.IO:
         return "IO-Geräte"
+    elif component_type == ComponentType.FEED_IN_PRICE:
+        return "Einspeisevergütung"
+    elif component_type == ComponentType.PV_PRICE:
+        return "Preis für Erzeugung"
+    elif component_type == ComponentType.BAT_PRICE:
+        return "Preis für Speicherentladung"
     elif component_type == ComponentType.VEHICLE:
         return "Fahrzeug"
     else:

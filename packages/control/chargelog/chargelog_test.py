@@ -31,6 +31,60 @@ def test_create_entry_optional_smarthome(mock_data, sh_values):
     broker_client.assert_not_called()
 
 
+def test_create_entry_logs_all_price_channels(mock_data, monkeypatch):
+    now = 1652683000
+    monkeypatch.setattr(process_log_entry_builder.timecheck, "create_timestamp", Mock(return_value=now))
+    pricing = data.data.optional_data.data.electricity_pricing
+    data.data.optional_data._flexible_tariff_module = Mock()  # ein Stromtarif ist eingerichtet
+    pricing.get.prices = {str(now - 100): 0.00031, str(now + 800): 0.0009}
+    pricing.pv_price.get.prices = {str(now - 100): 0.00011, str(now + 800): 0.0009}
+    pricing.bat_price.get.prices = {str(now - 100): 0.00022}
+    pricing.feed_in_price.get.prices = {str(now - 100): 0.00008}
+
+    with patch.object(process_log_entry_builder, "BrokerClient"):
+        entry = process_log_entry_builder.create_entry(None, None)
+
+    assert entry["prices"]["grid"] == 0.00031
+    assert entry["prices"]["pv"] == 0.00011
+    assert entry["prices"]["bat"] == 0.00022
+    assert entry["prices"]["feed_in"] == 0.00008
+    assert entry["prices"]["cp"] == 0
+    assert entry["prices"]["fault_state"] == 0
+
+
+def test_create_entry_logs_fault_state_of_provider_without_prices(mock_data):
+    """Ein fehlerhafter Anbieter ohne Preisliste: die Preise fallen zurück, der Fehler wird trotzdem geloggt."""
+    pricing = data.data.optional_data.data.electricity_pricing
+    data.data.optional_data._flexible_tariff_module = Mock()
+    pricing.flexible_tariff.get.fault_state = 2
+    data.data.optional_data._grid_fee_module = Mock()
+    pricing.grid_fee.get.fault_state = 1
+
+    with patch.object(process_log_entry_builder, "BrokerClient"):
+        entry = process_log_entry_builder.create_entry(None, None)
+
+    assert entry["prices"]["grid"] == 0.0003
+    assert entry["prices"]["fault_state"] == 2
+
+
+def test_create_entry_ignores_fault_state_without_provider(mock_data):
+    pricing = data.data.optional_data.data.electricity_pricing
+    pricing.flexible_tariff.get.fault_state = 2  # veralteter Wert, es ist kein Anbieter eingerichtet
+
+    with patch.object(process_log_entry_builder, "BrokerClient"):
+        entry = process_log_entry_builder.create_entry(None, None)
+
+    assert entry["prices"]["fault_state"] == 0
+
+
+def test_create_entry_logs_fallback_prices_without_providers(mock_data):
+    with patch.object(process_log_entry_builder, "BrokerClient"):
+        entry = process_log_entry_builder.create_entry(None, None)
+
+    assert entry["prices"] == {"grid": 0.0003, "pv": 0.00015, "bat": 0.0002, "feed_in": 0.00008, "cp": 0,
+                               "fault_state": 0}
+
+
 def mock_daily_log(monkeypatch):
     daily_log = {"entries": [{'bat': {'all': {'exported': 2000, 'imported': 2000, 'soc': 100},
                                       'bat2': {'exported': 2000, 'imported': 2000, 'soc': 100}},
@@ -197,7 +251,7 @@ def test_calc_charge_cost_short_charge_uses_current_entry(mock_data, monkeypatch
     assert cp.data.set.log.costs == pytest.approx(0.015)
 
 
-def test_calc_charge_cost_reference_end_unique_price(mock_data, monkeypatch):
+def test_calc_charge_cost_reference_end_fixed_price(mock_data, monkeypatch):
     cp = Chargepoint(4, None)
     cp.data.set.log.imported_since_plugged = cp.data.set.log.imported_since_mode_switch = 3950
     cp.data.set.log.timestamp_mode_switch = 1652682600  # 8:30
@@ -212,13 +266,38 @@ def test_calc_charge_cost_reference_end_unique_price(mock_data, monkeypatch):
     current_entry["pv"]["all"]["exported"] = 3000
     current_entry["pv"]["pv1"]["exported"] = 3000
     monkeypatch.setattr(chargelog, "create_entry", Mock(return_value=current_entry))
-    data.data.general_data.data.prices = Prices(bat=0.0002, cp=0, grid=0.0002, pv=0.0002)
+    data.data.general_data.data.prices = Prices(cost_mode="fixed", fixed_price=0.0002)
 
     with patch("builtins.open", mock_open(read_data=json.dumps(daily_log))):
         calc_energy_costs(cp, True)
 
     assert cp.data.set.log.charged_energy_by_source == {'bat': 699.57, 'cp': 0.0, 'grid': 1300.14, 'pv': 400.29}
     assert round(cp.data.set.log.costs, 5) == 0.79
+
+
+def test_calc_charge_cost_reference_end_grid_price(mock_data, monkeypatch):
+    cp = Chargepoint(4, None)
+    cp.data.set.log.imported_since_plugged = cp.data.set.log.imported_since_mode_switch = 3950
+    cp.data.set.log.timestamp_mode_switch = 1652682600  # 8:30
+    cp.data.get.imported = 4100
+    cp.data.set.log.charged_energy_by_source = {'grid': 1243, 'pv': 386, 'bat': 671, 'cp': 0.0}
+    daily_log = mock_daily_log(monkeypatch)
+    current_entry = json.loads(json.dumps(daily_log["entries"][-1]))
+    current_entry["bat"]["all"]["exported"] = 4000
+    current_entry["bat"]["bat2"]["exported"] = 4000
+    current_entry["counter"]["counter0"]["imported"] = 4500
+    current_entry["cp"]["cp4"]["imported"] = 4100
+    current_entry["pv"]["all"]["exported"] = 3000
+    current_entry["pv"]["pv1"]["exported"] = 3000
+    monkeypatch.setattr(chargelog, "create_entry", Mock(return_value=current_entry))
+    data.data.general_data.data.prices = Prices(cost_mode="grid")
+
+    with patch("builtins.open", mock_open(read_data=json.dumps(daily_log))):
+        calc_energy_costs(cp, True)
+
+    # PV- und Speicherenergie werden zum Netzpreis des Eintrags (0.0003 €/Wh) abgerechnet:
+    # (699.57 + 1300.14 + 400.29) Wh - bisher verbuchte 2300 Wh = 100 Wh
+    assert cp.data.set.log.costs == pytest.approx(100 * 0.0003)
 
 
 def test_calc_charge_cost_reference_middle_day_change(mock_data, monkeypatch):

@@ -312,6 +312,14 @@ def setup_logging() -> None:
     forecast_file_handler.addFilter(RedactingFilter())
     forecast_log.addHandler(forecast_file_handler)
 
+    # Tariff logger (price provider requests and updates, not the charge control)
+    tariff_log = logging.getLogger("tariff")
+    tariff_log.propagate = False
+    tariff_file_handler = RotatingFileHandler(RAMDISK_PATH / 'tariff.log', maxBytes=mb_to_bytes(1), backupCount=1)
+    tariff_file_handler.setFormatter(logging.Formatter(FORMAT_STR_DETAILED))
+    tariff_file_handler.addFilter(RedactingFilter())
+    tariff_log.addHandler(tariff_file_handler)
+
     # Totals generation logger
     setup_generate_totals_logging()
 

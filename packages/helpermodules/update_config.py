@@ -53,6 +53,10 @@ from modules.common.abstract_vehicle import GeneralVehicleConfig
 from modules.common.component_type import ComponentType
 from modules.devices.sungrow.sungrow_sh.version import Version
 from modules.display_themes.cards.config import CardsDisplayTheme
+from modules.electricity_pricing.bat_prices.fixed_hours.config import FixedHoursBatPrice
+from modules.electricity_pricing.feed_in_prices.fixed_hours.config import FixedHoursFeedInPrice
+from modules.electricity_pricing.pv_prices.fixed_hours.config import FixedHoursPvPrice
+from modules.electricity_pricing.timebased_tariffs.fixed_hours.config import FixedHoursTariffConfiguration
 from modules.io_actions.controllable_consumers.ripple_control_receiver.config import RippleControlReceiverSetup
 from modules.web_themes.koala.config import KoalaWebTheme
 from modules.devices.good_we.good_we.version import GoodWeVersion
@@ -64,7 +68,7 @@ NO_MODULE = {"type": None, "configuration": {}}
 
 class UpdateConfig:
 
-    DATASTORE_VERSION = 163
+    DATASTORE_VERSION = 164
 
     valid_topic = [
         "^openWB/bat/config/bat_control_activated$",
@@ -338,9 +342,8 @@ class UpdateConfig:
         "^openWB/general/chargemode_config/surplus/consumer/switch_off_threshold$",
         # obsolet, Daten hieraus müssen nach prices/ überführt werden
         "^openWB/general/price_kwh$",
-        "^openWB/general/prices/bat$",
-        "^openWB/general/prices/grid$",
-        "^openWB/general/prices/pv$",
+        "^openWB/general/prices/cost_mode$",
+        "^openWB/general/prices/fixed_price$",
         "^openWB/general/web_theme$",
 
         "^openWB/graph/config/duration$",
@@ -458,15 +461,43 @@ class UpdateConfig:
         "^openWB/set/log/data",
 
         "^openWB/optional/ep/configured$",
+        "^openWB/optional/ep/controllable$",
         "^openWB/optional/ep/get/prices$",
         "^openWB/optional/ep/flexible_tariff/get/fault_state$",
         "^openWB/optional/ep/flexible_tariff/get/fault_str$",
         "^openWB/optional/ep/flexible_tariff/get/prices$",
+        "^openWB/optional/ep/flexible_tariff/get/force_update$",
+        "^openWB/optional/ep/flexible_tariff/get/last_update_time$",
+        "^openWB/optional/ep/flexible_tariff/get/next_query_time$",
         "^openWB/optional/ep/flexible_tariff/provider$",
         "^openWB/optional/ep/grid_fee/get/fault_state$",
         "^openWB/optional/ep/grid_fee/get/fault_str$",
         "^openWB/optional/ep/grid_fee/get/prices$",
+        "^openWB/optional/ep/grid_fee/get/force_update$",
+        "^openWB/optional/ep/grid_fee/get/last_update_time$",
+        "^openWB/optional/ep/grid_fee/get/next_query_time$",
         "^openWB/optional/ep/grid_fee/provider$",
+        "^openWB/optional/ep/pv_price/get/fault_state$",
+        "^openWB/optional/ep/pv_price/get/fault_str$",
+        "^openWB/optional/ep/pv_price/get/next_query_time$",
+        "^openWB/optional/ep/pv_price/get/prices$",
+        "^openWB/optional/ep/pv_price/get/force_update$",
+        "^openWB/optional/ep/pv_price/get/last_update_time$",
+        "^openWB/optional/ep/pv_price/provider$",
+        "^openWB/optional/ep/bat_price/get/fault_state$",
+        "^openWB/optional/ep/bat_price/get/fault_str$",
+        "^openWB/optional/ep/bat_price/get/next_query_time$",
+        "^openWB/optional/ep/bat_price/get/prices$",
+        "^openWB/optional/ep/bat_price/get/force_update$",
+        "^openWB/optional/ep/bat_price/get/last_update_time$",
+        "^openWB/optional/ep/bat_price/provider$",
+        "^openWB/optional/ep/feed_in_price/get/fault_state$",
+        "^openWB/optional/ep/feed_in_price/get/fault_str$",
+        "^openWB/optional/ep/feed_in_price/get/force_update$",
+        "^openWB/optional/ep/feed_in_price/get/last_update_time$",
+        "^openWB/optional/ep/feed_in_price/get/next_query_time$",
+        "^openWB/optional/ep/feed_in_price/get/prices$",
+        "^openWB/optional/ep/feed_in_price/provider$",
         "^openWB/optional/forecast/configured$",
         "^openWB/optional/forecast/provider$",
         "^openWB/optional/forecast/get/fault_state$",
@@ -694,6 +725,7 @@ class UpdateConfig:
         "^openWB/system/security/access/HardwareInstallation$",
         "^openWB/system/security/access/LoadManagementConfiguration$",
         "^openWB/system/security/access/ForecastConfiguration$",
+        "^openWB/system/security/access/ElectricityPricesConfiguration$",
         "^openWB/system/security/access/ChargePointInstallation$",
         "^openWB/system/security/access/VehicleConfiguration$",
         "^openWB/system/security/access/ConsumerConfiguration$",
@@ -798,9 +830,8 @@ class UpdateConfig:
         ("openWB/general/http_api", False),
         ("openWB/general/legacy_smarthome_active", True),
         ("openWB/general/modbus_control", False),
-        ("openWB/general/prices/bat", Prices().bat),
-        ("openWB/general/prices/grid", Prices().grid),
-        ("openWB/general/prices/pv", Prices().pv),
+        ("openWB/general/prices/cost_mode", Prices().cost_mode),
+        ("openWB/general/prices/fixed_price", Prices().fixed_price),
         ("openWB/general/range_unit", "km"),
         ("openWB/general/temporary_charge_templates_active", False),
         ("openWB/general/web_theme", asdict(KoalaWebTheme())),
@@ -809,6 +840,12 @@ class UpdateConfig:
         ("openWB/internal_chargepoint/1/data/parent_cp", None),
         ("openWB/optional/ep/flexible_tariff/provider", NO_MODULE),
         ("openWB/optional/ep/grid_fee/provider", NO_MODULE),
+        ("openWB/optional/ep/pv_price/provider",
+         asdict(FixedHoursPvPrice(configuration=FixedHoursTariffConfiguration(default_price=0.00015)))),
+        ("openWB/optional/ep/bat_price/provider",
+         asdict(FixedHoursBatPrice(configuration=FixedHoursTariffConfiguration(default_price=0.0002)))),
+        ("openWB/optional/ep/feed_in_price/provider",
+         asdict(FixedHoursFeedInPrice(configuration=FixedHoursTariffConfiguration(default_price=0.00008)))),
         ("openWB/optional/forecast/configured", False),
         ("openWB/optional/forecast/provider", NO_MODULE),
         ("openWB/optional/int_display/active", True),
@@ -864,6 +901,7 @@ class UpdateConfig:
         ("openWB/system/security/access/HardwareInstallation", True),
         ("openWB/system/security/access/LoadManagementConfiguration", True),
         ("openWB/system/security/access/ForecastConfiguration", True),
+        ("openWB/system/security/access/ElectricityPricesConfiguration", True),
         ("openWB/system/security/access/ChargePointInstallation", True),
         ("openWB/system/security/access/VehicleConfiguration", True),
         ("openWB/system/security/access/ConsumerConfiguration", True),
@@ -4389,3 +4427,63 @@ class UpdateConfig:
                 {}, "Der Strompreis-Anbieter Voltego hat den Betrieb eingestellt und wurde entfernt. Bitte unter "
                 "Einstellungen -> Konfiguration -> Strompreise einen anderen Anbieter wählen.", MessageType.WARNING)
         self._append_datastore_version(163)
+
+    def upgrade_datastore_164(self) -> None:
+        """Energiekosten: Aus den festen Preisen openWB/general/prices/{grid,pv,bat} werden Anbieter und die
+        Abrechnungsart der Ladekosten. Die Einspeisevergütung wird mit den Standardwerten angelegt.
+        - Ohne Stromtarif wird der bisherige Netzbezugspreis als fester Stromtarif (fixed_price) angelegt. Ein fester
+          Preis schaltet das preisbasierte Laden nicht frei, das Verhalten der Regelung ändert sich dadurch nicht.
+        - Waren alle drei Preise ohne Stromtarif gleich, wurde bisher mit einem festen Preis abgerechnet
+          -> cost_mode fixed.
+        - Die Anbieter fixed_hours bekommen ihre neuen Bezeichnungen."""
+        def price(name: str, default: float) -> float:
+            payload = self.all_received_topics.get(f"openWB/general/prices/{name}")
+            value = decode_payload(payload) if payload is not None else None
+            return default if value is None else value
+
+        def fixed_hours_provider(name: str, price: float) -> dict:
+            """Fester Preis als fixed_hours-Anbieter (ohne Zeitfenster). Bewusst nicht aus den Modul-Klassen erzeugt,
+            damit die Migration unabhängig von späteren Änderungen an diesen Klassen bleibt."""
+            return {"type": "fixed_hours",
+                    "name": name,
+                    "official": False,
+                    "configuration": {"default_price": price, "tariffs": [], "update_hours": list(range(24))}}
+
+        # bisherige Standardpreise in €/Wh
+        grid = price("grid", 0.0003)
+        pv = price("pv", 0.00015)
+        bat = price("bat", 0.0002)
+        modified_topics = {}
+
+        tariff_topic = "openWB/optional/ep/flexible_tariff/provider"
+        tariff_payload = self.all_received_topics.get(tariff_topic)
+        tariff = decode_payload(tariff_payload) if tariff_payload is not None else None
+        tariff_configured = isinstance(tariff, dict) and tariff.get("type") is not None
+        if not tariff_configured:
+            modified_topics[tariff_topic] = {"type": "fixed_price",
+                                             "name": "Fester Preis",
+                                             "official": True,
+                                             "configuration": {"default_price": grid,
+                                                               "update_hours": list(range(24))}}
+        elif tariff.get("type") == "fixed_hours":
+            tariff["name"] = "Zeitabhängiger Tarif (HT/NT)"
+            modified_topics[tariff_topic] = tariff
+
+        grid_fee_topic = "openWB/optional/ep/grid_fee/provider"
+        grid_fee_payload = self.all_received_topics.get(grid_fee_topic)
+        grid_fee = decode_payload(grid_fee_payload) if grid_fee_payload is not None else None
+        if isinstance(grid_fee, dict) and grid_fee.get("type") == "fixed_hours":
+            grid_fee["name"] = "Feste Netzentgelte (z.B. §14a EnWG Modul 3)"
+            modified_topics[grid_fee_topic] = grid_fee
+
+        modified_topics["openWB/optional/ep/pv_price/provider"] = fixed_hours_provider(
+            "Fester Preis für Erzeugung", pv)
+        modified_topics["openWB/optional/ep/bat_price/provider"] = fixed_hours_provider(
+            "Fester Preis für Speicherentladung", bat)
+        modified_topics["openWB/general/prices/cost_mode"] = (
+            "fixed" if not tariff_configured and grid == pv == bat else "mix")
+        modified_topics["openWB/general/prices/fixed_price"] = grid
+
+        for topic, payload in modified_topics.items():
+            self.__update_topic(topic, payload)
+        self._append_datastore_version(164)
