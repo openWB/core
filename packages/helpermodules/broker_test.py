@@ -1,7 +1,9 @@
 import errno
+import heapq
 import threading
-import time
-from unittest.mock import Mock
+from types import SimpleNamespace
+from typing import Callable, List, Optional, Tuple
+from unittest.mock import MagicMock, Mock
 
 import pytest
 
@@ -11,17 +13,52 @@ MESSAGES = [{"topic": "openWB/set/a", "payload": "1", "qos": 0, "retain": True},
             {"topic": "openWB/set/b", "payload": "2", "qos": 0, "retain": True}]
 
 
+class FakeClock:
+    def __init__(self) -> None:
+        self.now = 0.0
+        self.pending: List[Tuple[float, int, Callable[[], None]]] = []
+        self.sequence = 0
+
+    def call_later(self, delay: float, callback: Callable[[], None]) -> None:
+        self.sequence += 1
+        heapq.heappush(self.pending, (self.now + delay, self.sequence, callback))
+
+    def wait(self, timeout: float) -> None:
+        if self.pending and self.pending[0][0] <= self.now + timeout:
+            self.now, _, callback = heapq.heappop(self.pending)
+            callback()
+        else:
+            self.now += timeout
+
+
+class FakeEvent:
+    def __init__(self, clock: FakeClock) -> None:
+        self.clock = clock
+        self.is_set = False
+
+    def set(self) -> None:
+        self.is_set = True
+
+    def wait(self, timeout: float) -> bool:
+        deadline = self.clock.now + timeout
+        while not self.is_set and self.clock.now < deadline:
+            self.clock.wait(deadline - self.clock.now)
+        return self.is_set
+
+
 class FakeClient:
-    """Verhält sich wie paho, ruft on_connect/on_message aus einem eigenen Thread auf."""
+    """Callbacks über Testuhr oder für den Parallelitätstest aus einem eigenen Thread."""
     instance = None
     instances = []
 
-    def __init__(self, client_id="", rc: int = 0, connack: bool = True, incoming=(), published: bool = True):
+    def __init__(self, client_id="", rc: int = 0, connack: bool = True, incoming=(), published: bool = True,
+                 clock: Optional[FakeClock] = None):
         self.client_id = client_id
         self.rc = rc
         self.connack = connack
         self.incoming = list(incoming)
         self.published = published
+        self.clock = clock
         self.calls = []
         self.on_connect = None
         self.on_message = None
@@ -34,12 +71,20 @@ class FakeClient:
     def loop_start(self):
         self.calls.append(("loop_start",))
         if self.connack:
-            threading.Thread(target=self.on_connect, args=(self, None, {}, self.rc)).start()
+            if self.clock is None:
+                threading.Thread(target=self.on_connect, args=(self, None, {}, self.rc)).start()
+            else:
+                self.clock.call_later(0, lambda: self.on_connect(self, None, {}, self.rc))
 
     def subscribe(self, topic_filter):
         self.calls.append(("subscribe", topic_filter))
         for delay, topic, payload in self.incoming:
-            threading.Timer(delay, self.on_message, args=(self, None, Mock(topic=topic, payload=payload))).start()
+            message = Mock(topic=topic, payload=payload)
+            if self.clock is None:
+                assert delay == 0
+                self.on_message(self, None, message)
+            else:
+                self.clock.call_later(delay, lambda message=message: self.on_message(self, None, message))
 
     def publish(self, topic, payload, qos, retain):
         self.calls.append(("publish", topic, payload))
@@ -57,10 +102,18 @@ class FakeClient:
 @pytest.fixture
 def fake_client(monkeypatch):
     FakeClient.instances = []
+    clock = FakeClock()
+    condition = MagicMock()
+    condition.wait.side_effect = clock.wait
+    # Do not patch the global time/threading modules: the concurrency test and
+    # unrelated fixtures must keep their real clocks and synchronization.
+    monkeypatch.setattr(broker, "time", SimpleNamespace(monotonic=lambda: clock.now))
+    monkeypatch.setattr(broker, "threading", SimpleNamespace(
+        Event=lambda: FakeEvent(clock), Condition=lambda: condition))
 
     def install(**kwargs):
-        monkeypatch.setattr(broker.mqtt, "Client", lambda client_id: FakeClient(client_id, **kwargs))
-        return FakeClient
+        monkeypatch.setattr(broker.mqtt, "Client", lambda client_id: FakeClient(client_id, clock=clock, **kwargs))
+        return clock
     return install
 
 
@@ -84,64 +137,65 @@ def test_publishes_all_messages_over_one_connection_and_returns_complete_data(fa
 
 
 def test_returns_as_soon_as_data_is_complete(fake_client):
-    fake_client(incoming=[(0.0, "x/get/power", b"100")])
-    start = time.monotonic()
+    clock = fake_client(incoming=[(0.0, "x/get/power", b"100")])
 
     received = broker.publish_and_collect(
         "10.0.0.5", 1883, MESSAGES, "x/get/#", lambda topics: "x/get/power" in topics, timeout=5, settle=0.01)
 
     assert received == {"x/get/power": 100}
-    assert time.monotonic() - start < 1
+    assert clock.now == pytest.approx(0.01)
 
 
 def test_collects_topics_arriving_within_settle_time(fake_client):
-    fake_client(incoming=[(0.0, "x/get/power", b"100"), (0.05, "x/get/soc", b"80")])
+    clock = fake_client(incoming=[(0.0, "x/get/power", b"100"), (0.05, "x/get/soc", b"80")])
 
     received = broker.publish_and_collect(
         "10.0.0.5", 1883, MESSAGES, "x/get/#", lambda topics: "x/get/power" in topics, timeout=1, settle=0.3)
 
     assert received == {"x/get/power": 100, "x/get/soc": 80}
+    assert clock.now == pytest.approx(0.35)
 
 
 def test_keeps_collecting_while_messages_keep_arriving_within_settle_time(fake_client):
-    fake_client(incoming=[(0.0, "x/get/power", b"100"), (0.06, "x/get/soc", b"80"),
-                          (0.12, "x/get/rfid", b'"abc"'), (0.18, "x/get/version", b'"1.0"')])
+    clock = fake_client(incoming=[
+        (0.0, "x/get/power", b"100"), (0.06, "x/get/soc", b"80"),
+        (0.12, "x/get/rfid", b'"abc"'), (0.18, "x/get/version", b'"1.0"')])
 
     received = broker.publish_and_collect(
         "10.0.0.5", 1883, MESSAGES, "x/get/#", lambda topics: "x/get/power" in topics, timeout=2, settle=0.1)
 
     assert set(received) == {"x/get/power", "x/get/soc", "x/get/rfid", "x/get/version"}
+    assert clock.now == pytest.approx(0.28)
 
 
 def test_collecting_after_complete_data_is_limited_by_timeout(fake_client):
-    fake_client(incoming=[(i * 0.03, f"x/get/t{i}", b"1") for i in range(40)])
-    start = time.monotonic()
+    clock = fake_client(incoming=[(i * 0.03, f"x/get/t{i}", b"1") for i in range(40)])
 
     received = broker.publish_and_collect(
         "10.0.0.5", 1883, MESSAGES, "x/get/#", lambda topics: "x/get/t0" in topics, timeout=0.3, settle=0.1)
 
-    elapsed = time.monotonic() - start
-    assert 0.25 <= elapsed < 0.6
-    assert "x/get/t0" in received
-    assert 5 <= len(received) < 40
+    assert clock.now == pytest.approx(0.3)
+    assert received == {f"x/get/t{i}": 1 for i in range(11)}
 
 
 def test_returns_partial_data_after_timeout(fake_client):
-    fake_client(incoming=[(0.0, "x/get/power", b"100")])
+    clock = fake_client(incoming=[(0.0, "x/get/power", b"100")])
 
     received = broker.publish_and_collect(
         "10.0.0.5", 1883, MESSAGES, "x/get/#", lambda topics: len(topics) == 2, timeout=0.2, settle=0.01)
 
     assert received == {"x/get/power": 100}
+    assert clock.now == pytest.approx(0.2)
 
 
 def test_returns_empty_dict_without_data(fake_client):
-    fake_client()
+    clock = fake_client()
 
     received = broker.publish_and_collect(
         "10.0.0.5", 1883, MESSAGES, "x/get/#", lambda topics: bool(topics), timeout=0.1, settle=0.01)
 
     assert received == {}
+    assert clock.now == pytest.approx(0.1)
 
 
 @pytest.mark.parametrize("kwargs", [
@@ -181,16 +235,25 @@ def test_concurrent_calls_for_two_chargepoints_of_one_secondary_do_not_share_sta
     """Duo: beide Ladepunkte rufen gleichzeitig denselben Secondary ab. Jeder Aufruf hat eigene Verbindung,
     eigenes Abo, eigene Empfangsdaten und eine eigene Client-ID."""
     FakeClient.instances = []
-    incoming = {"x/0/get/#": [(0.0, "x/0/get/power", b"100"), (0.02, "x/0/get/rfid", b'"a"')],
-                "x/1/get/#": [(0.0, "x/1/get/power", b"200"), (0.02, "x/1/get/rfid", b'"b"')]}
+    incoming = {"x/0/get/#": [(0.0, "x/0/get/power", b"100"), (0.0, "x/0/get/rfid", b'"a"')],
+                "x/1/get/#": [(0.0, "x/1/get/power", b"200"), (0.0, "x/1/get/rfid", b'"b"')]}
     created = []
+    subscriptions_ready = threading.Barrier(2, timeout=5)
 
     def create(client_id):
         client = FakeClient(client_id)
         created.append(client)
         original_subscribe = client.subscribe
-        client.subscribe = lambda topic_filter: (setattr(client, "incoming", incoming[topic_filter]),
-                                                 original_subscribe(topic_filter))
+
+        def subscribe(topic_filter):
+            client.incoming = incoming[topic_filter]
+            # Both collections must exist before either receives messages. Keep
+            # both callbacks active until both have received their complete data.
+            subscriptions_ready.wait()
+            original_subscribe(topic_filter)
+            subscriptions_ready.wait()
+
+        client.subscribe = subscribe
         return client
 
     monkeypatch.setattr(broker.mqtt, "Client", create)
@@ -199,14 +262,16 @@ def test_concurrent_calls_for_two_chargepoints_of_one_secondary_do_not_share_sta
     def collect(duo_num):
         results[duo_num] = broker.publish_and_collect(
             "10.0.0.5", 1883, MESSAGES, f"x/{duo_num}/get/#",
-            lambda topics: f"x/{duo_num}/get/power" in topics, timeout=1, settle=0.1,
+            lambda topics: f"x/{duo_num}/get/power" in topics, timeout=10, settle=0.1,
             name=f"subscribeSeriesChargepoint{5 + duo_num}")
 
     threads = [threading.Thread(target=collect, args=(duo_num,)) for duo_num in (0, 1)]
     for thread in threads:
         thread.start()
     for thread in threads:
-        thread.join()
+        thread.join(timeout=15)
+
+    assert all(not thread.is_alive() for thread in threads)
 
     assert results[0] == {"x/0/get/power": 100, "x/0/get/rfid": "a"}
     assert results[1] == {"x/1/get/power": 200, "x/1/get/rfid": "b"}
