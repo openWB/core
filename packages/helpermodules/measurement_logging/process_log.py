@@ -5,6 +5,7 @@ import logging
 from pathlib import Path
 from typing import Dict, List, Optional
 from datetime import datetime
+from math import isfinite
 from helpermodules import timecheck
 from helpermodules.utils.precision_math import decimal_divide
 from helpermodules.measurement_logging.process_log_calculation import (CalculationType,
@@ -187,10 +188,66 @@ def convert_legacy_units(data: dict) -> dict:
 
 def get_daily_log(date: str):
     data = _collect_daily_log_data(date)
+    recording_gaps = _has_recording_gaps(data["entries"])
     data["entries"] = _process_entries(data["entries"], CalculationType.ALL)
     data["totals"] = get_totals(data["entries"], False)
-    data = _analyse_energy_source(data)
+    calculation_status = {"used_fallback": False}
+    data = _analyse_energy_source(data, calculation_status=calculation_status)
+    data["data_quality"] = _daily_data_quality(data, recording_gaps, calculation_status)
     return data
+
+
+def _has_recording_gaps(entries: List) -> bool:
+    # Match the daily chart's cadence inference, including a possible gap to the
+    # next day's boundary sample. Do not assume a fixed five-minute cadence.
+    steps = []
+    for previous, current in zip(entries, entries[1:]):
+        timestamps = (previous.get("timestamp"), current.get("timestamp"))
+        if all(isinstance(value, (int, float)) and isfinite(value) for value in timestamps):
+            step = timestamps[1] - timestamps[0]
+            if step > 0:
+                steps.append(step)
+    if len(steps) < 3:
+        return False
+    cadence = sorted(steps)[len(steps) // 2]
+    return any(step > cadence * 1.5 for step in steps)
+
+
+def _has_recorded_faults(entries: List) -> bool:
+    return any(
+        isinstance(values, dict) and values.get("fault_state") == 2
+        for entry in entries
+        for group in ("bat", "consumer", "counter", "cp", "pv", "sh", "hc")
+        for values in entry.get(group, {}).values()
+    )
+
+
+def _daily_data_quality(data: Dict, recording_gaps: bool, calculation_status: Dict) -> Dict:
+    return {
+        "version": 1,
+        "restricted": bool(
+            calculation_status["used_fallback"]
+            or (isinstance(data.get("message"), str) and data["message"].strip())
+            or _has_recorded_faults(data["entries"])
+            or recording_gaps
+        )
+    }
+
+
+def _period_data_restricted(content: Dict, period: str, daily: bool) -> bool:
+    quality = content.get("data_quality")
+    if isinstance(quality, dict) and quality.get("version") == 1 and isinstance(quality.get("restricted"), bool):
+        return quality["restricted"]
+    # Legacy caches contain only the last status snapshot. A recorded fault is
+    # sufficient evidence, but a healthy last snapshot cannot rule out earlier issues.
+    if _has_recorded_faults(content.get("entries", [content.get("entry", {})])):
+        return True
+    if isinstance(content.get("message"), str) and content["message"].strip():
+        return True
+    # Recover missing metadata from the underlying period, in memory only.
+    # Never replace cached energy totals or modify historical charge-log entries.
+    source = get_daily_log(period) if daily else get_monthly_log(period)
+    return source.get("data_quality", {}).get("restricted") is True
 
 
 def _collect_daily_log_data(date: str):
@@ -232,6 +289,7 @@ def get_monthly_log(date: str):
     monthly_entries = []
     monthly_names = {}
     monthly_colors = {}
+    restricted = False
 
     today = timecheck.create_timestamp_YYYYMMDD()
     day = f"{date}01"
@@ -254,6 +312,7 @@ def get_monthly_log(date: str):
             daily_entry = content.get("entry")
 
             if isinstance(daily_totals, dict) and isinstance(daily_entry, dict) and len(daily_entry) > 0:
+                restricted = restricted or _period_data_restricted(content, day, daily=True)
                 daily_entry = deepcopy(daily_entry)
                 daily_entry["date"] = day
                 _apply_source_totals(daily_entry, daily_totals)
@@ -267,9 +326,12 @@ def get_monthly_log(date: str):
         day = timecheck.get_relative_date_string(day, day_offset=1)
 
     if len(monthly_entries) > 0:
-        data = {"entries": monthly_entries, "names": monthly_names, "colors": monthly_colors}
+        data = {"entries": monthly_entries, "names": monthly_names, "colors": monthly_colors,
+                "data_quality": {"version": 1, "restricted": restricted}}
         data["totals"] = get_totals(data["entries"], False)
-        data["totals"] = analyse_percentage_totals(data["entries"], data["totals"])
+        calculation_status = {"used_fallback": False}
+        data["totals"] = analyse_percentage_totals(data["entries"], data["totals"], calculation_status)
+        data["data_quality"]["restricted"] |= calculation_status["used_fallback"]
         return data
 
     # Fallback, wenn keine Daten vorhanden sind
@@ -286,6 +348,7 @@ def get_yearly_log(year: str):
     monthly_entries = []
     monthly_names = {}
     monthly_colors = {}
+    restricted = False
     this_month = timecheck.create_timestamp_YYYYMM()
     month = f"{year}01"
 
@@ -307,6 +370,7 @@ def get_yearly_log(year: str):
             monthly_entry = content.get("entry")
 
             if isinstance(monthly_totals, dict) and isinstance(monthly_entry, dict) and len(monthly_entry) > 0:
+                restricted = restricted or _period_data_restricted(content, month, daily=False)
                 monthly_entry = deepcopy(monthly_entry)
                 monthly_entry["date"] = month
                 _apply_source_totals(monthly_entry, monthly_totals)
@@ -319,9 +383,12 @@ def get_yearly_log(year: str):
         month = timecheck.get_relative_date_string(month, month_offset=1)
 
     if len(monthly_entries) > 0:
-        data = {"entries": monthly_entries, "names": monthly_names, "colors": monthly_colors}
+        data = {"entries": monthly_entries, "names": monthly_names, "colors": monthly_colors,
+                "data_quality": {"version": 1, "restricted": restricted}}
         data["totals"] = get_totals(data["entries"], False)
-        data["totals"] = analyse_percentage_totals(data["entries"], data["totals"])
+        calculation_status = {"used_fallback": False}
+        data["totals"] = analyse_percentage_totals(data["entries"], data["totals"], calculation_status)
+        data["data_quality"]["restricted"] |= calculation_status["used_fallback"]
         return data
 
     # Fallback, wenn keine Daten vorhanden sind
@@ -339,17 +406,19 @@ def save_daily_source_totals(date: str, saving: bool = True):
             return None
         data = _collect_daily_log_data(date)
         source_entries = data.get("entries", [])
+        recording_gaps = _has_recording_gaps(source_entries)
 
         # Keep one source snapshot for the daily output entry and process entries in place to avoid full-copy peaks.
         source_daily_entry = _get_last_entry_for_period(source_entries, date, "%Y%m%d")
         processed_entries = _process_entries(source_entries, calculation=CalculationType.ENERGY)
 
         totals = get_totals(processed_entries, process_entries=False)
+        calculation_status = {"used_fallback": False}
         analysed_data = _analyse_energy_source({
             "entries": processed_entries,
             "totals": totals,
             "names": data.get("names", {})
-        })
+        }, calculation_status=calculation_status)
         totals = analysed_data["totals"]
 
         daily_entry = {}
@@ -366,6 +435,7 @@ def save_daily_source_totals(date: str, saving: bool = True):
             "date": date,
             "totals": totals,
             "entry": daily_entry,
+            "data_quality": _daily_data_quality(analysed_data, recording_gaps, calculation_status),
             "names": data.get("names", {}),
             "colors": data.get("colors", {})
         }
@@ -427,6 +497,7 @@ def save_monthly_source_totals(date: str, data: Optional[Dict] = None, saving: b
             "date": date,
             "totals": totals,
             "entry": monthly_entry,
+            "data_quality": {"version": 1, "restricted": _period_data_restricted(data, date, daily=False)},
             "names": data.get("names", {}),
             "colors": data.get("colors", {})
         }

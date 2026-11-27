@@ -460,10 +460,11 @@ def analyse_percentage_totals(entries, totals, calculation_status: Optional[Dict
     return totals
 
 
-def _analyse_energy_source(data, calc_cp: Optional[str] = None) -> Dict:
-    # Charge-log calculations need machine-readable provenance for the selected
-    # charge point. Keep the daily-log payload unchanged when no charge point is requested.
-    calculation_status = {"used_fallback": False} if calc_cp is not None else None
+def _analyse_energy_source(data, calc_cp: Optional[str] = None,
+                           calculation_status: Optional[Dict] = None) -> Dict:
+    # Callers may collect fallback provenance without changing the calculation.
+    if calc_cp is not None and calculation_status is None:
+        calculation_status = {"used_fallback": False}
     if data and len(data["entries"]) > 0:
         try:
             if data.get("message") is None:
@@ -479,6 +480,6 @@ def _analyse_energy_source(data, calc_cp: Optional[str] = None) -> Dict:
             log.exception("Fehler beim Analysieren der Energiequellen")
             pub_system_message({}, "Fehler beim Berechnen des Strom-Mix", MessageType.ERROR)
             data["message"] = "Fehler beim Berechnen des Strom-Mix."
-    if calculation_status is not None:
+    if calc_cp is not None:
         data["used_fallback"] = calculation_status["used_fallback"]
     return data
