@@ -9,7 +9,6 @@
       <component
         :is="chart.component"
         v-bind="chart.name !== 'daily_totals' ? { dashboard: true } : {}"
-        :desktop="chart.name === 'daily_totals'"
         :show-legend="localDataStore.isLegendVisible(chart.name)"
       />
     </div>

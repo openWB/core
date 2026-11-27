@@ -1,76 +1,59 @@
 <template>
-  <div
-    class="component-container"
-    :class="{ 'totals-hidden': hideDailyTotals }"
-  >
-    <div class="component-heading">
-      <!-- Icon -->
-      <div class="col-icon">
-        <component
-          :is="iconMap[props.item.icon as keyof typeof iconMap]"
-          class="base-icon"
-          :style="{ color: props.item.color || 'var(--q-diagram-icon)' }"
-        />
-      </div>
-      <!-- Title -->
-      <div class="col-title text-weight-bold">
-        <div v-if="componentNameVisible" class="title-wrapper">
-          <template v-if="props.item.level === 'secondary'">
-            <div class="ellipsis-wrapper">
-              {{ props.item.title }}
-              <q-tooltip>{{ props.item.title }}</q-tooltip>
-            </div>
-          </template>
-          <template v-else>
-            <div class="ellipsis-wrapper">
-              {{ props.item.title }}
-              <q-tooltip>{{ props.item.title }}</q-tooltip>
-            </div>
-          </template>
-          <!-- Expansion chevron icon -->
-          <q-icon
-            v-if="secondaryComponentsConfigured"
-            name="keyboard_arrow_down"
-            :class="['expand-icon', { 'rotate-180': rowExpanded }]"
-          />
+  <div class="component-container">
+    <!-- Icon -->
+    <div class="col-icon">
+      <component
+        :is="iconMap[props.item.icon as keyof typeof iconMap]"
+        class="base-icon"
+        :style="{ color: props.item.color || 'var(--q-diagram-icon)' }"
+      />
+    </div>
+    <!-- Title -->
+    <div class="col-title text-weight-bold">
+      <div v-if="componentNameVisible" class="title-wrapper">
+        <div class="ellipsis-wrapper">
+          {{ props.item.title }}
+          <q-tooltip>{{ props.item.title }}</q-tooltip>
         </div>
+        <!-- Expansion chevron icon -->
+        <q-icon
+          v-if="secondaryComponentsConfigured"
+          name="keyboard_arrow_down"
+          :class="['expand-icon', { 'rotate-180': rowExpanded }]"
+        />
       </div>
     </div>
-    <div class="component-reading">
-      <!-- SOC -->
-      <div :class="props.socValueVisible ? 'col-soc' : 'col-soc-spacer'">
-        <span
-          v-if="
-            props.socValueVisible &&
-            props.item.icon === 'battery' &&
-            Number.isFinite(props.item.soc)
-          "
-        >
-          {{ props.item.soc }}%
-        </span>
-      </div>
-      <!-- Arrow -->
-      <div class="col-arrow">
-        <q-icon
-          v-if="props.currentPowerVisible && props.item.power !== undefined"
-          :name="arrowDirection.noCurrent ? 'horizontal_rule' : 'double_arrow'"
-          :class="{ 'rotate-180': arrowDirection.rotate180 }"
-        />
-      </div>
-      <!-- Power -->
-      <div class="col-power">
-        <span
-          v-if="props.currentPowerVisible && props.item.power !== undefined"
-        >
-          {{ props.item.power.replace('-', '') }}
-        </span>
-      </div>
+    <!-- SOC -->
+    <div :class="props.socValueVisible ? 'col-soc' : 'col-soc-spacer'">
+      <span
+        v-if="
+          props.socValueVisible &&
+          props.item.icon === 'battery' &&
+          Number.isFinite(props.item.soc)
+        "
+      >
+        {{ props.item.soc }}%
+      </span>
+    </div>
+    <!-- Arrow -->
+    <div class="col-arrow">
+      <q-icon
+        v-if="props.currentPowerVisible && props.item.power !== undefined"
+        :name="arrowDirection.noCurrent ? 'horizontal_rule' : 'double_arrow'"
+        :class="{ 'rotate-180': arrowDirection.rotate180 }"
+      />
+    </div>
+    <!-- Power -->
+    <div class="col-power">
+      <span v-if="props.currentPowerVisible && props.item.power !== undefined">
+        {{ props.item.power.replace('-', '') }}
+      </span>
     </div>
 
     <div class="col-flex"></div>
 
     <!-- Right label -->
-    <div v-if="!hideDailyTotals" class="col-right-label text-weight-bold">
+    <div class="col-right-label text-weight-bold">
       <slot name="right-label" :item="props.item">
         <template
           v-if="
@@ -86,7 +69,7 @@
       </slot>
     </div>
     <!-- Right value -->
-    <div v-if="!hideDailyTotals" class="col-right-value">
+    <div class="col-right-value">
       <slot name="right-value" :item="props.item">
         <template
           v-if="
@@ -107,6 +90,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import type { DailyTotalsItem } from 'src/components/models/daily-totals-model';
+import { powerArrow } from 'src/composables/useDailyTotalsData';
 import BatteryIcon from 'src/assets/icons/owbBattery_2.svg?component';
 import GridIcon from 'src/assets/icons/owbGrid.svg?component';
 import PvIcon from 'src/assets/icons/owbPV.svg?component';
@@ -124,21 +108,11 @@ const props = defineProps<{
   socValueVisible: boolean;
   secondaryComponentsConfigured?: boolean;
   rowExpanded?: boolean;
-  hideDailyTotals?: boolean;
 }>();
 
 const rowHeightCssValue = computed(() => `${props.rowHeight}px`);
 
-const arrowDirection = computed(() => {
-  const value = props.item.powerValue ?? 0;
-  const noCurrent = !Number.isFinite(value) || value === 0;
-  const isCounter =
-    props.item.id === 'grid' || props.item.id.startsWith('counter-');
-  return {
-    noCurrent,
-    rotate180: !noCurrent && (isCounter ? value < 0 : value > 0),
-  };
-});
+const arrowDirection = computed(() => powerArrow(props.item));
 
 const iconMap = {
   grid: GridIcon,
@@ -163,15 +137,9 @@ const iconMap = {
   padding-inline: 0.5rem;
 }
 /* allow columns to shrink properly in flex layout */
-.component-container > div,
-.component-heading > div,
-.component-reading > div {
+.component-container > div {
   min-width: 0;
   flex-shrink: 1;
-}
-.component-heading,
-.component-reading {
-  display: contents;
 }
 .col-icon {
   flex: 0 0 2rem;
