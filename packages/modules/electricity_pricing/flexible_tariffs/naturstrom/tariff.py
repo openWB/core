@@ -9,6 +9,7 @@ from dataclass_utils import asdict
 from modules.common import req
 from modules.common.abstract_device import DeviceDescriptor
 from modules.common.component_state import TariffState
+from modules.common.tariff_errors import PermanentTariffError
 from modules.electricity_pricing.flexible_tariffs.naturstrom.config import NaturstromTariff, NaturstromToken
 
 from helpermodules import timecheck
@@ -67,14 +68,14 @@ def validate_token(config: NaturstromTariff) -> None:
         _refresh_token(config)
     else:
         # Kein Refresh Token vorhanden. Authentifizierung erforderlich.
-        raise Exception(
+        raise PermanentTariffError(
             "Refresh Token ist nicht vorhanden. Bitte authentifizieren Sie sich erneut.")
 
 
 def _refresh_token(config: NaturstromTariff) -> None:
     """Erneuert den Access Token mit dem Refresh Token."""
     if not config.configuration.token.refresh_token:
-        raise Exception(
+        raise PermanentTariffError(
             "Access Token ist abgelaufen und kein Refresh Token vorhanden. Bitte authentifizieren Sie sich erneut.")
 
     log.debug("Versuche Access Token mit Refresh Token zu erneuern.")
@@ -99,6 +100,10 @@ def _refresh_token(config: NaturstromTariff) -> None:
         Pub().pub("openWB/set/optional/ep/flexible_tariff/provider", asdict(config))
         log.debug("Token erfolgreich erneuert.")
     except HTTPError as e:
+        if e.response is not None and e.response.status_code in (400, 401, 403):
+            # z.B. invalid_grant: der Refresh Token ist abgelaufen oder widerrufen
+            raise PermanentTariffError(
+                f"Token-Erneuerung fehlgeschlagen, bitte authentifizieren Sie sich erneut: {e}.") from e
         raise Exception(f"Token-Erneuerung fehlgeschlagen: {e}.") from e
 
 

@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
-import math
 import random
-from typing import TypeVar, Generic, Callable
+from typing import Dict, TypeVar, Generic, Callable
+import requests
 from helpermodules import timecheck
 import logging
 from helpermodules.pub import Pub
@@ -10,26 +10,30 @@ from modules.common.component_context import SingleComponentUpdateContext
 from modules.common.component_state import TariffState
 from modules.common.component_type import ComponentType
 from modules.common.fault_state import ComponentInfo, FaultState
+from modules.common.tariff_errors import PermanentTariffError
 from control.optional_data import OptionalData, PricingGet
 
 
 # Stunden für tägliche Tarifaktualisierung, manche Anbieter aktualisieren mehrfach täglich
 T_TARIFF_CONFIG = TypeVar("T_TARIFF_CONFIG")
 ONE_HOUR_SECONDS: int = 3600
-# Wartezeit vor dem nächsten Versuch nach einem Abruf ohne neue Preise oder einer Exception (siehe #3703)
+# Die Preise für den Folgetag werden je nach Anbieter ab ca. 14 bis 18 Uhr veröffentlicht. Für alle Anbieter gleich:
+# erster Abruf 5-30 Minuten vor 14 Uhr (zufällig, um die Last der Anbieter zu verteilen), danach stündlich,
+# bis sie da sind.
+FIRST_TRY_HOUR: int = 14
+RETRY_INTERVAL_SECONDS: int = ONE_HOUR_SECONDS
+# Ab dieser Uhrzeit wird ein fehlender Folgetag gewarnt, der Abruf läuft stündlich weiter
+TOMORROW_WARNING_HOUR: int = 19
+# Wartezeit nach einer Exception oder wenn kein Preis den aktuellen Zeitpunkt abdeckt (siehe #3703)
 RETRY_BACKOFF_SECONDS: int = 5 * 60
-# So viele Stunden nach der ersten konfigurierten Tarifaktualisierungsstunde löst ein immer noch
-# fehlender Preis für den Folgetag eine Warnung aus statt stillschweigend weiter zu versuchen -
-# vorher ist das noch der normale, erwartete Fall
-LATE_WARNING_OFFSET_HOURS: int = 2
+# Nach einem dauerhaften Fehler (z.B. falsche Zugangsdaten) wird erst nach einer Änderung der Konfiguration
+# wieder abgefragt
+PERMANENT_ERROR_PARK_SECONDS: int = 365 * 24 * ONE_HOUR_SECONDS
 
 log = logging.getLogger(__name__)
 
 
 class ConfigurableTariff(Generic[T_TARIFF_CONFIG]):
-    # Default value, may be overridden in __init__ if config provides it
-    tariff_update_hours = [14]
-
     def __init__(self,
                  config: T_TARIFF_CONFIG,
                  component_initializer: Callable[[], float],
@@ -39,9 +43,8 @@ class ConfigurableTariff(Generic[T_TARIFF_CONFIG]):
         self.get = get
         self.tariff_type = tariff_type
 
-        # Set update_hours from config if available, else default to [14]
-        if hasattr(config.configuration, 'update_hours') and config.configuration.update_hours is not None:
-            self.tariff_update_hours = config.configuration.update_hours
+        # Anbieter, die erst um 0 Uhr die Preise des laufenden Tages liefern, haben keine Folgetagspreise
+        self.publishes_day_ahead = getattr(config, "publishes_day_ahead", True)
 
         # nach Init auf NO_ERROR setzen, damit der Fehlerstatus beim Modulwechsel gelöscht wird
         self.fault_state.no_error()
@@ -63,10 +66,19 @@ class ConfigurableTariff(Generic[T_TARIFF_CONFIG]):
                     with SingleComponentUpdateContext(self.fault_state, reraise=True):
                         tariff_state, timeslot_length_seconds = self.__update_et_provider_data()
                         self.__store_and_publish_updated_data(tariff_state)
+                        # erst nach dem Speichern der Preise, sonst passt der Zeitplan nach einem Abbruch nicht zu den
+                        # gespeicherten Preisen
+                        self._schedule_next_query(tariff_state.prices, timeslot_length_seconds)
                         self.__finalize_update_status(timeslot_length_seconds, tariff_state)
                 except Exception as e:
                     log.exception(f"Fehler beim Aktualisieren der Tarifdaten {e}")
-                    self._delay_next_query()
+                    if self._is_permanent_error(e):
+                        self.fault_state.error(f"{self.fault_state.fault_str} - Es wird erst nach einer Änderung der "
+                                               "Konfiguration erneut abgefragt.")
+                        self.fault_state.store_error()
+                        self._set_next_query_time(int(timecheck.create_timestamp()) + PERMANENT_ERROR_PARK_SECONDS)
+                    else:
+                        self._delay_next_query()
             else:
                 log.info(f"nächste Tarifaktualisierung für {self.tariff_type}" +
                          f" um {datetime.fromtimestamp(self.get.next_query_time)}")
@@ -77,64 +89,64 @@ class ConfigurableTariff(Generic[T_TARIFF_CONFIG]):
         tariff_state = self._remove_outdated_prices(tariff_state, timeslot_length_seconds)
         return tariff_state, timeslot_length_seconds
 
-    def _calculate_next_query_time(self, latest_price_timestamp: datetime) -> None:
-        now = datetime.now()
-        current_hour = now.hour + 1  # next full hour
-        log.debug(f"Aktuelle Tarif Update Stunde: {current_hour} Uhr."
-                  f" Berechne nächsten Abruf der {self.tariff_type} Strompreise.")
-        log.debug(f"Konfigurierte Tarifaktualisierungsstunden für {self.tariff_type} : {self.tariff_update_hours}")
-        next_hour = min([hour for hour in self.tariff_update_hours
-                         if hour > current_hour], default=self.tariff_update_hours[0])
-        log.debug(f"Nächste Tarifaktualisierungsstunde: {next_hour} Uhr.")
-        day_offset = 0 if next_hour > current_hour else 1
-        log.debug(f"Berechneter Tagsoffset für nächsten Abruf: {day_offset} Tage.")
+    @staticmethod
+    def _is_permanent_error(exception: Exception) -> bool:
+        if isinstance(exception, PermanentTariffError):
+            return True
+        return (isinstance(exception, requests.HTTPError) and exception.response is not None and
+                exception.response.status_code in (401, 403))
 
-        # reduce serverload on their site by trying early and randomizing query time minutes and seconds
-        next_query_time = (now.replace(hour=next_hour, minute=0, second=0, microsecond=0) +
-                           timedelta(days=day_offset, minutes=random.randint(1, 7) * -5))
-        if latest_price_timestamp < next_query_time:
-            tomorrow_start = (now + timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
-            warning_hour = min(self.tariff_update_hours) + LATE_WARNING_OFFSET_HOURS
-            if latest_price_timestamp < tomorrow_start and now.hour < warning_hour:
-                # Noch keine Preise für den Folgetag und die Warnschwelle ist noch nicht erreicht:
-                # kurzer Backoff statt auf das Ende der heute schon bekannten Preise zu springen.
-                # Sonst würde bei Anbietern mit rollierender Tagesantwort (Preise reichen jeden
-                # Abruf etwas weiter in den noch laufenden Tag, ohne je den Folgetag zu erreichen)
-                # der Abruf für Stunden pausiert, noch bevor überhaupt die Warnschwelle erreicht ist
-                # (siehe #3703).
-                self._delay_next_query()
-                return
-            # Falls die Preise nicht bis zum nächsten geplanten Abruf gültig sind,
-            # den Abruf auf die Gültigkeitsdauer der Preise setzen
-            log.debug(f"Die Preise sind nur bis {latest_price_timestamp} gültig, "
-                      f"setze nächsten Abruf auf dieses Datum.")
-            next_query_time = latest_price_timestamp
-        if next_query_time <= now:
-            # Zeit um so viele volle Stunden erhöhen, bis sie in der Zukunft liegt, Minute-Offset bleibt erhalten
-            delta_seconds = (now - next_query_time).total_seconds()
-            hours_to_add = max(1, math.floor(delta_seconds / ONE_HOUR_SECONDS) + 1)
-            next_query_time = next_query_time + timedelta(hours=hours_to_add)
-        self.get.next_query_time = int(next_query_time.timestamp())
-        log.debug(f"Nächster Abruf der {self.tariff_type} Strompreise geplant für:"
-                  f" {next_query_time} (Unix Timestamp: {self.get.next_query_time})")
-        Pub().pub(f"openWB/set/optional/ep/{self.tariff_type}/get/next_query_time", int(next_query_time.timestamp()))
+    @staticmethod
+    def _first_try(day: datetime) -> datetime:
+        return day.replace(hour=FIRST_TRY_HOUR, minute=0, second=0, microsecond=0) - timedelta(
+            minutes=random.randint(1, 6) * 5)
+
+    def _schedule_next_query(self, prices: Dict[str, float], timeslot_length_seconds: int) -> None:
+        now = datetime.now()
+        if not prices:
+            self._delay_next_query(RETRY_INTERVAL_SECONDS)
+            return
+        latest_start = datetime.fromtimestamp(max(int(ts) for ts in prices))
+        prices_end = latest_start + timedelta(seconds=timeslot_length_seconds)
+        if prices_end <= now:
+            # Kein Preis für den aktuellen Zeitpunkt: bei Anbietern, die um 0 Uhr die Preise des Tages liefern, ist das
+            # kurz nach Mitternacht normal, sonst eine Störung des Anbieters, die nicht minütlich abgefragt werden muss
+            self._delay_next_query(RETRY_BACKOFF_SECONDS if not self.publishes_day_ahead else RETRY_INTERVAL_SECONDS)
+            return
+        if not self.publishes_day_ahead:
+            next_query = prices_end
+        else:
+            tomorrow = now + timedelta(days=1)
+            tomorrow_start = tomorrow.replace(hour=0, minute=0, second=0, microsecond=0)
+            if latest_start >= tomorrow_start:
+                next_query = self._first_try(tomorrow)
+            else:
+                # Folgetag fehlt: bis zum ersten Abruf des Tages warten, danach stündlich wiederholen. Nach Mitternacht
+                # endet damit die Wiederholung (siehe #3703: rollierende Antworten erreichen den Folgetag nie).
+                first_try = self._first_try(now)
+                next_query = first_try if now < first_try else now + timedelta(seconds=RETRY_INTERVAL_SECONDS)
+        # spätestens, wenn die bekannten Preise ablaufen
+        next_query = min(next_query, prices_end)
+        self._set_next_query_time(int(next_query.timestamp()))
+        log.debug(f"Nächster Abruf der {self.tariff_type} Strompreise geplant für: {next_query}")
 
     def __call_component_updater(self) -> TariffState:
-        last_known_timestamp = datetime.fromtimestamp(max((int(ts) for ts in self.get.prices.keys()), default=0))
         tariff_state = self._component_updater()
-        latest_price_timestamp = datetime.fromtimestamp(max((int(ts) for ts in tariff_state.prices.keys()), default=0))
-        if last_known_timestamp < latest_price_timestamp:
-            self._calculate_next_query_time(latest_price_timestamp)
-        else:
-            # Anbieter hat (noch) keine neueren Preise geliefert, z.B. weil die Preise für den
-            # Folgetag noch nicht veröffentlicht sind - ohne Backoff würde sonst jeden Regelzyklus
-            # neu abgefragt, bis es welche gibt (siehe #3703)
-            self._delay_next_query()
+        # nach dem Abruf lesen: dauert er lange, kann ein anderer Abruf inzwischen neuere Preise gespeichert haben
+        last_known_timestamp = max((int(ts) for ts in self.get.prices.keys()), default=0)
+        latest_price_timestamp = max((int(ts) for ts in tariff_state.prices.keys()), default=0)
+        if latest_price_timestamp <= last_known_timestamp:
+            # Keine neueren Preise, z.B. weil die Preise für den Folgetag noch nicht veröffentlicht sind: die
+            # bekannten Preise behalten (siehe #3703)
+            tariff_state = TariffState(prices=dict(self.get.prices))
         return tariff_state
 
-    def _delay_next_query(self) -> None:
-        self.get.next_query_time = int(timecheck.create_timestamp()) + RETRY_BACKOFF_SECONDS
-        Pub().pub(f"openWB/set/optional/ep/{self.tariff_type}/get/next_query_time", self.get.next_query_time)
+    def _delay_next_query(self, seconds: int = RETRY_BACKOFF_SECONDS) -> None:
+        self._set_next_query_time(int(timecheck.create_timestamp()) + seconds)
+
+    def _set_next_query_time(self, next_query_time: int) -> None:
+        self.get.next_query_time = next_query_time
+        Pub().pub(f"openWB/set/optional/ep/{self.tariff_type}/get/next_query_time", next_query_time)
 
     def __finalize_update_status(self, timeslot_length_seconds: int, tariff_state: TariffState) -> None:
         # einziger Ort, der den fault_state setzt - sonst überschreibt ein abschließendes no_error()
@@ -156,8 +168,7 @@ class ConfigurableTariff(Generic[T_TARIFF_CONFIG]):
 
     def __is_tomorrow_price_missing_after_late_hour(self, tariff_state: TariffState) -> bool:
         now = datetime.now()
-        warning_hour = min(self.tariff_update_hours) + LATE_WARNING_OFFSET_HOURS
-        if now.hour < warning_hour:
+        if not self.publishes_day_ahead or now.hour < TOMORROW_WARNING_HOUR:
             return False
         # Datum vor dem Nullsetzen der Uhrzeit erhöhen - +24h in Sekunden träfe an Tagen mit Zeitumstellung
         # nicht auf Mitternacht

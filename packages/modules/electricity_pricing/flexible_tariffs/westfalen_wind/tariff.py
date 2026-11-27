@@ -12,9 +12,12 @@ from helpermodules.pub import Pub
 from modules.common import req
 from modules.common.abstract_device import DeviceDescriptor
 from modules.common.component_state import TariffState
+from modules.common.tariff_errors import PermanentTariffError
 from modules.electricity_pricing.flexible_tariffs.westfalen_wind.config import WestfalenWindTariff, WestfalenWindToken
 
 log = logging.getLogger(__name__)
+# mit abschließendem Slash, sonst leitet der Server per HTTP (Passwort im Klartext) um
+TOKEN_URL = 'https://api.wws.tarifdynamik.de/public/tokens/'
 
 
 def validate_token(config: WestfalenWindTariff) -> None:
@@ -44,7 +47,7 @@ def validate_token(config: WestfalenWindTariff) -> None:
 def _authenticate(config: WestfalenWindTariff) -> None:
     """Authentifizierung mit Benutzername und Passwort."""
     if not config.configuration.username or not config.configuration.password:
-        raise ValueError("Benutzername und Passwort sind für die Authentifizierung erforderlich.")
+        raise PermanentTariffError("Benutzername und Passwort sind für die Authentifizierung erforderlich.")
 
     data = {
         'grant_type': 'password',
@@ -52,7 +55,7 @@ def _authenticate(config: WestfalenWindTariff) -> None:
         'password': config.configuration.password
     }
     token_data = req.get_http_session().post(
-        'https://api.wws.tarifdynamik.de/public/tokens',
+        TOKEN_URL,
         data=data,
         headers={'Content-Type': 'application/x-www-form-urlencoded'}
     ).json()
@@ -81,7 +84,7 @@ def _refresh_token(config: WestfalenWindTariff) -> None:
     }
     try:
         token_data = req.get_http_session().post(
-            'https://api.wws.tarifdynamik.de/public/tokens',
+            TOKEN_URL,
             data=data,
             headers={'Content-Type': 'application/x-www-form-urlencoded'}
         ).json()

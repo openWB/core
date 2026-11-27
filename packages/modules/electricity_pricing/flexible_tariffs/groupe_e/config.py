@@ -3,7 +3,7 @@ from dataclasses import dataclass, field
 
 @dataclass
 class GroupeETariffConfiguration:
-    country: str = "ch"
+    country: str = "ch"  # Themes zeigen bei "ch" Rp statt ct
     unit: str = "Rp"
 
 

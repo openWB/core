@@ -4,6 +4,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
+from modules.common.tariff_errors import PermanentTariffError
 from modules.electricity_pricing.flexible_tariffs.octopusenergy import tariff
 from modules.electricity_pricing.flexible_tariffs.octopusenergy.tariff import build_tariff_state, OctopusEnergyApiError
 
@@ -157,6 +158,35 @@ def test_build_tariff_state_prefers_unit_rate_forecast_for_dynamic_tariffs(monke
     assert prices['1793624400'] == pytest.approx(0.0008)  # 2026-11-02 13:03 UTC, second forecast interval (80 ct)
 
 
+def test_build_tariff_state_keeps_the_forecast_until_the_end_of_tomorrow(monkeypatch):
+    # früher endete alles 28 Stunden nach dem Abruf, dann fehlte der Abend von morgen
+    def hour(start: str, end: str, rate: str) -> dict:
+        return {'validFrom': start, 'validTo': end,
+                'unitRateInformation': {'__typename': 'SimpleProductUnitRateInformation',
+                                        'latestGrossUnitRateCentsPerKwh': rate}}
+
+    data = {'account': {'property': {'electricityMalos': [{'agreements': [
+        {'id': 1,
+         'unitRateInformation': ALL_DAY_RATE,
+         'unitRateForecast': [
+             hour('2026-11-02T12:00:00+00:00', '2026-11-02T13:00:00+00:00', '10'),
+             # morgen 22:00 UTC = 23:00 Uhr, mehr als 28 Stunden nach dem Abruf, aber noch morgen
+             hour('2026-11-03T22:00:00+00:00', '2026-11-03T23:00:00+00:00', '20'),
+             # ab Mitternacht übermorgen gehört nicht mehr dazu
+             hour('2026-11-03T23:00:00+00:00', '2026-11-04T00:00:00+00:00', '30'),
+         ],
+         'validFrom': '2026-01-01T00:00:00+00:00',
+         'validTo': None}]}]}}}
+    datetime_mock = MagicMock(wraps=datetime)
+    datetime_mock.now.return_value = datetime(2026, 11, 2, 12, 3, 0, tzinfo=timezone.utc)
+    monkeypatch.setattr(tariff, "datetime", datetime_mock)
+
+    prices = build_tariff_state(data)
+
+    assert prices[str(int(datetime(2026, 11, 3, 22, 0, tzinfo=timezone.utc).timestamp()))] == pytest.approx(0.0002)
+    assert str(int(datetime(2026, 11, 3, 23, 0, tzinfo=timezone.utc).timestamp())) not in prices
+
+
 def test_build_tariff_state_keeps_forecasts_own_quarter_hour_resolution(monkeypatch):
     def quarter_hour(minute: int, rate: str) -> dict:
         start = f"2026-11-02T12:{minute:02d}:00+00:00"
@@ -283,15 +313,31 @@ def test_graphql_request_raises_on_graphql_errors(monkeypatch):
     mock_response = MagicMock()
     mock_response.status_code = 200
     mock_response.json.return_value = {
-        "errors": [{"message": "Token invalid or expired"}]
+        "errors": [{"message": "Invalid data.", "extensions": {"errorCode": "KT-CT-1138"}}]
     }
     mock_session = MagicMock()
     mock_session.post.return_value = mock_response
     monkeypatch.setattr(tariff.req, "get_http_session", lambda: mock_session)
 
-    # execution & assert: Authentifizierung im Konstruktor schlägt fehl
-    with pytest.raises(OctopusEnergyApiError, match="Token invalid or expired"):
+    # execution & assert: falsche Zugangsdaten bei der Anmeldung sind ein dauerhafter Fehler
+    with pytest.raises(PermanentTariffError, match="Invalid data"):
         tariff.OctopusEnergyClient(email="test@example.com", password="secret")
+
+
+def test_temporary_error_during_the_login_is_not_permanent(monkeypatch):
+    mock_response = MagicMock()
+    mock_response.status_code = 200
+    mock_response.json.return_value = {
+        "errors": [{"message": "Temporary error occurred.", "extensions": {"errorCode": "KT-CT-3956"}}]
+    }
+    mock_session = MagicMock()
+    mock_session.post.return_value = mock_response
+    monkeypatch.setattr(tariff.req, "get_http_session", lambda: mock_session)
+
+    with pytest.raises(OctopusEnergyApiError, match="Temporary error") as error:
+        tariff.OctopusEnergyClient(email="test@example.com", password="secret")
+
+    assert not isinstance(error.value, PermanentTariffError)
 
 
 def test_graphql_request_raises_on_missing_data_field(monkeypatch):

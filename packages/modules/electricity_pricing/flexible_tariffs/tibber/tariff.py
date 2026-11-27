@@ -4,6 +4,7 @@ from helpermodules import timecheck
 from modules.common.abstract_device import DeviceDescriptor
 from modules.common.component_state import TariffState
 from modules.common import req
+from modules.common.tariff_errors import PermanentTariffError
 from modules.electricity_pricing.flexible_tariffs.tibber.config import TibberTariffConfiguration
 from modules.electricity_pricing.flexible_tariffs.tibber.config import TibberTariff
 import json
@@ -53,8 +54,10 @@ def fetch_prices(config: TibberTariffConfiguration) -> dict[str, float]:
         sorted_market_prices = {**today_prices, **tomorrow_prices}
         return sorted_market_prices
     else:
-        error = response_json['errors'][0]['message']
-        raise Exception(error)
+        error = response_json['errors'][0]
+        if (error.get('extensions') or {}).get('code') == 'UNAUTHENTICATED':
+            raise PermanentTariffError(f"Tibber-Token ungültig: {error['message']}")
+        raise Exception(error['message'])
 
 
 def create_electricity_tariff(config: TibberTariff) -> Callable[[], TariffState]:

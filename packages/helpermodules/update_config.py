@@ -64,7 +64,7 @@ NO_MODULE = {"type": None, "configuration": {}}
 
 class UpdateConfig:
 
-    DATASTORE_VERSION = 163
+    DATASTORE_VERSION = 164
 
     valid_topic = [
         "^openWB/bat/config/bat_control_activated$",
@@ -4389,3 +4389,19 @@ class UpdateConfig:
                 {}, "Der Strompreis-Anbieter Voltego hat den Betrieb eingestellt und wurde entfernt. Bitte unter "
                 "Einstellungen -> Konfiguration -> Strompreise einen anderen Anbieter wählen.", MessageType.WARNING)
         self._append_datastore_version(163)
+
+    def upgrade_datastore_164(self) -> None:
+        """Die Abrufzeiten der Strompreisanbieter stehen jetzt im Code (Standard 14 Uhr), update_hours aus den
+        gespeicherten Konfigurationen entfernen."""
+        def upgrade(topic: str, payload) -> Optional[dict]:
+            if ("openWB/optional/ep/flexible_tariff/provider" == topic or
+                    "openWB/optional/ep/grid_fee/provider" == topic):
+                provider = decode_payload(payload)
+                configuration = provider.get("configuration")
+                if isinstance(configuration, dict) and "update_hours" in configuration:
+                    del configuration["update_hours"]
+                    return {topic: provider}
+            return None
+
+        self._loop_all_received_topics(upgrade)
+        self._append_datastore_version(164)

@@ -1,5 +1,6 @@
 import pytest
 
+from modules.common.tariff_errors import PermanentTariffError
 from modules.electricity_pricing.flexible_tariffs.ews_schoenau.config import EwsSchoenauTariffConfiguration
 from modules.electricity_pricing.flexible_tariffs.ews_schoenau.tariff import URL, fetch_prices
 
@@ -39,5 +40,5 @@ def test_fetch_prices_without_any_prices(requests_mock):
 
 
 def test_fetch_prices_without_api_key():
-    with pytest.raises(ValueError):
+    with pytest.raises(PermanentTariffError):
         fetch_prices(EwsSchoenauTariffConfiguration())

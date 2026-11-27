@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import logging
 import pytz
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, time, timedelta, timezone
 from typing import Dict, Optional
 
 from modules.electricity_pricing.flexible_tariffs.octopusenergy.config import (OctopusEnergyTariffConfiguration,
@@ -9,6 +9,7 @@ from modules.electricity_pricing.flexible_tariffs.octopusenergy.config import (O
 from modules.common import req
 from modules.common.abstract_device import DeviceDescriptor
 from modules.common.component_state import TariffState
+from modules.common.tariff_errors import PermanentTariffError
 
 log = logging.getLogger(__name__)
 
@@ -19,6 +20,18 @@ class OctopusEnergyApiError(Exception):
     """Wird geworfen, wenn die Kraken-API kein verwertbares 'data'-Feld liefert
     (z.B. GraphQL-Fehler, abgelaufener Token, Wartungsarbeiten bei Octopus)."""
     pass
+
+
+class OctopusEnergyGraphQlError(OctopusEnergyApiError):
+    """Die API hat mit HTTP 200 ein 'errors'-Array geliefert."""
+
+    def __init__(self, message: str, error_codes=()):
+        super().__init__(message)
+        self.error_codes = list(error_codes)
+
+
+# errorCode der Anmeldung mit falschen Zugangsdaten (gegen die API geprüft), alle anderen Fehler werden wiederholt
+INVALID_CREDENTIALS_CODE = "KT-CT-1138"
 
 
 class OctopusEnergyClient:
@@ -54,7 +67,8 @@ class OctopusEnergyClient:
             error_messages = "; ".join(
                 err.get("message", str(err)) for err in body["errors"]
             )
-            raise OctopusEnergyApiError(f"GraphQL-Fehler: {error_messages}")
+            error_codes = [(err.get("extensions") or {}).get("errorCode") for err in body["errors"]]
+            raise OctopusEnergyGraphQlError(f"GraphQL-Fehler: {error_messages}", error_codes)
 
         data = body.get("data")
         if data is None:
@@ -72,10 +86,16 @@ class OctopusEnergyClient:
         }
         """
         variables = {"email": email, "password": password}
-        data = self._graphql_request(mutation, variables)
+        try:
+            data = self._graphql_request(mutation, variables)
+        except OctopusEnergyGraphQlError as e:
+            if INVALID_CREDENTIALS_CODE in e.error_codes:
+                raise PermanentTariffError(
+                    f"Anmeldung bei Octopus fehlgeschlagen, bitte E-Mail und Passwort prüfen: {e}") from e
+            raise
 
         if "obtainKrakenToken" not in data or data["obtainKrakenToken"] is None:
-            raise OctopusEnergyApiError("Authentifizierung fehlgeschlagen: Kein Token in der Antwort enthalten.")
+            raise PermanentTariffError("Anmeldung bei Octopus fehlgeschlagen: Kein Token in der Antwort enthalten.")
 
         self.token = data["obtainKrakenToken"]["token"]
 
@@ -200,13 +220,21 @@ def agreement_active_at(agreement: dict, time_utc: datetime) -> bool:
     return valid_from <= time_utc <= valid_to
 
 
-def process_agreement(agreement: dict, current_utc: datetime, horizon_utc: datetime, prices: Dict[str, float]):
+def end_of_tomorrow(current_utc: datetime) -> datetime:
+    day_after_tomorrow = datetime.combine(current_utc.astimezone(GERMAN_TZ).date() + timedelta(days=2), time())
+    return GERMAN_TZ.localize(day_after_tomorrow).astimezone(timezone.utc)
+
+
+def process_agreement(agreement: dict, current_utc: datetime, horizon_utc: datetime, prices: Dict[str, float],
+                      forecast_horizon_utc: Optional[datetime] = None):
+    # Der Forecast reicht bis Ende morgen (Octopus liefert heute und morgen), sonst fehlt morgen Abend
+    forecast_horizon_utc = forecast_horizon_utc or horizon_utc
     forecast = agreement.get('unitRateForecast') or []
     forecast_intervals = []
     for entry in forecast:
         valid_from = parse_datetime(entry['validFrom'])
-        valid_to = parse_datetime(entry['validTo']) if entry.get('validTo') else horizon_utc
-        if valid_to <= current_utc or valid_from >= horizon_utc:
+        valid_to = parse_datetime(entry['validTo']) if entry.get('validTo') else forecast_horizon_utc
+        if valid_to <= current_utc or valid_from >= forecast_horizon_utc:
             continue
         forecast_intervals.append((valid_from, valid_to))
         if agreement_active_at(agreement, valid_from):
@@ -221,7 +249,7 @@ def process_agreement(agreement: dict, current_utc: datetime, horizon_utc: datet
     if forecast_intervals:
         step = forecast_intervals[0][1] - forecast_intervals[0][0]
         round_to_hour = False
-        fill_until = min(max(end for _, end in forecast_intervals), horizon_utc)
+        fill_until = min(max(end for _, end in forecast_intervals), forecast_horizon_utc)
     elif forecast:
         return  # Forecast ohne aktuelle Einträge: keine Platzhalter
     else:
@@ -259,7 +287,7 @@ def build_tariff_state(data: dict) -> Dict[str, float]:
         raise OctopusEnergyApiError(error_message)
 
     for agreement in malos[0]['agreements']:
-        process_agreement(agreement, current_utc, horizon_utc, prices)
+        process_agreement(agreement, current_utc, horizon_utc, prices, end_of_tomorrow(current_utc))
 
     sorted_prices = dict(sorted(prices.items()))
     return sorted_prices

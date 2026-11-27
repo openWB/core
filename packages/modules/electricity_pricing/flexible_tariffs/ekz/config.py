@@ -3,9 +3,8 @@ from dataclasses import dataclass, field
 
 @dataclass
 class EkzTariffConfiguration:
-    country: str = "ch"
+    country: str = "ch"  # Themes zeigen bei "ch" Rp statt ct
     unit: str = "Rp"
-    update_hours: list[int] = field(default_factory=lambda: [18, 19])
 
 
 @dataclass

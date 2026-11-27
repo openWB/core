@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from dateutil import tz
 from urllib.parse import quote
 from typing import Dict
@@ -16,19 +16,21 @@ def timestamp(power):
                    .astimezone(tz.tzutc()).timestamp()))
 
 
-# Read prices from Groupe E API
+# Read prices from Groupe E API (v2, v1 wurde abgeschaltet)
 def readApi() -> list[tuple[str, float]]:
-    endpoint = "https://api.tariffs.groupe-e.ch/v1/tariffs"
-    tariffName = "vario_plus"
-    startDate = datetime.now().strftime("%Y-%m-%dT%H:00:00+01:00")
-    endDate = (datetime.now() + timedelta(days=2)).strftime("%Y-%m-%dT%H:00:00+01:00")
-    session = req.get_http_session()
-    prices_raw = session.get(
+    endpoint = "https://api.tariffs.groupe-e.ch/v2/tariffs"
+    utcnow = datetime.now(timezone.utc)
+    startDate = utcnow.strftime("%Y-%m-%dT%H:00:00Z")
+    endDate = (utcnow + timedelta(days=2)).strftime("%Y-%m-%dT%H:00:00Z")
+    prices_raw = req.get_http_session().get(
         url=endpoint +
         f"?start_timestamp={quote(startDate)}&end_timestamp={quote(endDate)}",
-    ).json()
-    return [(timestamp(power), (power[tariffName]/100000))
-            for power in prices_raw]
+    ).json()["prices"]
+    return [(timestamp(price), integrated_price(price) / 1000) for price in prices_raw]  # CHF/kWh -> CHF/Wh
+
+
+def integrated_price(price) -> float:
+    return next(entry["value"] for entry in price["integrated"] if entry["unit"] == "CHF_kWh")
 
 
 # Fetch prices and return as a dictionary
