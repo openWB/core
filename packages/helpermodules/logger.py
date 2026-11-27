@@ -29,9 +29,10 @@ REDACTION_PATTERNS = [
     (r'({field})[=:]([^\s&]+)', r'\1=***REDACTED***'),  # field=value, i.e. for URL query parameters
     # JSON/dict formatted data: "field": "value", 'field': 'value' and 'field': "value" (repr of a value with an
     # apostrophe). Keys that only end in a known field are redacted too, i.e. portal_password or sponsor_token.
-    (r'"([\w.-]*{field})":\s*"(.*?)"', r'"\1": "***REDACTED***"'),
-    (r'\'([\w.-]*{field})\':\s*\'(.*?)\'', r"'\1': '***REDACTED***'"),
-    (r'\'([\w.-]*{field})\':\s*"(.*?)"', r"'\1': '***REDACTED***'"),
+    # A value ends at its closing quote, an escaped quote belongs to the value.
+    (r'"([\w.-]*{field})"\s*:\s*"((?:\\.|[^"\\])*)"', r'"\1": "***REDACTED***"'),
+    (r"'([\w.-]*{field})'\s*:\s*'((?:\\.|[^'\\])*)'", r"'\1': '***REDACTED***'"),
+    (r"'([\w.-]*{field})'\s*:\s*\"((?:\\.|[^\"\\])*)\"", r"'\1': '***REDACTED***'"),
 ]
 # Credentials in a URL (scheme://user:password@host/) carry no field name for REDACTION_PATTERNS
 # to key on. The user name is kept, it is useful when diagnosing authentication problems.
@@ -60,8 +61,8 @@ def redact_sensitive_info(message: str, additional_fields: Optional[list] = None
     message = re.sub(URL_CREDENTIALS_PATTERN[0], URL_CREDENTIALS_PATTERN[1], message)
     for field in fields_to_redact:
         for pattern, replacement in REDACTION_PATTERNS:
-            pattern = pattern.replace('{field}', field)
-            replacement = replacement.replace('{field}', field)
+            # the underscore is optional: access_key also matches accessKey
+            pattern = pattern.replace('{field}', field.replace('_', '_?'))
             message = re.sub(pattern, replacement, message, flags=re.IGNORECASE)
     return message
 
