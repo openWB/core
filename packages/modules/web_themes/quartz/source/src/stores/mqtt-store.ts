@@ -197,6 +197,9 @@ export const useMqttStore = defineStore('mqtt', () => {
   const topics = ref<TopicMap>({})
   const subscriptions = ref<SubscriptionCounts>({})
   const connected = ref(false)
+  let hasConnected = false
+  let lastMessageAt = Date.now()
+  let hiddenAt: number | null = null
   const authFailureMessage = ref('')
   const defaultCredentialsWarning = ref(false)
 
@@ -217,17 +220,24 @@ export const useMqttStore = defineStore('mqtt', () => {
       protocolVersion: 5,
       connectTimeout: 4000,
       reconnectPeriod: 4000,
+      // after a reconnect all topics are subscribed again in one packet (see below) instead of one per topic
+      resubscribe: false,
       clientId,
       username,
       password,
     })
     client.on('connect', () => {
       connected.value = true
-      Object.keys(subscriptions.value).forEach((topic) => client?.subscribe(topic, { qos: 0 }))
+      lastMessageAt = Date.now()
+      if (hasConnected) {
+        resubscribeAll()
+      }
+      hasConnected = true
       if (username === 'admin' && password === 'openwb') {
         defaultCredentialsWarning.value = true
       }
     })
+    document.addEventListener('visibilitychange', onVisibilityChange)
     client.on('close', () => {
       connected.value = false
     })
@@ -244,6 +254,7 @@ export const useMqttStore = defineStore('mqtt', () => {
       }
     })
     client.on('message', (topic, payload) => {
+      lastMessageAt = Date.now()
       if (payload.length === 0) {
         delete topics.value[topic]
         return
@@ -255,6 +266,33 @@ export const useMqttStore = defineStore('mqtt', () => {
       }
       trackSocUpdate(topic)
     })
+  }
+
+  /** One SUBSCRIBE packet for all topics; the flag makes mqtt.js send them although it already knows them. */
+  function resubscribeAll(): void {
+    const subs: Record<string, unknown> = { resubscribe: true }
+    Object.keys(subscriptions.value).forEach((topic) => {
+      subs[topic] = { qos: 0, nl: false, rap: false, rh: 0 }
+    })
+    client?.subscribe(subs as never)
+  }
+
+  /**
+   * A hidden tab throttles its timers, so the keepalive and the reconnect timer run late and the page shows old data
+   * for a while after it is shown again. Reconnect at once if the connection is down or has been silent.
+   */
+  const STALE_AFTER_MS = 30_000
+  function onVisibilityChange(): void {
+    if (document.visibilityState === 'hidden') {
+      hiddenAt = Date.now()
+      return
+    }
+    const wasHiddenFor = hiddenAt === null ? 0 : Date.now() - hiddenAt
+    hiddenAt = null
+    if (wasHiddenFor < STALE_AFTER_MS || !client) return
+    if (!client.connected || Date.now() - lastMessageAt > STALE_AFTER_MS) {
+      client.reconnect()
+    }
   }
 
   /** Subscribe to a topic, ref-counted so multiple consumers can share one subscription. */

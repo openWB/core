@@ -4,6 +4,19 @@ import { nextTick } from 'vue'
 
 const publishAsync = vi.fn()
 const connectOptions: Record<string, unknown>[] = []
+const visibilityListeners: (() => void)[] = []
+const handlers: Record<string, () => void> = {}
+const fakeClient = {
+  connected: true,
+  on: (event: string, handler: () => void) => {
+    handlers[event] = handler
+  },
+  subscribe: vi.fn(),
+  unsubscribe: vi.fn(),
+  end: vi.fn(),
+  reconnect: vi.fn(),
+  publishAsync,
+}
 
 vi.mock('mqtt', () => {
   class ErrorWithReasonCode extends Error {
@@ -18,7 +31,7 @@ vi.mock('mqtt', () => {
       ErrorWithReasonCode,
       connect: (_url: string, options: Record<string, unknown>) => {
         connectOptions.push(options)
-        return { on: vi.fn(), subscribe: vi.fn(), unsubscribe: vi.fn(), end: vi.fn(), publishAsync }
+        return fakeClient
       },
     },
   }
@@ -35,7 +48,12 @@ function newStore() {
 
 beforeEach(() => {
   vi.stubGlobal('location', { protocol: 'http:', hostname: 'openwb', port: '', reload: vi.fn() })
-  vi.stubGlobal('document', { cookie: '' })
+  visibilityListeners.length = 0
+  vi.stubGlobal('document', {
+    cookie: '',
+    visibilityState: 'visible',
+    addEventListener: (_: string, listener: () => void) => visibilityListeners.push(listener),
+  })
   setActivePinia(createPinia())
   publishAsync.mockReset()
   publishAsync.mockResolvedValue(undefined)
@@ -293,5 +311,65 @@ describe('SoC capability of the connected vehicle', () => {
     expect(store.chargePointConnectedVehicleSocType(4)).toBe('reported')
     store.topics['openWB/vehicle/1/soc_module/config'] = { type: 'mqtt' }
     expect(store.chargePointConnectedVehicleSocType(4)).toBe('mqtt')
+  })
+})
+
+describe('reconnect', () => {
+  beforeEach(() => {
+    fakeClient.connected = true
+    fakeClient.subscribe.mockReset()
+    fakeClient.reconnect.mockReset()
+  })
+
+  function setVisibility(state: 'hidden' | 'visible') {
+    ;(document as { visibilityState: string }).visibilityState = state
+    visibilityListeners.forEach((listener) => listener())
+  }
+
+  it('subscribes all topics in one packet after a reconnect, but not on the first connect', () => {
+    const store = newStore()
+    store.getValue('openWB/a', 0)
+    store.getValue('openWB/b', 0)
+    handlers.connect()
+    expect(fakeClient.subscribe).toHaveBeenCalledTimes(2)
+    fakeClient.subscribe.mockClear()
+    handlers.connect()
+    expect(fakeClient.subscribe).toHaveBeenCalledTimes(1)
+    const sent = fakeClient.subscribe.mock.calls[0][0] as Record<string, unknown>
+    expect(Object.keys(sent).sort()).toEqual(['openWB/a', 'openWB/b', 'resubscribe'])
+    expect(connectOptions.at(-1)?.resubscribe).toBe(false)
+  })
+
+  it('reconnects at once when the tab returns after a long time without a connection or data', () => {
+    vi.useFakeTimers()
+    newStore()
+    handlers.connect()
+    setVisibility('hidden')
+    vi.advanceTimersByTime(60_000)
+    setVisibility('visible')
+    expect(fakeClient.reconnect).toHaveBeenCalledTimes(1)
+    vi.useRealTimers()
+  })
+
+  it('keeps a connection that kept receiving data while the tab was hidden', () => {
+    vi.useFakeTimers()
+    newStore()
+    handlers.connect()
+    setVisibility('hidden')
+    vi.advanceTimersByTime(60_000)
+    ;(handlers.message as unknown as (t: string, p: Buffer) => void)('openWB/a', Buffer.from('1'))
+    setVisibility('visible')
+    expect(fakeClient.reconnect).not.toHaveBeenCalled()
+    vi.useRealTimers()
+  })
+
+  it('does not reconnect after a short absence', () => {
+    vi.useFakeTimers()
+    newStore()
+    setVisibility('hidden')
+    vi.advanceTimersByTime(5_000)
+    setVisibility('visible')
+    expect(fakeClient.reconnect).not.toHaveBeenCalled()
+    vi.useRealTimers()
   })
 })
