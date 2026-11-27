@@ -8,8 +8,7 @@
 			:font-size="labelfontsize"
 			class="pmLabel"
 		>
-			<tspan :class="textclass"> {{ text }} </tspan
-			><tspan>
+			<tspan :class="textclass"> {{ text }} </tspan><tspan>
 				<FormatWatt v-if="data !== undefined" :watt="data.power" />
 			</tspan>
 		</text>

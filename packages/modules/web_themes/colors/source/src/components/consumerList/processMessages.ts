@@ -18,7 +18,10 @@ const pendingMessages = new Map<number, { topic: string; message: string }[]>()
 
 // called from hierarchy processing - the only place a consumer may be created, so its color
 // (assigned from consumers.size at creation) stays consistent with the hierarchy order
-export function registerConsumerFromHierarchy(index: number, showInList = true) {
+export function registerConsumerFromHierarchy(
+	index: number,
+	showInList = true,
+) {
 	addConsumer(index, showInList)
 	const pending = pendingMessages.get(index)
 	if (pending) {
@@ -52,12 +55,6 @@ function processConsumerDeviceMessages(topic: string, message: string) {
 		try {
 			const moduleData = JSON.parse(message)
 			if (moduleData) {
-				console.log(
-					'Consumer module data for consumer ' +
-						index +
-						' received: ' +
-						JSON.stringify(moduleData),
-				)
 				dev.name = moduleData.name
 				dev.icon = moduleData.name
 			}
@@ -70,12 +67,6 @@ function processConsumerDeviceMessages(topic: string, message: string) {
 		try {
 			const usage = JSON.parse(message)
 			if (usage) {
-				console.log(
-					'Consumer usage data for consumer ' +
-						index +
-						' received: ' +
-						JSON.stringify(usage),
-				)
 				dev.usage = usage
 				dev.consumerType = usage.type
 			}

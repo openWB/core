@@ -35,14 +35,17 @@
 
 		<div class="subgrid pt-1">
 			<transition name="status-fade">
-				<div v-if="showInfo" class="statustext status-entry p-2 rounded">
+				<div
+					v-if="showInfo"
+					class="statustext status-entry p-3 mb-2 rounded shadow"
+				>
 					{{ device.statusText }}
 				</div>
 			</transition>
 			<transition name="status-fade">
 				<div
 					v-if="showFault && device && device.faultText"
-					class="faulttext status-entry p-2"
+					class="faulttext status-entry p-3 mb-3 rounded shadow"
 				>
 					{{ device.faultText }}
 				</div>
@@ -119,19 +122,20 @@ const showFault = ref(false)
 }
 .statustext {
 	grid-column: 1 / 13;
-	border: 1px solid var(--color-consumers);
 	justify-self: center;
-	font-size: var(--font-small);
-	color: black;
-	background: var(--color-menu);
+	font-size: var(--font-settings);
+	color: var(--color-consumers);
+	background: var(--color-input);
+	font-style: italic;
 }
 .faulttext {
 	grid-column: 1 / 13;
-	border: 1px solid var(--color-consumers);
+	border: 1px solid var(--color-battery);
 	justify-self: center;
-	font-size: var(--font-small);
-	color: black;
-	background: var(--color-battery);
+	font-size: var(--font-settings);
+	color: var(--color-consumers);
+	background: var(--color-input);
+	font-style: italic;
 }
 .status-entry {
 	overflow: hidden;

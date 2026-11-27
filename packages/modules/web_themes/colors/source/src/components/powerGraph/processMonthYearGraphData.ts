@@ -67,7 +67,6 @@ export function processYearGraphMessages(topic: string, message: string) {
 		names: itemNames2,
 		totals: energyValues,
 	} = JSON.parse(message)
-	console.log(inputTable)
 	itemNames.value = new Map(Object.entries(itemNames2))
 	resetHistoricData()
 	gridCounters = []
@@ -106,13 +105,12 @@ function transformDatatable(
 			}
 		})
 	})
-	console.log(outputTable)
+	//console.log(outputTable)
 	return outputTable
 }
 function transformRow(inputRow: RawDayGraphDataItem): GraphDataItem {
 	const outputRow: GraphDataItem = {}
 	// date
-	console.log('date: ' + inputRow.date)
 	const d =
 		graphData.graphMode == 'month'
 			? timeParse('%Y%m%d')(inputRow.date as string)
@@ -219,7 +217,7 @@ function transformRow(inputRow: RawDayGraphDataItem): GraphDataItem {
 			}
 			outputRow[id] = values.energy_imported
 		} else {
-			outputRow['charging'] = values.energy_imported
+			outputRow['consumers'] = values.energy_imported
 		}
 	})
 
