@@ -372,6 +372,7 @@ class ParameterHandler
         $pvChargingLimit = 'none';
         $pvChargingAmount = 0;
         $pvChargingSoc = 0;
+        $minimalPvSoc = 0;
         $maxPriceEco = 0;
         $soc = 0;
         $rangeCharged = 0;
@@ -394,6 +395,7 @@ class ParameterHandler
             $pvChargingLimit = $template['chargemode']['pv_charging']['limit']['selected'] ?? 'none';
             $pvChargingAmount = $template['chargemode']['pv_charging']['limit']['amount'] ?? 0;
             $pvChargingSoc = $template['chargemode']['pv_charging']['limit']['soc'] ?? 0;
+            $minimalPvSoc = $template['chargemode']['pv_charging']['min_soc'] ?? 0;
 
             // ECO Charging max_price extrahieren
             $maxPriceEco = isset($template['chargemode']['eco_charging']['max_price']) ? number_format((float)$template['chargemode']['eco_charging']['max_price'], 6, '.', '') : '0.0000';
@@ -492,6 +494,7 @@ class ParameterHandler
                 'pv_charging_limit' => $pvChargingLimit,
                 'pv_charging_amount' => intval($pvChargingAmount),
                 'pv_charging_soc' => intval($pvChargingSoc),
+                'minimal_pv_soc' => intval($minimalPvSoc),
                 'max_price_eco' => floatval($maxPriceEco),
                 'soc' => floatval($soc),
                 'range_charged' => floatval($rangeCharged),
