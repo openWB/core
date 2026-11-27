@@ -3,6 +3,7 @@ import time
 import pymodbus
 from typing import Any, Optional, Protocol, Tuple, Union
 
+from helpermodules.utils.error_handling import RetryableError
 from modules.common.component_state import CounterState, EvseState
 from modules.common.evse import Evse
 from modules.common.fault_state import FaultState
@@ -19,12 +20,16 @@ RETRY_DELAY_SECONDS = 0.3
 
 READ_RS485_ADAPTER_AGAIN = "Erneutes Auslesen des {}"
 READ_USB_ADAPTER_AGAIN = READ_RS485_ADAPTER_AGAIN.format('USB-Adapters')
+USB_ADAPTER_UNREACHABLE = "Kommunikation über den USB-Adapter gestört."
 READ_LAN_ADAPTER_AGAIN = READ_RS485_ADAPTER_AGAIN.format('LAN-Konverters')
+LAN_ADAPTER_UNREACHABLE = "Kommunikation über den LAN-Konverter gestört."
 METER_PROBLEM = "Erneutes Auslesen des Ladeleistungs-Zählers"
+METER_UNREACHABLE = "Interner Ladeleistungs-Zähler antwortet nicht."
 METER_NO_SERIAL_NUMBER = ("Die Seriennummer des Zählers für das Ladelog kann nicht ausgelesen werden. Wenn Du die "
                           "Seriennummer für Abrechnungszwecke benötigst, wende Dich bitte an unseren Support. Die "
                           "Funktionalität wird dadurch nicht beeinträchtigt!")
 READ_EVSE_AGAIN = "Erneutes Auslesen der EVSE"
+EVSE_UNREACHABLE = "Interne EVSE antwortet nicht."
 
 
 class ClientHandlerProtocol(Protocol):
@@ -82,24 +87,19 @@ class SeriesHardwareCheckMixin:
         meter_check_passed, meter_error_msg, counter_state = self.check_meter(self.meter_client)
         if meter_check_passed is False and evse_check_passed is False:
             if isinstance(self.client, ModbusTcpClient_):
-                raise Exception(READ_LAN_ADAPTER_AGAIN)
+                raise RetryableError(READ_LAN_ADAPTER_AGAIN, LAN_ADAPTER_UNREACHABLE)
             else:
-                raise Exception(READ_USB_ADAPTER_AGAIN)
+                raise RetryableError(READ_USB_ADAPTER_AGAIN, USB_ADAPTER_UNREACHABLE)
         if meter_check_passed is False:
-            if evse_check_passed is False:
-                if isinstance(self.client, ModbusTcpClient_):
-                    raise Exception(READ_LAN_ADAPTER_AGAIN)
-                else:
-                    raise Exception(READ_USB_ADAPTER_AGAIN)
-            else:
-                raise Exception(meter_error_msg)
+            raise RetryableError(meter_error_msg, METER_UNREACHABLE)
         elif evse_check_passed and meter_check_passed and meter_error_msg is not None:
             fault_state.warning(meter_error_msg)
         if evse_check_passed is False:
             if meter_error_msg is not None:
-                raise Exception(f"{READ_EVSE_AGAIN} {meter_error_msg}")
+                raise RetryableError(f"{READ_EVSE_AGAIN} {meter_error_msg}",
+                                     f"{EVSE_UNREACHABLE} {meter_error_msg}")
             else:
-                raise Exception(READ_EVSE_AGAIN)
+                raise RetryableError(READ_EVSE_AGAIN, EVSE_UNREACHABLE)
         return evse_state, counter_state
 
     def check_meter(self: ClientHandlerProtocol, meter_client: MeterClient) -> Tuple[bool, Optional[str], CounterState]:
