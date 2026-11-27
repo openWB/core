@@ -809,3 +809,40 @@ def test_start_filesystem_migrations_launches_one_worker(monkeypatch):
         stderr=update_config.subprocess.DEVNULL,
         close_fds=True,
     )
+
+
+def test_upgrade_datastore_163_resets_voltego_and_informs_the_user(mock_pub: Mock, monkeypatch: pytest.MonkeyPatch):
+    message = Mock()
+    monkeypatch.setattr(update_config, "pub_system_message", message)
+    uc = UpdateConfig()
+    uc.all_received_topics = {
+        "openWB/optional/ep/flexible_tariff/provider": {"type": "voltego", "configuration": {"client_id": "x"}},
+        "openWB/system/datastore_version": list(range(163)),
+    }
+
+    uc.upgrade_datastore_163()
+
+    assert uc.all_received_topics["openWB/optional/ep/flexible_tariff/provider"] == {
+        "type": None, "configuration": {}}
+    assert uc.all_received_topics["openWB/system/datastore_version"] == list(range(164))
+    message.assert_called_once()
+    text = message.call_args.args[1]
+    assert "Voltego" in text and "einen anderen Anbieter wählen" in text
+    assert message.call_args.args[2] == update_config.MessageType.WARNING
+
+
+def test_upgrade_datastore_163_keeps_other_providers_and_stays_silent(mock_pub: Mock, monkeypatch: pytest.MonkeyPatch):
+    message = Mock()
+    monkeypatch.setattr(update_config, "pub_system_message", message)
+    uc = UpdateConfig()
+    uc.all_received_topics = {
+        "openWB/optional/ep/flexible_tariff/provider": {"type": "tibber", "configuration": {"token": "x"}},
+        "openWB/system/datastore_version": list(range(163)),
+    }
+
+    uc.upgrade_datastore_163()
+
+    # gegen ein unabhängiges Literal, nicht gegen dasselbe Objekt
+    assert uc.all_received_topics["openWB/optional/ep/flexible_tariff/provider"] == {
+        "type": "tibber", "configuration": {"token": "x"}}
+    message.assert_not_called()
