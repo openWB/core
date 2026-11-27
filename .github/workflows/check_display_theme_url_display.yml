@@ -1,0 +1,38 @@
+name: Check Display Theme URL Display
+
+on:
+  pull_request:
+    paths:
+      - packages/modules/display_themes/url_display/source/**
+      - web/display/**
+    branches:
+      - master
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node: [ 24 ]
+        # See supported Node.js release schedule at https://nodejs.org/en/about/releases/
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v5
+
+      - name: Setup Node.js ${{ matrix.node }}
+        uses: actions/setup-node@v5
+        with:
+          node-version: ${{ matrix.node }}
+          cache: 'npm'
+          cache-dependency-path: packages/modules/display_themes/url_display/source/package-lock.json
+
+      - name: Install Dependencies and Build
+        run: |
+          cd packages/modules/display_themes/url_display/source
+          npm install
+          npm run build --if-present
+
+      - name: Test display start page
+        run: node --test "web/display/tests/*.test.cjs"

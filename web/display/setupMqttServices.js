@@ -104,39 +104,34 @@ function publish(payload, topic) {
 	client.publish("openWB/set/system/topicSender", "local client uid: " + client_uid + " sent: " + topic, { qos: 2, retain: true });
 }
 
-function totalTopicCount() {
-	var counter = Object.keys(topicsToSubscribe).length;
+function requiredTopics() {
+	const topics = { ...topicsToSubscribe };
 	if (data["openWB/general/extern"] === true) {
-		counter += Object.keys(secondaryTopicsToSubscribe).length;
+		topics["openWB/general/extern_display_mode"] =
+			secondaryTopicsToSubscribe["openWB/general/extern_display_mode"];
+		if (data["openWB/general/extern_display_mode"] === "local") {
+			Object.assign(topics, primaryTopicsToSubscribe);
+		} else {
+			Object.assign(topics, secondaryTopicsToSubscribe);
+		}
 	} else {
-		Object.keys(primaryTopicsToSubscribe).forEach((topic) => {
-			counter += primaryTopicsToSubscribe[topic];
-		});
+		Object.assign(topics, primaryTopicsToSubscribe);
 	}
-	return counter;
+	return topics;
+}
+
+function totalTopicCount() {
+	return Object.keys(requiredTopics()).length;
+}
+
+function missingTopicNames() {
+	return Object.entries(requiredTopics())
+		.filter(([, received]) => received === false)
+		.map(([topic]) => topic);
 }
 
 function missingTopics() {
-	var counter = 0;
-	Object.keys(topicsToSubscribe).forEach((topic) => {
-		if (topicsToSubscribe[topic] === false) {
-			counter++;
-		};
-	});
-	if (data["openWB/general/extern"] === true) {
-		Object.keys(secondaryTopicsToSubscribe).forEach((topic) => {
-			if (secondaryTopicsToSubscribe[topic] === false) {
-				counter++;
-			};
-		});
-	} else {
-		Object.keys(primaryTopicsToSubscribe).forEach((topic) => {
-			if (primaryTopicsToSubscribe[topic] === false) {
-				counter++;
-			};
-		});
-	}
-	return counter;
+	return missingTopicNames().length;
 }
 
 function allTopicsReceived() {
