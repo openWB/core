@@ -1,0 +1,32 @@
+{
+  "host": "localhost",
+  "port": 1884,
+  "username": null,
+  "password": null,
+  "use_tls": false,
+  "validate_cert": false,
+  "qos": 0,
+  "retain": true,
+  "reconnect_delay": 10,
+  "log_level": "INFO",
+  "http": {
+    "host": "127.0.0.1",
+    "port": 8099
+  },
+  "api": {
+    "cors_enabled": true
+  },
+  "auth": {
+    "enabled": true,
+    "require_https": false,
+    "tokens": [],
+    "users": {},
+    "broker": {
+      "host": "localhost",
+      "port": 8883,
+      "use_tls": true,
+      "validate_cert": false
+    }
+  },
+  "debug": false
+}

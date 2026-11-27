@@ -1,0 +1,1335 @@
+#!/usr/bin/env python3
+"""
+SimpleMQTT API Daemon
+
+Transforms complex MQTT topic structures into simplified API topics.
+Listens to openWB/* topics and republishes them under openWB/simpleAPI/*
+with JSON/tuple expansion and ID simplification.
+"""
+
+import contextlib
+import copy
+import json
+import logging
+from logging.handlers import RotatingFileHandler
+import threading
+import time
+import sys
+import ssl
+import math
+from typing import Callable, Dict, Any, Optional, Set, Tuple
+from pathlib import Path
+import paho.mqtt.client as mqtt
+import re
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from src.http_server import build_http_server  # noqa: E402
+from src.parameter_handler import is_numeric, php_echo  # noqa: E402
+
+FORMAT_STR_SHORT = '%(asctime)s - %(message)s'
+RAMDISK_PATH = str(Path(__file__).resolve().parents[1]) + '/ramdisk/'
+
+log = logging.getLogger("simpleAPI")
+log.propagate = False
+file_handler = RotatingFileHandler(RAMDISK_PATH + 'simple_api.log', maxBytes=500000, backupCount=1)  # 0.5 MB
+file_handler.setFormatter(logging.Formatter(FORMAT_STR_SHORT))
+log.addHandler(file_handler)
+
+HIERARCHY_TOPIC = "openWB/counter/get/hierarchy"
+LAST_LIVE_VALUES_TOPIC = "openWB/graph/lastlivevaluesJson"
+USER_MANAGEMENT_TOPIC = "openWB/system/security/user_management_active"
+# The configuration holds the access tokens and local users, so it lives outside of the web root (like
+# /home/openwb/configuration.json). The file in data/config is the default that atreboot.sh copies there.
+CONFIG_FILE_PATH = "/home/openwb/simpleapi_config.json"
+DEFAULT_CONFIG_FILE_PATH = str(Path(__file__).resolve().parents[1] / "data" / "config" / "simpleapi_config.json")
+
+
+class SimpleMQTTDaemon:
+    """Main daemon class for SimpleMQTT API transformation."""
+
+    def __init__(self, config_file: str):
+        """Initialize the daemon with MQTT connection parameters."""
+        self._load_config_file(config_file)
+
+        # Cache for tracking value changes
+        self.value_cache: Dict[str, Any] = {}
+
+        # Cache for tracking lowest IDs per component type
+        self.lowest_ids: Dict[str, int] = {}
+
+        # Component types whose "primary" ID is not simply the lowest one (counter: the grid counter, first entry
+        # of openWB/counter/get/hierarchy) - the ID that "auto" and the ID-less simpleAPI topics refer to
+        self.primary_ids: Dict[str, int] = {}
+
+        # Cache of every known ID per component type (used for list_components
+        # and as the basis for lowest_ids)
+        self.all_ids: Dict[str, Set[int]] = {}
+
+        # Cache for storing current charge_template configurations
+        self.charge_template_cache: Dict[str, Dict[str, Any]] = {}
+
+        # Raw per-topic cache (parsed payloads) backing the simpleAPI HTTP read
+        # parameters - distinct from value_cache, which holds the already
+        # transformed/simplified simpleAPI output topic tree, not the
+        # original openWB topics the HTTP read handlers need to mirror.
+        self.raw_value_cache: Dict[str, Any] = {}
+
+        # Track per-ID component values for efficient total topic aggregation
+        self.total_metrics = {
+            'pv': {'exported', 'monthly_exported', 'yearly_exported', 'imported', 'power'},
+            'chargepoint': {'exported', 'monthly_exported', 'yearly_exported', 'imported', 'power'}
+        }
+        self.total_value_cache: Dict[str, Dict[str, Dict[int, float]]] = {
+            component: {metric: {} for metric in metrics}
+            for component, metrics in self.total_metrics.items()
+        }
+        self.total_sums: Dict[str, Dict[str, float]] = {
+            component: {metric: 0.0 for metric in metrics}
+            for component, metrics in self.total_metrics.items()
+        }
+
+        # Set by the HTTP request thread while a write runs with the caller's own broker connection
+        self._request_publisher = threading.local()
+
+        # openWB/system/security/user_management_active; None until the retained value has arrived
+        self.user_management_active: Optional[bool] = None
+
+        # MQTT client setup
+        self.client = mqtt.Client()
+        self.client.on_connect = self._on_connect
+        self.client.on_message = self._on_message
+        self.client.on_disconnect = self._on_disconnect
+
+        self.http_server = build_http_server(self, self.config)
+
+    def _load_config_file(self, config_file: str):
+        """Load configuration from JSON file."""
+        try:
+            config_path = Path(config_file)
+            if not config_path.exists():
+                log.error(f"Configuration file not found: {config_file}")
+                sys.exit(1)
+
+            with open(config_file, 'r') as f:
+                config = json.load(f)
+
+            # Override instance variables with config file values
+            try:
+                self.host = config['host']
+                self.port = config['port']
+                self.username = config['username']
+                self.password = config['password']
+                self.use_tls = config['use_tls']
+                self.validate_cert = config.get('validate_cert', False)
+            except KeyError as e:
+                log.exception(f"Missing required config parameter: {e}")
+                sys.exit(1)
+
+            # Set log level if specified in config
+            log_level = config.get('log_level', 'INFO')
+            numeric_level = getattr(logging, log_level.upper(), logging.INFO)
+            log.setLevel(numeric_level)
+
+            self.config = config
+
+            log.info(f"Loaded configuration from {config_file}")
+        except json.JSONDecodeError as e:
+            log.error(f"Invalid JSON in config file {config_file}: {e}")
+            sys.exit(1)
+        except Exception as e:
+            log.error(f"Failed to load config file {config_file}: {e}")
+            sys.exit(1)
+
+    def _on_connect(self, client, userdata, flags, rc):
+        """Callback for successful MQTT connection."""
+        if rc == 0:
+            log.info(f"Connected to MQTT broker at {self.host}:{self.port}")
+
+            # Publish API revision
+            self._publish_revision()
+
+            # Subscribe to specific openWB component topics
+            client.subscribe("openWB/bat/#", qos=0)
+            client.subscribe("openWB/pv/#", qos=0)
+            client.subscribe("openWB/chargepoint/#", qos=0)
+            client.subscribe("openWB/counter/#", qos=0)
+            client.subscribe("openWB/consumer/#", qos=0)
+            client.subscribe("openWB/io/#", qos=0)
+            client.subscribe(USER_MANAGEMENT_TOPIC, qos=0)
+            client.subscribe(LAST_LIVE_VALUES_TOPIC, qos=0)
+
+            # Subscribe to simpleAPI set topics for write operations
+            client.subscribe("openWB/simpleAPI/set/#", qos=0)
+
+            log.info(
+                "Subscribed to openWB component topics (bat, pv, chargepoint, counter, consumer, io) "
+                "and simpleAPI set topics")
+        else:
+            log.error(f"Failed to connect to MQTT broker. Return code: {rc}")
+
+    def _on_disconnect(self, client, userdata, rc):
+        """Callback for MQTT disconnection."""
+        if rc != 0:
+            log.warning(f"Unexpected MQTT disconnection (code: {rc}). Attempting to reconnect...")
+            self._reconnect()
+        else:
+            log.info("Clean MQTT disconnection")
+
+    def _reconnect(self):
+        """Attempt to reconnect to MQTT broker with delay."""
+        reconnect_attempts = 0
+        max_attempts = 100  # Prevent infinite loops
+
+        while reconnect_attempts < max_attempts:
+            try:
+                reconnect_attempts += 1
+                log.info(f"Reconnection attempt {reconnect_attempts}/{max_attempts} in 10 seconds...")
+                time.sleep(10)
+
+                self.client.reconnect()
+                log.info("Successfully reconnected to MQTT broker")
+                break
+
+            except Exception as e:
+                log.error(f"Reconnection attempt {reconnect_attempts} failed: {e}")
+
+        if reconnect_attempts >= max_attempts:
+            log.critical("Maximum reconnection attempts exceeded. Exiting.")
+            sys.exit(1)
+
+    def _on_message(self, client, userdata, msg):
+        """Process incoming MQTT messages."""
+        try:
+            topic = msg.topic
+            payload = msg.payload.decode('utf-8')
+
+            log.debug(f"Received: {topic} = {payload}")
+
+            if topic == USER_MANAGEMENT_TOPIC:
+                self.user_management_active = self._parse_payload(payload) is True
+                return
+
+            if topic == LAST_LIVE_VALUES_TOPIC:
+                # served unchanged by get_lastlivevaluesjson
+                self.raw_value_cache[topic] = payload
+                return
+
+            # Handle write operations (simpleAPI set topics)
+            if topic.startswith('openWB/simpleAPI/set/'):
+                self._handle_write_operation(topic, payload)
+                return
+
+            # Skip if this is already a simpleAPI topic to avoid loops
+            if '/simpleAPI/' in topic:
+                return
+
+            # Cache charge_template configurations for later use
+            if '/set/charge_template' in topic:
+                self._cache_charge_template(topic, payload)
+
+            # Parse payload once so we can reuse it for both total aggregation and normal transformation
+            parsed_payload = self._parse_payload(payload)
+
+            # Raw per-topic cache backing the simpleAPI HTTP read parameters
+            self.raw_value_cache[topic] = parsed_payload
+
+            if topic == HIERARCHY_TOPIC:
+                self._update_grid_counter(parsed_payload)
+
+            # Update aggregated total topics from component ID metrics
+            self._update_total_topics(topic, parsed_payload)
+
+            # Transform and publish the message
+            self._transform_and_publish(topic, parsed_payload)
+
+        except Exception as e:
+            log.error(f"Error processing message {msg.topic}: {e}")
+
+    def _transform_and_publish(self, original_topic: str, parsed_payload: Any):
+        """Transform original topic to simpleAPI format and publish if value changed."""
+        try:
+            # Generate transformed topics
+            transformed_topics = self._generate_simple_topics(original_topic, parsed_payload)
+
+            # Publish each transformed topic if value changed
+            for topic, value in transformed_topics.items():
+                self._publish_if_changed(topic, value)
+
+        except Exception as e:
+            log.error(f"Error transforming topic {original_topic}: {e}")
+
+    def _update_grid_counter(self, hierarchy: Any):
+        """Make the grid counter the primary counter. openWB only guarantees it to be the first hierarchy entry,
+        not to have the lowest ID."""
+        if not (isinstance(hierarchy, list) and hierarchy and isinstance(hierarchy[0], dict)
+                and hierarchy[0].get('type') == 'counter' and isinstance(hierarchy[0].get('id'), int)):
+            return
+        grid_id = hierarchy[0]['id']
+        if self.primary_ids.get('counter') == grid_id:
+            return
+        self.primary_ids['counter'] = grid_id
+        self.lowest_ids['counter'] = grid_id
+        self.all_ids.setdefault('counter', set()).add(grid_id)
+        # the ID-less topics so far belonged to the old primary counter
+        for topic, value in list(self.raw_value_cache.items()):
+            if topic.startswith(f"openWB/counter/{grid_id}/"):
+                self._transform_and_publish(topic, value)
+
+    def _update_total_topics(self, original_topic: str, parsed_value: Any):
+        """Maintain and publish aggregated total topics from all numeric component IDs."""
+        # Match only per-ID get topics needed for totals
+        # Examples:
+        #   openWB/pv/7/get/exported
+        #   openWB/chargepoint/13/get/power
+        pattern = r'^openWB/(pv|chargepoint)/(\d+)/get/(exported|monthly_exported|yearly_exported|imported|power)$'
+        match = re.match(pattern, original_topic)
+        if not match:
+            return
+
+        component_type = match.group(1)
+        component_id = int(match.group(2))
+        metric = match.group(3)
+
+        # Only numeric, finite values are aggregated
+        if isinstance(parsed_value, bool) or not isinstance(parsed_value, (int, float)):
+            return
+
+        numeric_value = float(parsed_value)
+        if not math.isfinite(numeric_value):
+            return
+
+        metric_cache = self.total_value_cache[component_type][metric]
+        previous_value = metric_cache.get(component_id, 0.0)
+        metric_cache[component_id] = numeric_value
+
+        # O(1) sum update for performance with many IDs and frequent updates
+        self.total_sums[component_type][metric] += numeric_value - previous_value
+        total_value = self.total_sums[component_type][metric]
+
+        total_topic = self._build_total_topic(component_type, metric)
+        if total_topic is not None:
+            self._publish_if_changed(total_topic, total_value)
+
+    def _build_total_topic(self, component_type: str, metric: str) -> Optional[str]:
+        """Build destination topic for aggregated totals with component-consistent path style."""
+        if component_type == 'pv':
+            # PV topics keep /get/ in simpleAPI
+            return f"openWB/simpleAPI/pv/total/get/{metric}"
+        if component_type == 'chargepoint':
+            # chargepoint topics are published without /get/ in simpleAPI
+            return f"openWB/simpleAPI/chargepoint/total/{metric}"
+        return None
+
+    def _parse_payload(self, payload: str) -> Any:
+        """Parse payload as JSON, tuple, or raw value."""
+        payload = payload.strip()
+
+        # Try to parse as JSON. openWB JSON-encodes every payload it publishes, including plain
+        # strings (e.g. fault_str arrives on the wire as '"Kein Fehler."', not 'Kein Fehler.') -
+        # without also matching a leading '"' here, those quote characters would be republished
+        # literally as part of the simpleAPI value.
+        if payload.startswith('{') or payload.startswith('[') or payload.startswith('"'):
+            try:
+                return json.loads(payload)
+            except json.JSONDecodeError as e:
+                log.warning(f"Invalid JSON payload: {payload} - {e}")
+                return payload
+
+        # Try to parse as Python literal (for tuples/lists)
+        if payload.startswith('(') or payload.startswith('['):
+            try:
+                import ast
+                return ast.literal_eval(payload)
+            except (ValueError, SyntaxError) as e:
+                log.warning(f"Invalid literal payload: {payload} - {e}")
+                return payload
+
+        # Try to parse as number
+        try:
+            if '.' in payload:
+                return float(payload)
+            else:
+                return int(payload)
+        except ValueError:
+            pass
+
+        # Try to parse boolean
+        if payload.lower() in ('true', 'false'):
+            return payload.lower() == 'true'
+
+        # Return as string if null
+        if payload.lower() == 'null':
+            return None
+
+        # Return as raw string
+        return payload
+
+    def _generate_simple_topics(self, original_topic: str, parsed_value: Any) -> Dict[str, Any]:
+        """Generate simpleAPI topics from original topic and parsed value."""
+        result = {}
+
+        # Convert original topic to simpleAPI base
+        simple_base = original_topic.replace('openWB/', 'openWB/simpleAPI/')
+
+        # Extract component info for ID tracking
+        self._track_component_ids(original_topic)
+
+        # Apply chargepoint-specific transformations
+        if '/chargepoint/' in simple_base:
+            simple_base = self._transform_chargepoint_topic(simple_base)
+            if simple_base is None:  # Topic should be filtered out
+                return result
+
+        # Handle different value types - simple_base was already run through the
+        # chargepoint transform above, so the top-level (non-recursive) expansion
+        # doesn't need to redo it.
+        self._expand_value_to_topics(simple_base, parsed_value, result, already_transformed=True)
+
+        # Generate simplified topics for lowest IDs
+        simplified_topics = self._generate_simplified_topics(simple_base, parsed_value)
+        result.update(simplified_topics)
+
+        return result
+
+    def _transform_chargepoint_topic(self, simple_base: str) -> Optional[str]:
+        """Transform chargepoint topics according to simplified structure."""
+
+        log.debug(f"_transform_chargepoint_topic input: {simple_base}")
+
+        # FIRST: Handle connected_vehicle transformations (both /get/ and direct)
+        # This must happen BEFORE any other filtering
+        if '/connected_vehicle/config/chargemode' in simple_base:
+            simple_base = re.sub(r'/get/connected_vehicle/config/chargemode$', '/chargemode', simple_base)
+            simple_base = re.sub(r'/connected_vehicle/config/chargemode$', '/chargemode', simple_base)
+        elif '/connected_vehicle/info/name' in simple_base:
+            simple_base = re.sub(r'/get/connected_vehicle/info/name$', '/vehicle_name', simple_base)
+            simple_base = re.sub(r'/connected_vehicle/info/name$', '/vehicle_name', simple_base)
+        elif '/connected_vehicle/soc' in simple_base:
+            simple_base = re.sub(r'/get/connected_vehicle/soc$', '/soc', simple_base)
+            simple_base = re.sub(r'/connected_vehicle/soc$', '/soc', simple_base)
+
+        # Keep only config topics that are in the allowed list
+        if '/config/' in simple_base and not re.search(r'/(chargemode|vehicle_name)$', simple_base):
+            allowed_config_paths = [
+                'configuration/ip_address', 'configuration/duo_num', 'ev', 'name',
+                'type', 'template', 'connected_phases', 'phase_1',
+                'auto_phase_switch_hw', 'control_pilot_interruption_hw', 'id', 'ocpp_chargebox_id'
+            ]
+
+            # Extract the config path part
+            config_match = re.search(r'/config/(.+)$', simple_base)
+            if config_match:
+                config_path = config_match.group(1)
+                if config_path in allowed_config_paths:
+                    return simple_base  # Keep this config topic
+
+            return None  # Filter out other config topics
+
+        # Handle set topics with special mappings
+        if '/set/' in simple_base:
+            # set/manual_lock -> manual_lock
+            simple_base = re.sub(r'/set/manual_lock$', '/manual_lock', simple_base)
+
+            # set/current -> evse_current
+            simple_base = re.sub(r'/set/current$', '/evse_current', simple_base)
+
+            # Filter out all other set topics (like charge_template, log, etc.)
+            if '/set/' in simple_base:
+                return None
+
+        # Handle get topics - remove /get/ prefix
+        if '/get/' in simple_base:
+            simple_base = simple_base.replace('/get/', '/')
+
+            # Special handling for soc-related topics
+            if re.search(r'/soc$', simple_base):
+                simple_base = re.sub(r'/soc$', '/pro_soc', simple_base)
+            elif re.search(r'/soc_timestamp$', simple_base):
+                simple_base = re.sub(r'/soc_timestamp$', '/pro_soc_timestamp', simple_base)
+
+            # Filter out unwanted topics - but exclude already transformed ones
+            if not re.search(r'/(chargemode|vehicle_name|soc|pro_soc|pro_soc_timestamp)$', simple_base):
+                unwanted_patterns = [
+                    r'/connected_vehicle/(info|config)/',
+                    r'/max_evse_current$',
+                    r'/current_branch$',
+                    r'/current_commit$'
+                ]
+
+                for pattern in unwanted_patterns:
+                    if re.search(pattern, simple_base):
+                        return None
+        else:
+            # For non-get topics, also filter out remaining connected_vehicle topics
+            # but exclude the ones we already transformed
+            if not re.search(r'/(chargemode|vehicle_name|soc)$', simple_base):
+                if re.search(r'/connected_vehicle/', simple_base):
+                    log.debug(f"Filtering out connected_vehicle topic: {simple_base}")
+                    return None
+
+        log.debug(f"_transform_chargepoint_topic output: {simple_base}")
+        return simple_base
+
+    def _track_component_ids(self, topic: str):
+        """Track component IDs to determine lowest/all known IDs per type."""
+        match = re.match(r'openWB/(\w+)/(\d+)/', topic)
+        if match:
+            self._register_component_id(match.group(1), int(match.group(2)))
+            return
+
+        # io IDs sit one level deeper (openWB/io/states/<id>/...)
+        io_match = re.match(r'openWB/io/states/(\d+)/', topic)
+        if io_match:
+            self._register_component_id('io', int(io_match.group(1)))
+
+    def _register_component_id(self, component_type: str, component_id: int):
+        self.all_ids.setdefault(component_type, set()).add(component_id)
+        if component_type in self.primary_ids:
+            return
+        if component_type not in self.lowest_ids:
+            self.lowest_ids[component_type] = component_id
+        else:
+            self.lowest_ids[component_type] = min(self.lowest_ids[component_type], component_id)
+
+    def _expand_value_to_topics(
+            self, base_topic: str, value: Any, result: Dict[str, Any], already_transformed: bool = False):
+        """Expand complex values (JSON, tuples) into individual topics.
+
+        already_transformed is True only for the initial (non-recursive) call,
+        whose base_topic has already been run through _transform_chargepoint_topic
+        once by the caller - recursive calls append a new key/index suffix the
+        caller never saw, so those topics still need their own transform.
+        """
+        if isinstance(value, dict):
+            # Handle JSON objects
+            for key, val in value.items():
+                new_topic = f"{base_topic}/{key}"
+                self._expand_value_to_topics(new_topic, val, result)
+        elif isinstance(value, (list, tuple)):
+            # Handle arrays/tuples with 1-based indexing
+            for i, val in enumerate(value, 1):
+                new_topic = f"{base_topic}/{i}"
+                self._expand_value_to_topics(new_topic, val, result)
+        else:
+            # Raw value - apply chargepoint transformations to final topics
+            final_topic = base_topic
+            if '/chargepoint/' in base_topic and not already_transformed:
+                transformed = self._transform_chargepoint_topic(base_topic)
+                if transformed is not None:
+                    final_topic = transformed
+                else:
+                    return  # Topic should be filtered out
+
+            result[final_topic] = value
+
+    def _generate_simplified_topics(self, simple_topic: str, parsed_value: Any) -> Dict[str, Any]:
+        """Generate topics without IDs for components with lowest IDs."""
+        result = {}
+
+        # Pattern to match simpleAPI topics with numeric IDs
+        pattern = r'openWB/simpleAPI/(\w+)/(\d+)/(.*)'
+        match = re.match(pattern, simple_topic)
+
+        if match:
+            component_type = match.group(1)
+            component_id = int(match.group(2))
+            remaining_path = match.group(3)
+
+            # Check if this is the lowest ID for this component type
+            if component_type in self.lowest_ids and self.lowest_ids[component_type] == component_id:
+                simplified_base = f"openWB/simpleAPI/{component_type}/{remaining_path}"
+
+                # Apply chargepoint transformations to simplified topics as well
+                already_transformed = False
+                if component_type == 'chargepoint':
+                    simplified_base = self._transform_chargepoint_topic(simplified_base)
+                    if simplified_base is None:
+                        return result
+                    already_transformed = True
+
+                self._expand_value_to_topics(simplified_base, parsed_value, result, already_transformed)
+
+        return result
+
+    def _publish_if_changed(self, topic: str, value: Any):
+        """Publish topic only if value has changed."""
+        # Convert value to string for comparison and publishing
+        str_value = str(value) if value is not None else "null"
+
+        # Check if value changed
+        if topic in self.value_cache and self.value_cache[topic] == str_value:
+            return  # No change, don't publish
+
+        # Update cache and publish
+        self.value_cache[topic] = str_value
+
+        try:
+            self.client.publish(topic, str_value, qos=0, retain=True)
+            log.debug(f"Published: {topic} = {str_value}")
+        except Exception as e:
+            log.error(f"Failed to publish {topic}: {e}")
+
+    def _cache_charge_template(self, topic: str, payload: str):
+        """Cache charge_template configurations for write operations."""
+        try:
+            # Extract chargepoint ID from topic
+            pattern = r'openWB/chargepoint/(\d+)/set/charge_template'
+            match = re.match(pattern, topic)
+
+            if match:
+                chargepoint_id = match.group(1)
+                charge_template = json.loads(payload)
+                self.charge_template_cache[chargepoint_id] = charge_template
+                log.debug(f"Cached charge_template for chargepoint {chargepoint_id}")
+
+                # Publish read topics for charge_template values
+                self._publish_charge_template_read_topics(chargepoint_id, charge_template)
+
+        except json.JSONDecodeError as e:
+            log.warning(f"Failed to parse charge_template JSON for {topic}: {e}")
+        except Exception as e:
+            log.error(f"Error caching charge_template for {topic}: {e}")
+
+    # (path from charge_template root, key in that container, output field name,
+    # optional value transform) - the set of charge_template values that get
+    # mirrored out as simpleAPI read topics whenever a charge_template is cached.
+    _CHARGE_TEMPLATE_READ_FIELDS: Tuple[Tuple[Tuple[str, ...], str, str, Optional[Callable[[Any], Any]]], ...] = (
+        (('chargemode', 'instant_charging'), 'current', 'instant_charging_current', None),
+        (('chargemode', 'pv_charging'), 'min_current', 'minimal_permanent_current', None),
+        (('chargemode', 'pv_charging'), 'min_soc', 'minimal_pv_soc', None),
+        # max_price is stored internally in EUR/Wh - published in ct/kWh
+        (('chargemode', 'eco_charging'), 'max_price', 'max_price_eco', lambda v: v * 100000),
+        (('chargemode', 'instant_charging', 'limit'), 'selected', 'instant_charging_limit', None),
+        # amount is stored internally in Wh - published in kWh
+        (('chargemode', 'instant_charging', 'limit'), 'amount', 'instant_charging_limit_amount', lambda v: v / 1000),
+        (('chargemode', 'instant_charging', 'limit'), 'soc', 'instant_charging_limit_soc', None),
+        (('chargemode', 'pv_charging', 'limit'), 'selected', 'pv_charging_limit', None),
+        (('chargemode', 'pv_charging', 'limit'), 'amount', 'pv_charging_limit_amount', lambda v: v / 1000),
+        (('chargemode', 'pv_charging', 'limit'), 'soc', 'pv_charging_limit_soc', None),
+    )
+
+    def _is_lowest_chargepoint(self, chargepoint_id: str) -> bool:
+        return 'chargepoint' in self.lowest_ids and self.lowest_ids['chargepoint'] == int(chargepoint_id)
+
+    def _publish_pair(self, chargepoint_id: str, field: str, value: Any):
+        """Publish a chargepoint-scoped simpleAPI topic, and also under the
+        ID-less alias if this chargepoint happens to be the lowest known one."""
+        self._publish_if_changed(f"openWB/simpleAPI/chargepoint/{chargepoint_id}/{field}", value)
+        if self._is_lowest_chargepoint(chargepoint_id):
+            self._publish_if_changed(f"openWB/simpleAPI/chargepoint/{field}", value)
+
+    def _publish_charge_template_read_topics(self, chargepoint_id: str, charge_template: Dict[str, Any]):
+        """Publish readable topics for charge_template values."""
+        try:
+            for path, key, field, transform in self._CHARGE_TEMPLATE_READ_FIELDS:
+                container = charge_template
+                for step in path:
+                    container = container.get(step, {})
+                if key in container:
+                    value = container[key]
+                    if transform is not None:
+                        value = transform(value)
+                    self._publish_pair(chargepoint_id, field, value)
+
+        except Exception as e:
+            log.error(f"Error publishing charge_template read topics: {e}")
+
+    # Ordered (topic substring, handler method name) pairs for instant/pv charging
+    # limit set topics - checked in this order so the more specific suffixes
+    # (_soc, _amount) are matched before the bare limit type, which is itself a
+    # substring of both.
+    _LIMIT_OPERATIONS: Tuple[Tuple[str, str], ...] = (
+        ('instant_charging_limit_soc', '_handle_instant_charging_limit_soc_operation'),
+        ('instant_charging_limit_amount', '_handle_instant_charging_limit_amount_operation'),
+        ('instant_charging_limit', '_handle_instant_charging_limit_operation'),
+        ('pv_charging_limit_soc', '_handle_pv_charging_limit_soc_operation'),
+        ('pv_charging_limit_amount', '_handle_pv_charging_limit_amount_operation'),
+        ('pv_charging_limit', '_handle_pv_charging_limit_operation'),
+    )
+
+    def _parse_limit_topic_target(self, topic_remainder: str) -> Tuple[Optional[str], str]:
+        """Split a set-topic remainder into (explicit chargepoint ID or None, parameter name).
+
+        A limit topic arrives either as a bare parameter name (falls back to the
+        lowest known chargepoint ID) or as chargepoint/<digit>/<parameter> (explicit
+        ID) - mirrors the explicit-ID check in _handle_chargepoint_operation.
+        """
+        parts = topic_remainder.split('/')
+        if len(parts) >= 3 and parts[0] == 'chargepoint' and parts[1].isdigit():
+            return parts[1], parts[2]
+        return None, topic_remainder
+
+    def _handle_write_operation(self, topic: str, payload: str):
+        """Handle write operations from simpleAPI set topics."""
+        try:
+            # Skip processing if payload is empty (cleared set topic)
+            if not payload or payload.strip() == "":
+                log.debug(f"Skipping empty set topic: {topic}")
+                return
+
+            log.info(f"Write operation: {topic} = {payload}")
+
+            # Parse the set topic to extract operation details
+            topic_remainder = topic.replace('openWB/simpleAPI/set/', '')
+
+            # Instant/pv charging limit operations (can be with or without an explicit chargepoint ID)
+            chargepoint_id, limit_param = self._parse_limit_topic_target(topic_remainder)
+            for substring, handler_name in self._LIMIT_OPERATIONS:
+                if substring in limit_param:
+                    handler = getattr(self, handler_name)
+                    success, _ = handler(payload, chargepoint_id)
+                    if success:
+                        self._clear_set_topic(topic)
+                    return
+
+            topic_parts = topic_remainder.split('/')
+
+            if len(topic_parts) < 1:
+                log.error(f"Invalid set topic format: {topic}")
+                return
+
+            operation = topic_parts[0]
+
+            if operation == 'chargepoint':
+                success = self._handle_chargepoint_operation(topic_parts, payload)
+                if success:
+                    self._clear_set_topic(topic)
+            elif operation == 'io':
+                success = self._handle_io_operation(topic_parts, payload)
+                if success:
+                    self._clear_set_topic(topic)
+            elif operation == 'bat_mode':
+                success, _ = self._handle_bat_mode_operation(payload)
+                if success:
+                    self._clear_set_topic(topic)
+            elif operation == 'bat_power_reserve':
+                success, _ = self._handle_bat_power_reserve_operation(payload)
+                if success:
+                    self._clear_set_topic(topic)
+            else:
+                log.error(f"Unknown operation: {operation}")
+
+        except Exception as e:
+            log.error(f"Error handling write operation {topic}: {e}")
+
+    def _clear_set_topic(self, topic: str):
+        """Clear a set topic after successful operation."""
+        try:
+            self.client.publish(topic, "", qos=0, retain=True)
+            log.debug(f"Cleared set topic: {topic}")
+        except Exception as e:
+            log.error(f"Failed to clear set topic {topic}: {e}")
+
+    def _handle_chargepoint_operation(self, topic_parts: list, payload: str) -> bool:
+        """Handle chargepoint-specific write operations."""
+        # Determine chargepoint ID
+        if len(topic_parts) >= 3 and topic_parts[1].isdigit():
+            # Explicit ID provided: chargepoint/3/parameter
+            chargepoint_id = topic_parts[1]
+            parameter = topic_parts[2]
+        elif len(topic_parts) >= 2:
+            # No ID provided: chargepoint/parameter - use lowest ID
+            if 'chargepoint' in self.lowest_ids:
+                chargepoint_id = str(self.lowest_ids['chargepoint'])
+                parameter = topic_parts[1]
+            else:
+                log.error("No chargepoint ID found and no lowest ID available")
+                return False
+        else:
+            log.error(f"Invalid chargepoint topic format: {'/'.join(topic_parts)}")
+            return False
+
+        log.debug(f"Charge point operation: ID={chargepoint_id}, parameter={parameter}, value={payload}")
+
+        if parameter == 'chargemode':
+            success, _ = self._set_chargemode(chargepoint_id, payload)
+        elif parameter == 'chargecurrent':
+            success, _ = self._set_chargecurrent(chargepoint_id, payload)
+        elif parameter == 'minimal_pv_soc':
+            success, _ = self._set_minimal_pv_soc(chargepoint_id, payload)
+        elif parameter == 'minimal_permanent_current':
+            success, _ = self._set_minimal_permanent_current(chargepoint_id, payload)
+        elif parameter == 'max_price_eco':
+            success, _ = self._set_max_price_eco(chargepoint_id, payload)
+        elif parameter == 'chargepoint_lock':
+            success, _ = self._set_chargepoint_lock(chargepoint_id, payload)
+        elif parameter == 'vehicle':
+            success, _ = self._set_vehicle(chargepoint_id, payload)
+        elif parameter == 'manual_soc':
+            success, _ = self._set_manual_soc(chargepoint_id, payload)
+        else:
+            log.error(f"Unknown chargepoint parameter: {parameter}")
+            return False
+
+        return success
+
+    def _handle_io_operation(self, topic_parts: list, payload: str) -> bool:
+        """Set an IO output: io/[<id>/][digital_output|analog_output/]<name>, the ID defaults to the lowest one."""
+        parts = topic_parts[1:]
+        if parts and parts[0].isdigit():
+            io_id = parts[0]
+            parts = parts[1:]
+        elif 'io' in self.lowest_ids:
+            io_id = str(self.lowest_ids['io'])
+        else:
+            log.error("No io ID found and no lowest ID available")
+            return False
+
+        output_type = None
+        if len(parts) == 2 and self._normalize_io_output_type(parts[0]) is not None:
+            output_type = parts[0]
+            parts = parts[1:]
+        if len(parts) != 1:
+            log.error(f"Invalid io topic format: {'/'.join(topic_parts)}")
+            return False
+
+        success, _ = self._set_io_output(io_id, payload, parts[0], output_type)
+        return success
+
+    def _get_charge_template(self, chargepoint_id: str) -> Optional[Dict[str, Any]]:
+        """Get charge_template for a chargepoint, either from cache or request it."""
+        chargepoint_id = str(chargepoint_id)
+        # templates written earlier in the same HTTP request: openWB reports them back only a moment later
+        written = getattr(self._request_publisher, 'templates', None) or {}
+        if chargepoint_id in written:
+            return copy.deepcopy(written[chargepoint_id])
+        if chargepoint_id in self.charge_template_cache:
+            # nested dicts must not be shared with the cache: a write that is refused or fails
+            # would otherwise leave its change behind for the next one
+            return copy.deepcopy(self.charge_template_cache[chargepoint_id])
+
+        log.warning(f"No cached charge_template for chargepoint {chargepoint_id}")
+        return None
+
+    def _set_charge_template_field(
+            self, chargepoint_id: str, keypath: Tuple[str, ...], value: Any) -> Optional[Dict[str, Any]]:
+        """Fetch chargepoint_id's cached charge_template, set the nested field at
+        keypath, publish it back to openWB, and return the mutated template - or
+        None if no cached template is available (caller supplies the failure message)."""
+        charge_template = self._get_charge_template(chargepoint_id)
+        if charge_template is None:
+            return None
+
+        container = charge_template
+        for step in keypath[:-1]:
+            container = container[step]
+        container[keypath[-1]] = value
+
+        target_topic = f"openWB/set/chargepoint/{chargepoint_id}/set/charge_template"
+        self._publish_json(target_topic, charge_template)
+        return charge_template
+
+    def _set_chargemode(self, chargepoint_id: str, mode: str) -> Tuple[bool, str]:
+        """Set chargemode for a chargepoint."""
+        # Mapping from simple values to internal values
+        mode_mapping = {
+            'instant': 'instant_charging',
+            'pv': 'pv_charging',
+            'eco': 'eco_charging',
+            'stop': 'stop',
+            'target': 'scheduled_charging',
+            # Support full names directly
+            'instant_charging': 'instant_charging',
+            'pv_charging': 'pv_charging',
+            'eco_charging': 'eco_charging',
+            'scheduled_charging': 'scheduled_charging'
+        }
+
+        if mode not in mode_mapping:
+            message = f"Invalid chargemode: {mode}"
+            log.error(message)
+            return False, message
+
+        internal_mode = mode_mapping[mode]
+        if self._set_charge_template_field(chargepoint_id, ('chargemode', 'selected'), internal_mode) is None:
+            message = f"No charge_template available for chargepoint {chargepoint_id}"
+            log.error(message)
+            return False, message
+
+        log.info(f"Set chargemode to {mode} ({internal_mode}) for chargepoint {chargepoint_id}")
+        return True, f"Chargemode set to {mode} ({internal_mode})"
+
+    def _set_chargecurrent(self, chargepoint_id: str, current: str) -> Tuple[bool, str]:
+        """Set charge current for instant charging."""
+        try:
+            current_value = int(current)
+        except ValueError:
+            message = f"Invalid current value: {current}"
+            log.error(message)
+            return False, message
+
+        if self._set_charge_template_field(
+                chargepoint_id, ('chargemode', 'instant_charging', 'current'), current_value) is None:
+            message = f"No charge_template available for chargepoint {chargepoint_id}"
+            log.error(message)
+            return False, message
+
+        log.info(f"Set charge current to {current_value}A for chargepoint {chargepoint_id}")
+        return True, f"Chargecurrent set to {current_value}A for chargepoint {chargepoint_id}"
+
+    def _set_minimal_pv_soc(self, chargepoint_id: str, soc: str) -> Tuple[bool, str]:
+        """Set minimal EV SoC for PV charging."""
+        try:
+            soc_value = int(soc)
+        except ValueError:
+            message = f"Invalid SoC value: {soc}"
+            log.error(message)
+            return False, message
+
+        if self._set_charge_template_field(
+                chargepoint_id, ('chargemode', 'pv_charging', 'min_soc'), soc_value) is None:
+            message = f"No charge_template available for chargepoint {chargepoint_id}"
+            log.error(message)
+            return False, message
+
+        log.info(f"Set minimal PV SoC to {soc_value}% for chargepoint {chargepoint_id}")
+        return True, f"Minimal PV SoC set to {soc_value}% for chargepoint {chargepoint_id}"
+
+    def _set_minimal_permanent_current(self, chargepoint_id: str, current: str) -> Tuple[bool, str]:
+        """Set minimal permanent current for PV charging."""
+        try:
+            current_value = int(current)
+        except ValueError:
+            message = f"Invalid current value: {current}"
+            log.error(message)
+            return False, message
+
+        if self._set_charge_template_field(
+                chargepoint_id, ('chargemode', 'pv_charging', 'min_current'), current_value) is None:
+            message = f"No charge_template available for chargepoint {chargepoint_id}"
+            log.error(message)
+            return False, message
+
+        log.info(f"Set minimal permanent current to {current_value}A for chargepoint {chargepoint_id}")
+        return True, f"Minimal permanent current set to {current_value}A for chargepoint {chargepoint_id}"
+
+    def _set_max_price_eco(self, chargepoint_id: str, price: str) -> Tuple[bool, str]:
+        """Set maximum price for ECO charging."""
+        try:
+            price_value = float(price) / 100000
+        except ValueError:
+            message = f"Invalid price value: {price}"
+            log.error(message)
+            return False, message
+
+        if self._set_charge_template_field(
+                chargepoint_id, ('chargemode', 'eco_charging', 'max_price'), price_value) is None:
+            message = f"No charge_template available for chargepoint {chargepoint_id}"
+            log.error(message)
+            return False, message
+
+        log.info(f"Set max ECO price to {price_value} for chargepoint {chargepoint_id}")
+        return True, f"Max price eco set to {price_value} for chargepoint {chargepoint_id}"
+
+    def _set_chargepoint_lock(self, chargepoint_id: str, lock_state: str) -> Tuple[bool, str]:
+        """Set chargepoint lock state."""
+        try:
+            lock_value = str(lock_state).lower() in ('true', '1', 'yes', 'on')
+            target_topic = f"openWB/set/chargepoint/{chargepoint_id}/set/manual_lock"
+
+            self._publish(target_topic, str(lock_value).lower())
+            log.info(f"Set chargepoint {chargepoint_id} lock to {lock_value}")
+            return True, f"Chargepoint lock set to {lock_value} for chargepoint {chargepoint_id}"
+        except Exception as e:
+            message = f"Error setting chargepoint lock: {e}"
+            log.error(message)
+            return False, message
+
+    def _handle_bat_mode_operation(self, payload: str) -> Tuple[bool, str]:
+        """Handle battery mode operation."""
+        valid_modes = ['min_soc_bat_mode', 'ev_mode', 'bat_mode']
+
+        if payload not in valid_modes:
+            message = f"Invalid bat_mode: {payload}. Valid values: {valid_modes}"
+            log.error(message)
+            return False, message
+
+        target_topic = "openWB/set/general/chargemode_config/bat/mode"
+        self._publish(target_topic, payload)
+        log.info(f"Set bat_mode to {payload}")
+        return True, f"Bat mode set to {payload}"
+
+    def _handle_bat_power_reserve_operation(self, payload: str) -> Tuple[bool, str]:
+        """Handle battery power reserve operation.
+
+        Sets the power (in Watts) that openWB reserves for the battery
+        during PV surplus charging, before releasing surplus to EV charging.
+        Value 0 = no reservation (equivalent to ev_mode behaviour).
+        Allows external energy managers to do proportional battery/EV sharing
+        without switching bat_mode.
+        """
+        try:
+            watts = int(payload)
+        except ValueError:
+            message = f"Invalid bat_power_reserve value: {payload!r}. Must be an integer (Watts)."
+            log.error(message)
+            return False, message
+
+        if watts < 0:
+            message = f"Invalid bat_power_reserve value: {watts}. Must be >= 0."
+            log.error(message)
+            return False, message
+
+        target_topic = "openWB/set/general/chargemode_config/bat/power_reserve"
+        self._publish(target_topic, watts)
+        log.info(f"Set bat_power_reserve to {watts}W")
+        return True, f"bat_power_reserve set to {watts}W"
+
+    def _resolve_chargepoint_id(self, chargepoint_id: Optional[str]) -> Optional[str]:
+        """Use the given chargepoint ID, or fall back to the lowest known one."""
+        if chargepoint_id is not None:
+            return str(chargepoint_id)
+        if 'chargepoint' in self.lowest_ids:
+            return str(self.lowest_ids['chargepoint'])
+        return None
+
+    def _set_charging_limit_type(
+            self, mode_key: str, label: str, payload: str,
+            chargepoint_id: Optional[str] = None) -> Tuple[bool, str]:
+        """Shared body for instant_charging_limit / pv_charging_limit (the
+        chargemode.<mode_key>.limit.selected field)."""
+        valid_limits = ['none', 'soc', 'amount']
+
+        if payload not in valid_limits:
+            message = f"Invalid {mode_key}_limit: {payload}. Valid values: {valid_limits}"
+            log.error(message)
+            return False, message
+
+        chargepoint_id = self._resolve_chargepoint_id(chargepoint_id)
+        if chargepoint_id is None:
+            message = f"No chargepoint ID found for {mode_key}_limit operation"
+            log.error(message)
+            return False, message
+
+        if self._set_charge_template_field(
+                chargepoint_id, ('chargemode', mode_key, 'limit', 'selected'), payload) is None:
+            message = f"No charge_template available for chargepoint {chargepoint_id}"
+            log.error(message)
+            return False, message
+
+        log.info(f"Set {mode_key}_limit to {payload} for chargepoint {chargepoint_id}")
+        return True, f"{label} limit set to {payload} for chargepoint {chargepoint_id}"
+
+    def _set_charging_limit_soc(
+            self, mode_key: str, label: str, payload: str,
+            chargepoint_id: Optional[str] = None) -> Tuple[bool, str]:
+        """Shared body for instant_charging_limit_soc / pv_charging_limit_soc
+        (the chargemode.<mode_key>.limit.soc field)."""
+        try:
+            soc_value = int(payload)
+            if soc_value < 0 or soc_value > 100:
+                message = f"Invalid SoC value: {soc_value}. Must be between 0 and 100"
+                log.error(message)
+                return False, message
+        except ValueError:
+            message = f"Invalid SoC value: {payload}. Must be an integer"
+            log.error(message)
+            return False, message
+
+        chargepoint_id = self._resolve_chargepoint_id(chargepoint_id)
+        if chargepoint_id is None:
+            message = f"No chargepoint ID found for {mode_key}_limit_soc operation"
+            log.error(message)
+            return False, message
+
+        if self._set_charge_template_field(
+                chargepoint_id, ('chargemode', mode_key, 'limit', 'soc'), soc_value) is None:
+            message = f"No charge_template available for chargepoint {chargepoint_id}"
+            log.error(message)
+            return False, message
+
+        log.info(f"Set {mode_key}_limit_soc to {soc_value}% for chargepoint {chargepoint_id}")
+        return True, f"{label} SoC set to {soc_value}% for chargepoint {chargepoint_id}"
+
+    def _set_charging_limit_amount(
+            self, mode_key: str, label: str, payload: str,
+            chargepoint_id: Optional[str] = None) -> Tuple[bool, str]:
+        """Shared body for instant_charging_limit_amount / pv_charging_limit_amount
+        (the chargemode.<mode_key>.limit.amount field, stored internally in Wh)."""
+        try:
+            amount_value = int(payload)
+            if amount_value < 1 or amount_value > 50:
+                message = f"Invalid amount value: {amount_value}. Must be between 1 and 50"
+                log.error(message)
+                return False, message
+            internal_amount = amount_value * 1000
+        except ValueError:
+            message = f"Invalid amount value: {payload}. Must be an integer"
+            log.error(message)
+            return False, message
+
+        chargepoint_id = self._resolve_chargepoint_id(chargepoint_id)
+        if chargepoint_id is None:
+            message = f"No chargepoint ID found for {mode_key}_limit_amount operation"
+            log.error(message)
+            return False, message
+
+        if self._set_charge_template_field(
+                chargepoint_id, ('chargemode', mode_key, 'limit', 'amount'), internal_amount) is None:
+            message = f"No charge_template available for chargepoint {chargepoint_id}"
+            log.error(message)
+            return False, message
+
+        log.info(
+            f"Set {mode_key}_limit_amount to {amount_value} kWh "
+            f"({internal_amount} Wh) for chargepoint {chargepoint_id}"
+        )
+        message = (
+            f"{label} amount set to {amount_value}kWh ({internal_amount}Wh) "
+            f"for chargepoint {chargepoint_id}"
+        )
+        return True, message
+
+    def _handle_instant_charging_limit_operation(
+            self, payload: str, chargepoint_id: Optional[str] = None) -> Tuple[bool, str]:
+        """Handle instant charging limit type operation."""
+        return self._set_charging_limit_type('instant_charging', 'Instant charging', payload, chargepoint_id)
+
+    def _handle_instant_charging_limit_soc_operation(
+            self, payload: str, chargepoint_id: Optional[str] = None) -> Tuple[bool, str]:
+        """Handle instant charging limit SoC operation."""
+        return self._set_charging_limit_soc('instant_charging', 'Instant charging', payload, chargepoint_id)
+
+    def _handle_instant_charging_limit_amount_operation(
+            self, payload: str, chargepoint_id: Optional[str] = None) -> Tuple[bool, str]:
+        """Handle instant charging limit amount operation."""
+        return self._set_charging_limit_amount('instant_charging', 'Instant charging', payload, chargepoint_id)
+
+    def _handle_pv_charging_limit_operation(
+            self, payload: str, chargepoint_id: Optional[str] = None) -> Tuple[bool, str]:
+        """Handle PV charging limit type operation."""
+        return self._set_charging_limit_type('pv_charging', 'PV charging', payload, chargepoint_id)
+
+    def _handle_pv_charging_limit_soc_operation(
+            self, payload: str, chargepoint_id: Optional[str] = None) -> Tuple[bool, str]:
+        """Handle PV charging limit SoC operation."""
+        return self._set_charging_limit_soc('pv_charging', 'PV charging', payload, chargepoint_id)
+
+    def _handle_pv_charging_limit_amount_operation(
+            self, payload: str, chargepoint_id: Optional[str] = None) -> Tuple[bool, str]:
+        """Handle PV charging limit amount operation."""
+        return self._set_charging_limit_amount('pv_charging', 'PV charging', payload, chargepoint_id)
+
+    def _publish(self, topic: str, payload: Any) -> None:
+        """Publish a write operation - through the caller's own broker connection if the request runs
+        with one (see http_write), otherwise through the daemon's connection."""
+        publisher = getattr(self._request_publisher, 'session', None)
+        # commands from HTTP requests were never retained by the PHP API; only the MQTT set topics are
+        retain = not getattr(self._request_publisher, 'http', False)
+        if publisher is not None:
+            publisher.publish(topic, payload, retain=retain)
+        else:
+            info = self.client.publish(topic, payload, qos=0, retain=retain)
+            if info.rc != mqtt.MQTT_ERR_SUCCESS:
+                raise ConnectionError(f"Publish to {topic} failed: {mqtt.error_string(info.rc)}")
+
+    @contextlib.contextmanager
+    def http_write(self, session=None):
+        """Run the write handlers of the current thread for an HTTP request: not retained and, with a
+        session, through the caller's own broker connection (and with the caller's permissions)."""
+        self._request_publisher.http = True
+        self._request_publisher.session = session
+        self._request_publisher.templates = {}
+        try:
+            yield
+        finally:
+            self._request_publisher.http = False
+            self._request_publisher.session = None
+            self._request_publisher.templates = None
+
+    def _publish_json(self, topic: str, data: Dict[str, Any]):
+        """Publish JSON data to a topic."""
+        self._publish(topic, json.dumps(data))
+        log.debug(f"Published JSON to {topic}")
+        match = re.fullmatch(r'openWB/set/chargepoint/(\d+)/set/charge_template', topic)
+        written = getattr(self._request_publisher, 'templates', None)
+        if match and written is not None:
+            written[match.group(1)] = copy.deepcopy(data)
+
+    def _publish_revision(self):
+        """Publish API revision number."""
+        try:
+            revision_topic = "openWB/simpleAPI/revision"
+            revision_value = "2"
+            self.client.publish(revision_topic, revision_value, qos=0, retain=True)
+            log.info(f"Published API revision: {revision_value}")
+        except Exception as e:
+            log.error(f"Failed to publish revision: {e}")
+
+    def _set_vehicle(self, chargepoint_id: str, value: str) -> Tuple[bool, str]:
+        """Assign a vehicle to a chargepoint."""
+        try:
+            vehicle_id = int(value)
+        except ValueError:
+            message = f"Invalid vehicle ID: {value}"
+            log.error(message)
+            return False, message
+
+        if vehicle_id < 0:
+            message = "Vehicle ID must be >= 0"
+            return False, message
+
+        topic = f"openWB/set/chargepoint/{chargepoint_id}/config/ev"
+        self._publish(topic, str(vehicle_id))
+        log.info(f"Assigned vehicle {vehicle_id} to chargepoint {chargepoint_id}")
+        return True, f"Vehicle {vehicle_id} assigned to chargepoint {chargepoint_id}"
+
+    def _set_manual_soc(self, chargepoint_id: str, value: str) -> Tuple[bool, str]:
+        """Set the manually entered SoC for the vehicle assigned to a chargepoint."""
+        try:
+            soc = int(value)
+            if soc < 0 or soc > 100:
+                message = f"Manual SoC must be between 0 and 100, got {soc}"
+                return False, message
+        except ValueError:
+            message = f"Invalid SoC value: {value}"
+            log.error(message)
+            return False, message
+
+        config = self.raw_value_cache.get(f"openWB/chargepoint/{chargepoint_id}/config")
+        vehicle_id = config.get('ev') if isinstance(config, dict) else None
+        if vehicle_id is None:
+            message = f"No vehicle assigned to chargepoint {chargepoint_id}"
+            log.error(message)
+            return False, message
+
+        topic = f"openWB/set/vehicle/{vehicle_id}/soc_module/calculated_soc_state/manual_soc"
+        self._publish(topic, str(soc))
+        log.info(f"Set manual SoC to {soc}% for vehicle {vehicle_id} (chargepoint {chargepoint_id})")
+        return True, f"Manual SoC set to {soc}% for vehicle {vehicle_id} (chargepoint {chargepoint_id})"
+
+    def _get_io_output_map(self, io_id: str, output_type: str) -> Dict[str, Any]:
+        value = self.raw_value_cache.get(f"openWB/io/states/{io_id}/get/{output_type}")
+        return value if isinstance(value, dict) else {}
+
+    @staticmethod
+    def _normalize_io_output_type(output_type: Optional[str]) -> Optional[str]:
+        if output_type is None or str(output_type).strip() == '':
+            return None
+        value = str(output_type).strip().lower()
+        if value in ('digital', 'digital_output'):
+            return 'digital_output'
+        if value in ('analog', 'analog_output'):
+            return 'analog_output'
+        return None
+
+    @staticmethod
+    def _parse_io_output_value(value: Any):
+        if isinstance(value, bool):
+            return value
+        if isinstance(value, (int, float)):
+            return float(value)
+        normalized = str(value).strip().lower()
+        if normalized in ('true', 'on', 'yes'):
+            return True
+        if normalized in ('false', 'off', 'no'):
+            return False
+        # float() would also take "nan", "inf" and "1_0"
+        if is_numeric(normalized):
+            return float(normalized)
+        return value
+
+    def _set_io_output(
+            self, io_id: Optional[str], value: str, output_name: Optional[str],
+            output_type: Optional[str] = None) -> Tuple[bool, str]:
+        """Manually set a digital or analog IO output."""
+        if io_id is None or str(io_id) == '':
+            return False, "Missing io_nr"
+        if output_name is None or str(output_name).strip() == '':
+            return False, "Missing io_output"
+
+        output_name = str(output_name).strip()
+        normalized_type = self._normalize_io_output_type(output_type)
+        parsed_value = self._parse_io_output_value(value)
+
+        if normalized_type is None:
+            digital = self._get_io_output_map(io_id, 'digital_output')
+            analog = self._get_io_output_map(io_id, 'analog_output')
+            if output_name in digital:
+                normalized_type = 'digital_output'
+            elif output_name in analog:
+                normalized_type = 'analog_output'
+            elif isinstance(parsed_value, bool):
+                normalized_type = 'digital_output'
+            else:
+                normalized_type = 'analog_output'
+
+        if normalized_type == 'digital_output':
+            if isinstance(parsed_value, bool):
+                payload = 'true' if parsed_value else 'false'
+            elif isinstance(parsed_value, (int, float)) and float(parsed_value) == 0.0:
+                payload = 'false'
+            elif isinstance(parsed_value, (int, float)) and float(parsed_value) == 1.0:
+                payload = 'true'
+            else:
+                return False, "Digital output expects boolean or 0/1"
+        elif isinstance(parsed_value, bool):
+            payload = '1' if parsed_value else '0'
+        elif isinstance(parsed_value, float):
+            payload = php_echo(parsed_value)
+        else:
+            return False, "Analog output expects a number or boolean"
+
+        topic = f"openWB/set/system/io/{io_id}/set/manual/{normalized_type}/{output_name}"
+        self._publish(topic, payload)
+        log.info(f"Set {normalized_type}/{output_name} to {payload} for io {io_id}")
+        return True, f"Set {normalized_type}/{output_name} to {payload} for io {io_id}"
+
+    def connect(self):
+        """Establish connection to MQTT broker."""
+        try:
+            # Setup TLS if requested
+            if self.use_tls:
+                self.client.tls_set(ca_certs=None, certfile=None, keyfile=None,
+                                    cert_reqs=ssl.CERT_REQUIRED, tls_version=ssl.PROTOCOL_TLS,
+                                    ciphers=None)
+                if not self.validate_cert:
+                    self.client.tls_insecure_set(True)
+
+            # Setup authentication if provided
+            if self.username and self.password:
+                self.client.username_pw_set(self.username, self.password)
+
+            # Connect to broker
+            self.client.connect(self.host, self.port, 60)
+            return True
+
+        except Exception as e:
+            log.error(f"Failed to connect to MQTT broker: {e}")
+            return False
+
+    def run(self):
+        """Start the MQTT client's own thread and run the HTTP server on the main thread."""
+        if not self.connect():
+            sys.exit(1)
+
+        self.client.loop_start()
+        log.info(
+            f"SimpleMQTT API Daemon started, HTTP server listening on "
+            f"{self.http_server.server_address[0]}:{self.http_server.server_address[1]}"
+        )
+
+        try:
+            self.http_server.serve_forever()
+        except KeyboardInterrupt:
+            log.info("Received interrupt signal, shutting down...")
+        finally:
+            self.http_server.shutdown()
+            self.client.loop_stop()
+            self.client.disconnect()
+
+
+def select_config_file(config_file: str = CONFIG_FILE_PATH, default_file: str = DEFAULT_CONFIG_FILE_PATH) -> str:
+    if Path(config_file).exists():
+        return config_file
+    log.warning(f"{config_file} not found, using the default configuration {default_file}")
+    return default_file
+
+
+def main():
+    daemon = SimpleMQTTDaemon(config_file=select_config_file())
+    daemon.run()
+
+
+if __name__ == "__main__":
+    main()

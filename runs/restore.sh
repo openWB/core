@@ -63,6 +63,13 @@ source "$OPENWB_BASE_DIR/runs/update_version_helpers.sh" || exit 1
 	else
 		echo "Backup does not contain configuration. Skipping restore."
 	fi
+	if [[ -f "$WORKING_DIR/simpleapi_config.json" ]]; then
+		sudo mv -v -f "${WORKING_DIR}/simpleapi_config.json" "/home/openwb/"
+		sudo chown openwb:openwb "/home/openwb/simpleapi_config.json"
+		sudo chmod 600 "/home/openwb/simpleapi_config.json"
+	else
+		echo "Backup does not contain simpleapi_config.json. Skipping restore."
+	fi
 	if [[ -f "$WORKING_DIR/mosquitto_ctrl" ]]; then
 		sudo mv -v -f "${WORKING_DIR}/mosquitto_ctrl" "/home/openwb/.config/"
 	else
