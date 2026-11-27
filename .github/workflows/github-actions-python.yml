@@ -66,8 +66,16 @@ jobs:
         with:
           path: runs
           flake8_version: "7.3.0"
+      - name: Flake8 with annotations in simpleAPI folder
+        uses: TrueBrain/actions-flake8@v2.4
+        with:
+          path: simpleAPI
+          flake8_version: "7.3.0"
       - name: Test with pytest
         run: |
           for pythonpath in packages runs; do
             PYTHONPATH="$pythonpath" "${RUNNER_TEMP}/openwb-venv/.venv/bin/python" -m pytest packages --log-cli-level=DEBUG
           done
+      - name: Test simpleAPI with pytest
+        run: |
+          PYTHONPATH=simpleAPI "${RUNNER_TEMP}/openwb-venv/.venv/bin/python" -m pytest simpleAPI --log-cli-level=DEBUG
