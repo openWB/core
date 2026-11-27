@@ -51,3 +51,26 @@ def test_redact_client_secret():
     expected = '{"client_id": "abc", "client_secret": "***REDACTED***"}'
 
     assert redact_sensitive_info(message) == expected
+
+
+@pytest.mark.parametrize("message, expected", [
+    pytest.param("{'portal_username': 'user', 'portal_password': 'abc123', 'rscp_key': 'xyz'}",
+                 "{'portal_username': 'user', 'portal_password': '***REDACTED***', 'rscp_key': '***REDACTED***'}",
+                 id="e3dc configuration as dict"),
+    pytest.param('{"smb_password": "abc123", "sponsor_token": "xyz"}',
+                 '{"smb_password": "***REDACTED***", "sponsor_token": "***REDACTED***"}',
+                 id="prefixed keys in json"),
+    pytest.param("{'portal_password': \"it's secret\"}",
+                 "{'portal_password': '***REDACTED***'}",
+                 id="repr of a value with an apostrophe"),
+    pytest.param("{'api_key': 'abc', 'secret_key': 'def'}",
+                 "{'api_key': '***REDACTED***', 'secret_key': '***REDACTED***'}",
+                 id="key fields"),
+])
+def test_redact_prefixed_and_key_fields(message, expected):
+    assert redact_sensitive_info(message) == expected
+
+
+def test_keep_keys_that_only_contain_a_sensitive_word():
+    message = "{'max_tokens': 5, 'passwords_changed': 'no', 'turkey': 'x'}"
+    assert redact_sensitive_info(message) == message

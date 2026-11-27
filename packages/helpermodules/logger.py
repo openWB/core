@@ -22,12 +22,16 @@ NUMBER_OF_LOGFILES = 3
 
 KNOWN_SENSITIVE_FIELDS = [
     'password', 'secret', 'token', 'apikey', 'access_token',
-    'refresh_token', 'accesstoken', 'refreshtoken', 'client_secret'
+    'refresh_token', 'accesstoken', 'refreshtoken', 'client_secret',
+    'api_key', 'secret_key', 'access_key', 'psk_key', 'rscp_key'
 ]
 REDACTION_PATTERNS = [
     (r'({field})[=:]([^\s&]+)', r'\1=***REDACTED***'),  # field=value, i.e. for URL query parameters
-    (r'"{field}":\s*"(.*?)"', r'"{field}": "***REDACTED***"'),  # "field": "value", JSON formatted data
-    (r'\'{field}\':\s*\'(.*?)\'', r"'{field}': '***REDACTED***'")  # 'field': 'value', JSON formatted data
+    # JSON/dict formatted data: "field": "value", 'field': 'value' and 'field': "value" (repr of a value with an
+    # apostrophe). Keys that only end in a known field are redacted too, i.e. portal_password or sponsor_token.
+    (r'"([\w.-]*{field})":\s*"(.*?)"', r'"\1": "***REDACTED***"'),
+    (r'\'([\w.-]*{field})\':\s*\'(.*?)\'', r"'\1': '***REDACTED***'"),
+    (r'\'([\w.-]*{field})\':\s*"(.*?)"', r"'\1': '***REDACTED***'"),
 ]
 # Credentials in a URL (scheme://user:password@host/) carry no field name for REDACTION_PATTERNS
 # to key on. The user name is kept, it is useful when diagnosing authentication problems.
