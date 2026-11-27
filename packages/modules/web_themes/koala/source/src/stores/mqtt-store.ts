@@ -1,5 +1,14 @@
 import { defineStore } from 'pinia';
-import { ref, computed, ComputedRef } from 'vue';
+import type { Pinia, StoreGeneric } from 'pinia';
+import {
+  ref,
+  computed,
+  ComputedRef,
+  hasInjectionContext,
+  inject,
+  unref,
+} from 'vue';
+import type { InjectionKey, Ref } from 'vue';
 import mqtt, { IClientOptions, IClientPublishOptions } from 'mqtt';
 import { QoS } from 'mqtt-packet';
 import { useQuasar } from 'quasar';
@@ -33,7 +42,22 @@ import type {
   RangeValue,
 } from './mqtt-store-model';
 
-export const useMqttStore = defineStore('mqtt', () => {
+export interface MqttSettingsTransport {
+  topics: Ref<TopicList>;
+  subscribe: (topic: string, defaultValue: unknown) => void;
+  updateTopic: (
+    topic: string,
+    payload: unknown,
+    path: string | undefined,
+    publish: boolean,
+  ) => void;
+  publish: (topic: string, payload: unknown) => Promise<boolean>;
+  command: (event: SystemCommandEvent) => void;
+}
+
+// The settings dialog reuses the same field accessors with an isolated transport.
+// Its descendants never publish to the live store until the user confirms.
+export function mqttStoreSetup(transport?: MqttSettingsTransport) {
   const $q = useQuasar();
   let mqttUser: string | undefined = undefined;
   let mqttPass: string | undefined = undefined;
@@ -64,7 +88,7 @@ export const useMqttStore = defineStore('mqtt', () => {
 
   // State
   const subscriptions = ref<TopicCount>({});
-  const topics = ref<TopicList>({});
+  const topics = transport?.topics ?? ref<TopicList>({});
   const mqttClientConnected = ref(false);
 
   // General functions and methods for the store - BEGIN
@@ -228,6 +252,10 @@ export const useMqttStore = defineStore('mqtt', () => {
     objectPath: string | undefined = undefined,
     publish: boolean = false,
   ) {
+    if (transport) {
+      transport.updateTopic(topic, payload, objectPath, publish);
+      return;
+    }
     /**
      * helper function to update nested objects py path
      * @param object object to update
@@ -310,6 +338,10 @@ export const useMqttStore = defineStore('mqtt', () => {
     }
     topics.forEach((topic) => {
       if (addSubscription(topic) == 1) {
+        if (transport) {
+          transport.subscribe(topic, defaultValue);
+          return;
+        }
         initTopic(topic, defaultValue);
         if (!mqttClient) {
           console.error('mqttClient is not initialized');
@@ -357,6 +389,10 @@ export const useMqttStore = defineStore('mqtt', () => {
       topics = [topics];
     }
     topics.forEach((topic) => {
+      if (transport) {
+        removeSubscription(topic);
+        return;
+      }
       if (removeSubscription(topic) <= 0) {
         removeTopic(topic);
         if (!mqttClient) {
@@ -440,6 +476,11 @@ export const useMqttStore = defineStore('mqtt', () => {
     retain: boolean = true,
     qos: QoS = 2,
   ): Promise<boolean> {
+    if (transport)
+      return transport.publish(
+        topic.replace('openWB/set/', 'openWB/'),
+        payload,
+      );
     console.debug('doPublish', topic, payload);
     if (!mqttClient) {
       console.error('mqttClient is not initialized');
@@ -516,6 +557,10 @@ export const useMqttStore = defineStore('mqtt', () => {
    * @param event Command object to send
    */
   function sendCommand(event: SystemCommandEvent) {
+    if (transport) {
+      transport.command(event);
+      return;
+    }
     console.log(
       'sendCommand',
       `openWB/set/command/${mqttClient?.options.clientId}/todo/${event.command}`,
@@ -4964,4 +5009,20 @@ export const useMqttStore = defineStore('mqtt', () => {
     etProviderConfigured,
     etPrices,
   };
-});
+}
+
+const useLiveMqttStore = defineStore('mqtt', () => mqttStoreSetup());
+export type MqttStore = ReturnType<typeof useLiveMqttStore>;
+export const settingsMqttStoreKey: InjectionKey<MqttStore | Ref<MqttStore>> =
+  Symbol('settingsMqttStore');
+
+export const useMqttStore: typeof useLiveMqttStore = Object.assign(
+  (pinia?: Pinia | null, hot?: StoreGeneric) => {
+    const settingsStore =
+      !pinia && hasInjectionContext()
+        ? inject(settingsMqttStoreKey, null)
+        : null;
+    return unref(settingsStore) ?? useLiveMqttStore(pinia, hot);
+  },
+  { $id: useLiveMqttStore.$id },
+);

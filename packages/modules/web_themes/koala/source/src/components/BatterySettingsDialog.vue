@@ -1,12 +1,20 @@
 <template>
   <q-dialog
-    v-model="isOpen"
+    v-model="visible"
     :maximized="isSmallScreen"
     :backdrop-filter="isSmallScreen ? '' : 'blur(4px)'"
+    :persistent="dashboard && saving"
   >
     <q-card class="card-width">
       <q-card-section>
-        <div class="row no-wrap">
+        <SettingsDialogHeader
+          v-if="dashboard"
+          :name="name"
+          :saving="saving"
+          @close="visible = false"
+          @apply="applyChanges"
+        />
+        <div v-else class="row no-wrap">
           <div>
             <div class="text-h6 q-pr-sm">Speicher-Beachtung:</div>
             <div class="text-h6 ellipsis" :title="name">{{ name }}</div>
@@ -23,7 +31,7 @@
         </div>
       </q-card-section>
       <q-separator />
-      <q-card-section>
+      <q-card-section :inert="saving || undefined">
         <div class="text-subtitle2">Ladepriorität:</div>
         <BatteryModeButtons />
         <RangeSliderStandard
@@ -37,6 +45,12 @@
           :markers="10"
         />
       </q-card-section>
+      <SettingsDiscardDialog
+        :model-value="confirmClose"
+        :saving="saving"
+        @discard="discardChanges"
+        @apply="applyChanges"
+      />
     </q-card>
   </q-dialog>
 </template>
@@ -46,7 +60,9 @@ import { computed, ref } from 'vue';
 import { Screen } from 'quasar';
 import BatteryModeButtons from './BatteryModeButtons.vue';
 import RangeSliderStandard from './RangeSliderStandard.vue';
-import { useMqttStore } from 'src/stores/mqtt-store';
+import { useSettingsDialog } from 'src/composables/useSettingsDialog';
+import SettingsDialogHeader from './SettingsDialogHeader.vue';
+import SettingsDiscardDialog from './SettingsDiscardDialog.vue';
 
 const isOpen = ref(false);
 
@@ -54,7 +70,18 @@ const props = defineProps<{
   batteryId: number | undefined;
 }>();
 
-const mqttStore = useMqttStore();
+const {
+  dashboard,
+  mqttStore,
+  visible,
+  saving,
+  confirmClose,
+  discardChanges,
+  applyChanges,
+} = useSettingsDialog(
+  () => isOpen.value,
+  (value) => (isOpen.value = value),
+);
 
 const isSmallScreen = computed(() => Screen.lt.sm);
 
@@ -62,19 +89,19 @@ const name = computed(() => {
   if (props.batteryId === undefined || props.batteryId === -1) {
     return 'Übergreifend';
   }
-  return mqttStore.batteryName(props.batteryId);
+  return mqttStore.value.batteryName(props.batteryId);
 });
 
 defineExpose({
   open: () => (isOpen.value = true),
 });
 
-const batteryMode = computed(() => mqttStore.batteryMode().value);
+const batteryMode = computed(() => mqttStore.value.batteryMode().value);
 
 const batteryRange = computed({
-  get: () => mqttStore.batteryChargePriorityRange,
+  get: () => mqttStore.value.batteryChargePriorityRange,
   set: (value) => {
-    mqttStore.batteryChargePriorityRange = value;
+    mqttStore.value.batteryChargePriorityRange = value;
   },
 });
 </script>

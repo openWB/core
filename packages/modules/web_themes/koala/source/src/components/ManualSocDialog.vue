@@ -1,17 +1,22 @@
 <template>
-  <q-dialog
-    v-model="visible"
-    @hide="reset"
-  >
+  <q-dialog v-model="visible" @hide="reset" :persistent="dashboard && saving">
     <q-card>
       <q-card-section>
-        <div class="row">
+        <SettingsDialogHeader
+          v-if="dashboard"
+          :name="vehicleName"
+          subtitle="SoC-Eingabe"
+          :saving="saving"
+          @close="visible = false"
+          @apply="applyChanges"
+        />
+        <div v-else class="row">
           <div class="text-h6 q-mr-md">SoC-Eingabe {{ vehicleName }}</div>
           <q-space />
           <q-btn icon="close" flat round dense v-close-popup />
         </div>
       </q-card-section>
-      <q-card-section class="q-py-none">
+      <q-card-section class="q-py-none" :inert="saving || undefined">
         <div class="row justify-center items-center">
           <div class="col-6">
             <q-input
@@ -51,12 +56,8 @@
           </div>
         </div>
       </q-card-section>
-      <q-card-actions align="center" class="q-mt-md">
-        <q-btn
-          label="Abbrechen"
-          color="negative"
-          v-close-popup
-        />
+      <q-card-actions v-if="!dashboard" align="center" class="q-mt-md">
+        <q-btn label="Abbrechen" color="negative" v-close-popup />
         <q-btn
           label="Bestätigen"
           color="primary"
@@ -64,15 +65,21 @@
           @click="confirmChanges"
         />
       </q-card-actions>
+      <SettingsDiscardDialog
+        :model-value="confirmClose"
+        :saving="saving"
+        @discard="discardChanges"
+        @apply="applyChanges"
+      />
     </q-card>
   </q-dialog>
 </template>
 
 <script setup lang="ts">
-import { useMqttStore } from 'src/stores/mqtt-store';
+import { useSettingsDialog } from 'src/composables/useSettingsDialog';
+import SettingsDialogHeader from './SettingsDialogHeader.vue';
+import SettingsDiscardDialog from './SettingsDiscardDialog.vue';
 import { computed, ref } from 'vue';
-
-const mqttStore = useMqttStore();
 
 const props = defineProps<{
   vehicleId: number | undefined;
@@ -84,16 +91,25 @@ const emit = defineEmits<{
   'update:socDialogVisible': [value: boolean];
 }>();
 
-const vehicleName = computed(() => {
-  const vehicle = mqttStore.vehicleList.find((v) => v.id === props.vehicleId);
-  return vehicle?.name || '';
-});
+const {
+  dashboard,
+  mqttStore,
+  visible,
+  saving,
+  confirmClose,
+  discardChanges,
+  applyChanges,
+} = useSettingsDialog(
+  () => props.socDialogVisible,
+  (value) => emit('update:socDialogVisible', value),
+  () => confirmChanges(),
+);
 
-const visible = computed({
-  get: () => props.socDialogVisible,
-  set: (value) => {
-    emit('update:socDialogVisible', value);
-  },
+const vehicleName = computed(() => {
+  const vehicle = mqttStore.value.vehicleList.find(
+    (v) => v.id === props.vehicleId,
+  );
+  return vehicle?.name || '';
 });
 
 const socValue = ref<number | undefined>(undefined);
@@ -102,7 +118,7 @@ const socInputValue = computed({
   get: () => {
     return (
       socValue.value ??
-      mqttStore.vehicleSocManualValue(props.vehicleId).value ??
+      mqttStore.value.vehicleSocManualValue(props.vehicleId).value ??
       0
     );
   },
@@ -124,7 +140,9 @@ const reset = () => {
 };
 
 const confirmChanges = () => {
-  mqttStore.vehicleSocManualValue(props.vehicleId, props.chargePointId).value =
-    socInputValue.value;
+  mqttStore.value.vehicleSocManualValue(
+    props.vehicleId,
+    props.chargePointId,
+  ).value = socInputValue.value;
 };
 </script>

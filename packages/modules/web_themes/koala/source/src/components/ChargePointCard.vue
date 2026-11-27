@@ -6,11 +6,21 @@
       'full-height': props.fullHeight,
     }"
   >
-    <q-card-section class="row no-wrap">
-      <div class="text-h6 text-bold ellipsis" :title="name">
-        {{ name }}
+    <q-card-section class="row no-wrap items-center device-card-heading">
+      <div class="col device-card-title">
+        <q-icon
+          name="ev_station"
+          size="sm"
+          class="device-card-icon"
+          :style="{ color: chargePointColor }"
+        />
+        <div
+          class="col text-h6 text-bold ellipsis device-card-name"
+          :title="name"
+        >
+          {{ name }}
+        </div>
       </div>
-      <q-space />
       <q-btn
         v-if="props.closeButton"
         icon="close"

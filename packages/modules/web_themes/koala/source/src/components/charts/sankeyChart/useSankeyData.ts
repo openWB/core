@@ -2,7 +2,6 @@
  * Store adapter for the live Sankey diagram.
  */
 import { computed } from 'vue';
-import { useQuasar } from 'quasar';
 import { useMqttStore } from 'src/stores/mqtt-store';
 import {
   allocate,
@@ -23,7 +22,6 @@ const COUNTER_ID_PREFIX = 'counter';
 
 export function useSankeyData() {
   const mqttStore = useMqttStore();
-  const $q = useQuasar();
 
   const num = (value: unknown): number => Number(value) || 0;
 
@@ -120,12 +118,6 @@ export function useSankeyData() {
     }),
   );
 
-  // A small screen has no room for node names once the household splits into
-  // a third column. The names are then hidden and listed in a legend instead.
-  const compact = computed(() => {
-    return $q.screen.lt.sm && allocation.value.houseParts.length > 0;
-  });
-
   /**
    * Resolve the display color for a node id.
    */
@@ -139,7 +131,7 @@ export function useSankeyData() {
         return cssVar('--q-battery-stroke');
       case 'house':
       case 'house_rest':
-        return cssVar('--q-home-stroke');
+        return '#94A3B8';
       case COUNTER_GROUP_ID:
       case COUNTER_HOUSE_GROUP_ID:
         return cssVar('--q-secondary-counter-stroke');
@@ -177,7 +169,7 @@ export function useSankeyData() {
     return getComputedStyle(document.body).color || '#000000';
   };
 
-  return { allocation, compact, colorForNode, labelColor };
+  return { allocation, colorForNode, labelColor };
 }
 
 /**

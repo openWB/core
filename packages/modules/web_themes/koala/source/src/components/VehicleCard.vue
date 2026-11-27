@@ -6,11 +6,21 @@
       'full-height': props.fullHeight,
     }"
   >
-    <q-card-section class="row no-wrap">
-      <div class="text-h6 text-bold ellipsis" :title="vehicle?.name">
-        {{ vehicle?.name }}
+    <q-card-section class="row no-wrap items-center device-card-heading">
+      <div class="col device-card-title">
+        <q-icon
+          name="directions_car"
+          size="sm"
+          class="device-card-icon"
+          :style="{ color: vehicleColor }"
+        />
+        <div
+          class="col text-h6 text-bold ellipsis device-card-name"
+          :title="vehicle?.name"
+        >
+          {{ vehicle?.name }}
+        </div>
       </div>
-      <q-space />
       <q-btn
         v-if="props.closeButton"
         icon="close"

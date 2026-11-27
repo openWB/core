@@ -17,20 +17,28 @@
       :key="`${chartComponent.name}-${chartComponent.name === 'history_chart' ? renderKey : 0}`"
       :name="chartComponent.name"
     >
-      <component :is="chartComponent.component" :show-legend="legendVisible" />
+      <component
+        :is="chartComponent.component"
+        v-bind="
+          chartComponent.name === 'forecast_price_chart'
+            ? { dashboard: !!props.includeDashboard }
+            : {}
+        "
+        :show-legend="localDataStore.isLegendVisible(chartComponent.name)"
+      />
     </q-carousel-slide>
 
     <template v-slot:control>
       <q-carousel-control position="bottom-left">
         <q-btn
-          v-if="
-            currentSlide === 'history_chart' ||
-            (currentSlide === 'sankey_chart' && sankeyCompact)
-          "
+          v-if="currentSlide === 'history_chart'"
           size="sm"
           push
           class="q-mr-sm legend-button-text"
           label="Legende"
+          :aria-pressed="
+            currentSlide ? localDataStore.isLegendVisible(currentSlide) : false
+          "
           @click="toggleLegend"
         />
       </q-carousel-control>
@@ -51,15 +59,14 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue';
 import { useQuasar } from 'quasar';
-import EnergyFlowChart from './charts/energyFlowChart/EnergyFlowChart.vue';
-import HistoryChart from './charts/historyChart/HistoryChart.vue';
-import DailyTotals from './charts/dailyTotals/DailyTotals.vue';
-import SankeyChart from './charts/sankeyChart/SankeyChart.vue';
 import { useLocalDataStore } from 'src/stores/localData-store';
-import { useMqttStore } from 'src/stores/mqtt-store';
-import { useSankeyData } from './charts/sankeyChart/useSankeyData';
+import { useTopCharts } from './charts/topCharts';
 
-const mqttStore = useMqttStore();
+const props = defineProps<{
+  excludedSlides?: string[];
+  includeDashboard?: boolean;
+}>();
+const availableCharts = useTopCharts();
 
 defineOptions({
   name: 'ChartCarousel',
@@ -68,10 +75,9 @@ const $q = useQuasar();
 const localDataStore = useLocalDataStore();
 const renderKey = ref(0);
 const toggleLegend = () => {
-  localDataStore.toggleLegendVisibility();
+  if (currentSlide.value)
+    localDataStore.toggleLegendVisibility(currentSlide.value);
 };
-const legendVisible = computed(() => localDataStore.legendVisible);
-const { compact: sankeyCompact } = useSankeyData();
 const fullscreen = ref(false);
 
 const carouselKey = computed(() =>
@@ -80,42 +86,11 @@ const carouselKey = computed(() =>
 
 const currentSlide = ref<string | null>(null);
 
-const componentMap = {
-  flow_diagram: EnergyFlowChart,
-  history_chart: HistoryChart,
-  daily_totals: DailyTotals,
-  sankey_chart: SankeyChart,
-};
-
-const chartCarouselItems = computed(() => {
-  const slideOrder = mqttStore.themeConfiguration?.top_carousel_slide_order;
-  if (!slideOrder || slideOrder.length === 0) {
-    return [
-      {
-        name: 'flow_diagram',
-        component: EnergyFlowChart,
-      },
-      {
-        name: 'history_chart',
-        component: HistoryChart,
-      },
-      {
-        name: 'daily_totals',
-        component: DailyTotals,
-      },
-      {
-        name: 'sankey_chart',
-        component: SankeyChart,
-      },
-    ];
-  }
-  return slideOrder
-    .map((name) => ({
-      name,
-      component: componentMap[name as keyof typeof componentMap],
-    }))
-    .filter((item) => !!item.component);
-});
+const chartCarouselItems = computed(() =>
+  availableCharts.value.filter(
+    (chart) => !props.excludedSlides?.includes(chart.name),
+  ),
+);
 
 watch(
   () => fullscreen.value,
@@ -135,7 +110,10 @@ watch(
 watch(
   chartCarouselItems,
   (items) => {
-    if (items.length > 0) {
+    if (
+      items.length > 0 &&
+      !items.some((item) => item.name === currentSlide.value)
+    ) {
       currentSlide.value = items[0].name;
     }
   },
@@ -150,5 +128,20 @@ watch(
 
 .legend-button-text {
   color: var(--q-carousel-control);
+}
+
+@media (max-width: 599px) {
+  /* Keep all six slide indicators clear of the existing corner controls. */
+  :deep(.q-carousel__navigation--bottom) {
+    left: 96px;
+    right: 54px;
+  }
+  :deep(.q-carousel__navigation .q-btn) {
+    margin: 0;
+    padding: 0;
+    width: 24px;
+    min-width: 24px;
+    min-height: 24px;
+  }
 }
 </style>

@@ -1,23 +1,32 @@
 <template>
-  <q-dialog v-model="visible">
+  <q-dialog v-model="visible" :persistent="dashboard && saving">
     <q-card class="dialog-width">
-      <q-card-section class="row items-center no-wrap">
-        <div class="text-h6 ellipsis">Einstellungen {{ name }}</div>
-        <q-space />
-        <q-btn icon="close" flat round dense v-close-popup />
+      <q-card-section>
+        <SettingsDialogHeader
+          v-if="dashboard"
+          :name="name"
+          :saving="saving"
+          @close="visible = false"
+          @apply="applyChanges"
+        />
+        <div v-else class="row items-center no-wrap">
+          <div class="text-h6 ellipsis">Einstellungen {{ name }}</div>
+          <q-space />
+          <q-btn icon="close" flat round dense v-close-popup />
+        </div>
       </q-card-section>
 
       <template v-if="showModeControls">
         <q-separator />
 
-        <q-card-section>
+        <q-card-section :inert="saving || undefined">
           <div class="text-subtitle2">Betriebsmodus</div>
           <ConsumerModeButtons :consumer-id="props.consumerId" />
         </q-card-section>
 
         <q-separator inset />
 
-        <q-card-section>
+        <q-card-section :inert="saving || undefined">
           <div class="row items-center justify-between">
             <div class="text-subtitle2 q-mr-sm">Betriebsmodus umstellen</div>
             <ToggleStandard
@@ -55,7 +64,7 @@
 
             <div
               v-if="resetMode === 'weekly'"
-              class="row items-center q-gutter-sm justify-center no-wrap q-mt-xs"
+              class="row items-center q-gutter-sm justify-center q-mt-xs"
             >
               <div v-for="(day, index) in weekDays" :key="day">
                 <q-btn
@@ -88,7 +97,7 @@
       </template>
 
       <q-separator />
-      <q-card-actions align="right">
+      <q-card-actions align="right" :inert="saving || undefined">
         <q-btn
           flat
           dense
@@ -98,19 +107,28 @@
           type="a"
           href="/openWB/web/settings/#/ConsumerConfiguration"
           :title="`Geräte-Einstellungen ${name ?? ''}`"
+          @click="openDeviceSettings"
         />
       </q-card-actions>
+      <SettingsDiscardDialog
+        :model-value="confirmClose"
+        :saving="saving"
+        @discard="discardChanges"
+        @apply="applyChanges"
+      />
     </q-card>
   </q-dialog>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
-import { useMqttStore } from 'src/stores/mqtt-store';
+import { computed, ref } from 'vue';
+import { useSettingsDialog } from 'src/composables/useSettingsDialog';
 import { useChargeModes } from 'src/composables/useChargeModes';
 import type { ConsumerResetTrigger } from 'src/stores/mqtt-store-model';
 import ConsumerModeButtons from './ConsumerModeButtons.vue';
 import ToggleStandard from './ToggleStandard.vue';
+import SettingsDialogHeader from './SettingsDialogHeader.vue';
+import SettingsDiscardDialog from './SettingsDiscardDialog.vue';
 
 const props = defineProps<{
   consumerId: number;
@@ -121,15 +139,36 @@ const emit = defineEmits<{
   'update:modelValue': [value: boolean];
 }>();
 
-const mqttStore = useMqttStore();
+const deviceSettingsRequested = ref(false);
+const {
+  dashboard,
+  mqttStore,
+  field,
+  visible,
+  saving,
+  confirmClose,
+  discardChanges,
+  applyChanges,
+} = useSettingsDialog(
+  () => props.modelValue,
+  (value) => {
+    emit('update:modelValue', value);
+    if (!value && deviceSettingsRequested.value) {
+      deviceSettingsRequested.value = false;
+      window.location.assign('/openWB/web/settings/#/ConsumerConfiguration');
+    }
+  },
+);
 const { chargeModes } = useChargeModes();
 
-const name = computed(() => mqttStore.consumerName(props.consumerId));
+const name = computed(() => mqttStore.value.consumerName(props.consumerId));
 
-const visible = computed({
-  get: () => props.modelValue,
-  set: (value) => emit('update:modelValue', value),
-});
+function openDeviceSettings(event: Event) {
+  if (!dashboard.value) return;
+  event.preventDefault();
+  deviceSettingsRequested.value = true;
+  visible.value = false;
+}
 
 const resetModes: { value: ConsumerResetTrigger; label: string }[] = [
   { value: 'once', label: 'Einmalig' },
@@ -137,12 +176,22 @@ const resetModes: { value: ConsumerResetTrigger; label: string }[] = [
   { value: 'weekly', label: 'Wöchentlich' },
 ];
 
-const resetEnabled = mqttStore.consumerResetEnabled(props.consumerId);
-const resetMode = mqttStore.consumerResetTrigger(props.consumerId);
-const resetTargetMode = mqttStore.consumerResetTargetMode(props.consumerId);
-const resetTime = mqttStore.consumerResetTime(props.consumerId);
-const resetOnceDate = mqttStore.consumerResetOnceDate(props.consumerId);
-const resetWeeklyDays = mqttStore.consumerResetWeeklyDays(props.consumerId);
+const resetEnabled = field((store) =>
+  store.consumerResetEnabled(props.consumerId),
+);
+const resetMode = field((store) =>
+  store.consumerResetTrigger(props.consumerId),
+);
+const resetTargetMode = field((store) =>
+  store.consumerResetTargetMode(props.consumerId),
+);
+const resetTime = field((store) => store.consumerResetTime(props.consumerId));
+const resetOnceDate = field((store) =>
+  store.consumerResetOnceDate(props.consumerId),
+);
+const resetWeeklyDays = field((store) =>
+  store.consumerResetWeeklyDays(props.consumerId),
+);
 const weekDays = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
 
 const defaultWeekdayIndex = () => {
@@ -184,7 +233,7 @@ const toggleWeeklyDay = (index: number) => {
 };
 
 const consumerUsageType = computed(() =>
-  mqttStore.consumerUsageType(props.consumerId),
+  mqttStore.value.consumerUsageType(props.consumerId),
 );
 
 /** Meter-only consumers cannot be controlled, so hide the mode controls. */

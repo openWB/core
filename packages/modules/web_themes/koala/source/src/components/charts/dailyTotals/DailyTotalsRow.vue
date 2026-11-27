@@ -11,15 +11,10 @@
     <!-- Title -->
     <div class="col-title text-weight-bold">
       <div v-if="componentNameVisible" class="title-wrapper">
-        <template v-if="props.item.level === 'secondary'">
-          <div class="ellipsis-wrapper">
-            {{ props.item.title }}
-            <q-tooltip>{{ props.item.title }}</q-tooltip>
-          </div>
-        </template>
-        <template v-else>
+        <div class="ellipsis-wrapper">
           {{ props.item.title }}
-        </template>
+          <q-tooltip>{{ props.item.title }}</q-tooltip>
+        </div>
         <!-- Expansion chevron icon -->
         <q-icon
           v-if="secondaryComponentsConfigured"
@@ -30,7 +25,13 @@
     </div>
     <!-- SOC -->
     <div :class="props.socValueVisible ? 'col-soc' : 'col-soc-spacer'">
-      <span v-if="props.socValueVisible && props.item.id === 'battery'">
+      <span
+        v-if="
+          props.socValueVisible &&
+          props.item.icon === 'battery' &&
+          Number.isFinite(props.item.soc)
+        "
+      >
         {{ props.item.soc }}%
       </span>
     </div>
@@ -38,10 +39,8 @@
     <div class="col-arrow">
       <q-icon
         v-if="props.currentPowerVisible && props.item.power !== undefined"
-        :name="
-          arrowDirection(item.id).noCurrent ? 'horizontal_rule' : 'double_arrow'
-        "
-        :class="{ 'rotate-180': arrowDirection(props.item.id).rotate180 }"
+        :name="arrowDirection.noCurrent ? 'horizontal_rule' : 'double_arrow'"
+        :class="{ 'rotate-180': arrowDirection.rotate180 }"
       />
     </div>
     <!-- Power -->
@@ -90,8 +89,8 @@
 
 <script setup lang="ts">
 import { computed } from 'vue';
-import { useMqttStore } from 'src/stores/mqtt-store';
 import type { DailyTotalsItem } from 'src/components/models/daily-totals-model';
+import { powerArrow } from 'src/composables/useDailyTotalsData';
 import BatteryIcon from 'src/assets/icons/owbBattery_2.svg?component';
 import GridIcon from 'src/assets/icons/owbGrid.svg?component';
 import PvIcon from 'src/assets/icons/owbPV.svg?component';
@@ -100,8 +99,6 @@ import VehicleIcon from 'src/assets/icons/owbVehicle.svg?component';
 import ChargePointIcon from 'src/assets/icons/owbChargePoint_2.svg?component';
 import CounterIcon from 'src/assets/icons/owbCounter.svg?component';
 import ConsumerIcon from 'src/assets/icons/owbConsumer.svg?component';
-
-const mqttStore = useMqttStore();
 
 const props = defineProps<{
   item: DailyTotalsItem;
@@ -115,41 +112,7 @@ const props = defineProps<{
 
 const rowHeightCssValue = computed(() => `${props.rowHeight}px`);
 
-const arrowDirection = (id: string) => {
-  let value = 0;
-  switch (id) {
-    case 'grid':
-      value = mqttStore.counterPower('value') as number;
-      break;
-    case 'battery':
-      value = mqttStore.batteryTotalPower('value') as number;
-      break;
-    case 'pv':
-      value = mqttStore.pvPowerTotal('value') as number;
-      break;
-    case 'house':
-      value = mqttStore.homePower('value') as number;
-      break;
-    case 'chargepoint':
-      value = mqttStore.chargePointSumPower('value') as number;
-      break;
-    case 'consumer':
-      value = mqttStore.consumerSumPower('value') as number;
-      break;
-    default:
-      if (id.startsWith('counter-')) {
-        const counterId = Number(id.replace('counter-', ''));
-        value = mqttStore.counterPower('value', counterId) as number;
-      }
-  }
-  const noCurrent = value === 0;
-  let rotate180 = false;
-
-  if (id === 'grid' || id.startsWith('counter-')) rotate180 = value < 0;
-  else rotate180 = value > 0;
-
-  return { noCurrent, rotate180 };
-};
+const arrowDirection = computed(() => powerArrow(props.item));
 
 const iconMap = {
   grid: GridIcon,
@@ -182,10 +145,13 @@ const iconMap = {
   flex: 0 0 2rem;
   display: flex;
   justify-content: center;
+  align-items: center;
 }
 .base-icon {
   width: 1.75rem;
   height: 1.75rem;
+  /* Center the visible glyph against the text, rather than its line box. */
+  transform: translateY(-1px);
 }
 .col-title {
   flex: 0 0 5.5rem;
@@ -194,6 +160,7 @@ const iconMap = {
   display: flex;
   align-items: center;
   gap: 0.25rem;
+  line-height: 1.4;
 }
 .ellipsis-wrapper {
   overflow: hidden;

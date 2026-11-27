@@ -116,12 +116,12 @@ $consumer: #7d42f5;
   }
   // Header colors
   .q-header {
-    background-color: var(--q-background-2);
+    background-color: var(--q-card-background);
     color: var(--q-text);
   }
   // Drawer background
   .q-drawer {
-    background-color: var(--q-background-2);
+    background-color: var(--q-card-background);
   }
   // Tab panel background
   .q-tab-panels {
@@ -316,11 +316,11 @@ $dark-table-hover: #ffffff12;
   // Header colors
   .q-header {
     color: var(--q-white);
-    background-color: var(--q-secondary);
+    background-color: var(--q-card-background);
   }
   // Drawer background
   .q-drawer {
-    background-color: var(--q-list);
+    background-color: var(--q-card-background);
   }
   // Tab active background color
   .q-tab--active {
@@ -406,6 +406,10 @@ $dark-table-hover: #ffffff12;
 // List background, for menus etc — all themes (value via --q-list).
 .q-list {
   background-color: var(--q-list);
+}
+
+.q-drawer .q-list {
+  background-color: var(--q-card-background);
 }
 
 // Toggle thumb color — off (base) and on (truthy) — all themes.

@@ -18,6 +18,7 @@ import HomeConsumptionDetailsDialog from './HomeConsumptionDetailsDialog.vue';
 
 const mqttStore = useMqttStore();
 const $q = useQuasar();
+const props = defineProps<{ dashboard?: boolean }>();
 
 const svgSize = ref<SvgSize>({
   xMin: 0,
@@ -46,10 +47,33 @@ watch(
   { immediate: true },
 );
 
-const svgViewBox = computed(
-  () =>
-    `${svgSize.value.xMin} ${svgSize.value.yMin} ${svgSize.value.xMax} ${svgSize.value.yMax}`,
-);
+const svgViewBox = computed(() => {
+  const { xMin, xMax, yMin, yMax } = svgSize.value;
+  if (props.dashboard && svgComponents.value.length) {
+    // Fit the occupied nodes and the central junction instead of reserving
+    // empty vehicle rows. Include the pills and a small margin for shadows.
+    const xs = svgComponents.value.map((component) =>
+      calcColumnX(component.position.column),
+    );
+    const ys = svgComponents.value.map((component) =>
+      calcRowY(component.position.row),
+    );
+    xs.push(calcColumnX(1));
+    ys.push(calcRowY(1));
+    const padding = 3;
+    const left = Math.min(...xs) - svgRectWidth.value / 2 - padding;
+    const top = Math.min(...ys) - svgSize.value.circleRadius - padding;
+    const width =
+      Math.max(...xs) - Math.min(...xs) + svgRectWidth.value + padding * 2;
+    const height =
+      Math.max(...ys) -
+      Math.min(...ys) +
+      svgSize.value.circleRadius * 2 +
+      padding * 2;
+    return `${left} ${top} ${width} ${height}`;
+  }
+  return `${xMin} ${yMin} ${xMax} ${yMax}`;
+});
 
 // The icon circle sits inside the label pill (pill radius = circleRadius);
 // the inset leaves a visible gap between circle and pill edge.
@@ -801,9 +825,13 @@ const labelClipPath = computed(() => {
 </script>
 
 <template>
-  <div class="svg-container">
+  <div
+    class="svg-container"
+    :class="{ 'dashboard-dark': props.dashboard && $q.dark.isActive }"
+  >
     <svg
       :viewBox="svgViewBox"
+      preserveAspectRatio="xMidYMid meet"
       version="1.1"
       xmlns="http://www.w3.org/2000/svg"
       xmlns:svg="http://www.w3.org/2000/svg"
@@ -1051,6 +1079,15 @@ svg {
 .flow-base.animated,
 .flow-base.animatedReverse {
   stroke: var(--q-grey);
+}
+
+/* Keep idle connections visible against the dark dashboard card as well. */
+.dashboard-dark .flow-base {
+  stroke: #b8c2cf;
+}
+.dashboard-dark .flow-base.animated,
+.dashboard-dark .flow-base.animatedReverse {
+  stroke: #cbd5e1;
 }
 
 /* overlay stays hidden until energy is flowing */

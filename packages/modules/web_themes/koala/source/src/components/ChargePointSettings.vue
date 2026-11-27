@@ -3,10 +3,18 @@
     v-model="visible"
     :maximized="isSmallScreen"
     :backdrop-filter="isSmallScreen ? '' : 'blur(4px)'"
+    :persistent="dashboard && saving"
   >
-    <q-card>
+    <q-card :class="{ 'dashboard-charge-point-settings': dashboard }">
       <q-card-section>
-        <div class="row no-wrap">
+        <SettingsDialogHeader
+          v-if="dashboard"
+          :name="name"
+          :saving="saving"
+          @close="visible = false"
+          @apply="applyChanges"
+        />
+        <div v-else class="row no-wrap">
           <div class="text-h6 q-pr-sm">Einstellungen:</div>
           <div class="text-h6 ellipsis" :title="name">{{ name }}</div>
           <q-space />
@@ -14,7 +22,7 @@
         </div>
       </q-card-section>
       <q-separator />
-      <q-card-section>
+      <q-card-section :inert="saving || undefined">
         <div class="row items-center justify-between">
           <div class="text-subtitle2">Ladepunkt sperren</div>
           <ChargePointLock :charge-point-id="props.chargePointId" dense />
@@ -60,14 +68,22 @@
           />
         </div>
       </q-card-section>
+      <SettingsDiscardDialog
+        :model-value="confirmClose"
+        :saving="saving"
+        @discard="discardChanges"
+        @apply="applyChanges"
+      />
     </q-card>
   </q-dialog>
 </template>
 
 <script setup lang="ts">
 import { Screen, QDialog } from 'quasar';
-import { useMqttStore } from 'src/stores/mqtt-store';
-import { computed, ref, watch } from 'vue';
+import { computed } from 'vue';
+import { useSettingsDialog } from 'src/composables/useSettingsDialog';
+import SettingsDialogHeader from './SettingsDialogHeader.vue';
+import SettingsDiscardDialog from './SettingsDiscardDialog.vue';
 import ChargePointInstantSettings from './ChargePointInstantSettings.vue';
 import ChargePointPvSettings from './ChargePointPvSettings.vue';
 import ChargePointEcoSettings from './ChargePointEcoSettings.vue';
@@ -76,8 +92,6 @@ import ChargePointTimeChargingSettings from './ChargePointTimeChargingSettings.v
 import ChargePointLock from './ChargePointLock.vue';
 import ChargePointModeButtons from './ChargePointModeButtons.vue';
 import ChargePointVehicleSelect from './ChargePointVehicleSelect.vue';
-
-const mqttStore = useMqttStore();
 
 const props = defineProps<{
   chargePointId: number;
@@ -90,26 +104,39 @@ const emit = defineEmits<{
 
 const isSmallScreen = computed(() => Screen.lt.sm);
 
-const tempValue = ref<boolean>(props.modelValue);
-
-watch(
+const {
+  dashboard,
+  mqttStore,
+  visible,
+  saving,
+  confirmClose,
+  discardChanges,
+  applyChanges,
+} = useSettingsDialog(
   () => props.modelValue,
-  (value) => {
-    tempValue.value = value;
-  },
+  (value) => emit('update:model-value', value),
 );
 
-const visible = computed({
-  get: () => tempValue.value,
-  set: (value) => {
-    tempValue.value = value;
-    emit('update:model-value', value);
-  },
-});
-
-const name = computed(() => mqttStore.chargePointName(props.chargePointId));
+const name = computed(() =>
+  mqttStore.value.chargePointName(props.chargePointId),
+);
 
 const chargeMode = computed(() =>
-  mqttStore.chargePointConnectedVehicleChargeMode(props.chargePointId),
+  mqttStore.value.chargePointConnectedVehicleChargeMode(props.chargePointId),
 );
 </script>
+
+<style scoped>
+.dashboard-charge-point-settings {
+  width: 680px;
+  min-width: min(600px, calc(100vw - 48px));
+  max-width: calc(100vw - 48px);
+}
+@media (max-width: 599px) {
+  .dashboard-charge-point-settings {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+  }
+}
+</style>
