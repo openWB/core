@@ -209,33 +209,57 @@ def check_end_time(plan: Union[ScheduledPlanConsumer, ScheduledChargingPlan, Tim
     ------
     neg: Zeitpunkt vorbei
     pos: verbleibende Sekunden
+
+    Return remaining seconds and the deadline timestamp; ambiguous local times use the first occurrence."""
+    now = datetime.datetime.today()
+    now_timestamp = now.timestamp()
+    end = compute_plan_end_time(plan, buffer, now, now_timestamp)
+    deadline = end.timestamp()
+    return deadline - now_timestamp
+
+
+def check_end_time_with_deadline(
+    plan: Union[ScheduledPlanConsumer, ScheduledChargingPlan, TimeChargingPlanConsumer, TimepointPlan],
+    buffer: float = 0,
+) -> Tuple[float, float]:
+    """ gibt die verbleibende Zeit in Sekunden und den Zieltermin-Timestamp zurück.
+
+    Return
+    ------
+    Tuple[remaining_seconds, deadline_timestamp]
+    - remaining_seconds: neg: Zeitpunkt vorbei, pos: verbleibende Sekunden
+    - deadline_timestamp: Unix timestamp des Endzeitpunkts
     """
     now = datetime.datetime.today()
+    now_timestamp = now.timestamp()
+    end = compute_plan_end_time(plan, buffer, now, now_timestamp)
+    deadline = end.timestamp()
+    return deadline - now_timestamp, deadline
+
+
+def compute_plan_end_time(plan, buffer, now, now_timestamp):
     end = datetime.datetime.strptime(plan.time, '%H:%M')
     if plan.frequency.selected == "once":
         endDate = datetime.datetime.strptime(plan.frequency.once, "%Y-%m-%d")
         end = end.replace(endDate.year, endDate.month, endDate.day)
-        remaining_time = end - now
+        return end
     elif plan.frequency.selected == "daily":
         end = end.replace(now.year, now.month, now.day)
-        remaining_time = end - now
-        if remaining_time.total_seconds() < buffer:
+        if end.timestamp() - now_timestamp < buffer:
             # Wenn auf Zielladen umgeschaltet wurde und der Termin noch nicht vorbei war, noch auf diesen Termin laden.
             end = end + datetime.timedelta(days=1)
-            remaining_time = end - now
+        return end
     elif plan.frequency.selected == "weekly":
         if not any(plan.frequency.weekly):
             raise ValueError("Es muss mindestens ein Tag ausgewählt werden.")
         end = end.replace(now.year, now.month, now.day)
         end += datetime.timedelta(days=_get_next_charging_day(plan.frequency.weekly, now.weekday()))
-        remaining_time = end - now
-        if remaining_time.total_seconds() < buffer:
+        if end.timestamp() - now_timestamp < buffer:
             end = end.replace(now.year, now.month, now.day)
             end += datetime.timedelta(days=_get_next_charging_day(plan.frequency.weekly, now.weekday()+1)+1)
-            remaining_time = end - now
+        return end
     else:
         raise TypeError(f'Unbekannte Häufigkeit {plan.frequency.selected}')
-    return remaining_time.total_seconds()
 
 
 def check_end_time_current_occurrence(plan: TimepointPlan) -> float:
