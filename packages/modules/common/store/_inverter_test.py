@@ -50,3 +50,88 @@ def test_fix_hybrid_values(params):
 
     # evaluation
     assert vars(state) == vars(params.expected_state)
+
+
+def test_update_without_any_prior_read_is_a_noop():
+    # setup - Komponente noch nie erfolgreich gelesen (zB direkt nach einem Neustart)
+    delegate = Mock(delegate=Mock(num=1))
+    purge = PurgeInverterState(delegate=delegate)
+
+    # execution / evaluation
+    with pytest.raises(AttributeError):
+        purge.update()
+    delegate.set.assert_not_called()
+
+
+def test_zero_power_on_sustained_error_without_any_prior_read_still_publishes():
+    # setup - zB Modul-Fehler besteht schon seit dem Start, nie erfolgreich gelesen, aber trotzdem nach
+    # 60s publizieren, sonst bliebe ein MQTT-Retained-Wert von vor dem Neustart für immer stehen.
+    data.data.counter_all_data.data.get.hierarchy = STANDARD_HIERARCHY
+    delegate = Mock(delegate=Mock(num=1))
+    purge = PurgeInverterState(delegate=delegate)
+
+    # execution
+    purge.zero_power_on_sustained_error()
+    purge.update()
+
+    # evaluation
+    state = delegate.set.call_args.args[0]
+    assert state.power == 0
+
+
+def test_update_without_new_reading_does_not_apply_hybrid_fix_twice():
+    # setup
+    # Lesefehler darf die Hybrid-Korrektur nicht doppelt anwenden.
+    data.data.counter_all_data.data.get.hierarchy = HYBRID_HIERARCHY
+    data.data.bat_data["bat2"] = Mock(spec=Bat, data=Mock(
+        spec=BatData, get=Mock(spec=Get, currents=[0]*3, power=223, exported=100, imported=200)))
+    delegate = Mock(delegate=Mock(num=1))
+    purge = PurgeInverterState(delegate=delegate)
+    purge.set(InverterState(power=-5786, exported=200))
+
+    # execution
+    purge.update()
+    purge.update()  # Lesefehler: kein erneutes set()
+
+    # evaluation
+    state = delegate.set.call_args.args[0]
+    assert (state.power, state.exported) == (-6009, 300)
+
+
+def test_zero_power_on_sustained_error_survives_hybrid_fix():
+    # setup
+    # Nullung darf durch Hybrid-Korrektur nicht negativ werden.
+    data.data.counter_all_data.data.get.hierarchy = HYBRID_HIERARCHY
+    data.data.bat_data["bat2"] = Mock(spec=Bat, data=Mock(
+        spec=BatData, get=Mock(spec=Get, currents=[0]*3, power=500, exported=100, imported=200)))
+    delegate = Mock(delegate=Mock(num=1))
+    purge = PurgeInverterState(delegate=delegate)
+    purge.set(InverterState(power=-5786, exported=200))
+
+    # execution
+    purge.zero_power_on_sustained_error()
+    purge.update()
+
+    # evaluation
+    state = delegate.set.call_args.args[0]
+    assert state.power == 0
+
+
+def test_zero_power_on_sustained_error_flag_only_applies_once():
+    # setup
+    data.data.counter_all_data.data.get.hierarchy = HYBRID_HIERARCHY
+    data.data.bat_data["bat2"] = Mock(spec=Bat, data=Mock(
+        spec=BatData, get=Mock(spec=Get, currents=[0]*3, power=500, exported=100, imported=200)))
+    delegate = Mock(delegate=Mock(num=1))
+    purge = PurgeInverterState(delegate=delegate)
+    purge.set(InverterState(power=-5786, exported=200))
+    purge.zero_power_on_sustained_error()
+    purge.update()
+
+    # execution - Modul liest wieder gültige Werte, meldet also keinen neuen Fehler
+    purge.set(InverterState(power=-6000, exported=250))
+    purge.update()
+
+    # evaluation
+    state = delegate.set.call_args.args[0]
+    assert state.power == -6500  # -6000 - 500 (Speicherleistung), nicht mehr genullt

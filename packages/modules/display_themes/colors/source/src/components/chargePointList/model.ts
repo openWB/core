@@ -1,6 +1,7 @@
 import { reactive } from 'vue'
 import { updateChargeTemplate, updateServer } from '@/assets/js/sendMessages'
 import type { PowerItem } from '@/assets/js/types'
+
 export class ChargePoint {
 	id: number
 	name = 'Ladepunkt'
@@ -80,8 +81,11 @@ export class ChargePoint {
 			vehicles[this.connectedVehicle].name = name
 		}
 	}
-	get soc() : number | undefined {
-		if (vehicles[this.connectedVehicle] && vehicles[this.connectedVehicle].soc != undefined) {
+	get soc(): number | undefined {
+		if (
+			vehicles[this.connectedVehicle] &&
+			vehicles[this.connectedVehicle].soc != undefined
+		) {
 			return vehicles[this.connectedVehicle].soc
 		} else {
 			return undefined
@@ -359,7 +363,7 @@ export class Vehicle {
 	private _etMaxPrice = 20
 	isSocConfigured = false
 	isSocManual = false
-	
+
 	constructor(index: number) {
 		this.id = index
 	}
@@ -392,10 +396,7 @@ export class Vehicle {
 		return undefined
 	}
 	get visible(): boolean {
-		return (
-			this.name != '__invalid' && this.name != ""//&&
-			//(this.id != 0 || globalConfig.showStandardVehicle)
-		)
+		return this.name != '__invalid' && this.name != ''
 	}
 }
 export interface ConnectedVehicleConfig {

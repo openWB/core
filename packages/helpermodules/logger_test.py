@@ -44,3 +44,10 @@ def test_redact_url_credentials_with_sensitive_field_as_user_name():
     # If the user name matches an entry of KNOWN_SENSITIVE_FIELDS, the field pattern applies on
     # top and truncates the url. The password is removed in that case as well.
     assert redact_sensitive_info("ws://token:secret@ocpp.example.com/v16/") == "ws://token=***REDACTED***"
+
+
+def test_redact_client_secret():
+    message = '{"client_id": "abc", "client_secret": "xyz"}'
+    expected = '{"client_id": "abc", "client_secret": "***REDACTED***"}'
+
+    assert redact_sensitive_info(message) == expected

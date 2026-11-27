@@ -6,6 +6,7 @@ import pytest
 from control.chargepoint.chargepoint import Chargepoint
 from control.chargepoint.chargepoint_state_update import ChargepointStateUpdate
 from control.consumer.usage import ConsumerUsage
+from control.counter_all.counter_all import CounterAll
 import dataclass_utils
 from helpermodules import command
 from helpermodules.command import Command
@@ -127,7 +128,7 @@ def test_getDailyLog(regular_daily_log_entry,
     assert mock_pub.method_calls[0][1][1] == regular_daily_log_entry_processed_legacy_converted
 
 
-@pytest.mark.parametrize("usage_type", [ConsumerUsage.SUSPENDABLE_TUNABLE, ConsumerUsage.METER_ONLY])
+@pytest.mark.parametrize("usage_type", list(ConsumerUsage))
 def test_add_consumer_uses_module_default_usage_type(usage_type, mock_pub, monkeypatch):
     consumer_setup = SimpleNamespace(
         id=0,
@@ -142,9 +143,11 @@ def test_add_consumer_uses_module_default_usage_type(usage_type, mock_pub, monke
     monkeypatch.setattr(command.importlib, "import_module", Mock(return_value=SimpleNamespace(
         device_descriptor=descriptor)))
     monkeypatch.setattr(command, "pub_user_message", Mock())
-    monkeypatch.setattr(SubData, "counter_all_data", Mock())
-    SubData.counter_all_data.get_id_evu_counter.return_value = 0
-    SubData.counter_all_data.data.get.hierarchy = []
+    monkeypatch.setattr(SubData, "counter_all_data", CounterAll())
+    monkeypatch.setattr(SubData, "system_data", {
+        "system": SimpleNamespace(data={"security": {"user_management_active": False}}),
+    })
+    SubData.counter_all_data.data.get.hierarchy = [{"type": "counter", "id": 0, "children": []}]
     SubData.counter_all_data.data.get.loadmanagement_prios = []
     command_instance = Command.__new__(Command)
     command_instance.max_id_hierarchy = 0
@@ -155,6 +158,14 @@ def test_add_consumer_uses_module_default_usage_type(usage_type, mock_pub, monke
                    if call.args[0] == "openWB/consumer/1/usage"]
     assert len(usage_calls) == 1
     assert usage_calls[0].args[1]["type"] == usage_type.value
+    prio_calls = [call for call in mock_pub.pub.call_args_list
+                  if call.args[0] == "openWB/set/counter/get/loadmanagement_prios"]
+    if usage_type in (ConsumerUsage.METER_ONLY, ConsumerUsage.SELF_CONTROLLED):
+        assert SubData.counter_all_data.data.get.loadmanagement_prios == []
+        assert prio_calls == []
+    else:
+        assert SubData.counter_all_data.data.get.loadmanagement_prios == [{"type": "consumer", "id": 1}]
+        assert len(prio_calls) == 1
 
 
 def test_get_max_id_hierarchy_by_topics(mock_pub, monkeypatch):
@@ -167,3 +178,22 @@ def test_get_max_id_hierarchy_by_topics(mock_pub, monkeypatch):
 
     assert command_instance.max_id_hierarchy == 9
     mock_pub.pub.assert_any_call("openWB/set/command/max_id/hierarchy", 9)
+
+
+@pytest.mark.parametrize("consumer_type", ["wallbox_socket", "mqtt"])
+def test_remove_wallbox_socket_switches_off_before_removing_topics(consumer_type, mock_pub, monkeypatch):
+    order = []
+    consumer = SimpleNamespace(data=SimpleNamespace(module=SimpleNamespace(type=consumer_type)), module=Mock())
+    consumer.module.module_switch_off.side_effect = lambda: order.append("off")
+    branch = Mock()
+    branch.remove_topics.side_effect = lambda: order.append("remove")
+    monkeypatch.setattr(command, "ProcessBrokerBranch", Mock(return_value=branch))
+    monkeypatch.setattr(command, "pub_user_message", Mock())
+    monkeypatch.setattr(SubData, "consumer_data", {"consumer2": consumer})
+    monkeypatch.setattr(SubData, "counter_all_data", Mock())
+    monkeypatch.setattr(SubData, "system_data", {
+        "system": SimpleNamespace(data={"security": {"user_management_active": False}})})
+    instance = Command.__new__(Command)
+    instance.max_id_hierarchy = 2
+    instance.removeConsumer("test", {"data": {"consumer_id": 2}})
+    assert order == (["off", "remove"] if consumer_type == "wallbox_socket" else ["remove"])

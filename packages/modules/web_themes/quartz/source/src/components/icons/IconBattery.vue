@@ -1,0 +1,25 @@
+<template>
+  <svg
+    width="16"
+    height="16"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="1.8"
+    aria-hidden="true"
+  >
+    <rect
+      x="2"
+      y="7"
+      width="17"
+      height="10"
+      rx="2"
+    />
+    <rect
+      x="21"
+      y="10"
+      width="2"
+      height="4"
+    />
+  </svg>
+</template>

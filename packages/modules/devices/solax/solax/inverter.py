@@ -44,6 +44,12 @@ class SolaxInverter(AbstractInverter):
             power = sum(power_temp) * -1
             exported = self.__tcp_client.read_input_registers(
                 0x0052, ModbusDataType.UINT_32, wordorder=Endian.Little, unit=unit) * 100
+        elif SolaxVersion(self.device_config.configuration.version) == SolaxVersion.G5:
+            power_temp = self.__tcp_client.read_input_registers(0x000A, [ModbusDataType.UINT_16] * 2, unit=unit)
+            power_pv3 = self.__tcp_client.read_input_registers(292, ModbusDataType.UINT_16, unit=unit)
+            power = (sum(power_temp) + power_pv3) * -1
+            exported = self.__tcp_client.read_input_registers(
+                0x0052, ModbusDataType.UINT_32, wordorder=Endian.Little, unit=unit) * 100
         else:
             power_temp = self.__tcp_client.read_input_registers(0x0410, [ModbusDataType.UINT_16] * 2, unit=unit)
             power = sum(power_temp) * -1

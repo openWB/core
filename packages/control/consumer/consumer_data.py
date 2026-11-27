@@ -66,7 +66,7 @@ class ConsumerConfig:
     rfid_enabled: bool = False
     valid_tags: List[str] = field(default_factory=empty_list_factory)
     rfid_reset: RfidReset = RfidReset.AFTER_TIME
-    rfid_timeout: int = 300
+    rfid_timeout: int = 3600
 
 
 @dataclass
@@ -83,12 +83,12 @@ class Get:
     imported: float = 0
     phases_in_use: int = 0
     plug_state: bool = field(default=False, metadata={"topic": "get/plug_state"})
-    power: float = 0
+    power: float = field(default=0, metadata={"topic": "get/power"})
     powers: Optional[List[Optional[float]]] = None
     set_power: Optional[float] = None
     state: Optional[bool] = False
     state_str: Optional[str] = field(default=None, metadata={"topic": "get/state_str"})
-    temperatures: Optional[List[float]] = None
+    temperatures: Optional[List[Optional[float]]] = None
     voltages: List[float] = field(default_factory=voltages_list_factory)
 
 
@@ -99,6 +99,7 @@ class Set:
     rfid_power_end: Optional[float] = field(default=None, metadata={"topic": "set/rfid_power_end"})
     rfid_power_seen: bool = field(default=False, metadata={"topic": "set/rfid_power_seen"})
     current: float = field(default=0, metadata={"topic": "set/current"})
+    error_timer: Optional[float] = field(default=None, metadata={"topic": "set/error_timer"})
     phases_to_use: int = field(default=1, metadata={"topic": "set/phases_to_use"})
     plug_time: Optional[float] = field(default=None, metadata={"topic": "set/plug_time"})
     required_power: float = field(default=0)

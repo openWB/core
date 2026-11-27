@@ -163,7 +163,8 @@ class CarState:
         """Args:
             soc: actual state of charge in percent
             range: actual range in km
-            soc_timestamp: timestamp of last request as unix timestamp
+            soc_timestamp: unix timestamp of the SoC measurement, if the vehicle or its API provides one;
+                otherwise (default) the time of the request
             odometer: actual odometer of vehicle in km
             warning: informational message about a vehicle-side setting affecting charging
                 (eg. a manufacturer battery-care-mode limit), shown to the user but not an error
@@ -275,11 +276,13 @@ class IoState:
 
 
 class EvseState:
-    def __init__(self, plug_state: bool, charge_state: bool, set_current: int, max_current: int) -> None:
+    def __init__(self, plug_state: bool, charge_state: bool, set_current: int, max_current: int,
+                 status_code: Optional[int] = None) -> None:
         self.plug_state = plug_state
         self.charge_state = charge_state
         self.set_current = set_current
         self.max_current = max_current
+        self.status_code = status_code
 
 
 @auto_str
@@ -317,3 +320,14 @@ class ConsumerState:
         self.temperatures = temperatures
         self.rfid = rfid
         self.rfid_timestamp = rfid_timestamp
+        self.rfid = rfid
+        self.rfid_timestamp = rfid_timestamp
+
+    def distribute_total_power(self, connected_phases: int) -> None:
+        """Module, die nur die Gesamtleistung liefern, haben hier 230 V und 0 A/0 W auf allen drei Phasen.
+        Die Werte werden auf die angeschlossenen Phasen (ab Phase 1, wie vom Gerät ausgelesen) verteilt."""
+        if self.voltages == [230.0]*3:
+            self.voltages = [230.0 if i < connected_phases else 0.0 for i in range(3)]
+        if self.power and self.currents == [0.0]*3 and self.powers == [0.0]*3:
+            self.powers = [self.power / connected_phases if i < connected_phases else 0.0 for i in range(3)]
+            self.currents = [power / voltage if voltage else 0.0 for power, voltage in zip(self.powers, self.voltages)]

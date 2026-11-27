@@ -3,10 +3,9 @@ import time
 
 from control import data
 from helpermodules import pub, timecheck
-from helpermodules.broker import BrokerClient
+from helpermodules.broker import publish_and_collect
 from helpermodules.utils import get_default
 from helpermodules.utils.error_handling import CP_ERROR, ErrorTimerContext
-from helpermodules.utils.topic_parser import decode_payload
 from modules.chargepoints.external_openwb.config import OpenWBSeries
 from modules.common.abstract_chargepoint import AbstractChargepoint
 from modules.common.abstract_device import DeviceDescriptor
@@ -16,6 +15,8 @@ from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.store._chargepoint import get_chargepoint_value_store
 
 log = logging.getLogger(__name__)
+
+REQUIRED_TOPICS = ("power", "phases_in_use", "imported", "exported", "currents", "plug_state", "charge_state")
 
 
 class ChargepointModule(AbstractChargepoint):
@@ -33,10 +34,13 @@ class ChargepointModule(AbstractChargepoint):
             current = 0
         with SingleComponentUpdateContext(self.fault_state, update_always=False):
             with self.client_error_context:
-                pub.pub_single(f"openWB/set/internal_chargepoint/{self.config.configuration.duo_num}/data/set_current",
-                               current, hostname=self.config.configuration.ip_address)
-                pub.pub_single(f"openWB/set/isss/{'' if self.config.configuration.duo_num == 0 else 'Lp2'}Current",
-                               current, hostname=self.config.configuration.ip_address)
+                pub.pub_multiple([
+                    pub.PubMessage(
+                        f"openWB/set/internal_chargepoint/{self.config.configuration.duo_num}/data/set_current",
+                        current),
+                    pub.PubMessage(f"openWB/set/isss/{'' if self.config.configuration.duo_num == 0 else 'Lp2'}Current",
+                                   current)
+                ], hostname=self.config.configuration.ip_address)
 
     def get_values(self) -> None:
         def parse_received_topics(value: str):
@@ -49,36 +53,26 @@ class ChargepointModule(AbstractChargepoint):
                     my_ip_address = "localhost"
                 else:
                     my_ip_address = data.data.system_data["system"].data["ip_address"]
-                pub.pub_single("openWB/set/internal_chargepoint/global_data",
-                               {"heartbeat": timecheck.create_timestamp(), "parent_ip": my_ip_address},
-                               hostname=ip_address)
-                pub.pub_single("openWB/set/isss/heartbeat", 0, hostname=ip_address)
-                pub.pub_single("openWB/set/isss/parentWB", my_ip_address, hostname=ip_address, no_json=True)
-                pub.pub_single(f"openWB/set/internal_chargepoint/{self.config.configuration.duo_num}/data/parent_cp",
-                               str(num), hostname=ip_address)
-                pub.pub_single(f"openWB/set/isss/parentCPlp{self.config.configuration.duo_num + 1}",
-                               str(num), hostname=ip_address)
-
-                def on_connect(client, userdata, flags, rc):
-                    client.subscribe(f"openWB/internal_chargepoint/{self.config.configuration.duo_num}/get/#")
-
-                def on_message(client, userdata, message):
-                    received_topics.update({message.topic: decode_payload(message.payload)})
-
-                received_topics = {}
-                # Höheres Timeout als der Default: muss zuverlässig alle ~20 retained Topics über eine
-                # echte Netzwerkverbindung zu einer ggf. gerade stark ausgelasteten Gegenstelle einsammeln
-                # (zB während einer laufenden Ladung), nicht nur ein oder zwei lokale Werte.
-                BrokerClient(f"subscribeSeriesChargepoint{self.config.id}",
-                             on_connect,
-                             on_message,
-                             host=self.config.configuration.ip_address,
-                             port=1886 if self.config.configuration.ip_address == "localhost" else 1883
-                             ).start_finite_loop(timeout=2)
+                duo_num = self.config.configuration.duo_num
+                topic_prefix = f"openWB/internal_chargepoint/{duo_num}/get/"
+                messages = [
+                    pub.PubMessage("openWB/set/internal_chargepoint/global_data",
+                                   {"heartbeat": timecheck.create_timestamp(), "parent_ip": my_ip_address}),
+                    pub.PubMessage("openWB/set/isss/heartbeat", 0),
+                    pub.PubMessage("openWB/set/isss/parentWB", my_ip_address, no_json=True),
+                    pub.PubMessage(f"openWB/set/internal_chargepoint/{duo_num}/data/parent_cp", str(num)),
+                    pub.PubMessage(f"openWB/set/isss/parentCPlp{duo_num + 1}", str(num))
+                ]
+                received_topics = publish_and_collect(
+                    ip_address,
+                    1886 if ip_address == "localhost" else 1883,
+                    [pub.to_mqtt_message(message) for message in messages],
+                    f"{topic_prefix}#",
+                    lambda topics: all(f"{topic_prefix}{topic}" in topics for topic in REQUIRED_TOPICS),
+                    name=f"subscribeSeriesChargepoint{self.config.id}")
 
                 if received_topics:
                     log.debug(f"Empfange MQTT Daten für Ladepunkt {self.config.id}: {received_topics}")
-                    topic_prefix = f"openWB/internal_chargepoint/{self.config.configuration.duo_num}/get/"
                     try:
                         chargepoint_state = ChargepointState(
                             power=received_topics[f"{topic_prefix}power"],
@@ -137,37 +131,35 @@ class ChargepointModule(AbstractChargepoint):
     def switch_phases(self, phases_to_use: int) -> None:
         with SingleComponentUpdateContext(self.fault_state, update_always=False):
             with self.client_error_context:
-                pub.pub_single(
-                    f"openWB/set/internal_chargepoint/{self.config.configuration.duo_num}/data/phases_to_use",
-                    phases_to_use,
-                    self.config.configuration.ip_address)
-                pub.pub_single(
-                    f"openWB/set/internal_chargepoint/{self.config.configuration.duo_num}/data/trigger_phase_switch",
-                    True,
-                    self.config.configuration.ip_address)
-                pub.pub_single("openWB/set/isss/U1p3p", phases_to_use,
-                               self.config.configuration.ip_address)
+                duo_num = self.config.configuration.duo_num
+                pub.pub_multiple([
+                    pub.PubMessage(f"openWB/set/internal_chargepoint/{duo_num}/data/phases_to_use", phases_to_use),
+                    pub.PubMessage(f"openWB/set/internal_chargepoint/{duo_num}/data/trigger_phase_switch", True),
+                    pub.PubMessage("openWB/set/isss/U1p3p", phases_to_use)
+                ], hostname=self.config.configuration.ip_address)
 
     def interrupt_cp(self, duration: int) -> None:
         with SingleComponentUpdateContext(self.fault_state, update_always=False):
             with self.client_error_context:
                 ip_address = self.config.configuration.ip_address
-                pub.pub_single(
-                    "openWB/set/internal_chargepoint/"
-                    f"{self.config.configuration.duo_num}/data/cp_interruption_duration",
-                    duration,
-                    hostname=ip_address
-                )
-                pub.pub_single(f"openWB/set/isss/Cpulp{self.config.configuration.duo_num + 1}",
-                               duration, hostname=ip_address)
+                pub.pub_multiple([
+                    pub.PubMessage(
+                        f"openWB/set/internal_chargepoint/{self.config.configuration.duo_num}/data/"
+                        "cp_interruption_duration",
+                        duration),
+                    pub.PubMessage(f"openWB/set/isss/Cpulp{self.config.configuration.duo_num + 1}", duration)
+                ], hostname=ip_address)
                 time.sleep(duration)
 
     def clear_rfid(self) -> None:
         with SingleComponentUpdateContext(self.fault_state):
             with self.client_error_context:
                 ip_address = self.config.configuration.ip_address
-                pub.pub_single("openWB/set/isss/ClearRfid", 1, hostname=ip_address)
-                pub.pub_single("openWB/set/internal_chargepoint/last_tag", None, hostname=ip_address)
+                pub.pub_multiple([
+                    pub.PubMessage("openWB/set/isss/ClearRfid", 1),
+                    pub.PubMessage("openWB/set/internal_chargepoint/last_tag", None),
+                    pub.PubMessage("openWB/set/internal_chargepoint/last_tag_timestamp", None)
+                ], hostname=ip_address)
 
 
 chargepoint_descriptor = DeviceDescriptor(configuration_factory=OpenWBSeries)

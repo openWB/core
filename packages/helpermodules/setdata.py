@@ -10,6 +10,7 @@ import paho.mqtt.client as mqtt
 
 import logging
 from control import data
+from control.chargepoint.chargepoint_data import normalize_ocpp_connector_values
 from helpermodules import hardware_configuration, subdata
 from helpermodules.broker import BrokerClient
 from helpermodules.filesystem_migrations import FilesystemMigrations
@@ -103,6 +104,8 @@ class SetData:
                 self.process_command_topic(msg)
             elif "openWB/set/internal_chargepoint/" in msg.topic:
                 self.process_internal_chargepoint_topic(msg)
+            elif "openWB/set/internal_socket/" in msg.topic:
+                self.process_wallbox_socket_topic(msg)
             elif "openWB/set/LegacySmartHome/" in msg.topic:
                 self.process_legacy_smart_home_topic(msg)
             elif "openWB/set/consumer/" in msg.topic:
@@ -502,6 +505,8 @@ class SetData:
                     self._validate_value(msg, int, [(0, 7)])
                 elif "/set/autolock_state" in msg.topic:
                     self._validate_value(msg, int, [(0, 4)])
+                elif msg.topic.endswith("/set/rfid_timestamp"):
+                    self._validate_value(msg, float, [(0, TIMESTAMP_2100)])
                 elif "/set/rfid" in msg.topic:
                     self._validate_value(msg, str)
                 elif "/set/plug_time" in msg.topic:
@@ -555,6 +560,7 @@ class SetData:
                 "/control_parameter/reserved_power" in msg.topic or
                 "/control_parameter/timestamp_switch_on_off" in msg.topic or
                 "/control_parameter/timestamp_charge_start" in msg.topic or
+                "/control_parameter/timestamp_last_cp_retry" in msg.topic or
                 "/control_parameter/timestamp_chargemode_changed" in msg.topic or
                 "/control_parameter/timestamp_last_phase_switch" in msg.topic or
                 "/control_parameter/timestamp_phase_switch_buffer_start" in msg.topic):
@@ -586,10 +592,30 @@ class SetData:
             self._validate_value(msg, float, [(float("-inf"), 0)])
         elif "/get/power" in msg.topic:
             self._validate_value(msg, float)
+        elif msg.topic.endswith("/get/ocpp/transaction_id"):
+            self._validate_value(msg, int)
         elif "/get/phases_in_use" in msg.topic:
             self._validate_value(msg, int, [(0, 3)])
+        elif (msg.topic.endswith("/get/ocpp/availability") or
+              msg.topic.endswith("/get/ocpp/pending_availability")):
+            try:
+                value = normalize_ocpp_connector_values(decode_payload(msg.payload))
+            except ValueError:
+                log.error("Invalid OCPP connector values: Topic %s, Payload %s", msg.topic, msg.payload)
+            else:
+                Pub().pub(msg.topic.replace('set/', '', 1), value, retain=True)
+            finally:
+                Pub().pub(msg.topic, "")
         elif ("/get/charge_state" in msg.topic or
-                "/get/plug_state" in msg.topic):
+                "/get/unlock_blocked" in msg.topic or
+                "/get/plug_state" in msg.topic or
+                "/get/ocpp/remote_stop" in msg.topic or
+                "/get/ocpp/remote_start" in msg.topic or
+                "/get/ocpp/unlock_stop" in msg.topic or
+                "/get/ocpp/tag_accepted" in msg.topic or
+                "/get/ocpp/connected" in msg.topic or
+                "/get/ocpp/reset" in msg.topic or
+                "/get/ocpp/rfid_stop" in msg.topic):
             self._validate_value(msg, bool)
         elif "/get/fault_state" in msg.topic:
             self._validate_value(msg, int, [(0, 2)])
@@ -599,7 +625,9 @@ class SetData:
             self._validate_value(msg, float, [(-3200, 3200)])
         elif ("/get/version" in msg.topic or
               "/get/current_branch" in msg.topic or
-              "/get/current_commit" in msg.topic):
+              "/get/current_commit" in msg.topic or
+              "/get/ocpp/authorization_flow_status" in msg.topic or
+              msg.topic.endswith("/get/ocpp/backend_message")):
             self._validate_value(msg, str)
         elif ("/get/error_timestamp" in msg.topic or
                 "/get/rfid_timestamp" in msg.topic):
@@ -617,7 +645,14 @@ class SetData:
         elif ("/get/simulation" in msg.topic or
               "/get/connected_vehicle/config" in msg.topic or
               "/get/connected_vehicle/info" in msg.topic or
-              "/get/connected_vehicle/soc" in msg.topic):
+              "/get/connected_vehicle/soc" in msg.topic or
+              "/get/ocpp/pending_transactions" in msg.topic or
+              msg.topic.endswith("/get/ocpp/last_connection_settings")):
+            self._validate_value(msg, "json")
+        elif (msg.topic.endswith("/get/ocpp/transaction_id_tag") or
+              msg.topic.endswith("/get/ocpp/previous_chargebox_id")):
+            self._validate_value(msg, str)
+        elif "/get/ocpp/config" in msg.topic:
             self._validate_value(msg, "json")
         else:
             self.__unknown_topic(msg)
@@ -651,6 +686,8 @@ class SetData:
             elif subdata.SubData.pv_data.get(f"pv{get_index(msg.topic)}"):
                 if "/get/fault_state" in msg.topic:
                     self._validate_value(msg, int, [(0, 2)])
+                elif "/set/error_timer" in msg.topic:
+                    self._validate_value(msg, float, [(0, float("inf"))])
                 elif ("/get/fault_str" in msg.topic or
                       "/get/serial_number" in msg.topic):
                     self._validate_value(msg, str)
@@ -724,6 +761,8 @@ class SetData:
                   "openWB/set/bat/config/power_limit_condition" in msg.topic or
                   "openWB/set/bat/config/manual_mode" in msg.topic):
                 self._validate_value(msg, str)
+            elif re.search("^openWB/set/bat/[0-9]+/config/max_power$", msg.topic) is not None:
+                self._validate_value(msg, float, [(0, float("inf"))])
             elif "/config" in msg.topic:
                 self._validate_value(msg, "json")
             elif "/get/power" in msg.topic:
@@ -740,6 +779,8 @@ class SetData:
                     self._validate_value(msg, float, [(0, 100)])
                 elif "/get/fault_state" in msg.topic:
                     self._validate_value(msg, int, [(0, 2)])
+                elif "/set/error_timer" in msg.topic:
+                    self._validate_value(msg, float, [(0, float("inf"))])
                 elif ("/get/fault_str" in msg.topic or
                       "/get/serial_number" in msg.topic):
                     self._validate_value(msg, str)
@@ -1108,6 +1149,7 @@ class SetData:
                     "openWB/set/system/backup_cloud/backup_before_update" in msg.topic or
                     "openWB/set/system/installAssistantDone" in msg.topic or
                     "openWB/set/system/dataprotection_acknowledged" in msg.topic or
+                    "openWB/set/system/update_feedback" == msg.topic or
                     "openWB/set/system/usage_terms_acknowledged" in msg.topic or
                     "openWB/set/system/update_config_completed" in msg.topic or
                     "openWB/set/system/security/user_management_active" in msg.topic):
@@ -1230,10 +1272,32 @@ class SetData:
                 self._validate_value(msg, bool)
             elif "get" in msg.topic:
                 self.process_chargepoint_get_topics(msg)
+            elif msg.topic.endswith("/last_tag_timestamp"):
+                self._validate_value(msg, float, [(0, TIMESTAMP_2100)])
             elif "last_tag" in msg.topic:
                 self._validate_value(msg, str)
             else:
                 self._validate_value(msg, "json")
+        except Exception:
+            log.exception(f"Fehler im setdata-Modul: Topic {msg.topic}, Value: {msg.payload}")
+
+    def process_wallbox_socket_topic(self, msg):
+        try:
+            suffix = msg.topic.removeprefix("openWB/set/internal_socket/")
+            if suffix in ("data/set_state", "data/detected", "get/state"):
+                self._validate_value(msg, bool)
+            elif suffix == "get/error_timestamp":
+                self._validate_value(msg, float, [(0, TIMESTAMP_2100)])
+            elif suffix == "get/fault_state":
+                self._validate_value(msg, int, [(0, 2)])
+            elif suffix in ("data/last_tag", "get/fault_str", "get/rfid"):
+                self._validate_value(msg, str)
+            elif suffix in ("get/power", "get/imported", "get/exported"):
+                self._validate_value(msg, float)
+            elif suffix in ("get/currents", "get/voltages", "get/powers"):
+                self._validate_value(msg, "json")
+            else:
+                self.__unknown_topic(msg)
         except Exception:
             log.exception(f"Fehler im setdata-Modul: Topic {msg.topic}, Value: {msg.payload}")
 
@@ -1308,11 +1372,15 @@ class SetData:
                         re.search("consumer/[0-9]+/get/rfid_timestamp$", msg.topic) is not None or
                         re.search("consumer/[0-9]+/get/set_power$", msg.topic) is not None):
                     self._validate_value(msg, float)
+                elif re.search("consumer/[0-9]+/set/error_timer$", msg.topic) is not None:
+                    self._validate_value(msg, float, [(0, float("inf"))])
                 elif (re.search("consumer/[0-9]+/get/currents$", msg.topic) is not None or
                       re.search("consumer/[0-9]+/get/voltages$", msg.topic) is not None or
-                      re.search("consumer/[0-9]+/get/powers$", msg.topic) is not None or
-                      re.search("consumer/[0-9]+/get/temperatures$", msg.topic) is not None):
+                      re.search("consumer/[0-9]+/get/powers$", msg.topic) is not None):
                     self._validate_value(msg, float, collection=list)
+                elif re.search("consumer/[0-9]+/get/temperatures$", msg.topic) is not None:
+                    # Preserve positions for optional sensors that currently have no reading.
+                    self._validate_value(msg, (int, float, type(None)), collection=list)
                 elif (re.search("consumer/[0-9]+/get/exported$", msg.topic) is not None or
                       re.search("consumer/[0-9]+/get/imported$", msg.topic) is not None or
                       re.search("consumer/[0-9]+/get/daily_exported$", msg.topic) is not None or

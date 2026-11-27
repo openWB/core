@@ -41,6 +41,7 @@ class AllConsumers:
         try:
             for consumer in data.data.consumer_data.values():
                 try:
+                    # Fehlerfall ist bereits vom Modul selbst auf get.power abgebildet.
                     power = power + consumer.data.get.power
                 except Exception:
                     log.exception(f"Fehler in der allgemeinen Verbaucher-Klasse für Verbaucher {consumer}")

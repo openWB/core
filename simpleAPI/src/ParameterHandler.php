@@ -109,6 +109,8 @@ class ParameterHandler
                 return $this->getChargepointSoc($id);
             case 'get_chargepoint_state_str':
                 return $this->getChargepointStateStr($id);
+            case 'get_chargepoint_limit':
+                return $this->getChargepointLimit($id);
             case 'get_chargepoint_fault_str':
                 return $this->getChargepointFaultStr($id);
             case 'get_chargepoint_fault_state':
@@ -243,6 +245,8 @@ class ParameterHandler
                 return $this->getIoOutputAll($id);
             case 'get_io_output':
                 return $this->getIoOutput($id, $options['io_output'] ?? null, $options['io_output_type'] ?? null);
+            case 'get_io_input_all':
+                return $this->getIoInputAll($id);
 
             case 'get_lastlivevaluesjson':
                 return $this->getLastLiveValuesJson();
@@ -334,6 +338,7 @@ class ParameterHandler
             $prefix . 'rfid_timestamp',
             $prefix . 'connected_vehicle/info',
             "openWB/chargepoint/{$id}/config",
+            "openWB/chargepoint/{$id}/control_parameter/limit",
 
             "openWB/chargepoint/{$id}/set/charge_template"
         ];
@@ -367,6 +372,7 @@ class ParameterHandler
         $pvChargingLimit = 'none';
         $pvChargingAmount = 0;
         $pvChargingSoc = 0;
+        $minimalPvSoc = 0;
         $maxPriceEco = 0;
         $soc = 0;
         $rangeCharged = 0;
@@ -389,6 +395,7 @@ class ParameterHandler
             $pvChargingLimit = $template['chargemode']['pv_charging']['limit']['selected'] ?? 'none';
             $pvChargingAmount = $template['chargemode']['pv_charging']['limit']['amount'] ?? 0;
             $pvChargingSoc = $template['chargemode']['pv_charging']['limit']['soc'] ?? 0;
+            $minimalPvSoc = $template['chargemode']['pv_charging']['min_soc'] ?? 0;
 
             // ECO Charging max_price extrahieren
             $maxPriceEco = isset($template['chargemode']['eco_charging']['max_price']) ? number_format((float)$template['chargemode']['eco_charging']['max_price'], 6, '.', '') : '0.0000';
@@ -454,6 +461,7 @@ class ParameterHandler
                 ],
                 'state_str' => $this->decodeStringValue($values[$prefix . 'state_str'] ?? null, 'Unbekannt'),
                 'fault_str' => $this->decodeStringValue($values[$prefix . 'fault_str'] ?? null, 'Kein Fehler'),
+                'limit' => $this->parseLimitValue($values["openWB/chargepoint/{$id}/control_parameter/limit"] ?? null),
                 'fault_state' => intval($values[$prefix . 'fault_state'] ?? 0),
                 'imported' => floatval($values[$prefix . 'imported'] ?? 0),
                 'exported' => floatval($values[$prefix . 'exported'] ?? 0),
@@ -486,6 +494,7 @@ class ParameterHandler
                 'pv_charging_limit' => $pvChargingLimit,
                 'pv_charging_amount' => intval($pvChargingAmount),
                 'pv_charging_soc' => intval($pvChargingSoc),
+                'minimal_pv_soc' => intval($minimalPvSoc),
                 'max_price_eco' => floatval($maxPriceEco),
                 'soc' => floatval($soc),
                 'range_charged' => floatval($rangeCharged),
@@ -524,6 +533,26 @@ class ParameterHandler
      * Anführungszeichen im Wert erhalten und würden beim äußeren json_encode() der Antwort
      * nochmal escaped. Fällt bei nicht-JSON-Werten (z.B. leer) auf den Rohwert/Default zurück.
      */
+    /**
+     * Begrenzung der Ladeleistung (control_parameter/limit) parsen.
+     *
+     * Liefert den Grund, warum die Ladeleistung gerade begrenzt wird, z.B. durch
+     * Dimmen per EMS, Dimmen per Direktsteuerung oder RSE-Kontakt (§14a EnWG),
+     * den Lastmanager oder die Absicherung eines Zählers.
+     * Beide Werte sind null, wenn keine Begrenzung aktiv ist.
+     */
+    private function parseLimitValue($value)
+    {
+        $decoded = json_decode($value ?? '', true);
+        if (!is_array($decoded)) {
+            $decoded = [];
+        }
+        return [
+            'message' => $decoded['message'] ?? null,
+            'limiting_value' => $decoded['limiting_value'] ?? null
+        ];
+    }
+
     private function decodeStringValue($value, $default = '')
     {
         if ($value === null || $value === '') {
@@ -1457,6 +1486,20 @@ class ParameterHandler
             return ["chargepoint_{$id}" => ['soc' => intval($value ?? 0)]];
         } catch (Exception $e) {
             return ["chargepoint_{$id}" => ['soc' => 0]];
+        }
+    }
+
+    /**
+     * Chargepoint Limit (Grund der Leistungsbegrenzung)
+     */
+    private function getChargepointLimit($id)
+    {
+        try {
+            $topic = "openWB/chargepoint/{$id}/control_parameter/limit";
+            $value = $this->mqttClient->getValue($topic);
+            return ["chargepoint_{$id}" => ['limit' => $this->parseLimitValue($value)]];
+        } catch (Exception $e) {
+            return ["chargepoint_{$id}" => ['limit' => $this->parseLimitValue(null)]];
         }
     }
 
@@ -2784,6 +2827,24 @@ class ParameterHandler
     }
 
     /**
+     * IO-Eingaenge komplett lesen (digital + analog), z.B. die Kontakte des
+     * Dimm & Control Kits. Nur lesend; die Auswertung erfolgt in openWB ueber
+     * die IO-Aktionen.
+     */
+    private function getIoInputAll($id)
+    {
+        $digital = $this->getIoOutputMap($id, 'digital_input');
+        $analog = $this->getIoOutputMap($id, 'analog_input');
+
+        return [
+            "io_{$id}" => [
+                'digital_input' => $digital,
+                'analog_input' => $analog
+            ]
+        ];
+    }
+
+    /**
      * Einzelnen IO-Ausgang lesen.
      */
     private function getIoOutput($id, $outputName, $outputType = null)
@@ -2892,7 +2953,8 @@ class ParameterHandler
     }
 
     /**
-     * IO-Output-Map von MQTT laden.
+     * IO-Werte-Map von MQTT laden (digital_output, analog_output,
+     * digital_input oder analog_input).
      */
     private function getIoOutputMap($id, $outputType)
     {

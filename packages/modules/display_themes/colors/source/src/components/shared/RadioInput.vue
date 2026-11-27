@@ -41,7 +41,6 @@ function getColor(index: number) {
 	}
 }
 function setValue(event: Event) {
-	console.log(event)
 	let element = event.target as HTMLButtonElement
 	while (element && !element.value && element.parentElement) {
 		// we need to move up the DOM in case a sub element of the button was clicked
