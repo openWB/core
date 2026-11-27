@@ -193,7 +193,10 @@ def get_daily_log(date: str):
     data["totals"] = get_totals(data["entries"], False)
     calculation_status = {"used_fallback": False}
     data = _analyse_energy_source(data, calculation_status=calculation_status)
-    data["data_quality"] = _daily_data_quality(data, recording_gaps, calculation_status)
+    quality = _daily_data_quality(data, recording_gaps, calculation_status)
+    # Keep the established healthy daily response unchanged.
+    if quality["restricted"]:
+        data["data_quality"] = quality
     return data
 
 
