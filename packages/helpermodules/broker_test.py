@@ -175,8 +175,7 @@ def test_collecting_after_complete_data_is_limited_by_timeout(fake_client):
         "10.0.0.5", 1883, MESSAGES, "x/get/#", lambda topics: "x/get/t0" in topics, timeout=0.3, settle=0.1)
 
     assert clock.now == pytest.approx(0.3)
-    assert "x/get/t0" in received
-    assert 5 <= len(received) < 40
+    assert received == {f"x/get/t{i}": 1 for i in range(11)}
 
 
 def test_returns_partial_data_after_timeout(fake_client):
@@ -239,13 +238,22 @@ def test_concurrent_calls_for_two_chargepoints_of_one_secondary_do_not_share_sta
     incoming = {"x/0/get/#": [(0.0, "x/0/get/power", b"100"), (0.0, "x/0/get/rfid", b'"a"')],
                 "x/1/get/#": [(0.0, "x/1/get/power", b"200"), (0.0, "x/1/get/rfid", b'"b"')]}
     created = []
+    subscriptions_ready = threading.Barrier(2, timeout=5)
 
     def create(client_id):
         client = FakeClient(client_id)
         created.append(client)
         original_subscribe = client.subscribe
-        client.subscribe = lambda topic_filter: (setattr(client, "incoming", incoming[topic_filter]),
-                                                 original_subscribe(topic_filter))
+
+        def subscribe(topic_filter):
+            client.incoming = incoming[topic_filter]
+            # Both collections must exist before either receives messages. Keep
+            # both callbacks active until both have received their complete data.
+            subscriptions_ready.wait()
+            original_subscribe(topic_filter)
+            subscriptions_ready.wait()
+
+        client.subscribe = subscribe
         return client
 
     monkeypatch.setattr(broker.mqtt, "Client", create)
@@ -254,14 +262,16 @@ def test_concurrent_calls_for_two_chargepoints_of_one_secondary_do_not_share_sta
     def collect(duo_num):
         results[duo_num] = broker.publish_and_collect(
             "10.0.0.5", 1883, MESSAGES, f"x/{duo_num}/get/#",
-            lambda topics: f"x/{duo_num}/get/power" in topics, timeout=1, settle=0.1,
+            lambda topics: f"x/{duo_num}/get/power" in topics, timeout=10, settle=0.1,
             name=f"subscribeSeriesChargepoint{5 + duo_num}")
 
     threads = [threading.Thread(target=collect, args=(duo_num,)) for duo_num in (0, 1)]
     for thread in threads:
         thread.start()
     for thread in threads:
-        thread.join()
+        thread.join(timeout=15)
+
+    assert all(not thread.is_alive() for thread in threads)
 
     assert results[0] == {"x/0/get/power": 100, "x/0/get/rfid": "a"}
     assert results[1] == {"x/1/get/power": 200, "x/1/get/rfid": "b"}
