@@ -811,55 +811,92 @@ def test_start_filesystem_migrations_launches_one_worker(monkeypatch):
     )
 
 
-def test_upgrade_datastore_163_removes_update_hours_from_tariff_providers(mock_pub: Mock):
+def test_upgrade_datastore_163_resets_voltego_and_informs_the_user(mock_pub: Mock, monkeypatch: pytest.MonkeyPatch):
+    message = Mock()
+    monkeypatch.setattr(update_config, "pub_system_message", message)
     uc = UpdateConfig()
     uc.all_received_topics = {
-        "openWB/optional/ep/flexible_tariff/provider": {
-            "type": "ostrom", "configuration": {"client_id": "x", "zip": "12345", "update_hours": [2, 8, 14, 20]}},
-        "openWB/optional/ep/grid_fee/provider": {
-            "type": "fixed_hours", "configuration": {"default_price": 0.0003, "update_hours": list(range(24))}},
+        "openWB/optional/ep/flexible_tariff/provider": {"type": "voltego", "configuration": {"client_id": "x"}},
         "openWB/system/datastore_version": list(range(163)),
     }
 
     uc.upgrade_datastore_163()
 
     assert uc.all_received_topics["openWB/optional/ep/flexible_tariff/provider"] == {
+        "type": None, "configuration": {}}
+    assert uc.all_received_topics["openWB/system/datastore_version"] == list(range(164))
+    message.assert_called_once()
+    text = message.call_args.args[1]
+    assert "Voltego" in text and "einen anderen Anbieter wählen" in text
+    assert message.call_args.args[2] == update_config.MessageType.WARNING
+
+
+def test_upgrade_datastore_163_keeps_other_providers_and_stays_silent(mock_pub: Mock, monkeypatch: pytest.MonkeyPatch):
+    message = Mock()
+    monkeypatch.setattr(update_config, "pub_system_message", message)
+    uc = UpdateConfig()
+    uc.all_received_topics = {
+        "openWB/optional/ep/flexible_tariff/provider": {"type": "tibber", "configuration": {"token": "x"}},
+        "openWB/system/datastore_version": list(range(163)),
+    }
+
+    uc.upgrade_datastore_163()
+
+    # gegen ein unabhängiges Literal, nicht gegen dasselbe Objekt
+    assert uc.all_received_topics["openWB/optional/ep/flexible_tariff/provider"] == {
+        "type": "tibber", "configuration": {"token": "x"}}
+    message.assert_not_called()
+
+
+def test_upgrade_datastore_164_removes_update_hours_from_tariff_providers(mock_pub: Mock):
+    uc = UpdateConfig()
+    uc.all_received_topics = {
+        "openWB/optional/ep/flexible_tariff/provider": {
+            "type": "ostrom", "configuration": {"client_id": "x", "zip": "12345", "update_hours": [2, 8, 14, 20]}},
+        "openWB/optional/ep/grid_fee/provider": {
+            "type": "fixed_hours", "configuration": {"default_price": 0.0003, "update_hours": list(range(24))}},
+        "openWB/system/datastore_version": list(range(164)),
+    }
+
+    uc.upgrade_datastore_164()
+
+    assert uc.all_received_topics["openWB/optional/ep/flexible_tariff/provider"] == {
         "type": "ostrom", "configuration": {"client_id": "x", "zip": "12345"}}
     assert uc.all_received_topics["openWB/optional/ep/grid_fee/provider"] == {
         "type": "fixed_hours", "configuration": {"default_price": 0.0003}}
-    assert uc.all_received_topics["openWB/system/datastore_version"] == list(range(164))
+    assert uc.all_received_topics["openWB/system/datastore_version"] == list(range(165))
     assert mock_pub.pub.call_count == 3
 
     mock_pub.reset_mock()
-    uc.upgrade_datastore_163()
+    uc.upgrade_datastore_164()
     mock_pub.pub.assert_not_called()
 
 
-def test_upgrade_datastore_163_keeps_providers_without_update_hours(mock_pub: Mock):
+def test_upgrade_datastore_164_keeps_providers_without_update_hours(mock_pub: Mock):
     uc = UpdateConfig()
     provider = {"type": "awattar", "configuration": {"country": "de"}}
     uc.all_received_topics = {
         "openWB/optional/ep/flexible_tariff/provider": provider,
         "openWB/optional/ep/grid_fee/provider": {"type": None, "configuration": {}},
-        "openWB/system/datastore_version": list(range(163)),
+        "openWB/system/datastore_version": list(range(164)),
     }
 
-    uc.upgrade_datastore_163()
+    uc.upgrade_datastore_164()
 
     assert uc.all_received_topics["openWB/optional/ep/flexible_tariff/provider"] == provider
     assert mock_pub.pub.call_count == 1  # nur Datastore-Version
 
 
-def test_upgrade_datastore_163_keeps_country_and_unit_which_the_themes_read(mock_pub: Mock):
+def test_upgrade_datastore_164_keeps_country_and_unit_which_the_themes_read(mock_pub: Mock):
     # die Colors-Themes zeigen für country "ch" Rp statt ct und lesen unit aus der Provider-Konfiguration
     uc = UpdateConfig()
     uc.all_received_topics = {
         "openWB/optional/ep/flexible_tariff/provider": {
             "type": "ekz", "configuration": {"country": "ch", "unit": "Rp", "update_hours": [18, 19]}},
-        "openWB/system/datastore_version": list(range(163)),
+        "openWB/system/datastore_version": list(range(164)),
     }
 
-    uc.upgrade_datastore_163()
+    uc.upgrade_datastore_164()
 
     assert uc.all_received_topics["openWB/optional/ep/flexible_tariff/provider"]["configuration"] == {
         "country": "ch", "unit": "Rp"}
