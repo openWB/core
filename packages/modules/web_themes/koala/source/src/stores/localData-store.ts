@@ -78,41 +78,17 @@ export const useLocalDataStore = defineStore('localData', () => {
     'batteries',
     'consumers',
   ];
-  // Apply the complete dashboard start state once to new and existing profiles.
-  // Afterwards explicit choices, including disabled views, remain persistent.
-  if (readStorage('koala-dashboard-defaults-version') !== '1') {
-    const defaults = {
-      'koala-desktop-overview': 'true',
-      'koala-desktop-slides': JSON.stringify(defaultSlides),
-      'koala-device-sections': JSON.stringify(defaultDeviceSections),
-      'koala-device-layout': 'grid',
-      'koala-history-height': '500',
-    };
-    for (const [key, value] of Object.entries(defaults)) {
-      writeStorage(key, value);
-    }
-    writeStorage('koala-dashboard-defaults-version', '1');
-  }
 
   const desktopOverview = persistedRef(
     'koala-desktop-overview',
     true,
     (value) => value !== 'false',
   );
-  // Separate forecast and price views were merged into forecast_price_chart.
-  const legacySlides = ['forecast_chart', 'electricity_price_chart'];
   const desktopSlides = persistedRef(
     'koala-desktop-slides',
     [...defaultSlides],
-    (value) => parseList(value)?.filter((name) => !legacySlides.includes(name)),
+    parseList,
   );
-  // Introduce the combined view once without resetting other dashboard choices.
-  if (readStorage('koala-forecast-prices-default-applied') !== '1') {
-    if (!desktopSlides.value.includes('forecast_price_chart')) {
-      desktopSlides.value.push('forecast_price_chart');
-    }
-    writeStorage('koala-forecast-prices-default-applied', '1');
-  }
   const additionalChartsOpen = ref(false);
   const dashboardVisual = persistedRef(
     'koala-dashboard-visual',
