@@ -170,6 +170,7 @@ def empty_enery_source_dict_factory():
 class Log:
     chargemode_log_entry: str = "_"
     charged_energy_by_source: Dict[str, float] = field(default_factory=empty_enery_source_dict_factory)
+    used_fallback: bool = False
     costs: float = 0
     end: Optional[float] = None
     exported_at_mode_switch: float = 0

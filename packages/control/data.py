@@ -403,6 +403,14 @@ class Data:
                 self.counter_data[counter] = copy.deepcopy(SubData.counter_data[counter])
 
     def __copy_cp_data(self) -> None:
+        # MQTT may still contain an older snapshot of the same log entry.
+        # Preserve a locally recorded fallback only for that entry, never across a reset.
+        fallback_entries = {
+            cp: point.data.set.log.timestamp_mode_switch
+            for cp, point in self.cp_data.items()
+            if point.data.set.log.used_fallback is True
+            and point.data.set.log.timestamp_mode_switch is not None
+        }
         self.cp_data.clear()
         for cp in SubData.cp_data:
             # Workaround, da mit Python3.9/pymodbus2.5 eine pymodbus-Instanz nicht mehr kopiert werden kann.
@@ -417,6 +425,9 @@ class Data:
                 self.cp_data[cp].template = copy.deepcopy(SubData.cp_data[cp].chargepoint.template)
                 self.cp_data[cp].data = copy.deepcopy(SubData.cp_data[cp].chargepoint.data)
                 self.cp_data[cp].chargepoint_module = SubData.cp_data[cp].chargepoint.chargepoint_module
+            log_data = self.cp_data[cp].data.set.log
+            if cp in fallback_entries and log_data.timestamp_mode_switch == fallback_entries[cp]:
+                log_data.used_fallback = True
         self.cp_all_data = copy.deepcopy(SubData.cp_all_data)
         self.cp_template_data = copy.deepcopy(SubData.cp_template_data)
         for chargepoint in self.cp_data:
