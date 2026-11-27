@@ -1,4 +1,21 @@
 var credentialsFetched = false;
+var pendingDisplayNavigationTimeout = null;
+var pendingDisplayNavigationDestination = null;
+
+function scheduleDisplayNavigation(destination) {
+	if (destination === pendingDisplayNavigationDestination) {
+		return;
+	}
+	if (pendingDisplayNavigationTimeout !== null) {
+		clearTimeout(pendingDisplayNavigationTimeout);
+	}
+	pendingDisplayNavigationDestination = destination;
+	pendingDisplayNavigationTimeout = setTimeout(() => {
+		pendingDisplayNavigationTimeout = null;
+		pendingDisplayNavigationDestination = null;
+		location.href = destination;
+	}, 2000);
+}
 
 function setIframeSource() {
 	if (allTopicsReceived()) {
@@ -47,12 +64,16 @@ function setIframeSource() {
 					break;
 			}
 			// load display from primary or local
-			destination = `${location.protocol}//${host}/openWB/web/display/?${query.toString()}`;
-			addLog(`all done, loading theme from primary`);
+			const configuredDisplayUrl = data["openWB/optional/int_display/display_url"];
+			if (configuredDisplayUrl && configuredDisplayUrl.trim()) {
+				destination = configuredDisplayUrl.trim();
+				addLog(`all done, loading manually configured display URL`);
+			} else {
+				destination = `${location.protocol}//${host}/openWB/web/display/?${query.toString()}`;
+				addLog(`all done, loading theme from primary`);
+			}
 			// no iframe here as this would result in another nesting with the wrapper on primary
-			setTimeout(() => {
-				location.href = destination;
-			}, 2000);
+			scheduleDisplayNavigation(destination);
 		} else {
 			// load primary display (from primary or secondary openWB)
 			host = location.host;
@@ -103,12 +124,12 @@ function setIframeSource() {
 
 function addLog(message, forceDisplay = false) {
 	const logElement = document.getElementById('log');
-	let displayedMessages = logElement.innerHTML.split("\n");
+	let displayedMessages = logElement.textContent.split("\n");
 	if (displayedMessages.length > 25) {
 		displayedMessages.shift();
 	}
 	displayedMessages.push(message);
-	logElement.innerHTML = displayedMessages.join("\n");
+	logElement.textContent = displayedMessages.join("\n");
 	if (forceDisplay) {
 		logElement.classList.remove("hide");
 	}
