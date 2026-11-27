@@ -40,6 +40,7 @@
         <div class="toggle-row">
           <label>Nur eine bestimmte Ladeleistung reservieren</label>
           <BaseToggle
+            label="Nur eine bestimmte Ladeleistung reservieren"
             :model-value="powerReserveActive"
             @update:model-value="mqttStore.setBatteryPowerReserveActive($event)"
           />
@@ -63,6 +64,7 @@
         <div class="toggle-row">
           <label>Entladung des Speichers erlauben</label>
           <BaseToggle
+            label="Entladung des Speichers erlauben"
             :model-value="powerDischargeActive"
             @update:model-value="mqttStore.setBatteryPowerDischargeActive($event)"
           />
@@ -99,8 +101,6 @@ defineEmits<{ 'update:modelValue': [value: boolean] }>()
 
 const mqttStore = useMqttStore()
 
-// 'ev_mode' label matches PR #4197 ("Fahrzeug-Vorrang umbenennen") - this mode already governs
-// controlled consumers too, not just vehicles, the old "Fahrzeuge" label undersold that
 const modeOptions = [
   { value: 'ev_mode', label: 'Fzg./Verbr.' },
   { value: 'bat_mode', label: 'Speicher' },

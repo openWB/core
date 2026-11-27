@@ -19,8 +19,12 @@
 </template>
 
 <script setup lang="ts">
+import { useEscapeKey } from '@/composables/useEscapeKey'
+
 const props = defineProps<{ modelValue: boolean; panelClass?: string }>()
 const emit = defineEmits<{ 'update:modelValue': [value: boolean] }>()
+
+useEscapeKey(() => props.modelValue, () => emit('update:modelValue', false))
 
 function toggle(): void {
   emit('update:modelValue', !props.modelValue)

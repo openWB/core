@@ -17,7 +17,8 @@
             ? 'border-accent bg-accent text-white'
             : 'border-border bg-transparent text-text',
       ]"
-      @click="!option.disabled && $emit('update', option.value)"
+      :aria-pressed="modelValue === option.value"
+      @click="!option.disabled && modelValue !== option.value && $emit('update', option.value)"
     >
       {{ option.label }}
     </button>

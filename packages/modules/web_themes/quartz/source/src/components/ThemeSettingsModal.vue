@@ -12,12 +12,14 @@
 
       <label class="mb-2 block text-[13px] text-muted">Fluss anzeigen</label>
       <BaseToggle
+        label="Fluss anzeigen"
         :model-value="showFlow"
         @update:model-value="showFlow = $event"
       />
 
       <label class="mt-3 mb-2 block text-[13px] text-muted">Verlauf anzeigen</label>
       <BaseToggle
+        label="Verlauf anzeigen"
         :model-value="showChart"
         @update:model-value="showChart = $event"
       />
@@ -31,6 +33,7 @@
       <div class="mt-3">
         <label class="mb-2 block text-[13px] text-muted">Uhrzeit anzeigen</label>
         <BaseToggle
+          label="Uhrzeit anzeigen"
           :model-value="showClock"
           @update:model-value="$emit('update:showClock', $event)"
         />
@@ -39,6 +42,7 @@
       <div class="mt-3">
         <label class="mb-2 block text-[13px] text-muted">Standard-Fahrzeug anzeigen</label>
         <BaseToggle
+          label="Standard-Fahrzeug anzeigen"
           :model-value="!hideStandardVehicle"
           @update:model-value="hideStandardVehicle = !$event"
         />
@@ -148,6 +152,7 @@ import { useMqttStore } from '@/stores/mqtt-store'
 import { useChartSettings, categoryDefs, viewOptions } from '@/composables/useChartSettings'
 import { useVehicles } from '@/composables/useVehicles'
 import { getCssColor } from '@/utils/color'
+import { categoryHasComponent } from '@/utils/categoryComponents'
 import type { CategoryKey } from '@/types/chart'
 import BaseModal from './BaseModal.vue'
 import BaseTabGroup from './BaseTabGroup.vue'
@@ -185,39 +190,16 @@ const {
 } = useChartSettings()
 const { hideStandardVehicle } = useVehicles()
 
-// mirrors HistoryChart.vue's own categoryHasComponent/visibleCategoryDefs - re-derived here
-// from the same published 'categories' snapshot rather than duplicated as more published refs,
-// since it's only a couple of lines and both places already need mqttStore + categoryDefs anyway
-function categoryHasComponent(key: CategoryKey): boolean {
-  switch (key) {
-    case 'grid':
-    case 'house':
-      return true
-    case 'pv':
-      return mqttStore.inverterIds.length > 0
-    case 'battery':
-      return mqttStore.batteryIds.length > 0
-    case 'chargepoint':
-      return mqttStore.chargePointIds.length > 0
-    case 'consumer':
-      return mqttStore.consumerIds.length > 0
-    case 'counter':
-      return categories.value.counter.individual.length > 0
-  }
-}
-const visibleCategoryDefs = computed(() => categoryDefs.filter((c) => categoryHasComponent(c.key)))
+const visibleCategoryDefs = computed(() =>
+  categoryDefs.filter((c) => categoryHasComponent(c.key, mqttStore, categories.value.counter.individual.length)),
+)
 
-// only categories that actually offer a real Gesamt/Einzeln choice belong here - pv/battery
-// never have per-instance breakdown in Live mode (the live feed only ever publishes aggregates
-// there, unlike the daily log), so a switcher with nothing to switch to would be pointless; they
-// simply don't appear in Live's "Linien" list, same as before this round's UI pass (confirmed
-// with the user this is the right call once they understood why, not something to paper over)
+// only categories with a Gesamt/Einzeln choice: the live feed has no per-instance pv and battery data
 const categoriesWithIndividualBreakdown = computed(() =>
   visibleCategoryDefs.value.filter((c) => categories.value[c.key].individual.length > 0),
 )
 
-// explicit 3-lane grouping for the "Linien" grid (power-generation/storage, usage, SoC lines) -
-// the user asked for this specific grouping rather than an auto-balanced column flow
+// three lanes: generation and storage, usage, SoC lines
 const POWER_COLUMN_KEYS: CategoryKey[] = ['pv', 'counter', 'battery']
 const USAGE_COLUMN_KEYS: CategoryKey[] = ['house', 'consumer', 'chargepoint']
 const powerColumnCategories = computed(() =>

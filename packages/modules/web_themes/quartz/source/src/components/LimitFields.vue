@@ -2,7 +2,7 @@
   <BaseSegmentedControl
     label="Begrenzung"
     :model-value="limit.selected"
-    :options="limitOptions"
+    :options="limitOptions.map((o) => ({ ...o, disabled: o.value === 'soc' && !socAvailable }))"
     @update="(v) => $emit('set', `${fieldPrefix}.selected`, v)"
   />
   <FieldSlider
@@ -22,7 +22,7 @@
     :max="100"
     :decimals="1"
     :model-value="limit.amount / 1000"
-    @update="(v) => $emit('set', `${fieldPrefix}.amount`, v * 1000)"
+    @update="(v) => $emit('set', `${fieldPrefix}.amount`, Math.round(v * 1000))"
   />
 </template>
 
@@ -31,7 +31,8 @@ import FieldSlider from './FieldSlider.vue'
 import BaseSegmentedControl from './BaseSegmentedControl.vue'
 import type { Limit } from '@/stores/mqtt-store'
 
-defineProps<{ limit: Limit; fieldPrefix: string }>()
+// the SoC option is disabled for a vehicle without SoC
+withDefaults(defineProps<{ limit: Limit; fieldPrefix: string; socAvailable?: boolean }>(), { socAvailable: true })
 defineEmits<{ set: [path: string, value: unknown] }>()
 
 const limitOptions = [

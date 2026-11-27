@@ -5,7 +5,11 @@
       { 'cursor-pointer hover:border-accent': clickable },
       faultState === 1 ? 'chip-warning' : faultState !== undefined && faultState >= 2 ? 'chip-error' : '',
     ]"
+    :role="clickable ? 'button' : undefined"
+    :tabindex="clickable ? 0 : undefined"
     @click="clickable && $emit('click')"
+    @keydown.enter.prevent="clickable && $emit('click')"
+    @keydown.space.prevent="clickable && $emit('click')"
   >
     <component
       :is="icon"
@@ -40,7 +44,7 @@ defineProps<{
   color: string
   clickable?: boolean
   faultState?: number
-  /** 'in' = flowing into this entity (Bezug/Laden), 'out' = flowing out of it (Einspeisung/Entladen). Omit when direction isn't meaningful (0 W, or a category that's never bidirectional). */
+  /** 'in' flows into the entity (Bezug, Laden), 'out' flows out (Einspeisung, Entladen); omitted when not meaningful. */
   direction?: 'in' | 'out'
   directionLabel?: string
 }>()

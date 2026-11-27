@@ -11,7 +11,7 @@
       :step="step ?? 1"
       :value="local"
       :aria-label="`${label} in ${unit}`"
-      @input="local = Number(($event.target as HTMLInputElement).value)"
+      @input="onInput"
       @change="onChange"
     >
   </div>
@@ -19,13 +19,14 @@
 
 <script setup lang="ts">
 import { ref, watch } from 'vue'
+import { parseNumberInput } from '@/utils/numberInput'
 
 const props = defineProps<{
   label: string
   unit: string
   min?: number
   step?: number
-  /** Rounds the synced display value - a defensive guard against float noise in the source value (e.g. a *1e5/1e-5 scaling round-trip), not just a display nicety. */
+  /** Rounds the displayed value (float noise from scaling). */
   decimals?: number
   modelValue: number
 }>()
@@ -44,9 +45,14 @@ watch(
   },
 )
 
+// an empty or half-typed field leaves the last good value alone instead of turning into 0
+function onInput(event: Event): void {
+  local.value = parseNumberInput((event.target as HTMLInputElement).value, local.value)
+}
+
 function onChange(event: Event): void {
-  const value = round(Number((event.target as HTMLInputElement).value))
+  const value = round(parseNumberInput((event.target as HTMLInputElement).value, props.modelValue, props.min))
   local.value = value
-  emit('update', value)
+  if (value !== round(props.modelValue)) emit('update', value)
 }
 </script>

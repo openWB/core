@@ -28,7 +28,7 @@
         </div>
 
         <DetailSection
-          v-for="(section, idx) in instance.sections"
+          v-for="(section, idx) in shownSections(instance.sections)"
           :key="idx"
           :title="section.title"
           :tone="section.kind === 'alert' ? 'info' : 'neutral'"
@@ -189,12 +189,11 @@ interface InstanceInfo {
   id: number
   name: string
   badge?: { label: string; variant: 'ok' | 'wait' | 'muted' }
-  // a short, static fact not worth its own boxed section (e.g. a chargepoint's max charge power)
   meta?: string
   sections: Section[]
   faultState: number
   faultMessage: string
-  // calculated value without a module (house total) - no Modulmeldung box
+  // a calculated value, no module message
   noFault?: boolean
 }
 
@@ -214,9 +213,7 @@ function formatAmp(a: number): string {
 function formatFrequency(hz: number): string {
   return `${hz.toLocaleString(undefined, { minimumFractionDigits: 3, maximumFractionDigits: 3 })} Hz`
 }
-// Fronius/go-eCharger-style devices sometimes report max_evse_current as a 3-phase-equivalent value even
-// though the EVSE actually caps out higher on a single phase - same special case the legacy settings UI's
-// own ChargePointCard.vue carries for the same reason.
+// some devices report max_evse_current as a 3-phase equivalent (as in the settings UI)
 function formatMaxChargePower(maxEvseCurrent: number | undefined): string {
   if (maxEvseCurrent === undefined) return '-'
   const kw = Math.floor((maxEvseCurrent * 3 * 230) / 1000)
@@ -224,7 +221,15 @@ function formatMaxChargePower(maxEvseCurrent: number | undefined): string {
   return `${kw} kW`
 }
 
-// "Zählerstände" block shared by all popups: today (if known) and total
+function batterySocLabel(soc: number | undefined): string {
+  return soc === undefined ? '-' : `${Math.round(soc)} %`
+}
+
+// a table of phase values without any value (the user does not receive them) would only show its row labels
+function shownSections(sections: Section[]): Section[] {
+  return sections.filter((section) => !(section.kind === 'phases' && section.rows.every((row) => row.values.length === 0)))
+}
+
 function energySection(columns: string[], today: number[] | undefined, total: number[]): Section {
   const rows = []
   if (today) rows.push({ label: 'Heute', values: today.map((v) => formatKwh(v)) })
@@ -264,8 +269,6 @@ function buildConsumerInstance(id: number): InstanceInfo {
   const stateMessage = mqttStore.consumerInstanceStateMessage(id)
   const modeLabel = chargeModes.find((m) => m.value === mqttStore.consumerMode(id))?.label
   const temperatures = mqttStore.consumerTemperatures(id)
-    .map((value, index) => ({ index, value }))
-    .filter((t) => typeof t.value === 'number')
   const currents = mqttStore.consumerInstanceCurrents(id)
 
   const sections: Section[] = []
@@ -322,7 +325,6 @@ function buildCounterInstance(id: number): InstanceInfo {
   }
 }
 
-// total, plus the rest after subtracting the included consumers/counters (as in the chart's Einzeln view)
 function houseRows(): { label: string; value: string }[] {
   const rows = [{ label: 'Leistung', value: formatKw(mqttStore.houseConsumption) }]
   if (homeConsumptionConsumerIds.value.length + houseSplitCounterIds.value.length > 0) {
@@ -376,7 +378,7 @@ const instances = computed<InstanceInfo[]>(() => {
               title: 'Aktuelle Werte',
               rows: [
                 { label: 'Leistung', value: formatKw(mqttStore.batteryInstancePower(id)) },
-                { label: 'Ladestand', value: `${Math.round(mqttStore.batteryInstanceSoc(id) ?? 0)} %` },
+                { label: 'Ladestand', value: batterySocLabel(mqttStore.batteryInstanceSoc(id)) },
               ],
             },
             energySection(
@@ -402,7 +404,8 @@ const instances = computed<InstanceInfo[]>(() => {
       return mqttStore.chargePointIds.map((id) => {
         const chargeState = mqttStore.chargePointChargeState(id)
         const plugState = mqttStore.chargePointPlugState(id)
-        const badge = chargeState
+        // same rule as the card: charging needs real power, charge_state alone can lag
+        const badge = chargeState && mqttStore.chargePointPower(id) > 0
           ? { label: 'Lädt', variant: 'ok' as const }
           : plugState
             ? { label: 'Angesteckt', variant: 'wait' as const }
@@ -466,7 +469,7 @@ const instances = computed<InstanceInfo[]>(() => {
       ]
     }
     case 'house': {
-      // reine Rechengröße (PV + Netzbezug - Einspeisung), kein eigenes Modul -> kein Fehlerstatus
+      // a calculated value, not a module: no fault status
       const total: InstanceInfo = {
         id: -1,
         name: 'Hausverbrauch',
@@ -505,6 +508,5 @@ const instances = computed<InstanceInfo[]>(() => {
   }
 })
 
-// up to 3 cards per row
 const modalWidth = computed(() => (instances.value.length > 2 ? 1280 : instances.value.length > 1 ? 880 : 480))
 </script>

@@ -40,8 +40,7 @@ import type { FlowSegment } from '@/types/flow'
 const props = defineProps<{
   segments: FlowSegment[]
   total: number
-  /** Whether the total+legend line sits above or below the bar - the bar itself always stays on
-   *  the side facing the arrow divider (sources: bar below; sinks: bar above). */
+  /** Where the legend sits; the bar always faces the arrow divider. */
   position: 'above' | 'below'
 }>()
 
@@ -49,13 +48,7 @@ function pct(value: number): number {
   return props.total > 0 ? (value / props.total) * 100 : 0
 }
 
-// a diagonal white-stripe overlay on top of the segment's own solid color - distinguishes
-// segments that deliberately share one color (Zähler reuses --grid, same as Netz) without
-// introducing a whole new color just for that one case. An explicit small backgroundSize tile
-// (the standard CSS diagonal-stripe recipe) forces the browser to rasterize one small repeating
-// tile instead of computing a single gradient across the segment's full width - without it, a
-// wide segment showed visible seam/banding artifacts (subpixel drift accumulating over a long
-// unconstrained repeating-linear-gradient).
+// stripes over the segment colour tell apart segments that share a colour (Zähler and Netz); a small background tile avoids banding on wide segments
 function segmentStyle(seg: FlowSegment): Record<string, string> {
   const color = `var(--${seg.colorVar})`
   if (!seg.hatched) return { background: color }

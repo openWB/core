@@ -13,7 +13,7 @@
     "type-check": "vue-tsc --build --force",
     "lint": "eslint . --fix",
     "format": "prettier 'src/' --write",
-    "test:unit": "vitest run --root src/"
+    "test:unit": "vitest run --root src/ --config ../vite.config.ts"
   },
   "dependencies": {
     "chart.js": "^4.6.2",
@@ -32,21 +32,22 @@
     "@eslint/js": "^10.0.1",
     "@tailwindcss/vite": "^4.3.5",
     "@tsconfig/node24": "^24.0.6",
-    "@types/node": "^24.19.2",
+    "@types/node": "^24.19.4",
     "@typescript-eslint/eslint-plugin": "^8.74.0",
     "@typescript-eslint/parser": "^8.74.0",
     "@vitejs/plugin-vue": "^6.0.11",
     "@vue/eslint-config-prettier": "^10.2.0",
     "@vue/tsconfig": "^0.9.1",
-    "eslint": "^10.15.0",
+    "eslint": "^10.16.0",
     "eslint-plugin-vue": "^10.12.1",
     "globals": "^17.14.0",
+    "happy-dom": "^21.0.4",
     "npm-run-all2": "^9.1.0",
     "prettier": "^3.10.1",
     "tailwindcss": "^4.3.5",
     "typescript": "^6.0.3",
-    "vite": "^8.3.8",
-    "vitest": "^5.1.1",
+    "vite": "^8.4.0",
+    "vitest": "^5.1.2",
     "vue-tsc": "^3.3.14"
   }
 }

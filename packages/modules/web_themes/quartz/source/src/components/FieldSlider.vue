@@ -38,15 +38,11 @@ const props = defineProps<{
 }>()
 const emit = defineEmits<{ update: [value: number] }>()
 
-// the rendered input always reflects 'local' (the live drag position), never the raw prop
-// directly - Vue force-syncs an <input>'s value on every patch regardless of whether it
-// changed, so binding straight to modelValue would yank the slider back to a stale value
-// mid-drag the moment anything else in the app causes a re-render
+// shows the drag position, not the prop: Vue would reset the input to a stale value on any re-render mid-drag
 const local = ref(props.modelValue)
 const dragging = ref(false)
 
-// only follow external updates (e.g. the backend echoing the saved value back) while the
-// user isn't actively dragging
+// follow external updates only while not dragging
 watch(
   () => props.modelValue,
   (v) => {
@@ -54,9 +50,7 @@ watch(
   },
 )
 
-// a native <input type="range"> only knows a plain min/max/step range - discreteValues maps
-// that onto an index space instead, so the thumb can only land on the configured values,
-// e.g. "Aus" (0) + 6-16, never 1-5
+// discreteValues are mapped onto an index range so the thumb lands only on them
 const sliderMin = computed(() => (props.discreteValues ? 0 : props.min))
 const sliderMax = computed(() => (props.discreteValues ? props.discreteValues.length - 1 : props.max))
 const sliderPosition = computed(() => {

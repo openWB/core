@@ -68,7 +68,7 @@
       <BaseTabGroup
         class="min-w-0"
         :model-value="activeTab"
-        :options="tabs"
+        :options="visibleTabs"
         @update="activeTab = $event"
       />
     </div>
@@ -95,13 +95,15 @@
       </template>
     </template>
 
+    <ToastHost />
+
     <ThemeSettingsModal
       v-model="showThemeSettings"
       :dark="dark"
       :show-clock="showClock"
       :configured-sections="configuredSections"
       :visible-sections="visibleSections"
-      @update:dark="dark = $event"
+      @update:dark="setDark"
       @update:show-clock="showClock = $event"
       @toggle-section="(key, checked) => toggleSection(key as SectionKey, checked)"
     />
@@ -109,7 +111,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watchEffect, onMounted, onUnmounted, type Component } from 'vue'
+import { computed, ref, watch, watchEffect, onMounted, onUnmounted, type Component } from 'vue'
 import StatusStrip from './components/StatusStrip.vue'
 import HistoryChart from './components/HistoryChart.vue'
 import ChargePointCard from './components/ChargePointCard.vue'
@@ -121,6 +123,7 @@ import BaseIconButton from './components/BaseIconButton.vue'
 import BasePopover from './components/BasePopover.vue'
 import ThemeSettingsModal from './components/ThemeSettingsModal.vue'
 import ConnectionIndicator from './components/ConnectionIndicator.vue'
+import ToastHost from './components/ToastHost.vue'
 import LoginWidget from './components/LoginWidget.vue'
 import IconMenu from './components/icons/IconMenu.vue'
 import { useChargePoints } from './composables/useChargePoints'
@@ -128,6 +131,7 @@ import { useVehicles } from './composables/useVehicles'
 import { useBatteries } from './composables/useBatteries'
 import { useConsumers } from './composables/useConsumers'
 import { useMqttStore } from './stores/mqtt-store'
+import { readStorage, writeStorage } from './utils/storage'
 
 const mqttStore = useMqttStore()
 
@@ -156,8 +160,7 @@ interface EntitySection {
   idProp: string
 }
 
-// one entry per entity-type card grid shown on the "Auswahl" overview and its own dedicated tab -
-// each grid is otherwise structurally identical, differing only in these 5 fields
+// one entry per card grid; the grids differ only in these fields
 const entitySections = computed<EntitySection[]>(() => [
   { key: 'ladepunkte', label: 'Ladepunkte', component: ChargePointCard, ids: chargePointIds.value, idProp: 'chargePointId' },
   { key: 'fahrzeuge', label: 'Fahrzeuge', component: VehicleCard, ids: vehicleIds.value, idProp: 'vehicleId' },
@@ -165,23 +168,29 @@ const entitySections = computed<EntitySection[]>(() => [
   { key: 'verbraucher', label: 'Verbraucher', component: ConsumerCard, ids: consumerIds.value, idProp: 'consumerId' },
 ])
 
-// dedicated tab: always show, regardless of card count/visibility settings. "Auswahl": only if
-// configured (at least one instance exists) and the user hasn't hidden this section.
+// a tab for a kind of card the user has none of (or may not see) would only lead to an empty page
+const visibleTabs = computed(() =>
+  tabs.filter((tab) => tab.value === 'alle' || (entitySections.value.find((s) => s.key === tab.value)?.ids.length ?? 0) > 0),
+)
+watch(visibleTabs, (list) => {
+  if (!list.some((tab) => tab.value === activeTab.value)) activeTab.value = 'alle'
+})
+
+// a dedicated tab always shows its grid; "Auswahl" only sections that have cards and are not hidden
 function isSectionVisible(section: EntitySection): boolean {
   if (activeTab.value === section.key) return true
   return activeTab.value === 'alle' && section.ids.length > 0 && visibleSections.value.has(section.key)
 }
 
-// which entity-type card sections appear in the "Auswahl" overview - the dedicated per-type tabs
-// always show their full card grid regardless of this (see v-if conditions above)
+// which card sections "Auswahl" shows
 const SECTIONS_STORAGE_KEY = 'quartz-visible-sections'
 const ALL_SECTION_KEYS: SectionKey[] = ['ladepunkte', 'fahrzeuge', 'speicher', 'verbraucher']
 const DEFAULT_VISIBLE_SECTIONS: SectionKey[] = ['ladepunkte', 'fahrzeuge', 'verbraucher']
 
 function loadPersistedSections(): SectionKey[] {
   try {
-    const raw = localStorage.getItem(SECTIONS_STORAGE_KEY)
-    // drop sections that no longer exist (Zähler/Wechselrichter cards were removed)
+    const raw = readStorage(SECTIONS_STORAGE_KEY)
+    // drop sections that no longer exist
     return raw ? (JSON.parse(raw) as SectionKey[]).filter((key) => ALL_SECTION_KEYS.includes(key)) : DEFAULT_VISIBLE_SECTIONS
   } catch {
     return DEFAULT_VISIBLE_SECTIONS
@@ -191,13 +200,7 @@ function loadPersistedSections(): SectionKey[] {
 const visibleSections = ref(new Set<SectionKey>(loadPersistedSections()))
 const showThemeSettings = ref(false)
 
-watchEffect(() => {
-  try {
-    localStorage.setItem(SECTIONS_STORAGE_KEY, JSON.stringify([...visibleSections.value]))
-  } catch {
-    // ignore storage errors (private browsing etc.)
-  }
-})
+watchEffect(() => writeStorage(SECTIONS_STORAGE_KEY, JSON.stringify([...visibleSections.value])))
 
 function toggleSection(key: SectionKey, checked: boolean): void {
   if (checked) visibleSections.value.add(key)
@@ -212,33 +215,25 @@ const configuredSections = computed(() =>
 )
 
 const STORAGE_KEY = 'quartz-dark-mode'
-const dark = ref(localStorage.getItem(STORAGE_KEY) === 'true')
+// follows the system until the user chooses; stored only when chosen
+const storedDark = readStorage(STORAGE_KEY)
+const prefersDark = typeof window.matchMedia === 'function' && window.matchMedia('(prefers-color-scheme: dark)').matches
+const dark = ref(storedDark === null ? prefersDark : storedDark === 'true')
+function setDark(value: boolean): void {
+  dark.value = value
+  writeStorage(STORAGE_KEY, String(value))
+}
 const theme = computed(() => (dark.value ? 'dark' : 'light'))
 
-// applied to <html>, not a template element, so :root[data-theme] CSS rules actually match
+// on <html>, so :root[data-theme] rules match
 watchEffect(() => {
   document.documentElement.setAttribute('data-theme', theme.value)
 })
 
-watchEffect(() => {
-  try {
-    localStorage.setItem(STORAGE_KEY, String(dark.value))
-  } catch {
-    // ignore storage errors (private browsing etc.)
-  }
-})
-
 const CLOCK_STORAGE_KEY = 'quartz-show-clock'
-const showClock = ref(localStorage.getItem(CLOCK_STORAGE_KEY) === 'true')
-watchEffect(() => {
-  try {
-    localStorage.setItem(CLOCK_STORAGE_KEY, String(showClock.value))
-  } catch {
-    // ignore storage errors (private browsing etc.)
-  }
-})
+const showClock = ref(readStorage(CLOCK_STORAGE_KEY) === 'true')
+watchEffect(() => writeStorage(CLOCK_STORAGE_KEY, String(showClock.value)))
 
-// minute granularity is enough for a clock display, no need for a per-second tick
 const now = ref(new Date())
 let clockTimer: ReturnType<typeof setInterval> | undefined
 onMounted(() => {

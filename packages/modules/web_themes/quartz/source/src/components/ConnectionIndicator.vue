@@ -10,8 +10,7 @@
     />
   </BaseIconButton>
 
-  <!-- no close affordance on purpose - this blocks interaction until the connection is actually
-       back, same as koala's persistent q-dialog; dismissing it would just hide a real problem. -->
+  <!-- No close button on purpose: dismissing it would hide a real problem. -->
   <div
     v-if="showDialog"
     class="fixed inset-0 z-[80] flex items-center justify-center bg-[rgba(10,12,16,0.5)] px-4"
@@ -37,9 +36,7 @@ import IconLink from './icons/IconLink.vue'
 import IconLinkOff from './icons/IconLinkOff.vue'
 import IconRefresh from './icons/IconRefresh.vue'
 
-// matches koala's ConnectionIndicator.vue timings and copy - delay before showing the connecting
-// dialog (avoids flicker on fast reconnects) and the grace period before warning the user the
-// connection might really be down rather than just mid-reconnect.
+// the delay before the dialog avoids flicker on fast reconnects; the grace period before warning that the connection may be down
 const DIALOG_DELAY_MS = 1000
 const GRACE_PERIOD_MS = 10000
 const ICON_HIDE_AFTER_RECONNECT_MS = 5000

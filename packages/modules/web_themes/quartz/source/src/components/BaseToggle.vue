@@ -1,10 +1,11 @@
 <template>
   <button
     type="button"
-    class="relative inline-flex h-6 w-11 flex-none items-center rounded-full border-0 bg-[#d1d5db] p-0.5"
+    class="relative inline-flex h-6 w-11 flex-none items-center rounded-full border-0 p-0.5"
     role="switch"
     :aria-checked="modelValue"
-    :class="{ 'bg-accent': modelValue }"
+    :aria-label="label"
+    :class="modelValue ? 'bg-accent' : 'bg-[#d1d5db]'"
     @click="emit('update:modelValue', !modelValue)"
   >
     <span
@@ -15,6 +16,6 @@
 </template>
 
 <script setup lang="ts">
-defineProps<{ modelValue: boolean }>()
+defineProps<{ modelValue: boolean; label?: string }>()
 const emit = defineEmits<{ 'update:modelValue': [value: boolean] }>()
 </script>

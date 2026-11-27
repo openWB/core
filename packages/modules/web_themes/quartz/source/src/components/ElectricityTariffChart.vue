@@ -1,6 +1,6 @@
 <template>
   <div class="my-3">
-    <div class="h-[220px]">
+    <div :class="{ 'h-[220px]': points.length > 0 }">
       <ChartjsLine
         v-if="points.length > 0"
         ref="chartRef"
@@ -24,21 +24,22 @@ import { Line as ChartjsLine } from 'vue-chartjs'
 import { Chart, type ChartOptions, type ChartData } from 'chart.js'
 import annotationPlugin, { type AnnotationOptions } from 'chartjs-plugin-annotation'
 import '@/utils/chartSetup'
+import { cardChartOptions } from '@/utils/chartOptions'
 import { useMqttStore } from '@/stores/mqtt-store'
 import { getCssColor, hexToRgba } from '@/utils/color'
 import { formatTooltipTime, eurPerWhToCtPerKwh } from '@/utils/format'
+import { priceRuns } from '@/utils/priceRuns'
 
 Chart.register(annotationPlugin)
 
-/** The price threshold (ct/kWh) - clicking the chart emits the clicked hour's own price as the new threshold. */
+/** The price threshold in ct/kWh; clicking the chart sets it to the clicked slot's price. */
 const props = defineProps<{ modelValue?: number }>()
 const emit = defineEmits<{ 'update:modelValue': [value: number] }>()
 
 const mqttStore = useMqttStore()
 const chartRef = ref<{ chart?: Chart } | null>(null)
 
-// stepped, forward-filled one extra hour so the line reaches the end of the last real slot
-// instead of stopping dead - same approach PriceDetailCard.vue's toStepSeries already uses
+// stepped, with one extra point so the line reaches the end of the last slot
 const points = computed(() => {
   const raw = Object.entries(mqttStore.electricityPrices)
     .map(([timestamp, price]) => ({ x: Number(timestamp) * 1000, y: eurPerWhToCtPerKwh(price) }))
@@ -49,32 +50,20 @@ const points = computed(() => {
   return [...raw, { x: last.x + interval - 1000, y: last.y }]
 })
 
-// contiguous runs of "below/at threshold" (allowed - green) vs "above threshold" (blocked -
-// red) price slots, shaded as background boxes - one pass over the series rather than two
-// separate below/above loops
+// shaded runs at or below (green) and above (red) the threshold
 const priceAnnotations = computed<AnnotationOptions[]>(() => {
   if (props.modelValue === undefined || points.value.length === 0) return []
   const allowedColor = hexToRgba(getCssColor('--pv'), 0.2)
   const blockedColor = hexToRgba(getCssColor('--error'), 0.2)
-  const series = points.value
-  const annotations: AnnotationOptions[] = []
-  let runStart = 0
-  for (let i = 1; i <= series.length; i++) {
-    const runAllowed = series[runStart].y <= props.modelValue
-    if (i === series.length || series[i].y <= props.modelValue !== runAllowed) {
-      annotations.push({
-        type: 'box',
-        drawTime: 'beforeDatasetsDraw',
-        xMin: series[runStart].x,
-        xMax: series[i - 1].x,
-        borderWidth: 1,
-        borderColor: runAllowed ? allowedColor : blockedColor,
-        backgroundColor: runAllowed ? allowedColor : blockedColor,
-      })
-      runStart = i
-    }
-  }
-  return annotations
+  return priceRuns(points.value, props.modelValue).map((run) => ({
+    type: 'box' as const,
+    drawTime: 'beforeDatasetsDraw' as const,
+    xMin: run.from,
+    xMax: run.to,
+    borderWidth: 1,
+    borderColor: run.allowed ? allowedColor : blockedColor,
+    backgroundColor: run.allowed ? allowedColor : blockedColor,
+  }))
 })
 
 const chartData = computed<ChartData<'line', { x: number; y: number }[]>>(() => ({
@@ -92,14 +81,10 @@ const chartData = computed<ChartData<'line', { x: number; y: number }[]>>(() => 
   ],
 }))
 
-const chartOptions = computed<ChartOptions<'line'>>(() => {
-  const mutedColor = getCssColor('--muted')
-  const borderColor = getCssColor('--border')
-  return {
-    responsive: true,
-    maintainAspectRatio: false,
-    animation: false,
-    interaction: { mode: 'index', intersect: false },
+const chartOptions = computed<ChartOptions<'line'>>(() =>
+  cardChartOptions({
+    yTitle: 'Preis [ct/kWh]',
+    noAnimation: true,
     plugins: {
       legend: { display: false },
       tooltip: {
@@ -114,21 +99,8 @@ const chartOptions = computed<ChartOptions<'line'>>(() => {
       },
       annotation: { annotations: priceAnnotations.value },
     },
-    scales: {
-      x: {
-        type: 'time',
-        time: { unit: 'hour' },
-        grid: { color: borderColor },
-        ticks: { color: mutedColor, font: { size: 11 } },
-      },
-      y: {
-        grid: { color: borderColor },
-        ticks: { color: mutedColor, font: { size: 11 } },
-        title: { display: true, text: 'Preis [ct/kWh]', color: mutedColor, font: { size: 12 } },
-      },
-    },
-  }
-})
+  }),
+)
 
 function onClick(event: MouseEvent): void {
   const chart = chartRef.value?.chart

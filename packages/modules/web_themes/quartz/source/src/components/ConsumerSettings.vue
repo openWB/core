@@ -17,8 +17,9 @@
     <div class="toggle-row">
       <label>Betriebsmodus automatisch umstellen</label>
       <BaseToggle
+        label="Betriebsmodus automatisch umstellen"
         :model-value="resetActive"
-        @update:model-value="setResetField('active', $event)"
+        @update:model-value="onResetActive"
       />
     </div>
 
@@ -39,7 +40,7 @@
         label="Wiederholung"
         :model-value="resetFrequencySelected"
         :options="frequencyOptions"
-        @update="setResetField('frequency.selected', $event)"
+        @update="onFrequencySelected"
       />
       <WeekdayToggle
         v-if="resetFrequencySelected === 'weekly'"
@@ -67,6 +68,7 @@
 </template>
 
 <script setup lang="ts">
+import { localDateString, withDefaultWeekday } from '@/utils/planSchedule'
 import { computed } from 'vue'
 import { useMqttStore } from '@/stores/mqtt-store'
 import { chargeModes } from '@/utils/chargeModes'
@@ -87,9 +89,26 @@ const resetTime = computed(() => resetChargemode.value?.time ?? '00:00')
 const resetTargetMode = computed(() => resetChargemode.value?.chargemode ?? 'scheduled_charging')
 const resetFrequencySelected = computed(() => resetChargemode.value?.frequency.selected ?? 'daily')
 const resetFrequencyWeekly = computed(() => resetChargemode.value?.frequency.weekly ?? [false, false, false, false, false, false, false])
-const resetFrequencyOnce = computed(() => resetChargemode.value?.frequency.once ?? new Date().toISOString().slice(0, 10))
+const resetFrequencyOnce = computed(() => resetChargemode.value?.frequency.once ?? localDateString(new Date()))
 
 function setResetField(path: string, value: unknown): void {
   mqttStore.setConsumerResetChargemodeField(props.consumerId, path, value)
+}
+
+// a weekly reset without a weekday never fires
+function selectDefaultWeekdayIfNeeded(): void {
+  const weekly = resetFrequencyWeekly.value
+  const withDay = withDefaultWeekday(weekly, new Date())
+  if (withDay !== weekly) setResetField('frequency.weekly', withDay)
+}
+
+function onResetActive(active: boolean): void {
+  setResetField('active', active)
+  if (active && resetFrequencySelected.value === 'weekly') selectDefaultWeekdayIfNeeded()
+}
+
+function onFrequencySelected(selected: string): void {
+  setResetField('frequency.selected', selected)
+  if (selected === 'weekly') selectDefaultWeekdayIfNeeded()
 }
 </script>

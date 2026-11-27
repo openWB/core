@@ -2,7 +2,7 @@
   <div class="grid grid-cols-3 gap-2 py-4 sm:flex sm:flex-wrap sm:gap-2.5">
     <StatChip
       v-for="chip in chips"
-      :key="chip.label"
+      :key="chip.key ?? chip.label"
       :icon="chip.icon"
       :label="chip.label"
       :value="chip.value"
@@ -54,9 +54,7 @@ const showPriceDetail = ref(false)
 const showForecastDetail = ref(false)
 const activeDetail = ref<CategoryKey | null>(null)
 
-// Netz/Hausverbrauch have no aggregate fault topic of their own - both reuse the single
-// EVU/grid counter's own fault state (the backend's one real "more generators than
-// configured" warning is explicitly written onto that same counter object).
+// Netz and Hausverbrauch have no fault topic of their own; the backend's generator warning sits on the grid counter
 const gridCounterFaultState = computed(() => mqttStore.counterInstanceFaultState(mqttStore.gridCounterId() ?? -1))
 
 const counterFaultState = computed(() =>
@@ -66,7 +64,6 @@ const counterFaultState = computed(() =>
 const consumerFaultState = computed(() =>
   visibleConsumerIds.value.reduce((max, id) => Math.max(max, mqttStore.consumerInstanceFaultState(id)), 0),
 )
-// the house chip shows faults of the consumers/counters counted in it
 const houseFaultState = computed(() =>
   Math.max(
     homeConsumptionConsumerIds.value.reduce((max, id) => Math.max(max, mqttStore.consumerInstanceFaultState(id)), 0),
@@ -96,10 +93,7 @@ interface Chip {
   directionLabel?: string
 }
 
-// grid: positive = Bezug/'in', negative = Einspeisung/'out' (shared convention, every counter).
-// battery: positive = Laden/'in', negative = Entladen/'out' - confirmed empirically against the
-// live bat-all-power topic (SoC trend), not from per-driver code comments, which describe
-// individual inverters' raw signals rather than this aggregate topic's own convention.
+// positive = Bezug / Laden, negative = Einspeisung / Entladen (battery checked against the live bat-all-power topic)
 const gridDirection = computed<'in' | 'out' | undefined>(() => {
   if (mqttStore.gridPower > 0) return 'in'
   if (mqttStore.gridPower < 0) return 'out'
@@ -113,8 +107,7 @@ const batteryDirection = computed<'in' | 'out' | undefined>(() => {
 })
 const batteryDirectionLabel = computed(() => (batteryDirection.value === 'in' ? 'Lädt' : 'Entlädt'))
 
-// chargepoints: positive = Lädt/'in', negative = Entlädt (V2H/bidi, 'out') - same convention as
-// battery; only meaningful for a bidi-capable setup, unverified against real V2H hardware.
+// same convention as the battery; unverified with real V2H hardware
 const chargePointDirection = computed<'in' | 'out' | undefined>(() => {
   if (mqttStore.chargePointSumPower > 0) return 'in'
   if (mqttStore.chargePointSumPower < 0) return 'out'
@@ -122,26 +115,30 @@ const chargePointDirection = computed<'in' | 'out' | undefined>(() => {
 })
 const chargePointDirectionLabel = computed(() => (chargePointDirection.value === 'in' ? 'Lädt' : 'Entlädt'))
 
+// "–" instead of 0 W while the live feed is not there (still loading, or the user's role does not allow it)
+const power = (kw: number): string => (mqttStore.liveValuesReceived ? formatKw(kw) : '–')
+
 const chips = computed<Chip[]>(() => {
   const result: Chip[] = [
     {
       key: 'pv',
       label: 'Erzeugung',
-      value: formatKw(mqttStore.pvPower),
+      value: power(mqttStore.pvPower),
       icon: IconSun,
       color: 'pv',
       faultState: detailInfo.value.pv.faultState,
-      clickable: true,
+      // the details are only offered when the user may see an inverter (else the popup would be empty)
+      clickable: mqttStore.inverterIds.length > 0,
       onClick: () => (activeDetail.value = 'pv'),
     },
     {
       key: 'grid',
       label: 'Netz',
-      value: formatKw(mqttStore.gridPower),
+      value: power(mqttStore.gridPower),
       icon: IconBolt,
       color: 'grid',
       faultState: detailInfo.value.grid.faultState,
-      clickable: true,
+      clickable: mqttStore.gridCounterAccessible(),
       direction: gridDirection.value,
       directionLabel: gridDirectionLabel.value,
       onClick: () => (activeDetail.value = 'grid'),
@@ -159,23 +156,26 @@ const chips = computed<Chip[]>(() => {
       onClick: () => (activeDetail.value = 'counter'),
     })
   }
-  result.push(
-    {
+  // without a battery there is nothing to show (the live feed leaves its battery fields out, too)
+  if (mqttStore.batteryConfigured) {
+    result.push({
       key: 'battery',
-      label: `Speicher ${mqttStore.batterySoc}%`,
-      value: formatKw(mqttStore.batteryPower),
+      label: mqttStore.liveValuesReceived ? `Speicher ${mqttStore.batterySoc}%` : 'Speicher',
+      value: power(mqttStore.batteryPower),
       icon: IconBattery,
       color: 'battery',
       faultState: detailInfo.value.battery.faultState,
-      clickable: true,
+      clickable: mqttStore.batteryIds.length > 0,
       direction: batteryDirection.value,
       directionLabel: batteryDirectionLabel.value,
       onClick: () => (activeDetail.value = 'battery'),
-    },
+    })
+  }
+  result.push(
     {
       key: 'house',
       label: 'Hausverbrauch',
-      value: formatKw(mqttStore.houseConsumption),
+      value: power(mqttStore.houseConsumption),
       icon: IconHouse,
       color: 'consumption',
       clickable: true,
@@ -184,7 +184,7 @@ const chips = computed<Chip[]>(() => {
     {
       key: 'chargepoint',
       label: 'Ladepunkte',
-      value: formatKw(mqttStore.chargePointSumPower),
+      value: power(mqttStore.chargePointSumPower),
       icon: IconBolt,
       color: 'chargepoint',
       faultState: detailInfo.value.chargepoint.faultState,
@@ -228,6 +228,11 @@ const chips = computed<Chip[]>(() => {
       onClick: () => (showForecastDetail.value = true),
     })
   }
-  return result
+  // nothing for what the installation does not have
+  const missing = new Set<CategoryKey>()
+  if (!mqttStore.pvConfigured) missing.add('pv')
+  if (mqttStore.gridCounterId() === undefined) missing.add('grid')
+  if (mqttStore.chargePointIds.length === 0) missing.add('chargepoint')
+  return result.filter((chip) => !(chip.key && missing.has(chip.key)))
 })
 </script>

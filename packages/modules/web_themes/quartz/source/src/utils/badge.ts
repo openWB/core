@@ -1,9 +1,4 @@
-/**
- * The charging/plugged/idle -> badge-ok/badge-wait/badge-muted vocabulary shared by every card
- * that shows a chargepoint-driven state (ChargePoint/Consumer/Vehicle). A locked chargepoint
- * always shows red regardless of charge/plug state - optional since only ChargePointCard has
- * a lock concept.
- */
+/** Badge class for the charging, plugged or idle state; `locked` (chargepoints only) always wins. */
 export function stateBadgeClass(charging: boolean, plugged: boolean, locked = false): string {
   if (locked) return 'badge-error'
   if (charging) return 'badge-ok'

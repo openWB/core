@@ -57,10 +57,7 @@
             >
               <IconCalendar />
             </BaseIconButton>
-            <!-- transparent native date input overlaid on the icon button - clicking anywhere on
-                 it opens the browser's own date picker, so the visible chip stays icon-only and
-                 doesn't widen the header row (a full-width input here used to push the legend
-                 onto its own line). The date itself is already shown by the dayLabel pill above. -->
+            <!-- transparent native date input over the icon button: the picker opens on click and the header row stays narrow -->
             <input
               type="date"
               aria-label="Datum auswählen"
@@ -106,6 +103,12 @@
         :options="chartOptions"
         :plugins="[nowLabelPlugin]"
       />
+      <p
+        v-else-if="mode === 'day' && dayDenied"
+        class="absolute inset-0 flex items-center justify-center px-4 text-center text-sm text-muted"
+      >
+        Für den Tagesverlauf fehlt die Berechtigung. Über die Schaltfläche oben lässt sich die Live-Ansicht wählen.
+      </p>
       <div
         v-else-if="isLoading"
         class="absolute inset-0 flex items-center justify-center text-muted"
@@ -136,7 +139,8 @@ import { useChartSettings, categoryDefs, type LegendKey } from '@/composables/us
 import { getCssColor, hexToRgba, instanceColor } from '@/utils/color'
 import { formatTooltipTime, formatChartDateLabel } from '@/utils/format'
 import { roundTimeTicks, tickStepMinutes } from '@/utils/timeTicks'
-import type { CategoryKey } from '@/types/chart'
+import { categoryHasComponent } from '@/utils/categoryComponents'
+import { alignDatasets } from '@/utils/alignDatasets'
 import BaseIconButton from './BaseIconButton.vue'
 import IconChevronLeft from './icons/IconChevronLeft.vue'
 import IconChevronRight from './icons/IconChevronRight.vue'
@@ -163,13 +167,11 @@ const {
   selectedVehicleSoc: publishedSelectedVehicleSoc,
 } = useChartSettings()
 
-// the zoomed range lives in state because chartOptions is recomputed on every 'now' tick / data
-// update, which would otherwise push the unzoomed scale bounds back into the chart. Clearing it is
-// the whole reset: chart.resetZoom() would fire onZoomComplete and immediately re-capture the range.
+// kept in state: chartOptions is recomputed on every tick and would reset the zoomed bounds; clearing it is the reset (chart.resetZoom() would re-capture the range)
 const zoomRange = ref<{ min: number; max: number } | null>(null)
 const isZoomed = computed(() => zoomRange.value !== null)
 
-// safety net so a forgotten zoom doesn't leave a stale view on an unattended screen
+// a forgotten zoom must not leave a stale view on an unattended screen
 const ZOOM_AUTO_RESET_MS = 5 * 60 * 1000
 let zoomResetTimer: ReturnType<typeof setTimeout> | undefined
 
@@ -185,7 +187,6 @@ function timeAxisUnit(): 'minute' | 'hour' {
   return tickStepMinutes(range.max - range.min) ? 'minute' : 'hour'
 }
 
-// round clock times as ticks, step from the scale's current span (also mid-gesture)
 function alignTimeTicks(scale: Scale): void {
   const step = tickStepMinutes(scale.max - scale.min)
   if (step) scale.ticks = roundTimeTicks(scale.min, scale.max, step).map((value) => ({ value }))
@@ -196,9 +197,7 @@ function resetZoom(): void {
   zoomRange.value = null
 }
 
-// Date.now() isn't a reactive dependency, so without this, 'now' (the chart options
-// computed's xMin/xMax for the vertical line) would freeze at whatever moment the
-// component happened to last recompute, instead of tracking real time
+// Date.now() is not reactive; this ticks so the "now" line follows real time
 const now = ref(Date.now())
 let nowTimer: ReturnType<typeof setInterval> | undefined
 onMounted(() => {
@@ -209,9 +208,7 @@ onUnmounted(() => {
   clearTimeout(zoomResetTimer)
 })
 
-// Chart.js options are JS-driven, not CSS - this is the one piece of the axis chrome that needs
-// a real viewport check rather than a Tailwind breakpoint class, to drop the rotated axis titles
-// and shrink the tick font on narrow screens, where both eat real width from the already-short plot area
+// Chart.js options are JS, not CSS, so the narrow layout needs a viewport check here
 const isNarrow = ref(window.innerWidth < 640)
 function updateIsNarrow(): void {
   isNarrow.value = window.innerWidth < 640
@@ -219,13 +216,11 @@ function updateIsNarrow(): void {
 onMounted(() => window.addEventListener('resize', updateIsNarrow))
 onUnmounted(() => window.removeEventListener('resize', updateIsNarrow))
 
-// drawn manually instead of via chartjs-plugin-annotation's own label - that label kept
-// getting clipped against the chart area regardless of position/yAdjust/clip settings
+// drawn manually: the annotation plugin's own label kept getting clipped
 const nowLabelPlugin: Plugin<'line'> = {
   id: 'nowLabel',
   afterDraw(chart) {
-    // not useful in live mode ("now" already sits right at the chart's right edge there), nor
-    // when viewing a past day (there's no "now" within that day's range)
+    // only meaningful in the day view of today
     if (mode.value !== 'day' || !isToday.value) return
     const x = chart.scales.x?.getPixelForValue(now.value)
     if (x === undefined) return
@@ -244,6 +239,12 @@ const props = defineProps<{ theme: string }>()
 
 const mqttStore = useMqttStore()
 
+// without chart rights the daily log is never delivered
+const dayDenied = computed(
+  () => mqttStore.userManagementKnown() && mqttStore.userManagementActive() && !mqttStore.accessChartAllowed(),
+)
+const dayFetchEnabled = computed(() => mode.value === 'day' && mqttStore.userManagementKnown() && !dayDenied.value)
+
 const {
   categories: dayCategories,
   batterySoc: dayBatterySoc,
@@ -256,11 +257,10 @@ const {
   goToNextDay,
   goToToday,
   goToDate,
-} = useDailyLog()
+} = useDailyLog(dayFetchEnabled)
 const dayLabel = computed(() => formatChartDateLabel(selectedDate.value))
 
-// native <input type="date"> uses the fixed YYYY-MM-DD format regardless of locale, unlike
-// dateToString's YYYYMMDD (built for the MQTT topic, not for this input)
+// <input type="date"> uses YYYY-MM-DD regardless of locale
 function toDateInputValue(date: Date): string {
   return `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}-${date
     .getDate()
@@ -283,7 +283,7 @@ const {
 const categories = computed(() => (mode.value === 'live' ? liveCategories.value : dayCategories.value))
 const batterySoc = computed(() => (mode.value === 'live' ? liveBatterySoc.value : dayBatterySoc.value))
 const vehicleSocAll = computed(() => (mode.value === 'live' ? liveVehicleSocAll.value : dayVehicleSocAll.value))
-// at most 2, prioritized by mqttStore.topVehicleIds (connected-to-a-chargepoint first)
+// at most 2, connected vehicles first
 const selectedVehicleSoc = computed(() =>
   mqttStore.topVehicleIds
     .map((id) => vehicleSocAll.value.find((v) => v.id === String(id)))
@@ -291,11 +291,7 @@ const selectedVehicleSoc = computed(() =>
     .map((v) => ({ ...v, label: mqttStore.vehicleList.find((veh) => veh.id === Number(v.id))?.name ?? v.label })),
 )
 
-// live mode has no equivalent of day mode's guaranteed command-response signal (graph.py's
-// retained alllivevaluesJson* chunks only exist once something has actually been logged, which a
-// fresh install genuinely may not have yet) - so this is a short grace period after
-// (re-)subscribing, just long enough for the broker to redeliver the retained chunks, rather than
-// a precise "response received" check
+// unlike the day view there is no response signal: a short grace period for the broker to redeliver the retained chunks
 const liveIsLoading = ref(false)
 let liveLoadingTimeout: ReturnType<typeof setTimeout> | undefined
 function startLiveLoadingGracePeriod(): void {
@@ -309,15 +305,13 @@ watch(liveCategories, () => {
   if (liveCategories.value.grid.all.length > 0) liveIsLoading.value = false
 })
 
-// mode can start as 'live' on a reload (persisted) - the watch below only reacts to later
-// changes, so the initial subscription needs its own call here
+// the persisted mode can already be 'live' on load
 if (mode.value === 'live') {
   mqttStore.subscribeLiveSeries()
   startLiveLoadingGracePeriod()
 }
 
-// the alllivevaluesJson* feed is only worth subscribing to while live view is actually shown;
-// default the range back to the max each time live is (re-)selected
+// the live feed is only subscribed while the live view is shown; selecting it resets the range to the maximum
 watch(mode, (m) => {
   if (m === 'live') {
     mqttStore.subscribeLiveSeries()
@@ -333,63 +327,24 @@ onUnmounted(() => {
   clearTimeout(liveLoadingTimeout)
 })
 
-// a zoom/pan shouldn't carry over to another day or the other view
 watch([mode, selectedDate], resetZoom)
 
 const hasData = computed(() => categories.value.grid.all.length > 0)
 const isLoading = computed(() => (mode.value === 'live' ? liveIsLoading.value : dayIsLoading.value))
 
-// published so ThemeSettingsModal.vue (a sibling, not a child - rendered from the hamburger
-// menu in App.vue) can show "which categories/instances exist right now" in its "Linien"
-// section without independently re-subscribing to the daily-log/live-view feeds itself
+// published for ThemeSettingsModal, which sits elsewhere in the tree and needs the same lines
 watchEffect(() => {
   publishedCategories.value = categories.value
   publishedBatterySoc.value = batterySoc.value
   publishedSelectedVehicleSoc.value = selectedVehicleSoc.value
 })
 
-// Chart.js' 'index' tooltip mode (interaction.mode below) matches datasets by shared ARRAY
-// POSITION, not shared x-value - fine when every dataset has the same points (all the day-mode
-// power/SoC categories do, since they're all built from the same daily_log entries), but forecast
-// comes from a separate, much coarser-sampled feed. Left unaligned, the tooltip would show
-// forecast's value from whatever index the dense categories happen to be at, i.e. essentially a
-// random nearby forecast point - frequently landing on a night-time (zero) entry since those
-// dominate the array, which is exactly the "always shows 0" bug reported. Resampling onto the
-// same timestamps every other day-mode series already shares fixes this at the root instead of
-// patching the tooltip display after the fact.
-function resampleToTimestamps(points: { x: number; y: number }[], timestamps: number[]): { x: number; y: number }[] {
-  if (points.length === 0) return []
-  let i = 0
-  return timestamps.map((t) => {
-    while (i < points.length - 2 && points[i + 1].x <= t) i++
-    const a = points[i]
-    const b = points[i + 1]
-    if (!b || t <= a.x) return { x: t, y: a.y }
-    if (t >= b.x) return { x: t, y: b.y }
-    const ratio = (t - a.x) / (b.x - a.x)
-    return { x: t, y: a.y + (b.y - a.y) * ratio }
-  })
-}
-
-// whole-day forecast for the day currently selected in day mode. Today, unchanged from before:
-// the live MQTT snapshot (mqttStore.forecastSeries), the continuously-refining forecast for a day
-// that hasn't ended yet. Past days instead read each daily_log entry's own "forecast" value (see
-// process_log_entry_builder.py::create_entry) - the value as it stood at that entry's own
-// timestamp, not a retroactively-refined whole-day curve; the live topic has long since moved on
-// to today's values by then, so this is the only source history can use. Older days (or days
-// forecast wasn't configured for) simply have none. History can be flat/missing (component in
-// error state) while the forecast is already known in full; only meaningful next to the day
-// view's combined PV line.
-// Split from forecastDay (the actually-drawn series) so the legend item can stay present and
-// clickable even while forecastVisible is off - otherwise toggling it hides the only way back on.
+// whole-day forecast: today from the live topic, past days from the value each log entry carried at its time
 const forecastSeriesDay = computed(() => {
   if (mode.value !== 'day' || categoryMode.pv !== 'combined') return []
   let raw: { x: number; y: number }[]
   if (!isToday.value) {
-    // past days: entries where no forecast value was logged that cycle (see buildForecast's
-    // numeric-only filter) are simply absent here, same gap case the resampling below already
-    // has to handle for today (a system switched on mid-day) - so it applies uniformly below
-    // rather than returning this raw, unaligned array straight away.
+    // entries without a logged forecast are missing, like for a system switched on mid-day
     raw = dayForecast.value.map((entry) => ({ x: entry.timestamp, y: entry.power }))
   } else {
     if (!mqttStore.forecastConfigured) return []
@@ -399,47 +354,13 @@ const forecastSeriesDay = computed(() => {
       .filter((entry) => entry.timestamp >= startOfToday && entry.timestamp <= endOfToday)
       .map((entry) => ({ x: entry.timestamp, y: entry.power }))
   }
-  // only resample the elapsed portion (where real power data exists and needs shared-index
-  // tooltip alignment) - grid.all has no entries for the future, so resampling the whole series
-  // onto it would silently cut the forecast off at "now" instead of showing the rest of the day.
-  // grid.all also doesn't necessarily start at 00:00 (e.g. a system only switched on at 13:00
-  // that day has no log entries before that) - any forecast points before its first timestamp need
-  // to be kept unchanged too, same as the future tail, or they'd be silently dropped instead of
-  // showing the pre-startup projected line
-  const referenceTimestamps = categories.value.grid.all.map((p) => p.timestamp)
-  if (referenceTimestamps.length === 0) return raw
-  const firstReference = referenceTimestamps[0]
-  const lastReference = referenceTimestamps[referenceTimestamps.length - 1]
-  const past = raw.filter((p) => p.x < firstReference)
-  const resampledElapsed = resampleToTimestamps(raw, referenceTimestamps)
-  const future = raw.filter((p) => p.x > lastReference)
-  return [...past, ...resampledElapsed, ...future]
+  return raw
 })
 const forecastDay = computed(() => (forecastVisible.value ? forecastSeriesDay.value : []))
 
-// whether a category has any real component behind it at all - grid/house are always
-// meaningful (grid connection + derived house consumption always exist), the rest depend on
-// what's actually configured. 'counter' has no static hierarchy signal (grid vs. non-grid is a
-// runtime flag, not a hierarchy-level distinction), so it reads the live category data instead.
-function categoryHasComponent(key: CategoryKey): boolean {
-  switch (key) {
-    case 'grid':
-    case 'house':
-      return true
-    case 'pv':
-      return mqttStore.inverterIds.length > 0
-    case 'battery':
-      return mqttStore.batteryIds.length > 0
-    case 'chargepoint':
-      return mqttStore.chargePointIds.length > 0
-    case 'consumer':
-      return mqttStore.consumerIds.some((id) => !mqttStore.consumerInstanceIsHomeConsumption(id))
-    case 'counter':
-      return categories.value.counter.individual.length > 0
-  }
-}
-
-const visibleCategoryDefs = computed(() => categoryDefs.filter((c) => categoryHasComponent(c.key)))
+const visibleCategoryDefs = computed(() =>
+  categoryDefs.filter((c) => categoryHasComponent(c.key, mqttStore, categories.value.counter.individual.length)),
+)
 
 const legend = computed(() => {
   void props.theme
@@ -462,12 +383,7 @@ const legend = computed(() => {
   return items
 })
 
-// x-axis bounds: the whole day for the day view, or the selected rolling window for live view.
-// Live's min is the earliest point actually held (categories.value.grid.all is already
-// cutoff-filtered to the window by useLiveView) rather than always the full window start, so a
-// freshly (re)started backend's axis grows from "what we have" up to the full range instead of
-// showing an empty gap for data that hasn't been collected yet - same as koala's HistoryChart.vue
-// (chartLabels' minTimestamp = selectedData[0]?.timestamp).
+// day view: the whole day. Live: from the earliest held point, so the axis grows with the data instead of showing an empty gap
 const xRange = computed(() => {
   if (mode.value === 'live') {
     const windowStart = now.value - liveRangeMinutes.value * 60 * 1000
@@ -497,7 +413,6 @@ const chartData = computed<ChartData<'line', { x: number; y: number }[]>>(() => 
           label: inst.label,
           data: inst.points.map((p) => ({ x: p.timestamp, y: p.power })),
           borderColor: color,
-          // lighter than the combined-mode fill (0.18) since individual instances can overlap
           backgroundColor: hexToRgba(color, 0.12),
           fill: true,
           borderWidth: 1.25,
@@ -520,9 +435,10 @@ const chartData = computed<ChartData<'line', { x: number; y: number }[]>>(() => 
     }
   })
 
+  const forecastDatasets = new Set<(typeof datasets)[number]>()
   if (forecastDay.value.length > 1) {
     const pvColor = getCssColor('--pv')
-    datasets.push({
+    const forecast = {
       label: 'Prognose',
       data: forecastDay.value,
       borderColor: pvColor,
@@ -532,11 +448,12 @@ const chartData = computed<ChartData<'line', { x: number; y: number }[]>>(() => 
       pointRadius: 0,
       tension: 0.2,
       borderDash: [6, 6],
-    })
+    }
+    datasets.push(forecast)
+    forecastDatasets.add(forecast)
   }
 
-  // dash pattern deliberately finer than the forecast line's [6, 6] - both can be on screen at
-  // once and need to read as different lines at a glance, not just different colors
+  // finer than the forecast dash so both read differently
   const SOC_DASH = [3, 3]
 
   if (socVisibleSeries.batterySoc) {
@@ -589,7 +506,7 @@ const chartData = computed<ChartData<'line', { x: number; y: number }[]>>(() => 
       })
     })
   }
-  return { datasets }
+  return { datasets: alignDatasets(datasets, forecastDatasets) }
 })
 
 const chartOptions = computed<ChartOptions<'line'>>(() => {
@@ -601,9 +518,7 @@ const chartOptions = computed<ChartOptions<'line'>>(() => {
   return {
     responsive: true,
     maintainAspectRatio: false,
-    // live mode re-fetches/re-renders every MQTT cycle (~10s) - Chart.js' default transition
-    // animation on each .update() call produced a visible diagonal "wipe" flash across the filled
-    // areas every tick, since points reposition on the sliding x-axis window at the same time.
+    // live mode redraws every cycle; the default transition showed a wipe flash
     animation: false,
     layout: { padding: { top: 20 } },
     interaction: { mode: 'index', intersect: false },
@@ -611,8 +526,7 @@ const chartOptions = computed<ChartOptions<'line'>>(() => {
       legend: { display: false },
       tooltip: {
         enabled: true,
-        // Chart.js' own default is a hardcoded near-black box regardless of app theme - themed to
-        // match Quartz's own panel/text/border tokens instead, so light mode gets a light tooltip
+        // Chart.js' default tooltip is dark regardless of the theme
         backgroundColor: panelColor,
         titleColor: textColor,
         bodyColor: textColor,
@@ -645,9 +559,7 @@ const chartOptions = computed<ChartOptions<'line'>>(() => {
         limits: {
           x: { min: xRange.value.min, max: xRange.value.max, minRange: 5 * 60 * 1000 },
         },
-        // disabled on narrow/touch viewports - a single-finger drag-to-pan there captures every
-        // attempt to scroll the page past the chart, which is far more disruptive than losing pan
-        // (pinch-zoom, a deliberate 2-finger gesture that doesn't conflict with scrolling, still works)
+        // no drag-to-pan on narrow screens: it blocks scrolling past the chart (pinch still works)
         pan: { enabled: !isNarrow.value, mode: 'x', onPanComplete: ({ chart }) => captureZoom(chart) },
         zoom: {
           wheel: { enabled: true },
@@ -677,7 +589,7 @@ const chartOptions = computed<ChartOptions<'line'>>(() => {
         position: 'right',
         min: 0,
         max: 100,
-        // no own gridlines - sharing the left axis' would double up at mismatched tick spacing
+        // no gridlines of its own: they would not line up with the left axis
         grid: { display: false },
         ticks: {
           color: mutedColor,

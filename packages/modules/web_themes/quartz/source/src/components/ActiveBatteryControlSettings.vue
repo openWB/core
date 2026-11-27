@@ -25,6 +25,12 @@
       @update="(v) => mqttStore.setBatteryControlSocRange(minSoc, v)"
     />
 
+    <p
+      v-if="!conditionOptions.some((option) => option.value === condition)"
+      class="mode-note"
+    >
+      Die eingestellte Regelbedingung wird hier nicht angeboten und nur in den Einstellungen geändert.
+    </p>
     <BaseSegmentedControl
       label="Regelbedingung"
       :model-value="condition"
@@ -58,6 +64,7 @@
       <div class="toggle-row">
         <label>Preisgrenze für Netzbezug statt Speicherentladung</label>
         <BaseToggle
+          label="Preisgrenze für Netzbezug statt Speicherentladung"
           :model-value="priceLimitActivated"
           @update:model-value="mqttStore.setBatteryPriceLimitActivated($event)"
         />
@@ -65,6 +72,7 @@
       <FieldNumber
         label="Eigenregelung für Strompreise über"
         unit="ct/kWh"
+        :min="0"
         :step="0.001"
         :decimals="3"
         :model-value="priceLimit"
@@ -79,6 +87,7 @@
       <div class="toggle-row">
         <label>Preisgrenze für Regelmodus (aktiv laden)</label>
         <BaseToggle
+          label="Preisgrenze für Regelmodus (aktiv laden)"
           :model-value="priceChargeActivated"
           @update:model-value="mqttStore.setBatteryPriceChargeActivated($event)"
         />
@@ -86,6 +95,7 @@
       <FieldNumber
         label="Speicher aktiv laden für Strompreise unter"
         unit="ct/kWh"
+        :min="0"
         :step="0.001"
         :decimals="3"
         :model-value="chargeLimit"
@@ -151,8 +161,6 @@ const powerLimitModeOptions = [
   { value: 'mode_charge_pv_production', label: 'PV-Ertrag speichern' },
 ] as const
 
-// ported from the reference's own batteryBehaviorDescription computed - same condition/manual_mode/
-// power_limit_mode -> text-lines mapping, kept terser per Quartz's existing style
 const behaviorDescription = computed(() => {
   const lines: string[] = []
   if (condition.value === 'manual') {

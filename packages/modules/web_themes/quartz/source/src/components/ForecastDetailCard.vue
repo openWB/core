@@ -57,6 +57,7 @@ import { computed, ref } from 'vue'
 import { Line as ChartjsLine } from 'vue-chartjs'
 import { type ChartOptions, type ChartData } from 'chart.js'
 import '@/utils/chartSetup'
+import { cardChartOptions } from '@/utils/chartOptions'
 import { useMqttStore } from '@/stores/mqtt-store'
 import { getCssColor, hexToRgba } from '@/utils/color'
 import { formatKwh } from '@/utils/format'
@@ -100,16 +101,26 @@ const energyLabel = computed(() => {
   return activeTab.value === 'today' ? 'Energie heute' : 'Energie morgen'
 })
 
-// left-Riemann sum over the series' own intervals - no fixed step assumed
+// the provider's daily energy when it reports one (0 means it did not); the series sum is only the fallback
 const energySum = computed(() => {
-  const series = points.value
+  if (activeTab.value === 'all') {
+    const daily = Object.values(mqttStore.forecastDailyKwh() ?? {})
+    if (daily.some((kwh) => kwh > 0)) return daily.reduce((sum, kwh) => sum + kwh, 0)
+  } else {
+    const reported = activeTab.value === 'today' ? mqttStore.forecastTodayKwh() : mqttStore.forecastTomorrowKwh()
+    if (reported !== undefined && reported > 0) return reported
+  }
+  return seriesEnergy(points.value)
+})
+
+function seriesEnergy(series: { timestamp: number; power: number }[]): number {
   let total = 0
   for (let i = 0; i < series.length - 1; i++) {
     const hours = (series[i + 1].timestamp - series[i].timestamp) / 3_600_000
     total += series[i].power * hours
   }
   return total
-})
+}
 
 const chartData = computed<ChartData<'line', { x: number; y: number }[]>>(() => {
   const color = getCssColor('--pv')
@@ -129,13 +140,11 @@ const chartData = computed<ChartData<'line', { x: number; y: number }[]>>(() => 
   }
 })
 
-const chartOptions = computed<ChartOptions<'line'>>(() => {
-  const mutedColor = getCssColor('--muted')
-  const borderColor = getCssColor('--border')
-  return {
-    responsive: true,
-    maintainAspectRatio: false,
-    interaction: { mode: 'index', intersect: false },
+const chartOptions = computed<ChartOptions<'line'>>(() =>
+  cardChartOptions({
+    yTitle: 'Leistung [kW]',
+    yMinSuggested: 0,
+    xUnit: activeTab.value === 'all' ? 'day' : 'hour',
     plugins: {
       legend: { display: false },
       tooltip: {
@@ -151,20 +160,6 @@ const chartOptions = computed<ChartOptions<'line'>>(() => {
         },
       },
     },
-    scales: {
-      x: {
-        type: 'time',
-        time: { unit: activeTab.value === 'all' ? 'day' : 'hour' },
-        grid: { color: borderColor },
-        ticks: { color: mutedColor, font: { size: 11 } },
-      },
-      y: {
-        suggestedMin: 0,
-        grid: { color: borderColor },
-        ticks: { color: mutedColor, font: { size: 12 } },
-        title: { display: true, text: 'Leistung [kW]', color: mutedColor, font: { size: 12 } },
-      },
-    },
-  }
-})
+  }),
+)
 </script>

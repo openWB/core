@@ -13,7 +13,6 @@ export function hexToRgba(hex: string, opacity = 1): string {
   return `rgba(${r}, ${g}, ${b}, ${opacity})`
 }
 
-/** Lighten (positive) or darken (negative) a hex color by a percentage, clamped to a valid channel range. */
 export function shadeColor(hex: string, percent: number): string {
   const num = parseInt(hex.replace('#', ''), 16)
   const amount = Math.round((percent / 100) * 255)
@@ -24,7 +23,6 @@ export function shadeColor(hex: string, percent: number): string {
   return `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)}`
 }
 
-/** A distinguishable shade of a category's base color for its Nth individual-instance line, same base color always. */
 export function instanceColor(baseHex: string, index: number): string {
   const steps = [0, -25, 25, -45, 45, -60, 60]
   return shadeColor(baseHex, steps[index % steps.length])

@@ -71,12 +71,12 @@
       <StatBlock
         v-if="range !== undefined"
         label="Reichweite"
-        :value="`${Math.round(range)} km`"
+        :value="`${Math.round(range)} ${rangeUnit}`"
       />
       <StatBlock
         v-if="odometer !== undefined"
         label="Kilometerstand"
-        :value="`${Math.round(odometer)} km`"
+        :value="`${Math.round(odometer)} ${rangeUnit}`"
       />
       <StatBlock
         v-if="socTimestamp !== undefined"
@@ -113,4 +113,5 @@ const range = computed(() => mqttStore.vehicleRange(props.vehicleId))
 const odometer = computed(() => mqttStore.vehicleOdometer(props.vehicleId))
 const socTimestamp = computed(() => mqttStore.vehicleSocTimestamp(props.vehicleId))
 const priority = computed(() => mqttStore.vehiclePriority(props.vehicleId))
+const rangeUnit = computed(() => mqttStore.rangeUnit(props.vehicleId))
 </script>

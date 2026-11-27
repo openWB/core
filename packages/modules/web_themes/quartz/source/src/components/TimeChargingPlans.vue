@@ -26,6 +26,7 @@
       <button
         type="button"
         class="add-plan-btn"
+        :disabled="addPending"
         @click="openNew"
       >
         + Neues Zeitfenster
@@ -34,7 +35,7 @@
 
     <template v-else>
       <div class="plan-edit-head">
-        <BaseButton @click="editing = null">
+        <BaseButton @click="cancel">
           &larr; Zurück
         </BaseButton>
         <BaseButton
@@ -59,14 +60,17 @@
 
       <div class="toggle-row">
         <label>Aktiv</label>
-        <BaseToggle v-model="editing.active" />
+        <BaseToggle
+          v-model="editing.active"
+          label="Aktiv"
+        />
       </div>
 
       <BaseSegmentedControl
         label="Häufigkeit"
         :model-value="editing.frequency.selected"
         :options="frequencyOptions"
-        @update="editing.frequency.selected = $event"
+        @update="(v) => setFrequency(editing!.frequency, v)"
       />
       <WeekdayToggle
         v-if="editing.frequency.selected === 'weekly'"
@@ -133,12 +137,14 @@
       <LimitFields
         :limit="editing.limit"
         field-prefix="limit"
+        :soc-available="socAvailable"
         @set="setLimitField"
       />
 
       <div class="toggle-row">
         <label>Nur wenn Speicher-SoC erreicht</label>
         <BaseToggle
+          label="Nur wenn Speicher-SoC erreicht"
           :model-value="editing.min_bat_soc !== null"
           @update:model-value="toggleMinBatSoc"
         />
@@ -169,6 +175,7 @@ import { computed } from 'vue'
 import { useMqttStore, type TimeChargingPlan, type Limit } from '@/stores/mqtt-store'
 import { convertDcCurrentToPower, convertPowerToDcCurrent } from '@/utils/format'
 import { usePlanListEditor, frequencyOptions, frequencyLabel } from '@/composables/usePlanListEditor'
+import { setFrequency } from '@/utils/planSchedule'
 import FieldSlider from './FieldSlider.vue'
 import BaseSegmentedControl from './BaseSegmentedControl.vue'
 import BaseButton from './BaseButton.vue'
@@ -181,25 +188,16 @@ const mqttStore = useMqttStore()
 
 const plans = computed(() => mqttStore.chargePointChargeTemplate(props.chargePointId)?.time_charging.plans ?? [])
 
+const socAvailable = computed(() => mqttStore.chargePointConnectedVehicleSocType(props.chargePointId) !== undefined)
+
 const acChargingEnabled = computed(() => mqttStore.chargePointChargeType(props.chargePointId) === 'AC')
 const dcChargingEnabled = computed(() => mqttStore.chargePointChargeType(props.chargePointId) === 'DC')
 const dcMaxPower = computed(() => mqttStore.chargePointDcMaxPower(props.chargePointId) ?? 300)
 
-const { editing, editingIndex, openEdit, openNew, save, remove } = usePlanListEditor<TimeChargingPlan>(
+const { editing, editingIndex, addPending, openEdit, openNew, save, cancel, remove } = usePlanListEditor<TimeChargingPlan>(
   plans,
   (next) => mqttStore.setChargePointChargeTemplateField(props.chargePointId, 'time_charging.plans', next),
-  (existingIds) => ({
-    active: true,
-    time: ['06:00', '07:00'],
-    frequency: { selected: 'daily', once: [new Date().toISOString().slice(0, 10), new Date().toISOString().slice(0, 10)], weekly: [false, false, false, false, false, false, false] },
-    current: 16,
-    dc_current: 145,
-    id: Math.max(0, ...existingIds) + 1,
-    limit: { selected: 'none', soc: 50, amount: 50000 },
-    min_bat_soc: null,
-    name: 'neuer Zeitladen-Plan',
-    phases_to_use: 1,
-  }),
+  () => mqttStore.addChargePlan(props.chargePointId, 'time'),
 )
 
 function toggleMinBatSoc(enabled: boolean): void {

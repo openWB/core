@@ -76,10 +76,10 @@
       class="mt-3 flex gap-4 text-[13px]"
     >
       <StatBlock
-        v-for="(temp, idx) in temperatures"
-        :key="idx"
-        :label="temperatures.length > 1 ? `Temperatur ${idx + 1}` : 'Temperatur'"
-        :value="`${temp.toLocaleString(undefined, { maximumFractionDigits: 1 })} °C`"
+        v-for="sensor in temperatures"
+        :key="sensor.index"
+        :label="temperatures.length > 1 ? `Temperatur ${sensor.index + 1}` : 'Temperatur'"
+        :value="`${sensor.value.toLocaleString(undefined, { maximumFractionDigits: 1 })} °C`"
       />
     </div>
   </div>
@@ -118,10 +118,10 @@ const priority = computed(() => mqttStore.consumerPriority(props.consumerId))
 const mode = computed(() => mqttStore.consumerMode(props.consumerId))
 const resetActive = computed(() => mqttStore.consumerUsage(props.consumerId)?.reset_chargemode?.active ?? false)
 
-// meter-only/self-controlled consumers can't be switched by openWB - nothing to configure
+// meter-only and self-controlled consumers cannot be switched; nothing before the usage has arrived
 const showControls = computed(() => {
   const usageType = mqttStore.consumerUsageType(props.consumerId)
-  return usageType !== 'meter_only' && usageType !== 'self_controlled'
+  return usageType !== undefined && usageType !== 'meter_only' && usageType !== 'self_controlled'
 })
 
 const stateBadgeText = computed(() => {

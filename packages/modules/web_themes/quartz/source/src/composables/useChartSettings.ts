@@ -1,4 +1,5 @@
 import { reactive, ref, watchEffect, type Ref } from 'vue'
+import { readStorage, writeStorage } from '@/utils/storage'
 import type { CategoryData, CategoryKey, SocCategoryData, SocSeries } from '@/types/chart'
 
 export type LegendKey = CategoryKey | 'forecast' | 'batterySoc' | 'vehicleSoc'
@@ -47,7 +48,7 @@ const STORAGE_KEY = 'quartz-chart-settings'
 
 function loadPersisted(): PersistedChartSettings {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY)
+    const raw = readStorage(STORAGE_KEY)
     return raw ? (JSON.parse(raw) as PersistedChartSettings) : {}
   } catch {
     return {}
@@ -59,22 +60,12 @@ function emptyCategories(): Record<CategoryKey, CategoryData> {
   return Object.fromEntries(categoryKeys.map((key) => [key, empty])) as unknown as Record<CategoryKey, CategoryData>
 }
 
-/**
- * Shared chart-preference state, now consumed both by HistoryChart.vue (to render) and
- * ThemeSettingsModal.vue (opened from the hamburger menu, a sibling of the chart - the two
- * aren't nested, so this needs to live somewhere both can reach rather than as local component
- * state). A lazily-created singleton (not module-top-level side effects) so the first real call
- * happens from inside a component's setup, after Pinia/the app are already installed - safe
- * since HistoryChart.vue, the only caller that matters for persistence/lifetime, is permanently
- * mounted for the app's whole life (confirmed elsewhere), so there's no premature-unmount risk
- * in tying this to "whichever component calls first" the way there would be for a transient one.
- */
+/** Chart preferences shared by HistoryChart and ThemeSettingsModal, which are not nested. Created lazily so the first call happens inside a component's setup, after Pinia exists. */
 function createChartSettings() {
   const persisted = loadPersisted()
 
   const mode = ref<'day' | 'live'>(persisted.mode ?? 'day')
   const liveRangeMinutes = ref(persisted.liveRangeMinutes ?? 120)
-  // independent on/off switches (both default true) - set via Theme-Einstellungen
   const showFlow = ref(persisted.showFlow ?? true)
   const showChart = ref(persisted.showChart ?? true)
 
@@ -83,8 +74,7 @@ function createChartSettings() {
     ...persisted.visibleSeries,
   })
 
-  // default to "Einzeln" for the categories that usually have more than one real instance
-  // (chargepoints/consumers/counters), "Gesamt" for the rest
+  // "Einzeln" by default for categories that usually have several instances
   const INDIVIDUAL_BY_DEFAULT: CategoryKey[] = ['chargepoint', 'consumer', 'counter']
   const categoryMode = reactive<Record<CategoryKey, 'combined' | 'individual'>>({
     ...(Object.fromEntries(
@@ -93,17 +83,12 @@ function createChartSettings() {
     ...persisted.categoryMode,
   })
 
-  // per-instance visibility within "Einzeln" mode, keyed "<category>:<instanceId>" - defaults to
-  // visible so a newly-appeared component shows up without the user having to opt it in
+  // keyed "<category>:<instanceId>"; new components are visible by default
   const instanceVisibility = reactive<Record<string, boolean>>({ ...persisted.instanceVisibility })
 
-  // independent of visibleSeries.pv on purpose - hiding the real Erzeugung line shouldn't also
-  // hide the forecast (and vice versa), they're separate things a user may want toggled separately
+  // independent of the Erzeugung line: hiding one should not hide the other
   const forecastVisible = ref(persisted.forecastVisible ?? true)
 
-  // overall show/hide per SoC line, same role visibleSeries plays for the power categories -
-  // per-instance (which battery, which vehicle) is handled by instanceVisibility below instead,
-  // same split power categories already use between "show this category" and "show this instance"
   const socVisibleSeries = reactive<Record<'batterySoc' | 'vehicleSoc', boolean>>({
     batterySoc: true,
     vehicleSoc: true,
@@ -127,11 +112,7 @@ function createChartSettings() {
       socVisibleSeries: { ...socVisibleSeries },
       socCategoryMode: { ...socCategoryMode },
     }
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(settings))
-    } catch {
-      // ignore storage errors (private browsing etc.)
-    }
+    writeStorage(STORAGE_KEY, JSON.stringify(settings))
   })
 
   function isInstanceVisible(category: string, id: string): boolean {
@@ -146,10 +127,7 @@ function createChartSettings() {
     else visibleSeries[key] = !visibleSeries[key]
   }
 
-  // live snapshot of the chart's own current category/SoC data, written by HistoryChart.vue
-  // (the only component with the real MQTT-sourced data) so the settings modal - a sibling, not
-  // a child - can render "which categories/instances exist right now" without independently
-  // re-subscribing to the daily-log/live-view feeds itself
+  // snapshot of the chart's data, written by HistoryChart for the settings modal
   const categories: Ref<Record<CategoryKey, CategoryData>> = ref(emptyCategories())
   const batterySoc: Ref<SocCategoryData> = ref({ all: [], individual: [] })
   const selectedVehicleSoc: Ref<SocSeries[]> = ref([])

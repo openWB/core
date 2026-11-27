@@ -24,7 +24,7 @@
       v-else
       class="py-10 text-center text-sm text-muted"
     >
-      Aktuell kein Energiefluss.
+      {{ mqttStore.liveValuesReceived ? 'Aktuell kein Energiefluss.' : 'Keine Daten.' }}
     </p>
   </div>
 </template>

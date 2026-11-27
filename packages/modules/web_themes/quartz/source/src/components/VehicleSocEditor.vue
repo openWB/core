@@ -1,6 +1,6 @@
 <template>
   <BasePopover
-    v-if="isManualSoc"
+    v-if="isManualSoc && mqttStore.vehicleSocEditable(vehicleId)"
     v-model="showSocEditor"
     panel-class="top-[calc(100%_+_8px)] right-0 flex w-55 flex-col gap-2.5 p-3"
   >

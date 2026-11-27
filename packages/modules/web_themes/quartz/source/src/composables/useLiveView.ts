@@ -14,18 +14,7 @@ import type {
 const INSTANCE_KEY = /^(cp|consumer|counter)(\d+)-power$/
 const EV_SOC_KEY = /^ev(\d+)-soc$/
 
-/**
- * Finer-grained recent-window series than the daily log - see the alllivevaluesJson*
- * chunks (runs/graphing.sh). Unlike the daily log, this feed only carries per-instance
- * breakdown for chargepoints, consumers and (non-grid) counters - pv/battery are only ever
- * published as totals, so their 'individual' arrays are always empty here. The backend never
- * publishes a 'counterN-power' for the grid counter itself (see graph.py::pub_graph_data), so
- * unlike the daily log's buildCounterCategory, no grid-flag filtering is needed here. There's
- * also no combined 'counter-all' key, so the total is summed client-side from the per-instance
- * fields. Subscription lifecycle is the caller's responsibility
- * (mqttStore.subscribeLiveSeries/unsubscribeLiveSeries), since it's only needed while live view
- * is actually selected.
- */
+/** Recent-window series from the alllivevaluesJson chunks. Only chargepoints, consumers and non-grid counters have a per-instance breakdown here (pv and battery are totals), and there is no combined counter total, so it is summed client-side. */
 export function useLiveView(rangeMinutes: Ref<number>) {
   const mqttStore = useMqttStore()
 
@@ -100,9 +89,6 @@ export function useLiveView(rangeMinutes: Ref<number>) {
       consumerAll.push({ timestamp, power: consumerSum })
     })
 
-    // real names (not a generic "Zähler <id>"-style fallback) - the live feed itself carries no
-    // name data, but the real component config is already available via the store's own
-    // getComponentConfiguration-backed getters, same ones the cards/popups already use
     const timestamps = points.value.map((entry) => entry.timestamp * 1000)
     const toSeries = (map: Map<string, InstancePoint[]>, resolveName: (id: number) => string): InstanceSeries[] =>
       Array.from(map.entries()).map(([id, pts]) => ({
@@ -130,9 +116,7 @@ export function useLiveView(rangeMinutes: Ref<number>) {
     }
   })
 
-  // only the aggregate 'bat-all-soc' is published to the live feed (graph.py) - no per-battery
-  // breakdown there, unlike the daily log, so individual stays empty (same asymmetry the
-  // 'battery' power category above already has between day and live mode)
+  // only the aggregate 'bat-all-soc' is published, so there is no per-battery breakdown
   const batterySoc = computed<SocCategoryData>(() => ({
     all: points.value
       .filter((entry) => entry['bat-all-soc'] !== undefined)

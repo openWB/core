@@ -60,9 +60,11 @@ import { computed } from 'vue'
 import { Line as ChartjsLine } from 'vue-chartjs'
 import { type ChartOptions, type ChartData } from 'chart.js'
 import '@/utils/chartSetup'
+import { cardChartOptions } from '@/utils/chartOptions'
 import { useMqttStore } from '@/stores/mqtt-store'
 import { getCssColor, shadeColor } from '@/utils/color'
 import { formatTooltipTime, eurPerWhToCtPerKwh } from '@/utils/format'
+import { alignStepSeries } from '@/utils/stepSeries'
 import BaseModal from './BaseModal.vue'
 
 defineProps<{ modelValue: boolean }>()
@@ -72,8 +74,7 @@ const mqttStore = useMqttStore()
 
 const endOfToday = () => new Date().setHours(23, 59, 59, 999)
 
-// each series is forward-filled one extra step (repeating the last value) so a stepped line
-// reaches visibly to the end of the day instead of stopping dead at its last real entry
+// one extra step repeating the last value so the stepped line reaches the end
 function toStepSeries(prices: Record<string, number>): { x: number; y: number }[] {
   const points = Object.entries(prices)
     .map(([timestamp, price]) => ({ x: Number(timestamp) * 1000, y: eurPerWhToCtPerKwh(price) }))
@@ -88,6 +89,8 @@ function toStepSeries(prices: Record<string, number>): { x: number; y: number }[
 const totalPoints = computed(() => toStepSeries(mqttStore.electricityPrices))
 const tariffPoints = computed(() => toStepSeries(mqttStore.flexibleTariffPrices()))
 const gridFeePoints = computed(() => toStepSeries(mqttStore.gridFeePrices()))
+
+const aligned = computed(() => alignStepSeries([totalPoints.value, tariffPoints.value, gridFeePoints.value]))
 
 const flexibleTariffProvider = computed(() => mqttStore.flexibleTariffProvider())
 const gridFeeProvider = computed(() => mqttStore.gridFeeProvider())
@@ -117,7 +120,7 @@ const chartData = computed<ChartData<'line', { x: number; y: number }[]>>(() => 
   if (totalPoints.value.length > 0) {
     datasets.push({
       label: 'Gesamtpreis',
-      data: totalPoints.value,
+      data: aligned.value[0],
       borderColor: totalColor,
       backgroundColor: 'transparent',
       stepped: true,
@@ -128,7 +131,7 @@ const chartData = computed<ChartData<'line', { x: number; y: number }[]>>(() => 
   if (tariffPoints.value.length > 0) {
     datasets.push({
       label: 'Stromtarif',
-      data: tariffPoints.value,
+      data: aligned.value[1],
       borderColor: tariffColor,
       backgroundColor: 'transparent',
       stepped: true,
@@ -139,7 +142,7 @@ const chartData = computed<ChartData<'line', { x: number; y: number }[]>>(() => 
   if (gridFeePoints.value.length > 0) {
     datasets.push({
       label: 'Netzentgelt',
-      data: gridFeePoints.value,
+      data: aligned.value[2],
       borderColor: gridFeeColor,
       backgroundColor: 'transparent',
       stepped: true,
@@ -150,21 +153,14 @@ const chartData = computed<ChartData<'line', { x: number; y: number }[]>>(() => 
   return { datasets }
 })
 
-const chartOptions = computed<ChartOptions<'line'>>(() => {
-  const mutedColor = getCssColor('--muted')
-  const borderColor = getCssColor('--border')
-  return {
-    responsive: true,
-    maintainAspectRatio: false,
-    interaction: { mode: 'index', intersect: false },
+const chartOptions = computed<ChartOptions<'line'>>(() =>
+  cardChartOptions({
+    yTitle: 'Preis [ct/kWh]',
     plugins: {
-      legend: {
-        display: true,
-        position: 'top',
-        labels: { color: mutedColor, boxWidth: 12, font: { size: 11 } },
-      },
+      legend: { display: true, position: 'top', labels: { color: getCssColor('--muted'), boxWidth: 12, font: { size: 11 } } },
       tooltip: {
         enabled: true,
+        filter: (item) => Number.isFinite(item.parsed.y),
         callbacks: {
           title: (items) => {
             const x = items[0]?.parsed.x
@@ -174,20 +170,7 @@ const chartOptions = computed<ChartOptions<'line'>>(() => {
         },
       },
     },
-    scales: {
-      x: {
-        type: 'time',
-        time: { unit: 'hour' },
-        grid: { color: borderColor },
-        ticks: { color: mutedColor, font: { size: 11 } },
-      },
-      y: {
-        grid: { color: borderColor },
-        ticks: { color: mutedColor, font: { size: 12 } },
-        title: { display: true, text: 'Preis [ct/kWh]', color: mutedColor, font: { size: 12 } },
-      },
-    },
-  }
-})
+  }),
+)
 </script>
 

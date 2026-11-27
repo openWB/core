@@ -48,6 +48,7 @@
         />
         <LimitFields
           :limit="instant.limit"
+          :soc-available="vehicleSocType !== undefined"
           field-prefix="chargemode.instant_charging.limit"
           @set="setField"
         />
@@ -118,6 +119,7 @@
         </template>
         <LimitFields
           :limit="pv.limit"
+          :soc-available="vehicleSocType !== undefined"
           field-prefix="chargemode.pv_charging.limit"
           @set="setField"
         />
@@ -165,6 +167,7 @@
         />
         <LimitFields
           :limit="eco.limit"
+          :soc-available="vehicleSocType !== undefined"
           field-prefix="chargemode.eco_charging.limit"
           @set="setField"
         />
@@ -186,6 +189,7 @@
         <div class="toggle-row">
           <label>Zeitladen</label>
           <BaseToggle
+            label="Zeitladen"
             :model-value="template.time_charging.active"
             @update:model-value="setField('time_charging.active', $event)"
           />
@@ -223,22 +227,17 @@ const name = computed(() => mqttStore.chargePointName(props.chargePointId))
 const template = computed(() => mqttStore.chargePointChargeTemplate(props.chargePointId))
 const mode = computed(() => template.value?.chargemode.selected)
 
-// both false while the chargepoint's own config/template topics are still loading - a brief,
-// expected gap, not something to paper over with a fallback
+// both false while the config and template topics are loading
 const acChargingEnabled = computed(() => mqttStore.chargePointChargeType(props.chargePointId) === 'AC')
 const dcChargingEnabled = computed(() => mqttStore.chargePointChargeType(props.chargePointId) === 'DC')
-// corresponds to the backend's dc_max_current default (435 A)
 const dcMaxPower = computed(() => mqttStore.chargePointDcMaxPower(props.chargePointId) ?? 300)
-// undefined when the connected vehicle can't report its own SoC at all - gates hiding the
-// entire Mindest-SoC sub-block (fields are meaningless without it)
+// undefined when the vehicle cannot report an SoC: hides the Mindest-SoC block
 const vehicleSocType = computed(() => mqttStore.chargePointConnectedVehicleSocType(props.chargePointId))
 
-// defaults match control/ev/charge_template.py's own dataclass defaults - only used to narrow
-// between "template still loading" and "mode === x", never actually shown unguarded
+// only narrows the type while the template loads, never shown
 const DEFAULT_LIMIT: Limit = { selected: 'none', soc: 50, amount: 50000 }
 
-// "Minimaler Dauerstrom" (pv_charging/eco_charging) is "Aus" (0) or 6-16A - no EVSE/vehicle can
-// sustain continuous charging below 6A (IEC 61851)
+// "Aus" or 6-16 A: continuous charging below 6 A is not possible (IEC 61851)
 const MIN_CURRENT_STEPS = [0, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]
 const instant = computed(
   () => template.value?.chargemode.instant_charging ?? { current: 16, dc_current: 145, phases_to_use: 3, limit: DEFAULT_LIMIT },

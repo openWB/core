@@ -1,9 +1,5 @@
 <template>
-  <!-- Both banners are independent of connected/userManagementActive on purpose: client.end()
-       in the store's CONNACK-rejection handler flips connected to false in the same tick, so
-       gating authFailureMessage behind `connected` would hide the message explaining the drop;
-       the default-creds nag likewise must survive even when user management isn't active yet -
-       exactly the state a fresh admin/openwb install is in. -->
+  <!-- Deliberately not gated on connected or userManagementActive: a rejected login ends the client (connected becomes false) and the message explaining that must still show, and the default-credentials warning applies before user management is on. -->
   <div
     v-if="mqttStore.defaultCredentialsWarning && !dismissedDefaultWarning"
     class="status-box status-box-warning fixed inset-x-2 top-2 z-[70] sm:inset-x-auto sm:right-2 sm:w-[360px]"
@@ -38,19 +34,25 @@
     </BaseButton>
   </div>
 
-  <div v-if="mqttStore.connected && userManagementActive">
-    <!-- nav trigger -->
-    <BaseIconButton
-      :active="mqttStore.loggedIn"
-      aria-label="Benutzerkonto"
-      :title="mqttStore.loggedIn ? `Angemeldet als „${mqttStore.username}“` : 'Anmelden'"
-      @click="mqttStore.loggedIn ? (showLogoutDialog = true) : (showLoginDialog = true)"
-    >
-      <IconUser v-if="mqttStore.loggedIn" />
-      <IconLock v-else />
-    </BaseIconButton>
+  <!-- also while logged in without the right to read the user-management flag (a user missing the base group), so
+       that logging out stays possible -->
+  <div v-if="mqttStore.connected && (userManagementActive || mqttStore.loggedIn)">
+    <div class="flex items-center gap-1.5">
+      <span
+        v-if="mqttStore.loggedIn"
+        class="hidden max-w-[10rem] truncate text-[13px] text-muted sm:inline"
+      >{{ mqttStore.username }}</span>
+      <BaseIconButton
+        :active="mqttStore.loggedIn"
+        :aria-label="mqttStore.loggedIn ? `Benutzerkonto, angemeldet als ${mqttStore.username}` : 'Anmelden'"
+        :title="mqttStore.loggedIn ? `Angemeldet als „${mqttStore.username}“` : 'Anmelden'"
+        @click="mqttStore.loggedIn ? (showLogoutDialog = true) : (showLoginDialog = true)"
+      >
+        <IconUser v-if="mqttStore.loggedIn" />
+        <IconLock v-else />
+      </BaseIconButton>
+    </div>
 
-    <!-- login dialog -->
     <BaseModal
       :model-value="showLoginDialog"
       title="Anmelden"
@@ -97,12 +99,14 @@
       </div>
     </BaseModal>
 
-    <!-- logout confirm dialog -->
     <BaseModal
       :model-value="showLogoutDialog"
       title="Abmelden"
       @update:model-value="showLogoutDialog = $event"
     >
+      <p class="mt-0">
+        Angemeldet als „{{ mqttStore.username }}“.
+      </p>
       <p>Willst Du Dich wirklich abmelden?</p>
       <div class="mt-4 flex items-center justify-end gap-2">
         <BaseButton
@@ -120,7 +124,6 @@
       </div>
     </BaseModal>
 
-    <!-- password reset dialog -->
     <BaseModal
       v-if="dataProtectionAcknowledged"
       :model-value="showResetDialog"
@@ -280,10 +283,7 @@ watch(showResetDialog, (open) => {
   }
 })
 
-// security topics only arrive after connecting - re-check whenever they do. A plain assignment,
-// not just a one-way "open" guard: if anonymousAccessAllowed flips true after this already forced
-// the dialog open (the topics can race in either order), it must also close again on its own -
-// the modal's own backdrop/X close is separately suppressed above via the @update:model-value guard.
+// the security topics arrive after connecting, in any order: the dialog is open exactly while it is needed
 watchEffect(() => {
   showLoginDialog.value = userManagementActive.value && !anonymousAccessAllowed.value && !mqttStore.loggedIn
 })

@@ -25,7 +25,7 @@
     <div class="flex gap-4 text-[13px]">
       <StatBlock
         label="Leistung"
-        :value="formatKw(power)"
+        :value="isOverview && !mqttStore.liveValuesReceived ? '–' : formatKw(power)"
       />
       <StatBlock
         label="Geladen heute"
@@ -61,11 +61,18 @@ const props = defineProps<{ batteryId: number }>()
 const mqttStore = useMqttStore()
 
 const isOverview = computed(() => props.batteryId === -1)
-const showSettings = computed(() => isOverview.value || mqttStore.batteryIds.length === 1)
+// the dialog only writes topics of the battery-control role
+const showSettings = computed(
+  () => (isOverview.value || mqttStore.batteryIds.length === 1) && mqttStore.accessBatteryControlAllowed(),
+)
 const showDialog = ref(false)
 
 const name = computed(() => (isOverview.value ? 'Speicher Übersicht' : mqttStore.batteryName(props.batteryId)))
-const soc = computed(() => (isOverview.value ? mqttStore.batterySoc : mqttStore.batteryInstanceSoc(props.batteryId)))
+const soc = computed(() =>
+  isOverview.value
+    ? mqttStore.liveValuesReceived ? mqttStore.batterySoc : undefined
+    : mqttStore.batteryInstanceSoc(props.batteryId),
+)
 const power = computed(() => (isOverview.value ? mqttStore.batteryPower : mqttStore.batteryInstancePower(props.batteryId)))
 const dailyImported = computed(() =>
   isOverview.value ? mqttStore.batteryDailyImportedTotal() : mqttStore.batteryInstanceDailyImported(props.batteryId),
@@ -79,7 +86,6 @@ const faultState = computed(() =>
 const faultMessage = computed(() =>
   isOverview.value ? mqttStore.batteryFaultMessageTotal() : mqttStore.batteryInstanceFaultMessage(props.batteryId),
 )
-// active-control status ("Hält SoC bei X%" etc.) is inherently per-battery - no aggregate
-// equivalent exists, so the overview pseudo-card just falls back to the generic empty state
+// the active-control status is per battery, so the overview has none
 const stateMessage = computed(() => (isOverview.value ? '' : mqttStore.batteryInstanceStateMessage(props.batteryId)))
 </script>

@@ -171,8 +171,7 @@ const power = computed(() => mqttStore.chargePointPower(props.chargePointId))
 const energyCharged = computed(() => mqttStore.chargePointEnergyChargedPlugged(props.chargePointId))
 const chargeMode = computed(() => mqttStore.chargePointChargeMode(props.chargePointId))
 
-// only instant/pv/eco modes carry a plain chargemode.<mode>.limit - scheduled_charging's limit
-// lives per-plan instead (a different shape), and stop has no limit concept at all
+// only instant, pv and eco have a plain limit (scheduled has one per plan, stop none)
 const limitLabel = computed(() => {
   const mode = chargeMode.value
   if (mode !== 'instant_charging' && mode !== 'pv_charging' && mode !== 'eco_charging') return undefined
@@ -195,7 +194,7 @@ const plugState = computed(() => mqttStore.chargePointPlugState(props.chargePoin
 const chargeState = computed(() => mqttStore.chargePointChargeState(props.chargePointId))
 const stateMessage = computed(() => mqttStore.chargePointStateMessage(props.chargePointId))
 const phasesInUse = computed(() => mqttStore.chargePointPhasesInUse(props.chargePointId))
-// measured current (average of the phases in use, same as the colors theme), not the setpoint from set/current
+// measured current (average of the active phases), not the setpoint
 const chargingCurrent = computed(() => {
   const active = mqttStore.chargePointInstanceCurrents(props.chargePointId).slice(0, phasesInUse.value)
   return active.length > 0 ? active.reduce((sum, current) => sum + current, 0) / active.length : 0
@@ -203,8 +202,7 @@ const chargingCurrent = computed(() => {
 const faultState = computed(() => mqttStore.chargePointFaultState(props.chargePointId))
 const faultMessage = computed(() => mqttStore.chargePointFaultMessage(props.chargePointId))
 
-// the badge shows what the charge point really does: charging needs real power (charge_state can lag), and
-// "locked" only counts once charging has stopped and a vehicle is plugged in
+// charging needs real power (charge_state can lag); "locked" only counts once charging has stopped with a vehicle plugged in
 const isCharging = computed(() => chargeState.value && power.value > 0)
 const isLockedShown = computed(() => locked.value && plugState.value && !isCharging.value)
 
