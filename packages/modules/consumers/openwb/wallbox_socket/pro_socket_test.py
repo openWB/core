@@ -26,7 +26,7 @@ def pro_socket(monkeypatch):
 def socket_status():
     return dict(date="2026:11:17-13:29:54", timestamp=1794918594,
                 socket_available=True, socket_switch_on=False, socket_is_on=True,
-                power=224.5, current=1, voltage=224.5, energy=9.0, frequency=50.018)
+                power=449.0, current=2, voltage=224.5, energy=9.0, frequency=50.018)
 
 
 @pytest.mark.parametrize("actual, target", [(True, False), (False, True)])
@@ -39,9 +39,9 @@ def test_reads_measured_values_and_actual_state(pro_socket, actual, target):
         state = consumer.module_updater()
 
     assert state.state is actual
-    assert state.power == 224.5
-    assert state.powers == [224.5, 0, 0]
-    assert state.currents == [1, 0, 0]
+    assert state.power == 449.0
+    assert state.powers == [449.0, 0, 0]
+    assert state.currents == [2, 0, 0]
     assert state.voltages == [224.5, 0, 0]
     assert state.imported == 9.0
     assert state.exported == 0
@@ -71,7 +71,7 @@ def test_missing_socket_reports_error_and_recovers(pro_socket):
             {"json": status}, {"json": socket_status()}])
         with pytest.raises(ValueError, match="keine Steckdose verbaut"):
             consumer.module_updater()
-        assert consumer.module_updater().power == 224.5
+        assert consumer.module_updater().power == 449.0
 
 
 @pytest.mark.parametrize("method", ["module_updater", "module_switch_on", "module_switch_off"])
@@ -113,7 +113,7 @@ def test_selects_interface_from_current_linked_chargepoint_type(pro_socket, monk
     with requests_mock.Mocker() as http:
         http.get("http://192.168.1.40/socket.php", json=socket_status())
         http.post("http://192.168.1.40/socket.php", text="OK")
-        assert consumer.module_updater().power == 224.5
+        assert consumer.module_updater().power == 449.0
         consumer.module_switch_on()
         consumer.module_clear_rfid()
         publisher.assert_not_called()
@@ -133,6 +133,6 @@ def test_selects_interface_from_current_linked_chargepoint_type(pro_socket, monk
 
         cp_config.type = "openwb_pro"
         cp_config.configuration.ip_address = "192.168.1.40"
-        assert consumer.module_updater().power == 224.5
+        assert consumer.module_updater().power == 449.0
         consumer.module_switch_off()
         assert len(http.request_history) == 4
