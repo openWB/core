@@ -27,6 +27,7 @@ METER_NO_SERIAL_NUMBER = ("Die Seriennummer des Zählers für das Ladelog kann n
                           "Seriennummer für Abrechnungszwecke benötigst, wende Dich bitte an unseren Support. Die "
                           "Funktionalität wird dadurch nicht beeinträchtigt!")
 READ_EVSE_AGAIN = "Erneutes Auslesen der EVSE"
+EVSE_UNREACHABLE = "Interne EVSE antwortet nicht."
 
 
 class ClientHandlerProtocol(Protocol):
@@ -99,9 +100,10 @@ class SeriesHardwareCheckMixin:
             fault_state.warning(meter_error_msg)
         if evse_check_passed is False:
             if meter_error_msg is not None:
-                raise Exception(f"{READ_EVSE_AGAIN} {meter_error_msg}")
+                raise RetryableError(f"{READ_EVSE_AGAIN} {meter_error_msg}",
+                                     f"{EVSE_UNREACHABLE} {meter_error_msg}")
             else:
-                raise Exception(READ_EVSE_AGAIN)
+                raise RetryableError(READ_EVSE_AGAIN, EVSE_UNREACHABLE)
         return evse_state, counter_state
 
     def check_meter(self: ClientHandlerProtocol, meter_client: MeterClient) -> Tuple[bool, Optional[str], CounterState]:
