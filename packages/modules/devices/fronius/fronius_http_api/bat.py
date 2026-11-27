@@ -101,9 +101,8 @@ class FroniusBat(AbstractBat):
                 self.last_mode = None
         elif power_limit == 0:
             log.debug("Aktive Batteriesteuerung. Batterie wird auf Stop gesetzt und nicht entladen")
-            if self.last_mode != 'stop':
-                self.bat_api.set_mode_avoid_discharge()
-                self.last_mode = 'stop'
+            self.bat_api.set_mode_avoid_discharge()
+            self.last_mode = 'stop'
         elif power_limit < 0:
             self.bat_api.set_mode_force_discharge(abs(power_limit))
             log.debug(f"Aktive Batteriesteuerung. Batterie wird mit {abs(power_limit)} W "
