@@ -331,6 +331,12 @@
 			},
 			{
 				"acltype": "publishClientSend",
+				"topic": "openWB/set/vehicle/<id>/get/force_soc_update",
+				"priority": 0,
+				"allow": true
+			},
+			{
+				"acltype": "publishClientSend",
 				"topic": "openWB/set/vehicle/<id>/soc_module/calculated_soc_state/manual_soc",
 				"priority": 0,
 				"allow": true
