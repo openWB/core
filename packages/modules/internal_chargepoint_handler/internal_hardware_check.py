@@ -20,7 +20,9 @@ RETRY_DELAY_SECONDS = 0.3
 
 READ_RS485_ADAPTER_AGAIN = "Erneutes Auslesen des {}"
 READ_USB_ADAPTER_AGAIN = READ_RS485_ADAPTER_AGAIN.format('USB-Adapters')
+USB_ADAPTER_UNREACHABLE = "Kommunikation über den USB-Adapter gestört."
 READ_LAN_ADAPTER_AGAIN = READ_RS485_ADAPTER_AGAIN.format('LAN-Konverters')
+LAN_ADAPTER_UNREACHABLE = "Kommunikation über den LAN-Konverter gestört."
 METER_PROBLEM = "Erneutes Auslesen des Ladeleistungs-Zählers"
 METER_UNREACHABLE = "Interner Ladeleistungs-Zähler antwortet nicht."
 METER_NO_SERIAL_NUMBER = ("Die Seriennummer des Zählers für das Ladelog kann nicht ausgelesen werden. Wenn Du die "
@@ -85,17 +87,11 @@ class SeriesHardwareCheckMixin:
         meter_check_passed, meter_error_msg, counter_state = self.check_meter(self.meter_client)
         if meter_check_passed is False and evse_check_passed is False:
             if isinstance(self.client, ModbusTcpClient_):
-                raise Exception(READ_LAN_ADAPTER_AGAIN)
+                raise RetryableError(READ_LAN_ADAPTER_AGAIN, LAN_ADAPTER_UNREACHABLE)
             else:
-                raise Exception(READ_USB_ADAPTER_AGAIN)
+                raise RetryableError(READ_USB_ADAPTER_AGAIN, USB_ADAPTER_UNREACHABLE)
         if meter_check_passed is False:
-            if evse_check_passed is False:
-                if isinstance(self.client, ModbusTcpClient_):
-                    raise Exception(READ_LAN_ADAPTER_AGAIN)
-                else:
-                    raise Exception(READ_USB_ADAPTER_AGAIN)
-            else:
-                raise RetryableError(meter_error_msg, METER_UNREACHABLE)
+            raise RetryableError(meter_error_msg, METER_UNREACHABLE)
         elif evse_check_passed and meter_check_passed and meter_error_msg is not None:
             fault_state.warning(meter_error_msg)
         if evse_check_passed is False:

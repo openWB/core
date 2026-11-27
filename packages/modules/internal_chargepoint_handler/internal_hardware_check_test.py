@@ -17,8 +17,8 @@ from modules.internal_chargepoint_handler.chargepoint_module import ChargepointM
 from modules.internal_chargepoint_handler.internal_chargepoint_handler_config import (
     GlobalHandlerData, InternalChargepoint)
 from modules.internal_chargepoint_handler.internal_hardware_check import (
-    EVSE_UNREACHABLE, METER_PROBLEM, METER_UNREACHABLE, READ_EVSE_AGAIN,
-    READ_LAN_ADAPTER_AGAIN, READ_USB_ADAPTER_AGAIN, SeriesHardwareCheckMixin)
+    EVSE_UNREACHABLE, LAN_ADAPTER_UNREACHABLE, METER_PROBLEM, METER_UNREACHABLE, READ_EVSE_AGAIN,
+    READ_LAN_ADAPTER_AGAIN, READ_USB_ADAPTER_AGAIN, USB_ADAPTER_UNREACHABLE, SeriesHardwareCheckMixin)
 from modules.internal_chargepoint_handler.wallbox_socket_config import WallboxSocket
 
 
@@ -61,7 +61,8 @@ def test_hardware_error_message_after_timeout_and_recovery(
     elif meter_available:
         retry_message, sustained_message = READ_EVSE_AGAIN, EVSE_UNREACHABLE
     else:
-        retry_message = sustained_message = READ_LAN_ADAPTER_AGAIN if tcp else READ_USB_ADAPTER_AGAIN
+        retry_message = READ_LAN_ADAPTER_AGAIN if tcp else READ_USB_ADAPTER_AGAIN
+        sustained_message = LAN_ADAPTER_UNREACHABLE if tcp else USB_ADAPTER_UNREACHABLE
 
     def read():
         with SingleComponentUpdateContext(module.fault_state):
@@ -111,15 +112,18 @@ def test_hardware_error_message_after_timeout_and_recovery(
 
 
 @pytest.mark.parametrize("error_timestamp", [None, 1000])
-@pytest.mark.parametrize("failed_hardware", ["meter", "evse"])
+@pytest.mark.parametrize("tcp", [False, True])
+@pytest.mark.parametrize("failed_hardware", ["meter", "evse", "adapter"])
 def test_handler_initialization_reports_hardware_error_immediately(
-        error_timestamp, failed_hardware, monkeypatch, mock_pub):
+        error_timestamp, tcp, failed_hardware, monkeypatch, mock_pub):
     monkeypatch.setattr(ExceptionRegistry, "registry", [])
     clock = Mock(return_value=1000)
     monkeypatch.setattr(timecheck, "create_timestamp", clock)
     monkeypatch.setattr(chargepoint_module.time, "sleep", Mock())
     monkeypatch.setattr(internal_chargepoint_handler.InternalChargepointHandler, "init_gpio", Mock())
-    client = MagicMock(spec=ModbusSerialClient_)
+    monkeypatch.setattr(pymodbus, "exceptions", SimpleNamespace(
+        ConnectionException=type("ConnectionException", (Exception,), {})), raising=False)
+    client = MagicMock(spec=ModbusTcpClient_ if tcp else ModbusSerialClient_)
     get_modbus_client = Mock(return_value=(client, [11]))
     monkeypatch.setattr(clients, "get_modbus_client", get_modbus_client)
     monkeypatch.setattr(internal_chargepoint_handler, "get_modbus_client", get_modbus_client)
@@ -128,10 +132,11 @@ def test_handler_initialization_reports_hardware_error_immediately(
         power=0, currents=[0]*3, voltages=[230]*3, serial_number="1234")))
     # Nach dem Neustart wird die ausgefallene Hardware nicht mehr erkannt.
     monkeypatch.setattr(clients.ClientHandler, "_evse_factory", Mock(
-        return_value=None if failed_hardware == "evse" else evse))
+        return_value=None if failed_hardware in ("evse", "adapter") else evse))
     monkeypatch.setattr(clients.ClientHandler, "find_meter_client", Mock(
-        return_value=None if failed_hardware == "meter" else meter))
-    expected_message = METER_UNREACHABLE if failed_hardware == "meter" else EVSE_UNREACHABLE
+        return_value=None if failed_hardware in ("meter", "adapter") else meter))
+    expected_message = {"meter": METER_UNREACHABLE, "evse": EVSE_UNREACHABLE,
+                        "adapter": LAN_ADAPTER_UNREACHABLE if tcp else USB_ADAPTER_UNREACHABLE}[failed_hardware]
     chargepoints = [InternalChargepoint(), InternalChargepoint()]
     for cp in chargepoints:
         cp.get.error_timestamp = error_timestamp

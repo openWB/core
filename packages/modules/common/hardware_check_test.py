@@ -12,7 +12,7 @@ from modules.common.modbus import NO_CONNECTION, ModbusSerialClient_, ModbusTcpC
 from modules.conftest import SAMPLE_IP, SAMPLE_PORT
 from modules.internal_chargepoint_handler.clients import ClientHandler
 from modules.internal_chargepoint_handler.internal_hardware_check import (
-    EVSE_UNREACHABLE, METER_PROBLEM, METER_UNREACHABLE, READ_LAN_ADAPTER_AGAIN, READ_USB_ADAPTER_AGAIN,
+    EVSE_UNREACHABLE, LAN_ADAPTER_UNREACHABLE, METER_PROBLEM, METER_UNREACHABLE, USB_ADAPTER_UNREACHABLE,
     SeriesHardwareCheckMixin)
 
 
@@ -27,9 +27,9 @@ from modules.internal_chargepoint_handler.internal_hardware_check import (
      pytest.param(None, Exception("Modbus"), None, None, None,
                   ModbusSerialClient_, METER_UNREACHABLE, id="Zähler falsch konfiguriert"),
      pytest.param(Exception("Modbus"), Exception("Modbus"), None, None, False, ModbusSerialClient_,
-                  READ_USB_ADAPTER_AGAIN, id="USB-Adapter defekt"),
+                  USB_ADAPTER_UNREACHABLE, id="USB-Adapter defekt"),
      pytest.param(Exception("Modbus"), Exception("Modbus"), None, None, False, ModbusTcpClient_,
-                  READ_LAN_ADAPTER_AGAIN, id="LAN-Adapter defekt"),
+                  LAN_ADAPTER_UNREACHABLE, id="LAN-Adapter defekt"),
      pytest.param(Exception("Modbus"), Exception("Modbus"), None,
                   Exception(NO_CONNECTION.format(SAMPLE_IP, SAMPLE_PORT)), None, ModbusTcpClient_,
                   NO_CONNECTION.format(SAMPLE_IP, SAMPLE_PORT), id="LAN-Adapter nicht erreichbar"),
