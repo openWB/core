@@ -14,34 +14,41 @@
         <component
           :is="iconMap[tile.item.icon as keyof typeof iconMap]"
           class="tile-icon"
-          :style="iconStyle(tile.item, '2.5rem')"
+          :style="iconStyle(tile.item, 'var(--tile-icon-size)')"
         />
-        <span class="tile-title text-weight-bold ellipsis">
-          {{ tile.item.title }}
-        </span>
-        <q-icon
-          v-if="tile.hasDetails"
-          name="keyboard_arrow_down"
-          size="xs"
-          :class="{ 'rotate-180': tile.expanded }"
-        />
-        <q-space />
-        <span v-if="Number.isFinite(tile.item.soc)" class="q-mr-xs">
-          {{ tile.item.soc }}%
-        </span>
-        <template v-if="tile.item.power !== undefined">
-          <q-icon
-            :name="
-              powerArrow(tile.item).noCurrent
-                ? 'horizontal_rule'
-                : 'double_arrow'
-            "
-            :class="{ 'rotate-180': powerArrow(tile.item).rotate180 }"
-          />
-          <span class="text-weight-bold text-no-wrap">
-            {{ tile.item.power.replace('-', '') }}
-          </span>
-        </template>
+        <!-- Name and reading share one line while they fit, otherwise the
+             reading wraps onto a second line below the name. -->
+        <div class="tile-body">
+          <div class="tile-name">
+            <span class="tile-title text-weight-bold ellipsis">
+              {{ tile.item.title }}
+            </span>
+            <q-icon
+              v-if="tile.hasDetails"
+              name="keyboard_arrow_down"
+              size="xs"
+              :class="{ 'rotate-180': tile.expanded }"
+            />
+          </div>
+          <div class="tile-reading">
+            <span v-if="Number.isFinite(tile.item.soc)" class="q-mr-xs">
+              {{ tile.item.soc }}%
+            </span>
+            <template v-if="tile.item.power !== undefined">
+              <q-icon
+                :name="
+                  powerArrow(tile.item).noCurrent
+                    ? 'horizontal_rule'
+                    : 'double_arrow'
+                "
+                :class="{ 'rotate-180': powerArrow(tile.item).rotate180 }"
+              />
+              <span class="text-weight-bold">
+                {{ tile.item.power.replace('-', '') }}
+              </span>
+            </template>
+          </div>
+        </div>
       </div>
 
       <!-- Daily totals, and the individual components if there are several.
@@ -65,29 +72,32 @@
               <component
                 :is="iconMap[row.icon as keyof typeof iconMap]"
                 class="tile-icon"
-                :style="iconStyle(row, '1.5rem')"
+                :style="iconStyle(row, 'var(--row-icon-size)')"
               />
-              <span class="tile-title ellipsis">
-                {{ row.title }}
-                <q-tooltip>{{ row.title }}</q-tooltip>
-              </span>
-              <q-space />
-              <span v-if="Number.isFinite(row.soc)" class="q-mr-xs">
-                {{ row.soc }}%
-              </span>
-              <template v-if="row.power !== undefined">
-                <q-icon
-                  :name="
-                    powerArrow(row).noCurrent
-                      ? 'horizontal_rule'
-                      : 'double_arrow'
-                  "
-                  :class="{ 'rotate-180': powerArrow(row).rotate180 }"
-                />
-                <span class="text-no-wrap">
-                  {{ row.power.replace('-', '') }}
-                </span>
-              </template>
+              <div class="tile-body">
+                <div class="tile-name">
+                  <span class="tile-title ellipsis">
+                    {{ row.title }}
+                    <q-tooltip>{{ row.title }}</q-tooltip>
+                  </span>
+                </div>
+                <div class="tile-reading">
+                  <span v-if="Number.isFinite(row.soc)" class="q-mr-xs">
+                    {{ row.soc }}%
+                  </span>
+                  <template v-if="row.power !== undefined">
+                    <q-icon
+                      :name="
+                        powerArrow(row).noCurrent
+                          ? 'horizontal_rule'
+                          : 'double_arrow'
+                      "
+                      :class="{ 'rotate-180': powerArrow(row).rotate180 }"
+                    />
+                    <span>{{ row.power.replace('-', '') }}</span>
+                  </template>
+                </div>
+              </div>
             </div>
             <div
               v-for="line in dailyLines(row)"
@@ -233,6 +243,10 @@ const dailyLines = (item: DailyTotalsItem) => {
 }
 
 .strip-tile {
+  /* icon and spacing follow the tile's own width, see @container below */
+  container-type: inline-size;
+  --tile-icon-size: 2.0rem;
+  --row-icon-size: 1.5rem;
   min-width: 0;
   border-radius: 0.5rem;
   background: var(--q-card-background);
@@ -271,6 +285,32 @@ const dailyLines = (item: DailyTotalsItem) => {
   min-width: 0;
 }
 
+.tile-body {
+  display: flex;
+  flex: 1 1 auto;
+  flex-wrap: wrap;
+  align-items: center;
+  column-gap: 0.4rem;
+  min-width: 0;
+}
+
+/* Grows on a shared line; its natural width decides when the reading wraps. */
+.tile-name {
+  display: flex;
+  flex: 1 1 auto;
+  align-items: center;
+  gap: 0.3rem;
+  min-width: 0;
+}
+
+.tile-reading {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  margin-left: auto;
+  white-space: nowrap;
+}
+
 .tile-details {
   padding: 0 0.75rem 0.5rem;
 }
@@ -291,5 +331,29 @@ const dailyLines = (item: DailyTotalsItem) => {
 
 .rotate-180 {
   transform: rotate(180deg);
+}
+
+/* Narrow tiles, e.g. two columns on a phone. Kept last so it overrides the
+   rules above. The reading always goes onto its own line so all tiles in a
+   row keep the same height. */
+@container (max-width: 15rem) {
+  .tile-header {
+    --tile-icon-size: 1.75rem;
+    gap: 0.4rem;
+    padding: 0.4rem 0.5rem;
+    font-size: 0.8rem;
+  }
+  .tile-header .tile-name {
+    flex-basis: 100%;
+  }
+  .tile-header .tile-title,
+  .tile-header .tile-reading > * {
+    font-weight: 500;
+  }
+  .tile-details {
+    --row-icon-size: 1.25rem;
+    padding: 0 0.5rem 0.4rem;
+    font-size: 0.8rem;
+  }
 }
 </style>
