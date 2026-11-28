@@ -94,6 +94,20 @@ def test_perform_phase_switch_without_meter_uses_evse_state(module: ChargepointM
     assert module.old_phases_in_use == 1
 
 
+def test_perform_phase_switch_starts_recovery_window_even_if_relay_fails(module: ChargepointModule,
+                                                                         monkeypatch):
+    monkeypatch.setattr("time.monotonic", lambda: 100.0)
+    module._client.evse_client.get_state_number.return_value = 2
+    module._client.meter_client.get_counter_state.return_value = counter_state([0.0, 0.0, 0.0])
+    module.cp_active_timestamp = None
+    chargepoint_module.GPIO.output.side_effect = [None, RuntimeError("Relais"), None]
+
+    with pytest.raises(RuntimeError):
+        module.perform_phase_switch(1)
+
+    assert module.cp_active_timestamp == 100.0
+
+
 @pytest.fixture
 def value_module(module: ChargepointModule, monkeypatch) -> ChargepointModule:
     module.old_plug_state = True

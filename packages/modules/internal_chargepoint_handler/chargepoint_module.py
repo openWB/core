@@ -213,8 +213,8 @@ class ChargepointModule(AbstractChargepoint):
             time.sleep(5)
         finally:
             GPIO.output(gpio_cp, GPIO.LOW)  # CP on - in jedem Fall wieder verbinden (#4037)
+            self.cp_active_timestamp = time.monotonic()
         time.sleep(1)
-        self.cp_active_timestamp = time.monotonic()
         self.old_phases_in_use = phases_to_use
         log.warning(f"Phasenumschaltung LP{num}: auf {phases_to_use} Phasen umgeschaltet "
                     f"({time.monotonic() - start:.1f} s gesamt).")
