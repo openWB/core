@@ -92,3 +92,74 @@ def test_perform_phase_switch_without_meter_uses_evse_state(module: ChargepointM
 
     assert chargepoint_module.GPIO.output.call_count == 4
     assert module.old_phases_in_use == 1
+
+
+def test_perform_phase_switch_starts_recovery_window_even_if_relay_fails(module: ChargepointModule,
+                                                                         monkeypatch):
+    monkeypatch.setattr("time.monotonic", lambda: 100.0)
+    module._client.evse_client.get_state_number.return_value = 2
+    module._client.meter_client.get_counter_state.return_value = counter_state([0.0, 0.0, 0.0])
+    module.cp_active_timestamp = None
+    chargepoint_module.GPIO.output.side_effect = [None, RuntimeError("Relais"), None]
+
+    with pytest.raises(RuntimeError):
+        module.perform_phase_switch(1)
+
+    assert module.cp_active_timestamp == 100.0
+
+
+@pytest.fixture
+def value_module(module: ChargepointModule, monkeypatch) -> ChargepointModule:
+    module.old_plug_state = True
+    module.cp_active_timestamp = None
+    module.old_chargepoint_state = MagicMock()
+    module.store_internal = MagicMock()
+    module.client_error_context = MagicMock()
+    module.client_error_context.error_counter_exceeded.return_value = False
+    module.version = module.current_branch = module.current_commit = ""
+    module.PLUG_STANDBY_POWER_THRESHOLD = 10
+    return module
+
+
+def _read(module: ChargepointModule, plug_state: bool, cp_active: bool = False) -> bool:
+    evse_state = MagicMock(plug_state=plug_state, charge_state=False, set_current=0, max_current=16)
+    counter = MagicMock(power=0, currents=[0.0, 0.0, 0.0], imported=0, powers=[0.0] * 3, voltages=[230.0] * 3,
+                        frequency=50, power_factors=[0.0] * 3, serial_number="1")
+    module._client.request_and_check_hardware.return_value = (evse_state, counter)
+    return module.get_values(cp_active, None).plug_state
+
+
+def test_plug_state_kept_until_vehicle_reports_state_b_after_cp_interruption(value_module: ChargepointModule,
+                                                                             monkeypatch):
+    now = [100.0]
+    monkeypatch.setattr("time.monotonic", lambda: now[0])
+
+    assert _read(value_module, plug_state=False, cp_active=True) is True
+    value_module.cp_active_timestamp = now[0]  # Thread beendet
+    now[0] += 0.4
+    assert _read(value_module, plug_state=False) is True  # State A direkt nach CP-Wiederkehr
+    assert _read(value_module, plug_state=True) is True  # State B
+    assert _read(value_module, plug_state=False) is False  # echtes Abstecken
+
+
+def test_plug_state_kept_if_thread_finished_between_two_reads(value_module: ChargepointModule, monkeypatch):
+    now = [100.0]
+    monkeypatch.setattr("time.monotonic", lambda: now[0])
+
+    value_module.perform_cp_interruption(1)  # kurze Unterbrechung, nie während get_values aktiv gesehen
+
+    assert value_module.cp_active_timestamp == 100.0
+    assert _read(value_module, plug_state=False) is True
+
+
+def test_plug_state_false_after_recovery_timeout(value_module: ChargepointModule, monkeypatch):
+    now = [100.0]
+    monkeypatch.setattr("time.monotonic", lambda: now[0])
+
+    value_module.cp_active_timestamp = now[0]
+    now[0] += ChargepointModule.CP_RECOVERY_TIMEOUT + 0.1
+    assert _read(value_module, plug_state=False) is False
+
+
+def test_plug_state_false_without_preceding_cp_interruption(value_module: ChargepointModule):
+    assert _read(value_module, plug_state=False) is False

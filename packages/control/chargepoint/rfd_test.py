@@ -290,6 +290,8 @@ def test_internal_chargepoint_forwards_scan_timestamp_unchanged(duo, rfid_tag, m
         phases_in_use=3, imported=0, exported=0, power=0, currents=[0]*3,
         charge_state=False, plug_state=True)
     module.old_phases_in_use = 3
+    module.old_plug_state = True
+    module.cp_active_timestamp = None
     module.client_error_context = MagicMock()
     module.client_error_context.error_counter_exceeded.return_value = False
     module._client = Mock()
