@@ -26,6 +26,8 @@ except ImportError:
 
 class ChargepointModule(AbstractChargepoint):
     PLUG_STANDBY_POWER_THRESHOLD = 10
+    # Nach CP-Unterbrechung/Phasenumschaltung braucht das Fahrzeug bis State B (#4387)
+    CP_RECOVERY_TIMEOUT = 10
 
     def __init__(self, local_charge_point_num: int,
                  client_handler: ClientHandler,
@@ -44,6 +46,7 @@ class ChargepointModule(AbstractChargepoint):
             hide_exception=True)
         self.client_error_context.error_timestamp = internal_cp.get.error_timestamp
         self.old_plug_state = False
+        self.cp_active_timestamp: Optional[float] = None
         self.old_chargepoint_state = ChargepointState(plug_state=False,
                                                       charge_state=False,
                                                       imported=None,
@@ -75,6 +78,10 @@ class ChargepointModule(AbstractChargepoint):
         with SingleComponentUpdateContext(self.fault_state, update_always=False):
             self._client.evse_client.set_current(current, phases_in_use=self.old_phases_in_use)
 
+    def _cp_recovering(self, evse_plug_state: bool) -> bool:
+        return (self.old_plug_state and not evse_plug_state and self.cp_active_timestamp is not None and
+                time.monotonic() - self.cp_active_timestamp < self.CP_RECOVERY_TIMEOUT)
+
     def get_values(self, phase_switch_cp_active: bool, last_tag: str,
                    last_tag_timestamp: Optional[float] = None) -> ChargepointState:
         def store_state(chargepoint_state: ChargepointState) -> None:
@@ -103,7 +110,12 @@ class ChargepointModule(AbstractChargepoint):
                     "Plug_state %s beibehalten, da CP-Unterbrechung oder Phasenumschaltung aktiv.", self.old_plug_state
                 )
                 plug_state = self.old_plug_state
+            elif self._cp_recovering(evse_state.plug_state):
+                log.debug("Plug_state %s beibehalten, bis das Fahrzeug nach der CP-Unterbrechung State B meldet.",
+                          self.old_plug_state)
+                plug_state = self.old_plug_state
             else:
+                self.cp_active_timestamp = None
                 self.old_plug_state = evse_state.plug_state
                 plug_state = evse_state.plug_state
 
@@ -202,6 +214,7 @@ class ChargepointModule(AbstractChargepoint):
         finally:
             GPIO.output(gpio_cp, GPIO.LOW)  # CP on - in jedem Fall wieder verbinden (#4037)
         time.sleep(1)
+        self.cp_active_timestamp = time.monotonic()
         self.old_phases_in_use = phases_to_use
         log.warning(f"Phasenumschaltung LP{num}: auf {phases_to_use} Phasen umgeschaltet "
                     f"({time.monotonic() - start:.1f} s gesamt).")
@@ -217,3 +230,4 @@ class ChargepointModule(AbstractChargepoint):
         GPIO.output(gpio_cp, GPIO.HIGH)
         time.sleep(duration)
         GPIO.output(gpio_cp, GPIO.LOW)
+        self.cp_active_timestamp = time.monotonic()
