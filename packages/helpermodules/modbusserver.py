@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 import logging
+import socket
 from socketserver import TCPServer
 from collections import defaultdict
 import struct
@@ -19,12 +20,31 @@ from helpermodules.subdata import SubData
 
 log = logging.getLogger(__name__)
 
+# Der Server bedient nur eine Verbindung gleichzeitig. Bricht das Netz weg, ohne dass ein FIN/RST ankommt
+# (z. B. Neustart des Routers), wartet recv() sonst endlos auf der toten Verbindung und alle neuen
+# Verbindungen laufen ins Leere. Mit Timeout und Keepalive wird die tote Verbindung verworfen und der
+# Client kann sich neu verbinden.
+CONNECTION_TIMEOUT = 120
+
+
+class ModbusTCPServer(TCPServer):
+    allow_reuse_address = True
+
+    def get_request(self):
+        connection, client_address = super().get_request()
+        connection.settimeout(CONNECTION_TIMEOUT)
+        connection.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
+        return connection, client_address
+
+    def handle_error(self, request, client_address):
+        log.warning(f"Modbus-Verbindung von {client_address} beendet", exc_info=True)
+
+
 try:
     log_to_stream(level=logging.DEBUG)
     data_store = defaultdict(int)
     conf.SIGNED_VALUES = True
-    TCPServer.allow_reuse_address = True
-    app = get_server(TCPServer, ('0.0.0.0', 1502), RequestHandler)
+    app = get_server(ModbusTCPServer, ('0.0.0.0', 1502), RequestHandler)
 
     serial_number = get_serial_number()
 except (Exception, OSError):
